@@ -1,65 +1,99 @@
-import Image from "next/image";
+// src/app/page.tsx
+'use client'
+
+import { useState, useCallback } from 'react'
+import toast from 'react-hot-toast'
+import LicenseForm from '@/components/LicenseForm'
+import LicenseResult from '@/components/LicenseResult'
+import { validateLicenseNumber } from '@/utils/validation'
 
 export default function Home() {
+  const [loading, setLoading] = useState(false)
+  const [result, setResult] = useState<any>(null)
+  const [notFound, setNotFound] = useState(false)
+
+  const checkLicense = useCallback(async (licenseNumber: string) => {
+    setLoading(true)
+    setResult(null)
+    setNotFound(false)
+
+    try {
+      const response = await fetch(`/api/license?number=${encodeURIComponent(licenseNumber)}`)
+      const data = await response.json()
+
+      if (data.status === 'success' && data.data) {
+        setResult(data.data)
+        setNotFound(false)
+        toast.success('License found!')
+      } else {
+        setNotFound(true)
+        toast.error('License not found in printed records')
+      }
+    } catch (error) {
+      console.error('Error checking license:', error)
+      toast.error('Failed to check license. Please try again.')
+      setNotFound(true)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+      <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        {/* Hero Section */}
+        <div className="container mx-auto px-4 py-12 md:py-20">
+          <div className="max-w-3xl mx-auto">
+            {/* Header */}
+            <div className="text-center mb-10">
+              <h1 className="text-4xl md:text-5xl font-bold text-primary mb-4">
+                Nepal License Print Status
+              </h1>
+              <p className="text-lg text-gray-600 mb-2">
+                Check if your smart card driving license is printed and ready for collection
+              </p>
+              <p className="text-sm text-gray-500">
+                Official data from Department of Transport Management (DOTM), Nepal
+              </p>
+            </div>
+
+            {/* Form */}
+            <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 mb-8">
+              <LicenseForm onSubmit={checkLicense} loading={loading} />
+            </div>
+
+            {/* Result Section */}
+            {(result || notFound) && !loading && (
+                <div className="animate-fade-in">
+                  <LicenseResult result={result} notFound={notFound} />
+                </div>
+            )}
+
+            {/* Info Section */}
+            <div className="mt-12 text-center text-sm text-gray-600">
+              <div className="bg-white/50 rounded-lg p-6 backdrop-blur-sm">
+                <h3 className="font-semibold mb-2">License Number Format</h3>
+                <p className="mb-2">Example: <code className="bg-gray-100 px-2 py-1 rounded">01-01-12345678</code></p>
+                <p className="text-xs">Format: XX-XX-XXXXXXXX (Office Code-District Code-Unique Number)</p>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+
+        <style jsx>{`
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out;
+        }
+      `}</style>
       </main>
-    </div>
-  );
+  )
 }
