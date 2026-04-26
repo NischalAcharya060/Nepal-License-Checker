@@ -1,24 +1,32 @@
 // scripts/update-data.js
 const DOTMScraper = require('./scraper');
 
-// For Vercel deployment, this can be triggered via API endpoint
-// For local testing, run with: node scripts/update-data.js
-
 async function runScraper() {
     const scraper = new DOTMScraper();
     try {
-        await scraper.scrapeAll();
-        console.log('Scheduled update completed successfully');
-        return { success: true, message: 'Data updated successfully' };
+        const success = await scraper.scrapeAll();
+        const result = {
+            success,
+            message: success ? 'DOTM data updated successfully' : 'Scraper finished with issues',
+            timestamp: new Date().toISOString(),
+            stats: scraper.stats,
+        };
+        console.log(JSON.stringify(result, null, 2));
+        return result;
     } catch (error) {
-        console.error('Scheduled update failed:', error);
-        return { success: false, error: error.message };
+        console.error('Scraper run failed:', error);
+        return {
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString(),
+        };
     }
 }
 
-// Run immediately if called directly
 if (require.main === module) {
-    runScraper().then(() => process.exit(0));
+    runScraper()
+        .then(() => process.exit(0))
+        .catch(err => { console.error(err); process.exit(1); });
 }
 
 module.exports = { runScraper };

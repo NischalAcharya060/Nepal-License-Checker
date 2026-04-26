@@ -2,32 +2,70 @@
 
 @layer base {
   :root {
-    --primary: #2563eb;
-    --background: #ffffff;
-    --foreground: #171717;
-  }
+    --nepal-red: #DC143C;
+    --nepal-blue: #003893;
+    --nepal-blue-mid: #1a4da8;
+    --nepal-blue-light: #e8eef8;
+    --nepal-blue-soft: #f0f4fc;
 
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --background: #0a0a0a;
-      --foreground: #ededed;
-    }
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8f9fb;
+
+    --text-primary: #1e2533;
+    --text-secondary: #5a6478;
+    --text-muted: #9aa3b0;
+
+    --border-default: #e2e6ed;
+
+    --success: #0f7b4d;
+    --success-bg: #edf7f2;
+    --success-border: #b3dece;
+
+    --error: #c0392b;
+    --error-bg: #fdf3f2;
+    --error-border: #f5c6c1;
+
+    --warning-bg: #fef9e7;
+    --warning-border: #f9e4a0;
+    --warning-text: #7d5e00;
   }
 
   body {
-    @apply bg-white text-gray-900;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+    background: linear-gradient(160deg, var(--nepal-blue-soft) 0%, #f5f7fc 40%, #fff 100%);
+    min-height: 100vh;
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
   }
 }
 
 @layer utilities {
   .input-focus {
-    @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-0;
+    @apply focus:outline-none;
+    box-shadow: 0 0 0 3px rgba(0, 56, 147, 0.12);
+    border-color: var(--nepal-blue) !important;
   }
 }
 
-@layer components {
-  .primary {
-    @apply bg-blue-600;
-  }
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes dotPulse {
+  0%, 60%, 100% { opacity: 0.3; transform: scale(1); }
+  30%            { opacity: 1;   transform: scale(1.35); }
+}
+
+.animate-slide-up { animation: slideUp 0.3s ease-out; }
+.animate-fade-in  { animation: fadeIn 0.25s ease-out; }
+.animate-spin-smooth { animation: spin 0.85s linear infinite; }
