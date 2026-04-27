@@ -4,10 +4,13 @@ const DOTMScraper = require('./scraper');
 async function runScraper() {
     const scraper = new DOTMScraper();
     try {
-        const success = await scraper.scrapeAll();
+        const ranToEnd = await scraper.scrapeAll();
+        const success = Boolean(ranToEnd && scraper.stats.failed === 0);
         const result = {
             success,
-            message: success ? 'DOTM data updated successfully' : 'Scraper finished with issues',
+            message: success
+                ? 'DOTM data updated successfully'
+                : 'Scraper finished with issues (check stats.failed)',
             timestamp: new Date().toISOString(),
             stats: scraper.stats,
         };
@@ -25,7 +28,7 @@ async function runScraper() {
 
 if (require.main === module) {
     runScraper()
-        .then(() => process.exit(0))
+        .then((result) => process.exit(result.success ? 0 : 1))
         .catch(err => { console.error(err); process.exit(1); });
 }
 
