@@ -62,58 +62,38 @@ export default function Home() {
   }, [])
 
   return (
-    <main style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #f0f4fc 0%, #f5f7fc 40%, #fff 100%)' }}>
-      <div style={{ maxWidth: '680px', margin: '0 auto', padding: '40px 20px 80px' }}>
-
-        {/* ── Header ── */}
-        <header style={{ textAlign: 'center', marginBottom: '40px' }}>
-          {/* Nepal flag colors stripe */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0', marginBottom: '20px' }}>
-            <div style={{ width: '40px', height: '6px', background: '#DC143C', borderRadius: '3px 0 0 3px' }} />
-            <div style={{ width: '10px', height: '10px', background: 'white', border: '2px solid #e2e6ed', borderRadius: '50%', margin: '0 8px' }} />
-            <div style={{ width: '40px', height: '6px', background: '#003893', borderRadius: '0 3px 3px 0' }} />
+    <main className="min-h-screen">
+      <div className="mx-auto w-full max-w-3xl px-4 pb-14 pt-8 sm:px-6 sm:pt-12">
+        <header className="mb-8 text-center sm:mb-10">
+          <div className="mb-5 flex items-center justify-center gap-2">
+            <div className="h-1.5 w-10 rounded-l-full bg-[var(--nepal-red)]" />
+            <div className="h-2.5 w-2.5 rounded-full border-2 border-[var(--border-default)] bg-white" />
+            <div className="h-1.5 w-10 rounded-r-full bg-[var(--nepal-blue)]" />
           </div>
 
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: '7px',
-            background: '#003893', color: 'white',
-            fontSize: '11px', fontWeight: '700', letterSpacing: '0.07em',
-            padding: '5px 14px', borderRadius: '20px', marginBottom: '16px',
-            textTransform: 'uppercase',
-          }}>
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-[var(--nepal-blue)] px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.09em] text-white sm:text-[11px]">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
             </svg>
             Government of Nepal · DOTM
           </div>
 
-          <h1 style={{
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
-            fontSize: '28px', fontWeight: '800',
-            color: '#1e2533', lineHeight: '1.2', marginBottom: '12px',
-          }}>
-            License Print Status{' '}
-            <span style={{ color: '#003893' }}>Checker</span>
+          <h1 className="mb-3 text-3xl font-extrabold tracking-tight text-[var(--text-primary)] sm:text-4xl">
+            License Print Status <span className="text-[var(--nepal-blue)]">Checker</span>
           </h1>
-
-          <p style={{
-            fontSize: '15px', color: '#5a6478', lineHeight: '1.65',
-            maxWidth: '460px', margin: '0 auto',
-          }}>
+          <p className="mx-auto max-w-xl text-sm leading-6 text-[var(--text-secondary)] sm:text-base">
             Check if your smart card driving license has been printed and is ready for collection from your transport management office.
           </p>
         </header>
 
-        {/* ── Search Form ── */}
         <LicenseForm
           onSubmit={checkLicense}
           onReset={reset}
           loading={searchState === 'loading'}
         />
 
-        {/* ── Result ── */}
         {(searchState === 'found' || searchState === 'not_found' || searchState === 'error') && (
-          <div className="animate-slide-up" style={{ marginTop: '20px' }}>
+          <div className="animate-slide-up mt-5">
             <LicenseResult
               state={searchState}
               result={result}
@@ -123,11 +103,8 @@ export default function Home() {
           </div>
         )}
 
-        {/* ── Info tiles ── */}
         {searchState === 'idle' && (
-          <div className="animate-fade-in" style={{
-            display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '28px'
-          }}>
+          <div className="animate-fade-in mt-7 grid grid-cols-1 gap-3 sm:grid-cols-2">
             {[
               {
                 icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>,
@@ -150,21 +127,14 @@ export default function Home() {
                 text: 'DOTM publishes new batches periodically. Check again in a few days if not found',
               },
             ].map((tile, i) => (
-              <div key={i} style={{
-                background: 'white', border: '1px solid #e2e6ed', borderRadius: '12px',
-                padding: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-              }}>
-                <div style={{
-                  width: '32px', height: '32px', background: '#f0f4fc',
-                  borderRadius: '8px', display: 'flex', alignItems: 'center',
-                  justifyContent: 'center', color: '#003893', marginBottom: '10px',
-                }}>
+              <div key={i} className="rounded-xl border border-[var(--border-default)] bg-white p-4 shadow-sm">
+                <div className="mb-2.5 flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)]">
                   {tile.icon}
                 </div>
-                <div style={{ fontSize: '11px', fontWeight: '700', color: '#1e2533', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '5px' }}>
+                <div className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--text-primary)]">
                   {tile.title}
                 </div>
-                <div style={{ fontSize: '12px', color: '#5a6478', lineHeight: '1.6' }}>
+                <div className="text-xs leading-5 text-[var(--text-secondary)]">
                   {tile.text}
                 </div>
               </div>
@@ -172,16 +142,14 @@ export default function Home() {
           </div>
         )}
 
-        {/* ── Footer ── */}
-        <p style={{ textAlign: 'center', marginTop: '36px', fontSize: '12px', color: '#9aa3b0' }}>
+        <p className="mt-9 text-center text-xs text-[var(--text-muted)]">
           Official data from{' '}
           <a href="https://dotm.gov.np/category/details-of-printed-licenses/" target="_blank" rel="noopener noreferrer"
-            style={{ color: '#003893', fontWeight: '600', textDecoration: 'none' }}>
+            className="font-semibold text-[var(--nepal-blue)] no-underline">
             dotm.gov.np
           </a>
           {' '}· Department of Transport Management, Nepal
         </p>
-
       </div>
     </main>
   )

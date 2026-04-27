@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { validateLicenseNumber } from '@/utils/validation'
 
 interface LicenseFormProps {
@@ -21,8 +21,8 @@ export default function LicenseForm({ onSubmit, onReset, loading }: LicenseFormP
     const [error, setError] = useState('')
     const [focused, setFocused] = useState(false)
     const [loadingMsgIdx, setLoadingMsgIdx] = useState(0)
-    const debounceTimer = useRef<NodeJS.Timeout | undefined>(undefined)
-    const loadingInterval = useRef<NodeJS.Timeout | undefined>(undefined)
+    const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const loadingInterval = useRef<ReturnType<typeof setInterval> | null>(null)
 
     // Cycle through loading messages
     const startLoadingMessages = useCallback(() => {
@@ -33,7 +33,21 @@ export default function LicenseForm({ onSubmit, onReset, loading }: LicenseFormP
     }, [])
 
     const stopLoadingMessages = useCallback(() => {
-        if (loadingInterval.current) clearInterval(loadingInterval.current)
+        if (loadingInterval.current) {
+            clearInterval(loadingInterval.current)
+            loadingInterval.current = null
+        }
+    }, [])
+
+    useEffect(() => {
+        if (!loading) stopLoadingMessages()
+    }, [loading, stopLoadingMessages])
+
+    useEffect(() => {
+        return () => {
+            if (debounceTimer.current) clearTimeout(debounceTimer.current)
+            if (loadingInterval.current) clearInterval(loadingInterval.current)
+        }
     }, [])
 
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -74,40 +88,22 @@ export default function LicenseForm({ onSubmit, onReset, loading }: LicenseFormP
     const progress = Math.min((licenseNumber.replace(/-/g, '').length / 12) * 100, 100)
 
     return (
-        <div style={{
-            background: 'white',
-            borderRadius: '16px',
-            border: '1px solid #e2e6ed',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-            padding: '28px',
-            marginBottom: '8px',
-        }}>
-            <form onSubmit={handleSubmit}>
-                {/* Label */}
-                <label style={{
-                    display: 'block', fontSize: '12px', fontWeight: '700',
-                    color: '#5a6478', letterSpacing: '0.07em',
-                    textTransform: 'uppercase', marginBottom: '10px',
-                }}>
+        <div className="rounded-2xl border border-[var(--border-default)] bg-white p-4 shadow-sm sm:p-6">
+            <form onSubmit={handleSubmit} className="space-y-3">
+                <label htmlFor="license-number" className="block text-xs font-bold uppercase tracking-[0.08em] text-[var(--text-secondary)]">
                     Driving License Number
                 </label>
 
-                {/* Input row */}
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'stretch' }}>
-                    {/* Input with icon */}
-                    <div style={{ flex: 1, position: 'relative' }}>
-                        <div style={{
-                            position: 'absolute', left: '14px', top: '50%',
-                            transform: 'translateY(-50%)', pointerEvents: 'none',
-                            color: focused ? '#003893' : '#9aa3b0',
-                            transition: 'color 0.2s',
-                        }}>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+                    <div className="relative flex-1">
+                        <div className={`pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors ${focused ? 'text-[var(--nepal-blue)]' : 'text-[var(--text-muted)]'}`}>
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <rect x="2" y="5" width="20" height="14" rx="2"/>
-                                <line x1="2" y1="10" x2="22" y2="10"/>
+                                <rect x="2" y="5" width="20" height="14" rx="2" />
+                                <line x1="2" y1="10" x2="22" y2="10" />
                             </svg>
                         </div>
                         <input
+                            id="license-number"
                             type="text"
                             value={licenseNumber}
                             onChange={handleInputChange}
@@ -119,81 +115,50 @@ export default function LicenseForm({ onSubmit, onReset, loading }: LicenseFormP
                             autoCorrect="off"
                             spellCheck={false}
                             maxLength={14}
-                            style={{
-                                width: '100%',
-                                height: '52px',
-                                paddingLeft: '44px',
-                                paddingRight: '16px',
-                                fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-                                fontSize: '17px',
-                                fontWeight: '600',
-                                letterSpacing: '0.1em',
-                                color: error ? '#c0392b' : '#1e2533',
-                                background: error ? '#fdf3f2' : focused ? 'white' : '#f8f9fb',
-                                border: `1.5px solid ${error ? '#f5c6c1' : focused ? '#003893' : '#e2e6ed'}`,
-                                borderRadius: '10px',
-                                outline: 'none',
-                                transition: 'all 0.2s',
-                                boxShadow: focused ? '0 0 0 3px rgba(0, 56, 147, 0.1)' : 'none',
-                                opacity: loading ? 0.6 : 1,
-                            }}
+                            inputMode="numeric"
+                            aria-invalid={!!error}
+                            className={`h-12 w-full rounded-xl border px-11 pr-10 font-mono text-[15px] font-semibold tracking-[0.08em] outline-none transition sm:h-[52px] sm:text-[16px] ${
+                                error
+                                    ? 'border-[var(--error-border)] bg-[var(--error-bg)] text-[var(--error)]'
+                                    : focused
+                                      ? 'border-[var(--nepal-blue)] bg-white shadow-[0_0_0_3px_rgba(0,56,147,0.12)]'
+                                      : 'border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-primary)]'
+                            } ${loading ? 'opacity-70' : ''}`}
                         />
+                        {licenseNumber && !loading && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setLicenseNumber('')
+                                    setError('')
+                                    onReset()
+                                }}
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-[var(--text-muted)] transition hover:bg-[var(--bg-secondary)] hover:text-[var(--text-secondary)]"
+                                aria-label="Clear license number"
+                            >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
+                            </button>
+                        )}
                     </div>
 
-                    {/* Submit button */}
                     <button
                         type="submit"
                         disabled={loading || !!error || !licenseNumber}
-                        style={{
-                            height: '52px',
-                            padding: '0 24px',
-                            background: loading || !!error || !licenseNumber ? '#9aa3b0' : '#003893',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '10px',
-                            fontFamily: "'Plus Jakarta Sans', sans-serif",
-                            fontSize: '14px',
-                            fontWeight: '700',
-                            cursor: loading || !!error || !licenseNumber ? 'not-allowed' : 'pointer',
-                            transition: 'all 0.2s',
-                            whiteSpace: 'nowrap',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            flexShrink: 0,
-                            transform: 'translateY(0)',
-                        }}
-                        onMouseEnter={e => {
-                            if (!loading && !error && licenseNumber) {
-                                (e.currentTarget as HTMLButtonElement).style.background = '#1a4da8'
-                                ;(e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)'
-                                ;(e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 12px rgba(0,56,147,0.35)'
-                            }
-                        }}
-                        onMouseLeave={e => {
-                            ;(e.currentTarget as HTMLButtonElement).style.background = loading || error || !licenseNumber ? '#9aa3b0' : '#003893'
-                            ;(e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)'
-                            ;(e.currentTarget as HTMLButtonElement).style.boxShadow = 'none'
-                        }}
+                        className="inline-flex h-12 min-w-[150px] items-center justify-center gap-2 rounded-xl bg-[var(--nepal-blue)] px-4 text-sm font-bold text-white transition hover:bg-[var(--nepal-blue-mid)] disabled:cursor-not-allowed disabled:bg-[var(--text-muted)] sm:h-[52px]"
                     >
                         {loading ? (
                             <>
-                <span style={{
-                    width: '16px', height: '16px',
-                    border: '2px solid rgba(255,255,255,0.3)',
-                    borderTopColor: 'white',
-                    borderRadius: '50%',
-                    display: 'inline-block',
-                    animation: 'spin 0.8s linear infinite',
-                    flexShrink: 0,
-                }} />
+                                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                                 Checking...
                             </>
                         ) : (
                             <>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <circle cx="11" cy="11" r="8"/>
-                                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                                    <circle cx="11" cy="11" r="8" />
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
                                 </svg>
                                 Check Status
                             </>
@@ -201,62 +166,55 @@ export default function LicenseForm({ onSubmit, onReset, loading }: LicenseFormP
                     </button>
                 </div>
 
-                {/* Progress bar */}
                 {licenseNumber && !loading && (
-                    <div style={{ marginTop: '10px', height: '3px', background: '#f0f4fc', borderRadius: '2px', overflow: 'hidden' }}>
-                        <div style={{
-                            height: '100%',
-                            width: `${progress}%`,
-                            background: isValid ? '#0f7b4d' : error ? '#c0392b' : '#003893',
-                            borderRadius: '2px',
-                            transition: 'width 0.2s, background 0.2s',
-                        }} />
+                    <div className="mt-2 h-1 overflow-hidden rounded-full bg-[var(--nepal-blue-soft)]">
+                        <div
+                            className="h-full rounded-full transition-all"
+                            style={{
+                                width: `${progress}%`,
+                                background: isValid ? 'var(--success)' : error ? 'var(--error)' : 'var(--nepal-blue)',
+                            }}
+                        />
                     </div>
                 )}
 
-                {/* Error / hint */}
                 {error ? (
-                    <p style={{ marginTop: '8px', fontSize: '12px', color: '#c0392b', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <p className="flex items-center gap-1.5 text-xs font-semibold text-[var(--error)]">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="12" y1="8" x2="12" y2="12" />
+                            <line x1="12" y1="16" x2="12.01" y2="16" />
                         </svg>
                         {error}
                     </p>
                 ) : loading ? (
-                    <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ display: 'flex', gap: '5px' }}>
+                    <div className="flex items-center gap-2.5 text-xs text-[var(--text-secondary)]">
+                        <div className="flex gap-1">
                             {[0, 1, 2].map(i => (
-                                <div key={i} style={{
-                                    width: '5px', height: '5px', background: '#003893', borderRadius: '50%',
-                                    animation: `dotPulse 1.4s ease-in-out ${i * 0.2}s infinite`,
-                                }} />
+                                <div
+                                    key={i}
+                                    className="h-1.5 w-1.5 rounded-full bg-[var(--nepal-blue)]"
+                                    style={{ animation: `dotPulse 1.4s ease-in-out ${i * 0.2}s infinite` }}
+                                />
                             ))}
                         </div>
-                        <span style={{ fontSize: '12px', color: '#5a6478', fontWeight: '500' }}>
-              {LOADING_MESSAGES[loadingMsgIdx]}
-            </span>
+                        <span className="font-medium">{LOADING_MESSAGES[loadingMsgIdx]}</span>
                     </div>
                 ) : (
-                    <p style={{ marginTop: '9px', fontSize: '12px', color: '#9aa3b0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <p className="flex flex-wrap items-center gap-1.5 text-xs text-[var(--text-muted)]">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="12" y1="8" x2="12" y2="12" />
+                            <line x1="12" y1="16" x2="12.01" y2="16" />
                         </svg>
-                        Format:{' '}
-                        <code style={{ fontFamily: "'JetBrains Mono', monospace", background: '#f0f2f5', padding: '1px 6px', borderRadius: '4px', fontSize: '11px', color: '#5a6478' }}>
+                        <span>Format:</span>
+                        <code className="rounded bg-[var(--nepal-blue-soft)] px-1.5 py-0.5 font-mono text-[11px] text-[var(--text-secondary)]">
                             XX-XX-XXXXXXXX
                         </code>
-                        &nbsp;·&nbsp; Office–District–Unique Number
+                        <span>· Office–District–Unique Number</span>
                     </p>
                 )}
             </form>
-
-            <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes dotPulse {
-          0%, 60%, 100% { opacity: 0.3; transform: scale(1); }
-          30% { opacity: 1; transform: scale(1.35); }
-        }
-      `}</style>
         </div>
     )
 }
