@@ -1,0 +1,47 @@
+name: DOTM scraper cron
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dotm-scraper-cron
+  cancel-in-progress: false
+
+jobs:
+  run-scraper:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+      TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate required secrets
+        run: |
+          if [ -z "${TURSO_DATABASE_URL}" ]; then
+            echo "Missing TURSO_DATABASE_URL secret"
+            exit 1
+          fi
+          if [ -z "${TURSO_AUTH_TOKEN}" ]; then
+            echo "Missing TURSO_AUTH_TOKEN secret"
+            exit 1
+          fi
+
+      - name: Run DOTM scraper
+        run: npm run cron:scrape

@@ -20,6 +20,18 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## GitHub Actions cron
+
+The DOTM scraper is scheduled via GitHub Actions using `.github/workflows/dotm-scraper-cron.yml`.
+
+- Schedule: `0 2 * * *` (daily at 02:00 UTC)
+- Manual run: **Actions** -> **DOTM scraper cron** -> **Run workflow**
+
+Set these repository secrets before enabling the workflow:
+
+- `TURSO_DATABASE_URL`
+- `TURSO_AUTH_TOKEN`
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

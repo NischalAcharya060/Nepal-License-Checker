@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "cron:scrape": "node scripts/update-data.js"
   },
   "dependencies": {
     "@libsql/client": "^0.17.3",
