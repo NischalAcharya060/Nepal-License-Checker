@@ -43,19 +43,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             },
             success: {
               style: {
-                background: '#edf7f2',
-                color: '#0f7b4d',
-                border: '1px solid #b3dece',
+                background: 'var(--success-bg)',
+                color: 'var(--success)',
+                border: '1px solid var(--success-border)',
               },
-              iconTheme: { primary: '#0f7b4d', secondary: '#edf7f2' },
+              iconTheme: { primary: 'var(--success)', secondary: 'var(--success-bg)' },
             },
             error: {
               style: {
-                background: '#fdf3f2',
-                color: '#c0392b',
-                border: '1px solid #f5c6c1',
+                background: 'var(--error-bg)',
+                color: 'var(--error)',
+                border: '1px solid var(--error-border)',
               },
-              iconTheme: { primary: '#c0392b', secondary: '#fdf3f2' },
+              iconTheme: { primary: 'var(--error)', secondary: 'var(--error-bg)' },
             },
           }}
         />

@@ -1,5 +1,5 @@
 // src/utils/helpers.ts
-export function formatDate(date: Date | string | any): string {
+export function formatDate(date: Date | string | any, locale: string = 'en-NP'): string {
     if (!date) return 'N/A';
 
     let d;
@@ -10,7 +10,7 @@ export function formatDate(date: Date | string | any): string {
         d = new Date(date);
     }
 
-    return d.toLocaleDateString('en-NP', {
+    return d.toLocaleDateString(locale, {
         year: 'numeric',
         month: 'long',
         day: 'numeric'

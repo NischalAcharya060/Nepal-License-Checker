@@ -2,21 +2,16 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { validateLicenseNumber } from '@/utils/validation'
+import type { LicenseFormCopy } from '@/lib/uiCopy'
 
 interface LicenseFormProps {
     onSubmit: (licenseNumber: string) => Promise<void>
     onReset: () => void
     loading: boolean
+    copy: LicenseFormCopy
 }
 
-const LOADING_MESSAGES = [
-    'Connecting to DOTM records...',
-    'Searching printed license lists...',
-    'Scanning PDF records...',
-    'Almost there...',
-]
-
-export default function LicenseForm({ onSubmit, onReset, loading }: LicenseFormProps) {
+export default function LicenseForm({ onSubmit, onReset, loading, copy }: LicenseFormProps) {
     const [licenseNumber, setLicenseNumber] = useState('')
     const [error, setError] = useState('')
     const [focused, setFocused] = useState(false)
@@ -27,10 +22,11 @@ export default function LicenseForm({ onSubmit, onReset, loading }: LicenseFormP
     // Cycle through loading messages
     const startLoadingMessages = useCallback(() => {
         setLoadingMsgIdx(0)
+        const totalMessages = copy.loadingMessages.length || 1
         loadingInterval.current = setInterval(() => {
-            setLoadingMsgIdx(prev => (prev + 1) % LOADING_MESSAGES.length)
+            setLoadingMsgIdx(prev => (prev + 1) % totalMessages)
         }, 1800)
-    }, [])
+    }, [copy.loadingMessages.length])
 
     const stopLoadingMessages = useCallback(() => {
         if (loadingInterval.current) {
@@ -69,15 +65,15 @@ export default function LicenseForm({ onSubmit, onReset, loading }: LicenseFormP
         if (debounceTimer.current) clearTimeout(debounceTimer.current)
         debounceTimer.current = setTimeout(() => {
             if (formatted.length === 14 && !validateLicenseNumber(formatted)) {
-                setError('Invalid format. Use XX-XX-XXXXXXXX')
+                setError(copy.errors.invalidShort)
             }
         }, 400)
-    }, [onReset])
+    }, [copy.errors.invalidShort, onReset])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (!licenseNumber) { setError('Please enter a license number'); return }
-        if (!validateLicenseNumber(licenseNumber)) { setError('Invalid format. Use XX-XX-XXXXXXXX (e.g. 01-01-12345678)'); return }
+        if (!licenseNumber) { setError(copy.errors.required); return }
+        if (!validateLicenseNumber(licenseNumber)) { setError(copy.errors.invalidFull); return }
         setError('')
         startLoadingMessages()
         await onSubmit(licenseNumber)
@@ -88,10 +84,10 @@ export default function LicenseForm({ onSubmit, onReset, loading }: LicenseFormP
     const progress = Math.min((licenseNumber.replace(/-/g, '').length / 12) * 100, 100)
 
     return (
-        <div className="rounded-2xl border border-[var(--border-default)] bg-white p-4 shadow-sm sm:p-6">
+        <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-sm sm:p-6">
             <form onSubmit={handleSubmit} className="space-y-3">
                 <label htmlFor="license-number" className="block text-xs font-bold uppercase tracking-[0.08em] text-[var(--text-secondary)]">
-                    Driving License Number
+                    {copy.label}
                 </label>
 
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
@@ -109,7 +105,7 @@ export default function LicenseForm({ onSubmit, onReset, loading }: LicenseFormP
                             onChange={handleInputChange}
                             onFocus={() => setFocused(true)}
                             onBlur={() => setFocused(false)}
-                            placeholder="01-01-12345678"
+                            placeholder={copy.placeholder}
                             disabled={loading}
                             autoComplete="off"
                             autoCorrect="off"
@@ -121,7 +117,7 @@ export default function LicenseForm({ onSubmit, onReset, loading }: LicenseFormP
                                 error
                                     ? 'border-[var(--error-border)] bg-[var(--error-bg)] text-[var(--error)]'
                                     : focused
-                                      ? 'border-[var(--nepal-blue)] bg-white shadow-[0_0_0_3px_rgba(0,56,147,0.12)]'
+                                      ? 'border-[var(--nepal-blue)] bg-[var(--surface-primary)] shadow-[0_0_0_3px_rgba(0,56,147,0.12)]'
                                       : 'border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-primary)]'
                             } ${loading ? 'opacity-70' : ''}`}
                         />
@@ -134,7 +130,7 @@ export default function LicenseForm({ onSubmit, onReset, loading }: LicenseFormP
                                     onReset()
                                 }}
                                 className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-[var(--text-muted)] transition hover:bg-[var(--bg-secondary)] hover:text-[var(--text-secondary)]"
-                                aria-label="Clear license number"
+                                aria-label={copy.clearLabel}
                             >
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                     <line x1="18" y1="6" x2="6" y2="18" />
@@ -152,7 +148,7 @@ export default function LicenseForm({ onSubmit, onReset, loading }: LicenseFormP
                         {loading ? (
                             <>
                                 <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                                Checking...
+                                {copy.checkingLabel}
                             </>
                         ) : (
                             <>
@@ -160,7 +156,7 @@ export default function LicenseForm({ onSubmit, onReset, loading }: LicenseFormP
                                     <circle cx="11" cy="11" r="8" />
                                     <line x1="21" y1="21" x2="16.65" y2="16.65" />
                                 </svg>
-                                Check Status
+                                {copy.submitLabel}
                             </>
                         )}
                     </button>
@@ -198,7 +194,7 @@ export default function LicenseForm({ onSubmit, onReset, loading }: LicenseFormP
                                 />
                             ))}
                         </div>
-                        <span className="font-medium">{LOADING_MESSAGES[loadingMsgIdx]}</span>
+                        <span className="font-medium">{copy.loadingMessages[loadingMsgIdx] ?? copy.loadingMessages[0]}</span>
                     </div>
                 ) : (
                     <p className="flex flex-wrap items-center gap-1.5 text-xs text-[var(--text-muted)]">
@@ -207,11 +203,11 @@ export default function LicenseForm({ onSubmit, onReset, loading }: LicenseFormP
                             <line x1="12" y1="8" x2="12" y2="12" />
                             <line x1="12" y1="16" x2="12.01" y2="16" />
                         </svg>
-                        <span>Format:</span>
+                        <span>{copy.formatLabel}</span>
                         <code className="rounded bg-[var(--nepal-blue-soft)] px-1.5 py-0.5 font-mono text-[11px] text-[var(--text-secondary)]">
                             XX-XX-XXXXXXXX
                         </code>
-                        <span>· Office–District–Unique Number</span>
+                        <span>· {copy.formatHint}</span>
                     </p>
                 )}
             </form>
