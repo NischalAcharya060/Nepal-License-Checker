@@ -17,8 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
-      TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
-      TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+      TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL || vars.TURSO_DATABASE_URL }}
+      TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN || vars.TURSO_AUTH_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,14 +32,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Validate required secrets
+      - name: Validate required credentials
         run: |
           if [ -z "${TURSO_DATABASE_URL}" ]; then
-            echo "Missing TURSO_DATABASE_URL secret"
+            echo "Missing TURSO_DATABASE_URL (set it in repository Secrets or Variables)"
             exit 1
           fi
           if [ -z "${TURSO_AUTH_TOKEN}" ]; then
-            echo "Missing TURSO_AUTH_TOKEN secret"
+            echo "Missing TURSO_AUTH_TOKEN (set it in repository Secrets or Variables)"
             exit 1
           fi
 

@@ -27,10 +27,10 @@ The DOTM scraper is scheduled via GitHub Actions using `.github/workflows/dotm-s
 - Schedule: `0 2 * * *` (daily at 02:00 UTC)
 - Manual run: **Actions** -> **DOTM scraper cron** -> **Run workflow**
 
-Set these repository secrets before enabling the workflow:
+Set these repository values before enabling the workflow:
 
-- `TURSO_DATABASE_URL`
-- `TURSO_AUTH_TOKEN`
+- `TURSO_DATABASE_URL` (Secret or Variable)
+- `TURSO_AUTH_TOKEN` (Secret or Variable)
 
 ## Learn More
 
