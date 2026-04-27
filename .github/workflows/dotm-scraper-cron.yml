@@ -15,6 +15,7 @@ concurrency:
 jobs:
   run-scraper:
     runs-on: ubuntu-latest
+    environment: Production
     timeout-minutes: 90
     env:
       TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL || vars.TURSO_DATABASE_URL }}
@@ -35,11 +36,11 @@ jobs:
       - name: Validate required credentials
         run: |
           if [ -z "${TURSO_DATABASE_URL}" ]; then
-            echo "Missing TURSO_DATABASE_URL (set it in repository Secrets or Variables)"
+            echo "Missing TURSO_DATABASE_URL (set it in repo Secrets/Variables or Production environment secrets)"
             exit 1
           fi
           if [ -z "${TURSO_AUTH_TOKEN}" ]; then
-            echo "Missing TURSO_AUTH_TOKEN (set it in repository Secrets or Variables)"
+            echo "Missing TURSO_AUTH_TOKEN (set it in repo Secrets/Variables or Production environment secrets)"
             exit 1
           fi
 

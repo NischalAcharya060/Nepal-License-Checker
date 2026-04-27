@@ -32,6 +32,8 @@ Set these repository values before enabling the workflow:
 - `TURSO_DATABASE_URL` (Secret or Variable)
 - `TURSO_AUTH_TOKEN` (Secret or Variable)
 
+If you store credentials as **Environment secrets**, the workflow uses the `Production` environment.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
