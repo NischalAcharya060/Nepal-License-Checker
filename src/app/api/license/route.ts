@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { adminDb } from '@/lib/firebase-admin'
+import { getTurso, type LicenseRow } from '@/lib/turso'
 import { RateLimiter } from '@/lib/rateLimit'
 import { sanitizeInput } from '@/utils/sanitize'
 import { License } from '@/types'
@@ -42,41 +42,54 @@ export async function GET(request: NextRequest) {
             )
         }
 
-        // 1. Try Firestore first (fast path)
-        const licensesRef = adminDb.collection('licenses')
-        const snapshot = await licensesRef
-            .where('license_number', '==', licenseNumber)
-            .limit(1)
-            .get()
+        // 1. Try Turso first (fast path)
+        const db = getTurso()
+        const result = await db.execute({
+            sql: `SELECT license_number, holder_name, office, category, created_at, updated_at
+                  FROM licenses WHERE license_number = ? LIMIT 1`,
+            args: [licenseNumber],
+        })
 
-        if (!snapshot.empty) {
-            const doc = snapshot.docs[0]
-            const licenseData = doc.data() as License
-
+        if (result.rows.length) {
+            const row = result.rows[0] as unknown as LicenseRow
             return NextResponse.json({
                 status: 'success',
                 source: 'database',
                 data: {
-                    holder_name: licenseData.holder_name,
-                    license_number: licenseData.license_number,
-                    office: licenseData.office,
-                    category: licenseData.category,
-                    createdAt: licenseData.createdAt,
-                    updatedAt: licenseData.updatedAt,
+                    holder_name: row.holder_name,
+                    license_number: row.license_number,
+                    office: row.office,
+                    category: row.category,
+                    createdAt: new Date(Number(row.created_at)),
+                    updatedAt: new Date(Number(row.updated_at)),
                 },
             })
         }
 
-        // 2. Not in Firestore — try live scrape from DOTM
+        // 2. Not in DB — try live scrape from DOTM
         const liveResult = await scrapeLicenseLive(licenseNumber)
 
         if (liveResult) {
-            // Save newly discovered license to Firestore for future lookups
+            // Save newly discovered license to Turso for future lookups
             try {
-                await licensesRef.doc(licenseNumber).set({
-                    ...liveResult,
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
+                const now = Date.now()
+                await db.execute({
+                    sql: `INSERT INTO licenses
+                            (license_number, holder_name, office, category, created_at, updated_at)
+                          VALUES (?, ?, ?, ?, ?, ?)
+                          ON CONFLICT(license_number) DO UPDATE SET
+                            holder_name = excluded.holder_name,
+                            office      = excluded.office,
+                            category    = excluded.category,
+                            updated_at  = excluded.updated_at`,
+                    args: [
+                        liveResult.license_number,
+                        liveResult.holder_name,
+                        liveResult.office,
+                        liveResult.category,
+                        now,
+                        now,
+                    ],
                 })
             } catch {
                 // Non-fatal: we still return the result even if save fails
@@ -133,11 +146,14 @@ async function scrapeLicenseLive(licenseNumber: string): Promise<License | null>
             if (!seenUrls.has(url)) { seenUrls.add(url); pdfUrls.push(url) }
         }
 
-        // Also extract /content/ page links so we can grab PDFs from sub-pages
+        // Also extract /content/ page links so we can grab PDFs from sub-pages.
+        // Match any /content/<id>/<slug>/ path — DOTM's listing markup doesn't always
+        // wrap them in href="..." cleanly.
         const contentLinks: string[] = []
-        const contentMatches = html.matchAll(/href="((?:https?:\/\/dotm\.gov\.np)?\/content\/[^"]+)"/gi)
+        const contentMatches = html.matchAll(/\/content\/\d+\/[A-Za-z0-9_\-]+\/?/gi)
         for (const m of contentMatches) {
-            const href = m[1].startsWith('http') ? m[1] : `${BASE_URL}${m[1]}`
+            const path = m[0].endsWith('/') ? m[0] : m[0] + '/'
+            const href = `${BASE_URL}${path}`
             if (!contentLinks.includes(href)) contentLinks.push(href)
         }
 
@@ -194,29 +210,28 @@ async function searchPdfForLicense(
 
     if (!text.includes(licenseNumber)) return null
 
-    // Parse the line containing our license number
+    // Real DOTM PDF row: "<sn> <NAME...> <XX-XX-XXXXXXXX> <CATEGORY> <OFFICE> <DATE>"
+    const pattern = /^(?:\d+\s+)?(.+?)\s+(\d{2}-\d{2}-\d{8})\s+([A-Z][A-Z,\/]*)\s+(.+?)(?:\s+(\d{4}-[A-Z]{3}-\d{2}|\d{4}-\d{2}-\d{2}))?$/
+
     const lines = text.split('\n').map(l => l.trim()).filter(Boolean)
     for (const line of lines) {
         if (!line.includes(licenseNumber)) continue
 
-        // Pattern: LICENSE_NUMBER  NAME  CATEGORY  OFFICE
-        const pattern = /(\d{2}-\d{2}-\d{8})\s+(.+?)\s+([A-C](?:\/[A-C])*)\s*(.*)/
         const match = line.match(pattern)
-
         if (match) {
-            const [, num, name, category, office] = match
+            const [, nameRaw, num, category, officeRaw] = match
             if (num === licenseNumber) {
                 return {
                     license_number: num.trim(),
-                    holder_name: name.trim().replace(/\s+/g, ' '),
+                    holder_name: nameRaw.trim().replace(/\s+/g, ' '),
                     category: category.trim(),
-                    office: office.trim() || 'DOTM',
+                    office: officeRaw.trim().replace(/\s+/g, ' ') || 'DOTM',
                     createdAt: new Date(),
                     updatedAt: new Date(),
                 }
             }
         } else {
-            // Fallback: found the number but pattern didn't match cleanly
+            // Fallback: found the number but couldn't parse fields cleanly
             return {
                 license_number: licenseNumber,
                 holder_name: 'See DOTM records',

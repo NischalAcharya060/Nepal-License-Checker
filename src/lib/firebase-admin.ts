@@ -3,16 +3,23 @@ import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 
-// Initialize Firebase Admin SDK (for server-side operations)
-const apps = getApps();
+function normalizePrivateKey(raw: string | undefined): string {
+    if (!raw) return '';
+    let key = raw;
+    // Strip surrounding quotes if dotenv kept them
+    key = key.replace(/^"+|"+$/g, '').trim();
+    // Convert literal \n sequences to real newlines
+    if (key.includes('\\n')) key = key.replace(/\\n/g, '\n');
+    return key;
+}
 
-if (!apps.length) {
+if (!getApps().length) {
     initializeApp({
         credential: cert({
-            project_id: process.env.FIREBASE_ADMIN_PROJECT_ID,
-            client_email: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
-            private_key: process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-        } as any),
+            projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
+            clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
+            privateKey: normalizePrivateKey(process.env.FIREBASE_ADMIN_PRIVATE_KEY),
+        }),
     });
 }
 

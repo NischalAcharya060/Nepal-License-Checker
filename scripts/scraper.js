@@ -4,20 +4,31 @@ require('dotenv').config();
 const https = require('https');
 const http = require('http');
 const { URL } = require('url');
-const { initializeApp, getApps, cert } = require('firebase-admin/app');
-const { getFirestore } = require('firebase-admin/firestore');
+const { createClient } = require('@libsql/client');
 
-// ── Firebase init ────────────────────────────────────────────────────────────
-if (!getApps().length) {
-    initializeApp({
-        credential: cert({
-            project_id: process.env.FIREBASE_ADMIN_PROJECT_ID,
-            client_email: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
-            private_key: process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-        }),
-    });
+// ── Turso (libSQL) init ──────────────────────────────────────────────────────
+if (!process.env.TURSO_DATABASE_URL) {
+    throw new Error('TURSO_DATABASE_URL is not set — add it to .env');
 }
-const db = getFirestore();
+const db = createClient({
+    url: process.env.TURSO_DATABASE_URL,
+    authToken: process.env.TURSO_AUTH_TOKEN,
+});
+
+async function ensureSchema() {
+    await db.execute(`
+        CREATE TABLE IF NOT EXISTS licenses (
+            license_number TEXT PRIMARY KEY,
+            holder_name    TEXT NOT NULL,
+            office         TEXT NOT NULL,
+            category       TEXT NOT NULL,
+            created_at     INTEGER NOT NULL,
+            updated_at     INTEGER NOT NULL
+        )
+    `);
+    // Optional secondary indexes for "search by name" / "list by office"
+    await db.execute(`CREATE INDEX IF NOT EXISTS licenses_office_idx ON licenses(office)`);
+}
 
 // ── HTTP helpers ─────────────────────────────────────────────────────────────
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
@@ -34,8 +45,10 @@ function fetchUrl(url, binary = false, retries = 3) {
                 timeout: binary ? 60000 : 20000,
                 headers: {
                     'User-Agent': USER_AGENT,
-                    'Accept': binary ? 'application/pdf,*/*' : 'text/html,application/xhtml+xml,*/*',
+                    'Accept': binary ? 'application/pdf,*/*' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                     'Accept-Language': 'en-US,en;q=0.9',
+                    'Referer': 'https://dotm.gov.np/category/details-of-printed-licenses/',
+                    'Connection': 'keep-alive',
                 },
             };
 
@@ -49,6 +62,12 @@ function fetchUrl(url, binary = false, retries = 3) {
                     }
                 }
                 if (res.statusCode < 200 || res.statusCode >= 400) {
+                    res.resume();
+                    if ((res.statusCode === 403 || res.statusCode >= 500) && n < retries) {
+                        const wait = 2000 * n;
+                        console.warn(`  HTTP ${res.statusCode} for ${url} — retry ${n}/${retries} in ${wait}ms`);
+                        return setTimeout(() => attempt(n + 1), wait);
+                    }
                     return reject(new Error(`HTTP ${res.statusCode} for ${url}`));
                 }
 
@@ -99,36 +118,67 @@ function extractTextFromPDF(buf) {
 // Try pdf-parse if available, fall back to raw extraction
 async function parsePDF(buf) {
     try {
-        const pdfParse = require('pdf-parse');
-        const data = await pdfParse(buf);
-        return data.text;
-    } catch {
+        const mod = require('pdf-parse');
+        // pdf-parse v2: class-based API, returns { numpages: [{ text, num }, ...] }
+        if (mod && typeof mod.PDFParse === 'function') {
+            const parser = new mod.PDFParse({ data: buf });
+            const result = await parser.getText();
+            if (typeof result.text === 'string') return result.text;
+            if (Array.isArray(result.pages)) {
+                return result.pages.map(p => p.text || '').join('\n');
+            }
+            if (Array.isArray(result.numpages)) {
+                return result.numpages.map(p => p.text || '').join('\n');
+            }
+        }
+        // pdf-parse v1: function API
+        if (typeof mod === 'function') {
+            const data = await mod(buf);
+            return data.text;
+        }
+        throw new Error('Unrecognized pdf-parse export shape');
+    } catch (err) {
+        console.warn(`    pdf-parse failed (${err.message}); using raw byte fallback`);
         return extractTextFromPDF(buf);
     }
 }
 
 // ── License parser ───────────────────────────────────────────────────────────
+// Real DOTM PDF row format (after pdf-parse text extraction):
+//   "<sn> <NAME...> <XX-XX-XXXXXXXX> <CATEGORY> <OFFICE> <PRINTED-DATE>"
+// e.g. "1 AABAD SINGH 04-06-01453435 A CHABAHIL 2026-FEB-06"
+//      "23 AABHUSHAN JYOTI KANSAKAR 01-06-00444068 B,A CHABAHIL 2026-FEB-06"
+// Categories may contain commas/slashes (A,B  K,B  B,A,F,G  A/B). Office may be
+// multi-word ("RADHE RADHE"). Date may be optional on legacy formats, so we
+// keep it lenient.
 function parseLicenses(text) {
     const results = [];
     const seen = new Set();
     const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-    const pattern = /^(\d{2}-\d{2}-\d{8})\s+(.+?)\s+([A-C](?:\/[A-C])*)\s*(.*)/;
+
+    // Anchor on the license number (the only strictly-shaped field), capture
+    // what's before it as name and what's after as category/office/date.
+    const pattern = /^(?:\d+\s+)?(.+?)\s+(\d{2}-\d{2}-\d{8})\s+([A-Z][A-Z,\/]*)\s+(.+?)(?:\s+(\d{4}-[A-Z]{3}-\d{2}|\d{4}-\d{2}-\d{2}))?$/;
 
     for (const line of lines) {
         const m = line.match(pattern);
         if (!m) continue;
-        const [, num, name, category, officeRaw] = m;
+        const [, nameRaw, num, category, officeRaw] = m;
         if (seen.has(num)) continue;
-        seen.add(num);
 
-        const holder_name = name.trim().replace(/\s+/g, ' ');
+        const holder_name = nameRaw.trim().replace(/\s+/g, ' ');
+        // Skip header line ("S.N. License Holder Name") and other non-data rows
         if (!holder_name || holder_name.length < 2) continue;
+        if (/license\s+holder\s+name/i.test(holder_name)) continue;
 
+        const office = officeRaw.trim().replace(/\s+/g, ' ') || 'Unknown';
+
+        seen.add(num);
         results.push({
             license_number: num.trim(),
             holder_name,
             category: category.trim(),
-            office: officeRaw.trim() || 'Unknown',
+            office,
             createdAt: new Date(),
             updatedAt: new Date(),
         });
@@ -171,22 +221,41 @@ class DOTMScraper {
 
     extractContentLinks(html) {
         const links = new Set();
-        for (const m of (html.matchAll(/href="((?:https?:\/\/dotm\.gov\.np)?\/content\/[^"]+)"/gi) || [])) {
-            const href = m[1];
-            links.add(href.startsWith('http') ? href : `${this.BASE}${href}`);
+        // Match any /content/<id>/<slug>/ path regardless of how it's wrapped
+        // (the DOTM listing uses markup that the strict href="..." regex misses).
+        const pattern = /\/content\/\d+\/[A-Za-z0-9_\-]+\/?/gi;
+        for (const m of (html.matchAll(pattern) || [])) {
+            const path = m[0].endsWith('/') ? m[0] : m[0] + '/';
+            links.add(`${this.BASE}${path}`);
         }
         return [...links];
     }
 
     async getOfficePDFs() {
-        console.log('Fetching DOTM category page...');
-        const html = await this.getPageHTML(this.CATEGORY);
-        if (!html) return [];
+        console.log('Fetching DOTM category page (with pagination)...');
 
-        let pdfUrls = this.extractPDFUrls(html, this.CATEGORY);
-        const contentLinks = this.extractContentLinks(html);
+        let pdfUrls = [];
+        const contentLinks = new Set();
 
-        console.log(`Found ${contentLinks.length} office pages, ${pdfUrls.length} direct PDFs`);
+        // Walk paginated category pages until one yields no new sub-page links.
+        const MAX_PAGES = 20;
+        for (let page = 1; page <= MAX_PAGES; page++) {
+            const url = page === 1 ? this.CATEGORY : `${this.CATEGORY}?page=${page}`;
+            const html = await this.getPageHTML(url);
+            if (!html) break;
+
+            pdfUrls = pdfUrls.concat(this.extractPDFUrls(html, url));
+
+            const before = contentLinks.size;
+            for (const link of this.extractContentLinks(html)) contentLinks.add(link);
+            const added = contentLinks.size - before;
+
+            console.log(`  page ${page}: +${added} new sub-pages (total ${contentLinks.size})`);
+            if (added === 0) break;
+            await sleep(400);
+        }
+
+        console.log(`Found ${contentLinks.size} office pages, ${pdfUrls.length} direct PDFs from listings`);
 
         // Visit each office sub-page to find their PDFs
         for (const link of contentLinks) {
@@ -194,8 +263,9 @@ class DOTMScraper {
                 const subHtml = await this.getPageHTML(link);
                 if (!subHtml) continue;
                 const subPDFs = this.extractPDFUrls(subHtml, link);
+                if (subPDFs.length) console.log(`  ${link} → ${subPDFs.length} pdf(s)`);
                 pdfUrls = pdfUrls.concat(subPDFs);
-                await sleep(500);
+                await sleep(1500);
             } catch (err) {
                 console.warn(`  Sub-page error: ${err.message}`);
             }
@@ -222,21 +292,37 @@ class DOTMScraper {
     }
 
     async saveBatch(licenses) {
-        const BATCH_SIZE = 500;
+        // libSQL batches: chunk to keep request payload manageable
+        const BATCH_SIZE = 200;
         for (let i = 0; i < licenses.length; i += BATCH_SIZE) {
-            const batch = db.batch();
             const chunk = licenses.slice(i, i + BATCH_SIZE);
-
-            for (const lic of chunk) {
-                const ref = db.collection('licenses').doc(lic.license_number);
-                batch.set(ref, lic, { merge: true });
-            }
+            const stmts = chunk.map(lic => ({
+                sql: `INSERT INTO licenses
+                        (license_number, holder_name, office, category, created_at, updated_at)
+                      VALUES (?, ?, ?, ?, ?, ?)
+                      ON CONFLICT(license_number) DO UPDATE SET
+                        holder_name = excluded.holder_name,
+                        office      = excluded.office,
+                        category    = excluded.category,
+                        updated_at  = excluded.updated_at`,
+                args: [
+                    lic.license_number,
+                    lic.holder_name,
+                    lic.office,
+                    lic.category,
+                    lic.createdAt instanceof Date ? lic.createdAt.getTime() : Date.now(),
+                    lic.updatedAt instanceof Date ? lic.updatedAt.getTime() : Date.now(),
+                ],
+            }));
 
             try {
-                await batch.commit();
+                await db.batch(stmts, 'write');
                 this.stats.saved += chunk.length;
+                if ((i / BATCH_SIZE) % 25 === 0) {
+                    console.log(`    saved ${this.stats.saved} so far...`);
+                }
             } catch (err) {
-                console.error(`Batch write failed: ${err.message}`);
+                console.error(`Batch write failed (${chunk.length} rows): ${err.message}`);
                 this.stats.failed += chunk.length;
             }
         }

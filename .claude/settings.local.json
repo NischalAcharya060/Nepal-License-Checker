@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:license.nirdeshpokhrel.com.np)",
+      "WebFetch(domain:dotm.gov.np)",
+      "Bash(node -e ' *)",
+      "Bash(node scripts/update-data.js)",
+      "Bash(node -e \"const p = require\\('pdf-parse'\\); console.log\\(typeof p, Object.keys\\(p\\)\\)\")",
+      "Bash(npm install *)",
+      "Bash(node -e \"console.log\\(require\\('@libsql/client/package.json'\\).version\\)\")",
+      "Bash(node -e \"const c = require\\('@libsql/client'\\); console.log\\('ok', Object.keys\\(c\\).slice\\(0,5\\)\\)\")"
+    ]
+  }
+}
