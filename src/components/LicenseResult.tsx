@@ -2,7 +2,7 @@
 
 import { formatDate } from '@/utils/helpers'
 import { SearchState, LicenseData } from '@/app/page'
-import type { LicenseResultCopy } from '@/lib/uiCopy'
+import type { LicenseResultCopy } from '@/lib/i18n'
 
 interface LicenseResultProps {
   state: SearchState
@@ -32,7 +32,7 @@ export default function LicenseResult({ state, result, licenseNumber, onCheckAno
 
   if (state === 'error') {
     return (
-      <div className="overflow-hidden rounded-2xl border border-[var(--error-border)] bg-[var(--surface-primary)] shadow-sm">
+      <div className="animate-rise-in overflow-hidden rounded-2xl border border-[var(--error-border)] bg-[var(--surface-primary)] shadow-sm">
         <div className="flex items-center gap-3 bg-gradient-to-r from-[var(--error)] to-[#e74c3c] px-4 py-5 sm:px-6">
           <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-white/20">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -64,7 +64,7 @@ export default function LicenseResult({ state, result, licenseNumber, onCheckAno
 
   if (state === 'not_found') {
     return (
-      <div className="overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-sm">
+      <div className="animate-rise-in overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-sm">
         <div className="flex items-center gap-3 bg-gradient-to-r from-[var(--error)] to-[#e74c3c] px-4 py-5 sm:px-6">
           <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-white/20">
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -130,7 +130,7 @@ export default function LicenseResult({ state, result, licenseNumber, onCheckAno
 
   if (state === 'found' && result) {
     return (
-      <div className="overflow-hidden rounded-2xl border border-[var(--success-border)] bg-[var(--surface-primary)] shadow-sm">
+      <div className="animate-rise-in overflow-hidden rounded-2xl border border-[var(--success-border)] bg-[var(--surface-primary)] shadow-sm">
         <div className="flex items-center gap-3 bg-gradient-to-r from-[var(--success)] to-[#14a366] px-4 py-5 sm:px-6">
           <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-white/20">
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -201,7 +201,7 @@ function CheckAnotherBtn({ onClick, label }: { onClick: () => void, label: strin
   return (
     <button
       onClick={onClick}
-      className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--border-default)] bg-transparent px-4 py-3 text-sm font-semibold text-[var(--text-secondary)] transition hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue-soft)] hover:text-[var(--nepal-blue)]"
+      className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--border-default)] bg-transparent px-4 py-3 text-sm font-semibold text-[var(--text-secondary)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue-soft)] hover:text-[var(--nepal-blue)] active:translate-y-0"
     >
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="11" cy="11" r="8" />

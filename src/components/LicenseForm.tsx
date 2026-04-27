@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { validateLicenseNumber } from '@/utils/validation'
-import type { LicenseFormCopy } from '@/lib/uiCopy'
+import type { LicenseFormCopy } from '@/lib/i18n'
 
 interface LicenseFormProps {
     onSubmit: (licenseNumber: string) => Promise<void>
@@ -84,7 +84,7 @@ export default function LicenseForm({ onSubmit, onReset, loading, copy }: Licens
     const progress = Math.min((licenseNumber.replace(/-/g, '').length / 12) * 100, 100)
 
     return (
-        <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-sm sm:p-6">
+        <div className="hover-lift animate-rise-in rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-sm sm:p-6">
             <form onSubmit={handleSubmit} className="space-y-3">
                 <label htmlFor="license-number" className="block text-xs font-bold uppercase tracking-[0.08em] text-[var(--text-secondary)]">
                     {copy.label}
@@ -113,7 +113,7 @@ export default function LicenseForm({ onSubmit, onReset, loading, copy }: Licens
                             maxLength={14}
                             inputMode="numeric"
                             aria-invalid={!!error}
-                            className={`h-12 w-full rounded-xl border px-11 pr-10 font-mono text-[15px] font-semibold tracking-[0.08em] outline-none transition sm:h-[52px] sm:text-[16px] ${
+                            className={`h-12 w-full rounded-xl border px-11 pr-10 font-mono text-[15px] font-semibold tracking-[0.08em] outline-none transition-all duration-200 sm:h-[52px] sm:text-[16px] ${
                                 error
                                     ? 'border-[var(--error-border)] bg-[var(--error-bg)] text-[var(--error)]'
                                     : focused
@@ -143,7 +143,7 @@ export default function LicenseForm({ onSubmit, onReset, loading, copy }: Licens
                     <button
                         type="submit"
                         disabled={loading || !!error || !licenseNumber}
-                        className="inline-flex h-12 min-w-[150px] items-center justify-center gap-2 rounded-xl bg-[var(--nepal-blue)] px-4 text-sm font-bold text-white transition hover:bg-[var(--nepal-blue-mid)] disabled:cursor-not-allowed disabled:bg-[var(--text-muted)] sm:h-[52px]"
+                        className="inline-flex h-12 min-w-[150px] items-center justify-center gap-2 rounded-xl bg-[var(--nepal-blue)] px-4 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[var(--nepal-blue-mid)] hover:shadow-md active:translate-y-0 disabled:cursor-not-allowed disabled:bg-[var(--text-muted)] disabled:shadow-none sm:h-[52px]"
                     >
                         {loading ? (
                             <>

@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import LicenseForm from '@/components/LicenseForm'
 import LicenseResult from '@/components/LicenseResult'
-import { UI_COPY, type UILanguage } from '@/lib/uiCopy'
+import { uiCopy } from '@/lib/i18n'
 
 export type LicenseData = {
   license_number: string
@@ -29,25 +29,27 @@ export default function Home() {
   const [result, setResult] = useState<LicenseData | null>(null)
   const [lastSearched, setLastSearched] = useState<string>('')
   const [theme, setTheme] = useState<ThemeMode>('light')
-  const [language, setLanguage] = useState<UILanguage>('en')
   const [hydratedPreferences, setHydratedPreferences] = useState(false)
 
-  const copy = UI_COPY[language]
+  const copy = uiCopy
 
   useEffect(() => {
+    const rootTheme = document.documentElement.getAttribute('data-theme')
     const savedTheme = window.localStorage.getItem('ui-theme')
     let preferredTheme: ThemeMode = 'light'
-    if (savedTheme === 'light' || savedTheme === 'dark') {
+
+    if (rootTheme === 'light' || rootTheme === 'dark') {
+      preferredTheme = rootTheme
+      setTheme(rootTheme)
+    } else if (savedTheme === 'light' || savedTheme === 'dark') {
       preferredTheme = savedTheme
       setTheme(savedTheme)
     } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
       preferredTheme = 'dark'
       setTheme('dark')
     }
-    applyThemeToDocument(preferredTheme)
 
-    const savedLanguage = window.localStorage.getItem('ui-language')
-    if (savedLanguage === 'ne') setLanguage('ne')
+    applyThemeToDocument(preferredTheme)
 
     setHydratedPreferences(true)
   }, [])
@@ -57,12 +59,6 @@ export default function Home() {
     applyThemeToDocument(theme)
     window.localStorage.setItem('ui-theme', theme)
   }, [hydratedPreferences, theme])
-
-  useEffect(() => {
-    if (!hydratedPreferences) return
-    document.documentElement.lang = language
-    window.localStorage.setItem('ui-language', language)
-  }, [hydratedPreferences, language])
 
   const checkLicense = useCallback(async (licenseNumber: string) => {
     setSearchState('loading')
@@ -105,11 +101,16 @@ export default function Home() {
   }, [])
 
   return (
-    <main className="min-h-screen">
-      <div className="mx-auto w-full max-w-3xl px-4 pb-14 pt-8 sm:px-6 sm:pt-12">
+    <main className="relative min-h-screen overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 -z-0">
+        <div className="animate-float-soft absolute -top-20 -left-20 h-56 w-56 rounded-full bg-[var(--nepal-blue)]/10 blur-3xl" />
+        <div className="animate-float-soft absolute top-24 -right-24 h-72 w-72 rounded-full bg-[var(--nepal-red)]/10 blur-3xl" style={{ animationDelay: '0.8s' }} />
+      </div>
+
+      <div className="relative z-10 mx-auto w-full max-w-4xl px-4 pb-14 pt-8 sm:px-6 sm:pt-12">
         <header className="mb-8 text-center sm:mb-10">
           <div className="mb-5 flex flex-wrap items-center justify-center gap-2 sm:justify-end">
-            <div className="inline-flex items-center gap-1 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] p-1 text-[11px]">
+            <div className="hover-lift inline-flex items-center gap-1 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] p-1 text-[11px]">
               <span className="px-2 text-[var(--text-muted)]">{copy.home.themeLabel}</span>
               <button
                 type="button"
@@ -119,11 +120,17 @@ export default function Home() {
                 }}
                 className={`rounded-full px-2.5 py-1 font-semibold transition ${
                   theme === 'light'
-                    ? 'bg-[var(--nepal-blue)] text-white'
+                    ? 'bg-[var(--nepal-blue)] text-white shadow-sm'
                     : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'
                 }`}
               >
-                {copy.home.lightLabel}
+                <span className="inline-flex items-center gap-1.5">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="4" />
+                    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+                  </svg>
+                  {copy.home.lightLabel}
+                </span>
               </button>
               <button
                 type="button"
@@ -133,58 +140,38 @@ export default function Home() {
                 }}
                 className={`rounded-full px-2.5 py-1 font-semibold transition ${
                   theme === 'dark'
-                    ? 'bg-[var(--nepal-blue)] text-white'
+                    ? 'bg-[var(--nepal-blue)] text-white shadow-sm'
                     : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'
                 }`}
               >
-                {copy.home.darkLabel}
+                <span className="inline-flex items-center gap-1.5">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3c0 0 0 0 0 0A7 7 0 0 0 21 12.79z" />
+                  </svg>
+                  {copy.home.darkLabel}
+                </span>
               </button>
             </div>
 
-            <div className="inline-flex items-center gap-1 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] p-1 text-[11px]">
-              <span className="px-2 text-[var(--text-muted)]">{copy.home.languageLabel}</span>
-              <button
-                type="button"
-                onClick={() => setLanguage('en')}
-                className={`rounded-full px-2.5 py-1 font-semibold transition ${
-                  language === 'en'
-                    ? 'bg-[var(--nepal-blue)] text-white'
-                    : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'
-                }`}
-              >
-                {copy.home.englishLabel}
-              </button>
-              <button
-                type="button"
-                onClick={() => setLanguage('ne')}
-                className={`rounded-full px-2.5 py-1 font-semibold transition ${
-                  language === 'ne'
-                    ? 'bg-[var(--nepal-blue)] text-white'
-                    : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'
-                }`}
-              >
-                {copy.home.nepaliLabel}
-              </button>
-            </div>
           </div>
 
-          <div className="mb-5 flex items-center justify-center gap-2">
+          <div className="mb-5 flex items-center justify-center gap-2 animate-float-soft">
             <div className="h-1.5 w-10 rounded-l-full bg-[var(--nepal-red)]" />
-            <div className="h-2.5 w-2.5 rounded-full border-2 border-[var(--border-default)] bg-[var(--surface-primary)]" />
+            <div className="animate-glow-pulse h-2.5 w-2.5 rounded-full border-2 border-[var(--border-default)] bg-[var(--surface-primary)]" />
             <div className="h-1.5 w-10 rounded-r-full bg-[var(--nepal-blue)]" />
           </div>
 
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-[var(--nepal-blue)] px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.09em] text-white sm:text-[11px]">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-[var(--nepal-blue)] px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.09em] text-white shadow-sm animate-rise-in sm:text-[11px]">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
             </svg>
             {copy.home.badge}
           </div>
 
-          <h1 className="mb-3 text-3xl font-extrabold tracking-tight text-[var(--text-primary)] sm:text-4xl">
+          <h1 className="mb-3 text-3xl font-extrabold tracking-tight text-[var(--text-primary)] animate-rise-in sm:text-4xl">
             {copy.home.title} <span className="text-[var(--nepal-blue)]">{copy.home.titleAccent}</span>
           </h1>
-          <p className="mx-auto max-w-xl text-sm leading-6 text-[var(--text-secondary)] sm:text-base">
+          <p className="mx-auto max-w-xl text-sm leading-6 text-[var(--text-secondary)] animate-rise-in sm:text-base" style={{ animationDelay: '0.06s' }}>
             {copy.home.description}
           </p>
         </header>
@@ -204,7 +191,7 @@ export default function Home() {
               licenseNumber={lastSearched}
               onCheckAnother={reset}
               copy={copy.result}
-              dateLocale={language === 'ne' ? 'ne-NP' : 'en-NP'}
+              dateLocale="en-NP"
             />
           </div>
         )}
@@ -233,7 +220,11 @@ export default function Home() {
                 text: copy.home.tiles[3].text,
               },
             ].map((tile, i) => (
-              <div key={i} className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-sm">
+              <div
+                key={i}
+                className="hover-lift animate-rise-in rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-sm"
+                style={{ animationDelay: `${i * 0.06}s` }}
+              >
                 <div className="mb-2.5 flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)]">
                   {tile.icon}
                 </div>
@@ -248,14 +239,23 @@ export default function Home() {
           </div>
         )}
 
-        <p className="mt-9 text-center text-xs text-[var(--text-muted)]">
-          {copy.home.footerPrefix}{' '}
-          <a href="https://dotm.gov.np/category/details-of-printed-licenses/" target="_blank" rel="noopener noreferrer"
-            className="font-semibold text-[var(--nepal-blue)] no-underline">
-            dotm.gov.np
-          </a>
-          {' '}· {copy.home.footerSuffix}
-        </p>
+        <div className="mt-9 space-y-1 text-center text-xs text-[var(--text-muted)]">
+          <p>
+            {copy.home.footerPrefix}{' '}
+            <a href="https://dotm.gov.np/category/details-of-printed-licenses/" target="_blank" rel="noopener noreferrer"
+              className="font-semibold text-[var(--nepal-blue)] no-underline">
+              dotm.gov.np
+            </a>
+            {' '}· {copy.home.footerSuffix}
+          </p>
+          <p>
+            {copy.home.developerCreditLabel}{' '}
+            <a href="https://acharyanischal.com.np/" target="_blank" rel="noopener noreferrer" className="font-semibold text-[var(--nepal-blue)] no-underline">
+              Nischal Acharya
+            </a>
+            {' '}
+          </p>
+        </div>
       </div>
     </main>
   )
