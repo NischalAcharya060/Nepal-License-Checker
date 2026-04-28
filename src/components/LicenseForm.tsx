@@ -207,7 +207,6 @@ export default function LicenseForm({ onSubmit, onReset, loading, copy }: Licens
                         <code className="rounded bg-[var(--nepal-blue-soft)] px-1.5 py-0.5 font-mono text-[11px] text-[var(--text-secondary)]">
                             XX-XX-XXXXXXXX
                         </code>
-                        <span>· {copy.formatHint}</span>
                     </p>
                 )}
             </form>

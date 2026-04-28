@@ -11,6 +11,8 @@ export interface HomeCopy {
   themeLabel: string
   lightLabel: string
   darkLabel: string
+  lastUpdatedLabel: string
+  lastUpdatedFallback: string
   tiles: HomeTileCopy[]
   footerPrefix: string
   footerSuffix: string
