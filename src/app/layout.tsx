@@ -30,6 +30,7 @@ const structuredData = {
       name: 'Nepal License Checker',
       url: siteUrl,
       inLanguage: ['en-NP'],
+      description: appDescription,
       potentialAction: {
         '@type': 'SearchAction',
         target: `${siteUrl}/?number={license_number}`,
@@ -44,10 +45,42 @@ const structuredData = {
       url: siteUrl,
       description: appDescription,
       creator: {
+        '@type': 'Organization',
+        name: 'Nepal License Checker',
+        url: siteUrl,
+      },
+      developer: {
         '@type': 'Person',
         name: 'Nischal Acharya',
         url: 'https://acharyanischal.com.np/',
       },
+      isAccessibleForFree: true,
+    },
+    {
+      '@type': 'Organization',
+      name: 'Nepal License Checker',
+      url: siteUrl,
+      description: appDescription,
+      founder: {
+        '@type': 'Person',
+        name: 'Nischal Acharya',
+      },
+      contactPoint: {
+        '@type': 'ContactPoint',
+        contactType: 'Support',
+        url: siteUrl,
+      },
+    },
+    {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'Home',
+          item: siteUrl,
+        },
+      ],
     },
   ],
 }
@@ -66,6 +99,10 @@ export const metadata: Metadata = {
     'smart card license Nepal',
     'license printed or not',
     'yatayat license check',
+    'license print status checker',
+    'Nepal driving license status',
+    'DOTM smart card',
+    'driving license Nepal official',
   ],
   authors: [
     { name: 'Nischal Acharya', url: 'https://acharyanischal.com.np/' },
@@ -73,6 +110,13 @@ export const metadata: Metadata = {
   ],
   creator: 'Nischal Acharya',
   publisher: 'Nepal License Checker',
+  formatDetection: {
+    telephone: false,
+    date: false,
+    address: false,
+    email: false,
+    url: false,
+  },
   alternates: {
     canonical: '/',
   },
@@ -83,15 +127,18 @@ export const metadata: Metadata = {
     siteName: 'Nepal License Checker',
     type: 'website',
     locale: 'en_NP',
+    countryName: 'Nepal',
   },
   twitter: {
-    card: 'summary',
+    card: 'summary_large_image',
     title: appTitle,
     description: appDescription,
+    creator: '@nischal_dev',
   },
   robots: {
     index: true,
     follow: true,
+    nocache: false,
     googleBot: {
       index: true,
       follow: true,
@@ -101,6 +148,12 @@ export const metadata: Metadata = {
     },
   },
   themeColor: '#003893',
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 5,
+  },
+  category: 'Government',
 }
 
 export default function RootLayout({

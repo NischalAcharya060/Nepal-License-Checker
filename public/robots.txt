@@ -1,0 +1,61 @@
+# Nepal License Checker - Robots.txt
+# This file tells search engines which pages they can crawl and how often
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /_next/
+Disallow: /static/
+Disallow: *.json$
+Crawl-delay: 1
+Request-rate: 30/60
+
+# Google Bot - More aggressive crawling allowed
+User-agent: Googlebot
+Allow: /
+Disallow: /api/
+Disallow: /_next/
+Disallow: /static/
+Crawl-delay: 0
+
+# Bing Bot
+User-agent: Bingbot
+Allow: /
+Disallow: /api/
+Disallow: /_next/
+Disallow: /static/
+Crawl-delay: 1
+
+# DuckDuckGo Bot
+User-agent: DuckDuckBot
+Allow: /
+Disallow: /api/
+Disallow: /_next/
+Disallow: /static/
+
+# Yandex Bot
+User-agent: YandexBot
+Allow: /
+Disallow: /api/
+Disallow: /_next/
+Disallow: /static/
+
+# Baidu Bot
+User-agent: Baiduspider
+Allow: /
+Disallow: /api/
+Disallow: /_next/
+Disallow: /static/
+
+# Block low-quality crawlers
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+# Sitemap locations
+Sitemap: /sitemap.xml

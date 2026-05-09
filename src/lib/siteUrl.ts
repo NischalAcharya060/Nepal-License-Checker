@@ -1,4 +1,4 @@
-const FALLBACK_SITE_URL = 'https://nepal-license-checker.vercel.app'
+const FALLBACK_SITE_URL = 'https://license-checker.acharyanischal.com.np'
 
 export function getSiteUrl(): string {
   const direct = process.env.NEXT_PUBLIC_SITE_URL?.trim()
