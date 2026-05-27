@@ -26,6 +26,10 @@ function applyThemeToDocument(theme: ThemeMode) {
   root.classList.toggle('dark', theme === 'dark')
 }
 
+function applyLangToDocument(lang: Language) {
+  document.documentElement.setAttribute('lang', lang === 'ne' ? 'ne-NP' : 'en-NP')
+}
+
 export default function Home() {
   const [searchState, setSearchState] = useState<SearchState>('idle')
   const [result, setResult] = useState<LicenseData | null>(null)
@@ -39,7 +43,7 @@ export default function Home() {
 
   const copy = translations[language]
 
-  // Hydrate theme and language preferences from localStorage
+  // Hydrate theme and language preferences from URL / localStorage / browser
   useEffect(() => {
     const rootTheme = document.documentElement.getAttribute('data-theme')
     const savedTheme = window.localStorage.getItem('ui-theme')
@@ -58,13 +62,21 @@ export default function Home() {
 
     applyThemeToDocument(preferredTheme)
 
-    // Hydrate language preference
+    // Language priority: URL ?lang= > localStorage > browser
+    const params = new URLSearchParams(window.location.search)
+    const urlLang = params.get('lang')
     const savedLang = window.localStorage.getItem('ui-language')
-    if (savedLang === 'ne' || savedLang === 'en') {
-      setLanguage(savedLang)
+
+    let preferredLang: Language = 'en'
+    if (urlLang === 'ne' || urlLang === 'en') {
+      preferredLang = urlLang
+    } else if (savedLang === 'ne' || savedLang === 'en') {
+      preferredLang = savedLang
     } else if (navigator.language.startsWith('ne')) {
-      setLanguage('ne')
+      preferredLang = 'ne'
     }
+    setLanguage(preferredLang)
+    applyLangToDocument(preferredLang)
 
     setHydratedPreferences(true)
   }, [])
@@ -75,10 +87,10 @@ export default function Home() {
     window.localStorage.setItem('ui-theme', theme)
   }, [hydratedPreferences, theme])
 
-  // Persist language preference
   useEffect(() => {
     if (!hydratedPreferences) return
     window.localStorage.setItem('ui-language', language)
+    applyLangToDocument(language)
   }, [hydratedPreferences, language])
 
   useEffect(() => {
@@ -237,34 +249,40 @@ export default function Home() {
       showHelp: false,
       highlight: true,
       meta: `${copy.home.lastUpdatedLabel}: ${lastUpdatedDisplay}`,
-      metaSub: indexedRecords !== null ? `${indexedRecords.toLocaleString(dateLocale)} records indexed` : null,
+      metaSub:
+        indexedRecords !== null
+          ? language === 'ne'
+            ? `${indexedRecords.toLocaleString(dateLocale)} अभिलेख अनुक्रमणिकामा`
+            : `${indexedRecords.toLocaleString(dateLocale)} records indexed`
+          : null,
     },
   ]
 
   return (
     <main className="relative min-h-screen overflow-hidden">
+      {/* Background ambient blobs */}
       <div className="pointer-events-none absolute inset-0 -z-0">
         <div className="animate-float-soft absolute -top-20 -left-20 h-56 w-56 rounded-full bg-[var(--nepal-blue)]/10 blur-3xl" />
         <div className="animate-float-soft absolute top-24 -right-24 h-72 w-72 rounded-full bg-[var(--nepal-red)]/10 blur-3xl" style={{ animationDelay: '0.8s' }} />
+        <div className="animate-float-soft absolute bottom-10 left-1/3 h-64 w-64 rounded-full bg-[var(--nepal-blue)]/8 blur-3xl" style={{ animationDelay: '1.4s' }} />
       </div>
 
-      <div className="relative z-10 mx-auto w-full max-w-4xl px-4 pb-14 pt-8 sm:px-6 sm:pt-12">
-        <header className="mb-8 text-center sm:mb-10">
-          {/* Controls bar: Language + Theme switchers */}
-          <div className="mb-5 flex flex-wrap items-center justify-center gap-2 sm:justify-end">
+      {/* Sticky top controls bar */}
+      <div className="sticky top-0 z-40 border-b border-[var(--border-default)]/60 bg-[var(--bg-primary)]/70 backdrop-blur-md">
+        <div className="mx-auto flex w-full max-w-4xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
+          <div className="flex items-center gap-2 text-[11px] font-semibold text-[var(--text-secondary)]">
+            <span className="inline-flex h-2 w-2 rounded-full bg-[var(--success)] animate-glow-pulse" aria-hidden />
+            <span className="hidden sm:inline">{language === 'ne' ? 'लाइभ डेटा · dotm.gov.np' : 'Live data · dotm.gov.np'}</span>
+            <span className="sm:hidden">{language === 'ne' ? 'लाइभ' : 'Live'}</span>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-end gap-2">
             {/* Language Switcher */}
             <div
-              className="hover-lift inline-flex items-center gap-1 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] p-1 text-[11px]"
+              className="inline-flex items-center gap-1 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] p-1 text-[11px]"
               role="group"
               aria-label="Language switch"
             >
-              <span className="px-2 text-[var(--text-muted)]">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="inline -mt-0.5 mr-0.5">
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="2" y1="12" x2="22" y2="12" />
-                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-                </svg>
-              </span>
               <button
                 type="button"
                 id="lang-en"
@@ -283,6 +301,7 @@ export default function Home() {
                 id="lang-ne"
                 aria-pressed={language === 'ne'}
                 onClick={() => setLanguage('ne')}
+                lang="ne"
                 className={`rounded-full px-2.5 py-1 font-semibold transition ${
                   language === 'ne'
                     ? 'bg-[var(--nepal-red)] text-white shadow-sm'
@@ -294,43 +313,43 @@ export default function Home() {
             </div>
 
             {/* Theme Switcher */}
-            <div className="hover-lift inline-flex items-center gap-1 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] p-1 text-[11px]" role="group" aria-label="Theme switch">
-              <span className="px-2 text-[var(--text-muted)]">{copy.home.themeLabel}</span>
+            <div className="inline-flex items-center gap-1 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] p-1 text-[11px]" role="group" aria-label="Theme switch">
               <button
                 type="button"
                 aria-pressed={theme === 'light'}
+                aria-label={copy.home.lightLabel}
                 onClick={() => setTheme('light')}
-                className={`rounded-full px-2.5 py-1 font-semibold transition ${
+                className={`rounded-full px-2 py-1 transition ${
                   theme === 'light' ? 'bg-[var(--nepal-blue)] text-white shadow-sm' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'
                 }`}
               >
-                <span className="inline-flex items-center gap-1.5">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="4" />
-                    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
-                  </svg>
-                  {copy.home.lightLabel}
-                </span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="4" />
+                  <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+                </svg>
               </button>
               <button
                 type="button"
                 aria-pressed={theme === 'dark'}
+                aria-label={copy.home.darkLabel}
                 onClick={() => setTheme('dark')}
-                className={`rounded-full px-2.5 py-1 font-semibold transition ${
+                className={`rounded-full px-2 py-1 transition ${
                   theme === 'dark' ? 'bg-[var(--nepal-blue)] text-white shadow-sm' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'
                 }`}
               >
-                <span className="inline-flex items-center gap-1.5">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 12.79A9 9 0 1 1 11.21 3A7 7 0 0 0 21 12.79z" />
-                  </svg>
-                  {copy.home.darkLabel}
-                </span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3A7 7 0 0 0 21 12.79z" />
+                </svg>
               </button>
             </div>
           </div>
+        </div>
+      </div>
 
-          <div className="mb-5 flex items-center justify-center gap-2 animate-float-soft">
+      <div className="relative z-10 mx-auto w-full max-w-4xl px-4 pb-14 pt-6 sm:px-6 sm:pt-10">
+        <header className="mb-8 text-center sm:mb-10">
+          {/* Nepal flag accent */}
+          <div className="mb-5 flex items-center justify-center gap-2 animate-float-soft" aria-hidden>
             <div className="h-1.5 w-10 rounded-l-full bg-[var(--nepal-red)]" />
             <div className="animate-glow-pulse h-2.5 w-2.5 rounded-full border-2 border-[var(--border-default)] bg-[var(--surface-primary)]" />
             <div className="h-1.5 w-10 rounded-r-full bg-[var(--nepal-blue)]" />
@@ -343,11 +362,22 @@ export default function Home() {
             {copy.home.badge}
           </div>
 
-          <h1 className="mb-3 animate-rise-in text-3xl font-extrabold tracking-tight text-[var(--text-primary)] sm:text-4xl">
+          <h1 className="mb-3 animate-rise-in text-3xl font-extrabold tracking-tight text-[var(--text-primary)] sm:text-5xl">
             {copy.home.title} <span className="text-[var(--nepal-blue)]">{copy.home.titleAccent}</span>
           </h1>
           <p className="mx-auto max-w-xl animate-rise-in text-sm leading-6 text-[var(--text-secondary)] sm:text-base" style={{ animationDelay: '0.06s' }}>
             {copy.home.description}
+          </p>
+
+          {/* Bilingual subline — visible, helps users + reinforces SEO for both languages */}
+          <p
+            className="mx-auto mt-3 max-w-2xl animate-rise-in text-[11px] leading-5 text-[var(--text-muted)] sm:text-xs"
+            style={{ animationDelay: '0.12s' }}
+            lang={language === 'ne' ? 'en' : 'ne'}
+          >
+            {language === 'ne'
+              ? 'Check if your Nepal smart card driving license is printed by DOTM and ready to collect.'
+              : 'तपाईंको स्मार्ट कार्ड सवारी चालक अनुमतिपत्र छापिएको छ कि छैन जाँच गर्नुहोस्।'}
           </p>
         </header>
 
@@ -408,6 +438,197 @@ export default function Home() {
                 </div>
               ))}
             </div>
+
+            {/* How-To: step-by-step guide */}
+            <section
+              id="how-to-check"
+              className="mt-10 overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-sm"
+              aria-labelledby="how-to-heading"
+            >
+              <div className="border-b border-[var(--border-default)] bg-gradient-to-r from-[var(--nepal-blue-soft)] to-transparent px-5 py-4 sm:px-6">
+                <div className="mb-1 inline-flex items-center gap-2 rounded-full bg-[var(--nepal-blue)]/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--nepal-blue)]">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 11l3 3L22 4" />
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                  </svg>
+                  {language === 'ne' ? 'चरण-दर-चरण' : 'Step-by-step'}
+                </div>
+                <h2 id="how-to-heading" className="text-lg font-extrabold text-[var(--text-primary)] sm:text-xl">
+                  {language === 'ne'
+                    ? 'सवारी चालक अनुमतिपत्र छापिएको कि छैन कसरी जाँच्ने?'
+                    : 'How to check if your Nepal driving license is printed'}
+                </h2>
+                <p className="mt-1 text-xs leading-5 text-[var(--text-secondary)] sm:text-sm">
+                  {language === 'ne'
+                    ? 'यातायात व्यवस्था विभाग (DOTM, dotm.gov.np) को आधिकारिक छपाइ सूचीबाट सिधै जाँच गर्ने सजिलो तरिका।'
+                    : 'The quickest way to verify your smart card status directly from the official DOTM (dotm.gov.np) print list.'}
+                </p>
+              </div>
+
+              <ol className="divide-y divide-[var(--border-default)]/70">
+                {(() => {
+                  const steps = language === 'ne'
+                    ? [
+                        {
+                          title: 'अनुमतिपत्र नम्बर तयार राख्नुहोस्',
+                          body: 'तपाईंको पुरानो लाइसेन्स वा परीक्षा रसिदमा XX-XX-XXXXXXXX ढाँचाको नम्बर हुन्छ — पहिलो २ अंक कार्यालय कोड, दोस्रो २ अंक जिल्ला कोड, र अन्तिम ८ अंक तपाईंको व्यक्तिगत नम्बर हो।',
+                          hint: 'उदाहरण: ०१-०१-१२३४५६७८',
+                        },
+                        {
+                          title: 'माथिको खोज बक्समा नम्बर हाल्नुहोस्',
+                          body: 'हाइफन (-) स्वतः थपिन्छ। केवल अंक टाइप गर्नुहोस्। गलत भएमा "मेट्नुहोस्" बटन थिचेर पुनः प्रयास गर्न सक्नुहुन्छ।',
+                          hint: null,
+                        },
+                        {
+                          title: '"स्थिति जाँच्नुहोस्" थिच्नुहोस्',
+                          body: 'हामी DOTM को पछिल्लो सार्वजनिक सूचीसँग तपाईंको नम्बर तुलना गर्छौं र केही सेकेन्डमै नतिजा देखाउँछौं।',
+                          hint: null,
+                        },
+                        {
+                          title: 'नतिजा बुझ्नुहोस्',
+                          body: '“तयार छ” देखियो भने तपाईंको स्मार्ट कार्ड छापिइसकेको छ। “तयार छैन” आएमा सूची अझै अद्यावधिक नभएको हुन सक्छ — केही दिनपछि पुनः जाँच गर्नुहोस्।',
+                          hint: null,
+                        },
+                        {
+                          title: 'कार्यालय गएर बुझिलिनुहोस्',
+                          body: 'नागरिकता प्रमाणपत्र, पुरानो सवारी चालक अनुमतिपत्र, र भुक्तानी रसिद लिएर आफ्नो यातायात कार्यालयमा जानुहोस्।',
+                          hint: null,
+                        },
+                      ]
+                    : [
+                        {
+                          title: 'Have your license number ready',
+                          body: 'Your old license or exam receipt shows a number in the format XX-XX-XXXXXXXX — the first two digits are the office code, the next two are the district code, and the last eight are your personal number.',
+                          hint: 'Example: 01-01-12345678',
+                        },
+                        {
+                          title: 'Enter the number in the search box above',
+                          body: 'Hyphens are inserted automatically — just type the digits. If you mistype, hit the clear button and try again.',
+                          hint: null,
+                        },
+                        {
+                          title: 'Press “Check Status”',
+                          body: 'We match your number against the latest list published by DOTM and return the result in a few seconds.',
+                          hint: null,
+                        },
+                        {
+                          title: 'Read the result',
+                          body: '“It’s Ready” means your smart card has been printed. “Not Ready” usually means the latest list hasn’t included it yet — check back in a few days.',
+                          hint: null,
+                        },
+                        {
+                          title: 'Collect it from your transport office',
+                          body: 'Bring your Citizenship card, old driving license, and payment receipt to the transport office where you applied.',
+                          hint: null,
+                        },
+                      ]
+                  return steps.map((s, idx) => (
+                    <li key={idx} className="flex gap-4 px-5 py-4 sm:px-6 sm:py-5">
+                      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[var(--nepal-blue)] text-sm font-bold text-white shadow-sm sm:h-9 sm:w-9">
+                        {idx + 1}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-bold text-[var(--text-primary)] sm:text-[15px]">{s.title}</div>
+                        <p className="mt-1 text-sm leading-6 text-[var(--text-secondary)]">{s.body}</p>
+                        {s.hint && (
+                          <code className="mt-2 inline-block rounded-md border border-[var(--nepal-blue)]/25 bg-[var(--nepal-blue-soft)] px-2 py-0.5 font-mono text-[12px] text-[var(--nepal-blue)]">
+                            {s.hint}
+                          </code>
+                        )}
+                      </div>
+                    </li>
+                  ))
+                })()}
+              </ol>
+
+              <div className="border-t border-[var(--border-default)] bg-[var(--bg-secondary)] px-5 py-3 text-[11px] leading-5 text-[var(--text-muted)] sm:px-6">
+                {language === 'ne'
+                  ? 'सूचना: यो साइट आधिकारिक स्रोत होइन। तथ्याङ्क dotm.gov.np बाट लिइन्छ र दैनिक/साप्ताहिक रूपमा अद्यावधिक हुन्छ।'
+                  : 'Note: this site is not the official source. Data is mirrored from dotm.gov.np and is updated regularly.'}
+              </div>
+            </section>
+
+            {/* FAQ accordion */}
+            <section
+              id="faq"
+              className="mt-8 overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-sm"
+              aria-labelledby="faq-heading"
+            >
+              <div className="border-b border-[var(--border-default)] px-5 py-4 sm:px-6">
+                <div className="mb-1 inline-flex items-center gap-2 rounded-full bg-[var(--nepal-red)]/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--nepal-red)]">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                  </svg>
+                  {language === 'ne' ? 'सोधाइ' : 'FAQ'}
+                </div>
+                <h2 id="faq-heading" className="text-lg font-extrabold text-[var(--text-primary)] sm:text-xl">
+                  {language === 'ne' ? 'बारम्बार सोधिने प्रश्नहरू' : 'Frequently asked questions'}
+                </h2>
+                <p className="mt-1 text-xs leading-5 text-[var(--text-secondary)] sm:text-sm">
+                  {language === 'ne'
+                    ? 'नेपाली स्मार्ट कार्ड सवारी चालक अनुमतिपत्र सम्बन्धी प्रायः सोधिने प्रश्नहरूको छोटो उत्तर।'
+                    : 'Quick answers to the most common questions about Nepal smart card driving licenses.'}
+                </p>
+              </div>
+
+              <div className="divide-y divide-[var(--border-default)]/70">
+                {(() => {
+                  const faqs = language === 'ne'
+                    ? [
+                        { q: 'मेरो लाइसेन्स छापिएको कि छैन कसरी थाहा पाउने?', a: 'माथिको खोज बक्समा आफ्नो अनुमतिपत्र नम्बर हाल्नुहोस् र "स्थिति जाँच्नुहोस्" थिच्नुहोस्। DOTM को आधिकारिक सूचीमा भएमा "तयार छ" देखाइनेछ।' },
+                        { q: 'अनुमतिपत्र नम्बरको ढाँचा के हो?', a: 'XX-XX-XXXXXXXX — पहिलो २ अंक कार्यालय कोड, दोस्रो २ अंक जिल्ला कोड, र अन्तिम ८ अंक व्यक्तिगत नम्बर। उदाहरण: ०१-०१-१२३४५६७८।' },
+                        { q: 'मेरो नम्बर कहाँ पाउन सकिन्छ?', a: 'पुरानो स्मार्ट कार्ड लाइसेन्स, परीक्षा रसिद, वा यातायात कार्यालयले दिएको अस्थायी रसिदमा तपाईंको नम्बर लेखिएको हुन्छ।' },
+                        { q: 'लाइसेन्स लिन के के लैजानु पर्छ?', a: 'नागरिकता प्रमाणपत्र, पुरानो सवारी चालक अनुमतिपत्र (यदि भए), र भुक्तानी रसिद। यी कागजात लिएर सम्बन्धित यातायात कार्यालयमा जानुहोस्।' },
+                        { q: '"तयार छैन" देखाइयो भने के गर्ने?', a: 'अझ छपाइ हुन बाँकी हुन सक्छ। DOTM ले साप्ताहिक रूपमा सूची अद्यावधिक गर्छ — केही दिनपछि पुनः जाँच गर्नुहोस्। वा dotm.gov.np मा गएर पूर्ण सूची हेर्न सकिन्छ।' },
+                        { q: 'सूची कति पटक अद्यावधिक हुन्छ?', a: 'विभागले साप्ताहिक रूपमा छपाइ भएका लाइसेन्सहरूको सूची सार्वजनिक गर्छ। हाम्रो प्रणालीले पनि नियमित रूपमा त्यो सूची अद्यावधिक गर्छ।' },
+                        { q: 'के यो आधिकारिक सरकारी वेबसाइट हो?', a: 'होइन। यो स्वतन्त्र रूपमा बनाइएको खोज उपकरण हो। तथ्याङ्क dotm.gov.np बाट लिइएको हो र त्यहीँ आधिकारिक सूची उपलब्ध छ।' },
+                        { q: 'के यो सेवा निःशुल्क हो?', a: 'हो। यो सेवा पूर्ण रूपमा निःशुल्क हो र कुनै दर्ता आवश्यक छैन।' },
+                        { q: 'मेरो व्यक्तिगत जानकारी सुरक्षित छ?', a: 'तपाईंले राख्ने नम्बर खोजका लागि मात्र प्रयोग गरिन्छ। हामी तपाईंको खोज सुरक्षित गर्दैनौं वा बेच्दैनौं।' },
+                      ]
+                    : [
+                        { q: 'How do I know if my license has been printed?', a: 'Enter your license number in the search box above and press “Check Status”. If your record appears in the official DOTM list, the page will show “It’s Ready” with your details.' },
+                        { q: 'What is the license number format?', a: 'XX-XX-XXXXXXXX — the first two digits are your office code, the next two are the district code, and the last eight are your personal number. Example: 01-01-12345678.' },
+                        { q: 'Where can I find my license number?', a: 'It’s printed on your old smart card license, on your exam receipt, or on the temporary slip your transport office gave you when you applied.' },
+                        { q: 'What do I need to bring to collect the license?', a: 'Your Citizenship card, your old driving license (if you have one), and your payment receipt. Bring them to the transport office where you applied.' },
+                        { q: 'My result says “Not Ready” — what should I do?', a: 'Your card may still be in the print queue. DOTM updates the list roughly weekly, so check back in a few days. You can also view the full list at dotm.gov.np.' },
+                        { q: 'How often is the data updated?', a: 'DOTM publishes the printed-license list approximately weekly. Our system syncs that list regularly so results stay current.' },
+                        { q: 'Is this the official government website?', a: 'No. This is an independent search tool. The underlying data comes from dotm.gov.np, which is the official source for the full list.' },
+                        { q: 'Is this service free to use?', a: 'Yes — it’s completely free and requires no sign-up.' },
+                        { q: 'Is my personal information safe?', a: 'The license number you enter is used only to perform the lookup. We don’t store or sell your searches.' },
+                      ]
+                  return faqs.map((f, idx) => (
+                    <details
+                      key={idx}
+                      className="group px-5 py-3.5 transition hover:bg-[var(--bg-secondary)]/60 sm:px-6"
+                    >
+                      <summary className="flex cursor-pointer list-none items-start justify-between gap-3 text-sm font-semibold text-[var(--text-primary)] sm:text-[15px]">
+                        <span className="min-w-0 flex-1">{f.q}</span>
+                        <span
+                          className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-secondary)] transition group-open:rotate-180 group-open:border-[var(--nepal-blue)] group-open:bg-[var(--nepal-blue)] group-open:text-white"
+                          aria-hidden
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="6 9 12 15 18 9" />
+                          </svg>
+                        </span>
+                      </summary>
+                      <p className="mt-2 pr-9 text-sm leading-6 text-[var(--text-secondary)]">
+                        {f.a}
+                      </p>
+                    </details>
+                  ))
+                })()}
+              </div>
+            </section>
+
+            {/* Related searches — keeps Nepali long-tail keywords on the page */}
+            <p className="mt-6 px-1 text-[11px] leading-5 text-[var(--text-muted)]">
+              {language === 'ne'
+                ? 'सम्बन्धित खोजहरू: सवारी चालक अनुमतिपत्र छापिएको कि छैन, स्मार्ट कार्ड लाइसेन्स स्थिति नेपाल, यातायात व्यवस्था विभाग लाइसेन्स, DOTM smart card print status, license chhapieko ki chaina, sawari chalak anumati patra Nepal.'
+                : 'Related searches: Nepal smart card driving license status, DOTM printed license list, सवारी चालक अनुमतिपत्र छापिएको कि छैन, स्मार्ट कार्ड लाइसेन्स स्थिति, license chhapieko ki chaina, sawari chalak anumati patra.'}
+            </p>
           </section>
         )}
 
