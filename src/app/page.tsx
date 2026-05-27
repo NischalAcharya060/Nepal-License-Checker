@@ -5,7 +5,8 @@ import { useState, useCallback, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import LicenseForm from '@/components/LicenseForm'
 import LicenseResult from '@/components/LicenseResult'
-import { uiCopy } from '@/lib/i18n'
+import { translations } from '@/lib/i18n'
+import type { Language } from '@/lib/i18n'
 
 export type LicenseData = {
   license_number: string
@@ -34,9 +35,11 @@ export default function Home() {
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null)
   const [indexedRecords, setIndexedRecords] = useState<number | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [language, setLanguage] = useState<Language>('en')
 
-  const copy = uiCopy
+  const copy = translations[language]
 
+  // Hydrate theme and language preferences from localStorage
   useEffect(() => {
     const rootTheme = document.documentElement.getAttribute('data-theme')
     const savedTheme = window.localStorage.getItem('ui-theme')
@@ -54,6 +57,15 @@ export default function Home() {
     }
 
     applyThemeToDocument(preferredTheme)
+
+    // Hydrate language preference
+    const savedLang = window.localStorage.getItem('ui-language')
+    if (savedLang === 'ne' || savedLang === 'en') {
+      setLanguage(savedLang)
+    } else if (navigator.language.startsWith('ne')) {
+      setLanguage('ne')
+    }
+
     setHydratedPreferences(true)
   }, [])
 
@@ -62,6 +74,12 @@ export default function Home() {
     applyThemeToDocument(theme)
     window.localStorage.setItem('ui-theme', theme)
   }, [hydratedPreferences, theme])
+
+  // Persist language preference
+  useEffect(() => {
+    if (!hydratedPreferences) return
+    window.localStorage.setItem('ui-language', language)
+  }, [hydratedPreferences, language])
 
   useEffect(() => {
     let cancelled = false
@@ -106,8 +124,10 @@ export default function Home() {
     }
   }, [isModalOpen])
 
+  const dateLocale = language === 'ne' ? 'ne-NP' : 'en-NP'
+
   const lastUpdatedDisplay = lastUpdatedAt
-    ? new Date(lastUpdatedAt).toLocaleString('en-NP', {
+    ? new Date(lastUpdatedAt).toLocaleString(dateLocale, {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
@@ -217,7 +237,7 @@ export default function Home() {
       showHelp: false,
       highlight: true,
       meta: `${copy.home.lastUpdatedLabel}: ${lastUpdatedDisplay}`,
-      metaSub: indexedRecords !== null ? `${indexedRecords.toLocaleString('en-NP')} records indexed` : null,
+      metaSub: indexedRecords !== null ? `${indexedRecords.toLocaleString(dateLocale)} records indexed` : null,
     },
   ]
 
@@ -230,7 +250,50 @@ export default function Home() {
 
       <div className="relative z-10 mx-auto w-full max-w-4xl px-4 pb-14 pt-8 sm:px-6 sm:pt-12">
         <header className="mb-8 text-center sm:mb-10">
+          {/* Controls bar: Language + Theme switchers */}
           <div className="mb-5 flex flex-wrap items-center justify-center gap-2 sm:justify-end">
+            {/* Language Switcher */}
+            <div
+              className="hover-lift inline-flex items-center gap-1 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] p-1 text-[11px]"
+              role="group"
+              aria-label="Language switch"
+            >
+              <span className="px-2 text-[var(--text-muted)]">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="inline -mt-0.5 mr-0.5">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="2" y1="12" x2="22" y2="12" />
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                </svg>
+              </span>
+              <button
+                type="button"
+                id="lang-en"
+                aria-pressed={language === 'en'}
+                onClick={() => setLanguage('en')}
+                className={`rounded-full px-2.5 py-1 font-semibold transition ${
+                  language === 'en'
+                    ? 'bg-[var(--nepal-blue)] text-white shadow-sm'
+                    : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'
+                }`}
+              >
+                EN
+              </button>
+              <button
+                type="button"
+                id="lang-ne"
+                aria-pressed={language === 'ne'}
+                onClick={() => setLanguage('ne')}
+                className={`rounded-full px-2.5 py-1 font-semibold transition ${
+                  language === 'ne'
+                    ? 'bg-[var(--nepal-red)] text-white shadow-sm'
+                    : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'
+                }`}
+              >
+                नेपाली
+              </button>
+            </div>
+
+            {/* Theme Switcher */}
             <div className="hover-lift inline-flex items-center gap-1 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] p-1 text-[11px]" role="group" aria-label="Theme switch">
               <span className="px-2 text-[var(--text-muted)]">{copy.home.themeLabel}</span>
               <button
@@ -292,14 +355,16 @@ export default function Home() {
 
         {(searchState === 'found' || searchState === 'not_found' || searchState === 'error') && (
           <div className="mt-5 animate-slide-up">
-            <LicenseResult state={searchState} result={result} licenseNumber={lastSearched} onCheckAnother={reset} copy={copy.result} dateLocale="en-NP" />
+            <LicenseResult state={searchState} result={result} licenseNumber={lastSearched} onCheckAnother={reset} copy={copy.result} dateLocale={dateLocale} />
           </div>
         )}
 
         {searchState === 'idle' && (
           <section className="mt-7 animate-fade-in" aria-label="Helpful info">
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-sm font-bold uppercase tracking-[0.08em] text-[var(--text-secondary)]">Helpful Information</h2>
+              <h2 className="text-sm font-bold uppercase tracking-[0.08em] text-[var(--text-secondary)]">
+                {language === 'ne' ? 'उपयोगी जानकारी' : 'Helpful Information'}
+              </h2>
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {infoTiles.map((tile, i) => (
@@ -324,7 +389,7 @@ export default function Home() {
                         onClick={() => setIsModalOpen(true)}
                         className="rounded-md border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2 py-1 text-[10px] font-semibold text-[var(--text-secondary)] transition hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue-soft)] hover:text-[var(--nepal-blue)]"
                       >
-                        View example
+                        {language === 'ne' ? 'उदाहरण हेर्नुहोस्' : 'View example'}
                       </button>
                     )}
                   </div>
@@ -387,9 +452,13 @@ export default function Home() {
               <Image src="/license-sample2.png" alt="License format guide" width={1200} height={760} className="h-auto w-full rounded-xl object-cover" priority />
             </div>
             <div className="p-4 text-center">
-              <h3 className="text-sm font-bold uppercase tracking-wide text-[var(--text-primary)]">Format Guide</h3>
+              <h3 className="text-sm font-bold uppercase tracking-wide text-[var(--text-primary)]">
+                {language === 'ne' ? 'ढाँचा निर्देशिका' : 'Format Guide'}
+              </h3>
               <p className="mt-1 text-xs text-[var(--text-secondary)]">
-                You can find your license number on your temporary receipt or your old smart card.
+                {language === 'ne'
+                  ? 'तपाईंको अनुमति पत्र नम्बर अस्थायी रसिद वा पुरानो स्मार्ट कार्डमा फेला पार्न सक्नुहुन्छ।'
+                  : 'You can find your license number on your temporary receipt or your old smart card.'}
               </p>
             </div>
           </div>
