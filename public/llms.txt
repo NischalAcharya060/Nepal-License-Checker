@@ -1,0 +1,21 @@
+# Nepal License Checker
+> Instantly check if your Nepal smart card driving license has been printed and is ready for collection from the Department of Transport Management (DOTM).
+
+## Who is this for?
+Nepali citizens who have applied for a smart card driving license and want to know if it's ready to collect from their transport office.
+
+## Key features
+- Free, no sign-up required
+- Bilingual: English and Nepali (नेपाली)
+- Data sourced directly from DOTM official PDF lists
+- Live lookup against 100,000+ indexed records
+- Updates weekly in sync with DOTM publication schedule
+
+## How to use
+Enter your license number in format XX-XX-XXXXXXXX (Office-District-Number) and press Check Status. Example: 01-01-12345678.
+
+## Links
+- Homepage: https://license-checker.acharyanischal.com.np
+- Check license: https://license-checker.acharyanischal.com.np/?number=XX-XX-XXXXXXXX
+- Official source: https://dotm.gov.np/category/details-of-printed-licenses/
+- Developer: https://acharyanischal.com.np

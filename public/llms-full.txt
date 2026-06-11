@@ -1,0 +1,65 @@
+# Nepal License Checker — Full Context
+
+## Overview
+Nepal License Checker is a free, bilingual (English/Nepali) web application that lets citizens verify whether their Nepal smart card driving license has been printed by the Department of Transport Management (DOTM). The tool searches against the official DOTM printed-license lists, which are published as PDFs on dotm.gov.np.
+
+## Target Audience
+- Nepali citizens who have applied for a smart card driving license
+- Individuals who want to check if their license is ready before visiting a transport office
+- Non-resident Nepalis tracking their license status remotely
+- Anyone with a Nepal driving license number in format XX-XX-XXXXXXXX
+
+## How It Works
+1. User enters their license number (auto-formatted to XX-XX-XXXXXXXX)
+2. The system first checks an indexed database (Turso/libSQL) containing parsed DOTM records
+3. If not found in the database, it live-scrapes the latest DOTM PDF lists
+4. Results are cached in the database for future lookups
+5. Result shows: holder name, license number, print status, issuing office, vehicle category, and last updated date
+
+## Data Source & Freshness
+- **Source**: DOTM (Department of Transport Management, Nepal) — [dotm.gov.np](https://dotm.gov.np/category/details-of-printed-licenses/)
+- **Update frequency**: Weekly (in sync with DOTM publication schedule)
+- **Records indexed**: 100,000+ driving license records
+- **Note**: This is NOT the official government website. It is an independent search tool using mirrored public data.
+
+## Technical Details
+- **Framework**: Next.js 16 (App Router) with TypeScript
+- **Database**: Turso (libSQL)
+- **Scraping**: Custom DOTM PDF scraper (axios + cheerio + pdf-parse)
+- **Deployment**: Vercel
+- **API rate limit**: 15 requests/minute per IP
+- **Structured data**: JSON-LD with WebSite, WebApplication, Organization, BreadcrumbList, FAQPage, HowTo, and GovernmentService schemas
+
+## License Number Format
+XX-XX-XXXXXXXX
+- First 2 digits: Office code
+- Next 2 digits: District code
+- Last 8 digits: Personal identification number
+- Example: 01-01-12345678
+
+## What to Bring for Collection
+- Citizenship card (नागरिकता प्रमाणपत्र)
+- Old driving license (if applicable)
+- Payment receipt from application
+
+## Supported Vehicle Categories
+A, B, C, C1, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z and sub-categories
+
+## Privacy & Security
+- No sign-up or account required
+- License numbers are used only for lookups and are not stored or sold
+- HTTPS throughout
+- Input sanitization against XSS
+- Rate limiting protects against abuse
+
+## FAQ Summary
+- **Q**: Is this the official government website? **A**: No. This is an independent search tool. The official source is dotm.gov.np.
+- **Q**: Is this free? **A**: Yes, completely free with no sign-up.
+- **Q**: How often is data updated? **A**: Weekly, in sync with DOTM publication.
+- **Q**: What does "Not Ready" mean? **A**: Your card may still be in the print queue — check back in a few days.
+- **Q**: Is my information safe? **A**: License numbers are used only for lookups and not stored or sold.
+
+## Related Resources
+- DOTM Official Site: https://dotm.gov.np
+- DOTM Printed Licenses: https://dotm.gov.np/category/details-of-printed-licenses/
+- Developer Portfolio: https://acharyanischal.com.np

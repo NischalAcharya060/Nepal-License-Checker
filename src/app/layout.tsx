@@ -10,9 +10,9 @@ const appTitleNe = 'सवारी चालक अनुमतिपत्र 
 const appTitle = `${appTitleEn} · ${appTitleNe}`
 
 const appDescriptionEn =
-  'Instantly check if your Nepal smart card driving license has been printed and is ready for collection from DOTM. Official data from dotm.gov.np.'
+  'Instantly check if your Nepal smart card driving license has been printed and is ready for collection from DOTM. Free bilingual tool searching 100,000+ indexed records from dotm.gov.np.'
 const appDescriptionNe =
-  'तपाईंको नेपाल स्मार्ट कार्ड सवारी चालक अनुमतिपत्र छापिएको छ कि छैन र यातायात व्यवस्था विभाग (DOTM) बाट लिन तयार छ कि छैन तुरुन्तै जाँच गर्नुहोस्। dotm.gov.np को आधिकारिक तथ्याङ्क।'
+  'तपाईंको नेपाल स्मार्ट कार्ड सवारी चालक अनुमतिपत्र छापिएको छ कि छैन र यातायात व्यवस्था विभाग (DOTM) बाट लिन तयार छ कि छैन तुरुन्तै जाँच गर्नुहोस्। १ लाख भन्दा बढी अभिलेखहरूमा निःशुल्क खोजी। dotm.gov.np को आधिकारिक तथ्याङ्क।'
 const appDescription = `${appDescriptionEn} | ${appDescriptionNe}`
 
 const themeInitScript = `
@@ -41,6 +41,9 @@ const structuredData = {
         'सवारी चालक अनुमतिपत्र जाँच',
         'स्मार्ट कार्ड लाइसेन्स स्थिति',
         'यातायात लाइसेन्स छापिएको कि छैन',
+        'DOTM License Status',
+        'Nepal Smart Card License Checker',
+        'लाइसेन्स स्थिति जाँच',
       ],
       url: siteUrl,
       inLanguage: ['en-NP', 'ne-NP'],
@@ -96,6 +99,39 @@ const structuredData = {
       },
     },
     {
+      '@type': 'GovernmentService',
+      '@id': `${siteUrl}/#service`,
+      name: 'Nepal Smart Card Driving License Print Status Check',
+      description: appDescriptionEn,
+      url: siteUrl,
+      provider: {
+        '@type': 'GovernmentOrganization',
+        name: 'Department of Transport Management (DOTM), Nepal',
+        url: 'https://dotm.gov.np',
+        alternateName: 'यातायात व्यवस्था विभाग',
+      },
+      serviceType: 'License Status Verification',
+      audience: {
+        '@type': 'Audience',
+        audienceType: 'Nepal driving license holders',
+      },
+      isRelatedTo: {
+        '@type': 'Thing',
+        name: 'Smart Card Driving License',
+        identifier: 'XX-XX-XXXXXXXX',
+      },
+      areaServed: {
+        '@type': 'Country',
+        name: 'Nepal',
+      },
+      inLanguage: ['en-NP', 'ne-NP'],
+      offers: {
+        '@type': 'Offer',
+        price: '0',
+        priceCurrency: 'NPR',
+      },
+    },
+    {
       '@type': 'BreadcrumbList',
       itemListElement: [
         {
@@ -105,6 +141,26 @@ const structuredData = {
           item: siteUrl,
         },
       ],
+    },
+    {
+      '@type': 'WebPage',
+      '@id': siteUrl,
+      url: siteUrl,
+      name: appTitle,
+      description: appDescription,
+      inLanguage: ['en-NP', 'ne-NP'],
+      isAccessibleForFree: true,
+      speakable: {
+        '@type': 'SpeakableSpecification',
+        cssSelector: ['h1', '#how-to-heading', '#faq-heading'],
+      },
+      about: {
+        '@type': 'Thing',
+        name: 'Nepal Smart Card Driving License Print Status',
+      },
+      mainEntity: {
+        '@id': `${siteUrl}/#service`,
+      },
     },
     {
       '@type': 'FAQPage',
@@ -299,6 +355,31 @@ export const metadata: Metadata = {
   icons: {
     icon: '/favicon.ico',
   },
+  openGraph: {
+    title: appTitle,
+    description: appDescription,
+    url: '/',
+    siteName: 'Nepal License Checker',
+    type: 'website',
+    locale: 'en_NP',
+    alternateLocale: ['ne_NP'],
+    countryName: 'Nepal',
+    images: [
+      {
+        url: '/logo.webp',
+        width: 512,
+        height: 512,
+        alt: 'Nepal License Checker - Smart Card Driving License Status',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: appTitle,
+    description: appDescription,
+    creator: '@nischal_dev',
+    images: ['/logo.webp'],
+  },
   keywords: [
     // English
     'Nepal driving license check',
@@ -353,22 +434,7 @@ export const metadata: Metadata = {
       'x-default': '/',
     },
   },
-  openGraph: {
-    title: appTitle,
-    description: appDescription,
-    url: '/',
-    siteName: 'Nepal License Checker',
-    type: 'website',
-    locale: 'en_NP',
-    alternateLocale: ['ne_NP'],
-    countryName: 'Nepal',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: appTitle,
-    description: appDescription,
-    creator: '@nischal_dev',
-  },
+
   robots: {
     index: true,
     follow: true,

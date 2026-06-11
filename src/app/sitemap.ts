@@ -3,16 +3,22 @@ import { getSiteUrl } from '@/lib/siteUrl'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const siteUrl = getSiteUrl()
-  const baseUrl = new URL(siteUrl)
+  const baseUrl = siteUrl.replace(/\/+$/, '')
 
-  const staticRoutes: MetadataRoute.Sitemap = [
+  const now = new Date()
+
+  return [
     {
-      url: baseUrl.toString(),
+      url: baseUrl,
       changeFrequency: 'daily',
       priority: 1.0,
-      lastModified: new Date(),
+      lastModified: now,
+      alternates: {
+        languages: {
+          en: baseUrl,
+          ne: `${baseUrl}/?lang=ne`,
+        },
+      },
     },
   ]
-
-  return staticRoutes
 }

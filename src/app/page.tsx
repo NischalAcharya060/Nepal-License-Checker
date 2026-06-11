@@ -381,6 +381,32 @@ export default function Home() {
           </p>
         </header>
 
+        {/* Trust & authority stats bar — visible E-E-A-T signal */}
+        <div className="mx-auto mb-6 flex max-w-lg flex-wrap items-center justify-center gap-x-6 gap-y-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)]/80 px-4 py-2.5 text-[11px] font-medium text-[var(--text-secondary)] shadow-sm animate-rise-in" style={{ animationDelay: '0.16s' }}>
+          <span className="inline-flex items-center gap-1.5">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            {indexedRecords !== null
+              ? language === 'ne'
+                ? `${indexedRecords.toLocaleString(dateLocale)} अभिलेख`
+                : `${indexedRecords.toLocaleString(dateLocale)} records`
+              : language === 'ne'
+                ? '१ लाख+ अभिलेख'
+                : '100K+ records'}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            {language === 'ne' ? 'साप्ताहिक अद्यावधिक' : 'Updated weekly'}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 7l-5-5-5 5"/><path d="M7 17l5 5 5-5"/></svg>
+            {language === 'ne' ? 'पूर्णतः निःशुल्क' : 'Completely free'}
+          </span>
+          <span className="inline-flex items-center gap-1.5" title={lastUpdatedAt ? new Date(lastUpdatedAt).toISOString() : undefined}>
+            <span className="inline-flex h-1.5 w-1.5 rounded-full bg-[var(--success)]" />
+            {(language === 'ne' ? 'स्रोत' : 'Source')}: dotm.gov.np
+          </span>
+        </div>
+
         <LicenseForm onSubmit={checkLicense} onReset={reset} loading={searchState === 'loading'} copy={copy.form} />
 
         {(searchState === 'found' || searchState === 'not_found' || searchState === 'error') && (
@@ -446,12 +472,22 @@ export default function Home() {
               aria-labelledby="how-to-heading"
             >
               <div className="border-b border-[var(--border-default)] bg-gradient-to-r from-[var(--nepal-blue-soft)] to-transparent px-5 py-4 sm:px-6">
-                <div className="mb-1 inline-flex items-center gap-2 rounded-full bg-[var(--nepal-blue)]/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--nepal-blue)]">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9 11l3 3L22 4" />
-                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-                  </svg>
-                  {language === 'ne' ? 'चरण-दर-चरण' : 'Step-by-step'}
+                <div className="mb-1 flex items-center gap-2">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-[var(--nepal-blue)]/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--nepal-blue)]">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 11l3 3L22 4" />
+                      <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                    </svg>
+                    {language === 'ne' ? 'चरण-दर-चरण' : 'Step-by-step'}
+                  </span>
+                  {lastUpdatedAt && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-[var(--bg-secondary)] px-2 py-0.5 text-[9px] font-medium text-[var(--text-muted)]">
+                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      {language === 'ne'
+                        ? `अद्यावधिक: ${new Date(lastUpdatedAt).toLocaleDateString('ne-NP', { year: 'numeric', month: 'short', day: 'numeric' })}`
+                        : `Updated: ${new Date(lastUpdatedAt).toLocaleDateString('en-NP', { year: 'numeric', month: 'short', day: 'numeric' })}`}
+                    </span>
+                  )}
                 </div>
                 <h2 id="how-to-heading" className="text-lg font-extrabold text-[var(--text-primary)] sm:text-xl">
                   {language === 'ne'
@@ -555,13 +591,23 @@ export default function Home() {
               aria-labelledby="faq-heading"
             >
               <div className="border-b border-[var(--border-default)] px-5 py-4 sm:px-6">
-                <div className="mb-1 inline-flex items-center gap-2 rounded-full bg-[var(--nepal-red)]/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--nepal-red)]">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                    <line x1="12" y1="17" x2="12.01" y2="17" />
-                  </svg>
-                  {language === 'ne' ? 'सोधाइ' : 'FAQ'}
+                <div className="mb-1 flex items-center gap-2">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-[var(--nepal-red)]/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--nepal-red)]">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                      <line x1="12" y1="17" x2="12.01" y2="17" />
+                    </svg>
+                    {language === 'ne' ? 'सोधाइ' : 'FAQ'}
+                  </span>
+                  {lastUpdatedAt && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-[var(--bg-secondary)] px-2 py-0.5 text-[9px] font-medium text-[var(--text-muted)]">
+                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      {language === 'ne'
+                        ? `अद्यावधिक: ${new Date(lastUpdatedAt).toLocaleDateString('ne-NP', { year: 'numeric', month: 'short', day: 'numeric' })}`
+                        : `Updated: ${new Date(lastUpdatedAt).toLocaleDateString('en-NP', { year: 'numeric', month: 'short', day: 'numeric' })}`}
+                    </span>
+                  )}
                 </div>
                 <h2 id="faq-heading" className="text-lg font-extrabold text-[var(--text-primary)] sm:text-xl">
                   {language === 'ne' ? 'बारम्बार सोधिने प्रश्नहरू' : 'Frequently asked questions'}
