@@ -1,50 +1,125 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Nepal License Checker 🇳🇵
 
-## Getting Started
+Instantly check whether your **Nepal smart card driving license** has been printed by the **Department of Transport Management (DOTM)** and is ready to collect — for free, in English and नेपाली.
 
-First, run the development server:
+> This site is **not** the official source. Data is mirrored from [dotm.gov.np](https://dotm.gov.np) and updated regularly.
+
+![Nepal License Checker product screenshot](public/product-screenshot.png)
+
+## Features
+
+- **Instant status lookup** — enter your license number (`XX-XX-XXXXXXXX`) and get a "Ready" / "Not Ready" result in seconds
+- **Smart input** — hyphens are inserted automatically as you type, with inline validation and progress feedback
+- **Bilingual UI** — full English ⇄ नेपाली switching (`?lang=ne` is also URL-selectable)
+- **Light & dark themes** — saved to localStorage and respects `prefers-color-scheme`
+- **100K+ indexed records** — fast lookups served from a Turso (LibSQL) database
+- **Live DOTM fallback** — if a number isn't in the database, the API scrapes the latest DOTM published PDFs on the fly and caches the result
+- **Weekly data sync** — a GitHub Actions cron keeps the indexed list fresh
+- **SEO-ready** — structured data (FAQPage, HowTo, GovernmentService), sitemap, and bilingual canonical links
+
+## How it works
+
+1. **Fast path:** the requested number is matched against the Turso database of indexed printed records.
+2. **Live path:** on a miss, the API downloads the DOTM printed-license PDFs, extracts text, and searches for the number.
+3. **Newly found licenses** are upserted back into the database so repeat lookups are instant.
+
+## Tech stack
+
+- **Framework:** Next.js 16 (App Router) · React 19 · TypeScript
+- **Styling:** Tailwind CSS v4
+- **Database:** Turso (LibSQL) via `@libsql/client`
+- **Scraping:** custom DOTM scraper (`scripts/scraper.js`) using Axios + Cheerio + PDF text extraction
+- **Deployment:** Vercel (`vercel.json` extends API function duration)
+
+## Getting started
+
+### Prerequisites
+
+- Node.js 20+
+- A Turso database (free tier works)
+
+### 1. Install dependencies
+
+```bash
+npm install
+```
+
+### 2. Set environment variables
+
+Copy `.env.example` to `.env` and fill in:
+
+| Variable | Description |
+| --- | --- |
+| `TURSO_DATABASE_URL` | Turso database URL (required) |
+| `TURSO_AUTH_TOKEN` | Turso auth token (required) |
+| `CRON_SECRET` | Secret used to protect the cron endpoint |
+| `NEXT_PUBLIC_SITE_URL` | Public site URL (optional; defaults to the Vercel domain) |
+
+### 3. Run the dev server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 4. Build & lint
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm run lint
+```
 
-## GitHub Actions cron
+## Syncing the license data
 
-The DOTM scraper is scheduled via GitHub Actions using `.github/workflows/dotm-scraper-cron.yml`.
+The DOTM printed-license list is refreshed by the scraper:
 
-- Schedule: `0 2 * * *` (daily at 02:00 UTC)
-- Manual run: **Actions** -> **DOTM scraper cron** -> **Run workflow**
+```bash
+npm run cron:scrape        # fetch and upsert the latest DOTM PDFs into Turso
+```
 
-Set these repository values before enabling the workflow:
+### GitHub Actions cron
 
-- `TURSO_DATABASE_URL` (Secret or Variable)
-- `TURSO_AUTH_TOKEN` (Secret or Variable)
+`.github/workflows/dotm-scraper-cron.yml` runs the scraper automatically on a schedule (`0 2 15 2,5,8,11 *`) and can also be triggered manually from the **Actions** tab.
 
-If you store credentials as **Environment secrets**, the workflow uses the `Production` environment.
+Set the following in the repo (as secrets or variables, optionally under the `Production` environment):
 
-## Learn More
+- `TURSO_DATABASE_URL`
+- `TURSO_AUTH_TOKEN`
 
-To learn more about Next.js, take a look at the following resources:
+## API
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### `GET /api/license?number=XX-XX-XXXXXXXX`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Checks a license number against the indexed database, then falls back to a live DOTM scrape.
 
-## Deploy on Vercel
+- `200` — `{ status: 'success', source: 'database' | 'live', data: { license_number, holder_name, office, category, createdAt, updatedAt } }`
+- `200` — `{ status: 'success', data: null }` when the license isn't in any printed list
+- `400` — invalid or missing `number`
+- `429` — rate limited (15 requests per minute per IP, in-memory)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### `GET /api/meta`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Returns index metadata (`lastUpdated`, `totalRecords`) for display on the home page.
+
+## Project structure
+
+```
+src/
+  app/                 # Next.js App Router (pages, API routes)
+    api/
+      license/         # license status lookup (DB + live scrape)
+      meta/            # index metadata
+      cron/            # protected scraper trigger endpoint
+  components/          # LicenseForm, LicenseResult
+  lib/                 # turso, i18n, rate limiting, site URL
+  types/               # shared TypeScript types
+  utils/               # validation, sanitization, helpers
+scripts/
+  scraper.js           # DOTM PDF scraper
+  update-data.js       # scraper runner (used by cron)
+```
+
+## License
+
+This project is provided as-is for personal and educational use.
