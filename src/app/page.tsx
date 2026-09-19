@@ -501,6 +501,13 @@ export default function Home() {
                 </p>
               </div>
 
+              {/* Tutorial video */}
+              <div className="px-5 py-4 sm:px-6 sm:py-5">
+                <video className="aspect-video w-full overflow-hidden rounded-xl border border-[var(--border-default)] bg-black shadow-sm" controls preload="metadata" playsInline>
+                  <source src="/tutorial.mp4" type="video/mp4" />
+                </video>
+              </div>
+
               <ol className="divide-y divide-[var(--border-default)]/70">
                 {(() => {
                   const steps = language === 'ne'
