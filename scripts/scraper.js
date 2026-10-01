@@ -53,6 +53,16 @@ async function ensureSchema() {
 
     // Optional secondary indexes for "search by name" / "list by office"
     await db.execute(`CREATE INDEX IF NOT EXISTS licenses_office_idx ON licenses(office)`);
+
+    // Track processed PDFs so future workflow runs can skip already extracted files
+    await db.execute(`
+        CREATE TABLE IF NOT EXISTS processed_pdfs (
+            url             TEXT PRIMARY KEY,
+            extracted_count INTEGER NOT NULL DEFAULT 0,
+            processed_at    INTEGER NOT NULL
+        )
+    `);
+    await db.execute(`CREATE INDEX IF NOT EXISTS processed_pdfs_processed_at_idx ON processed_pdfs(processed_at)`);
 }
 
 // ── HTTP helpers ─────────────────────────────────────────────────────────────
@@ -442,8 +452,24 @@ class DOTMScraper {
 
     extractContentLinks(html) {
         const links = new Set();
-        // Match any /content/<id>/<slug>/ path regardless of how it's wrapped
-        // (the DOTM listing uses markup that the strict href="..." regex misses).
+
+        // 1. Cheerio extraction for clean DOM card links
+        try {
+            const cheerio = require('cheerio');
+            const $ = cheerio.load(html);
+            $('.grid__card').each((_, el) => {
+                let href = $(el).find('.card__title a').attr('href') || $(el).find('a').attr('href');
+                if (href) {
+                    href = href.trim();
+                    const full = href.startsWith('http') ? href : new URL(href, this.BASE).href;
+                    links.add(full.endsWith('/') ? full : full + '/');
+                }
+            });
+        } catch {
+            // fallback to regex if cheerio unavailable
+        }
+
+        // 2. Comprehensive pattern matching /content/<id>/<slug>/
         const pattern = /\/content\/\d+\/[A-Za-z0-9_\-]+\/?/gi;
         for (const m of (html.matchAll(pattern) || [])) {
             const path = m[0].endsWith('/') ? m[0] : m[0] + '/';
@@ -453,26 +479,38 @@ class DOTMScraper {
     }
 
     async getOfficePDFs() {
-        console.log('Fetching DOTM category page (with pagination)...');
+        console.log('Fetching DOTM category pages (walking all pagination pages 1, 2, 3...)...');
 
         let pdfUrls = [];
         const contentLinks = new Set();
 
-        // Walk paginated category pages until one yields no new sub-page links.
-        const MAX_PAGES = 20;
+        // Walk paginated category pages until page returns 404 or empty response
+        const MAX_PAGES = 30;
+        let consecutiveEmptyPages = 0;
+
         for (let page = 1; page <= MAX_PAGES; page++) {
             const url = page === 1 ? this.CATEGORY : `${this.CATEGORY}?page=${page}`;
             const html = await this.getPageHTML(url);
-            if (!html) break;
 
-            pdfUrls = pdfUrls.concat(this.extractPDFUrls(html, url));
+            if (!html || html.length < 500) {
+                consecutiveEmptyPages++;
+                if (consecutiveEmptyPages >= 1) {
+                    console.log(`  page ${page}: reached end of pagination (status 404 or empty response).`);
+                    break;
+                }
+                continue;
+            }
+
+            consecutiveEmptyPages = 0;
+
+            const pagePdfs = this.extractPDFUrls(html, url);
+            pdfUrls = pdfUrls.concat(pagePdfs);
 
             const before = contentLinks.size;
             for (const link of this.extractContentLinks(html)) contentLinks.add(link);
             const added = contentLinks.size - before;
 
-            console.log(`  page ${page}: +${added} new sub-pages (total ${contentLinks.size})`);
-            if (added === 0) break;
+            console.log(`  page ${page}: +${added} new sub-pages (${pagePdfs.length} direct PDFs, total ${contentLinks.size} sub-pages)`);
             await sleep(400);
         }
 
@@ -498,6 +536,40 @@ class DOTMScraper {
         return unique;
     }
 
+    async getProcessedPDFs() {
+        const db = getDb();
+        try {
+            const res = await db.execute('SELECT url, extracted_count, processed_at FROM processed_pdfs');
+            const map = new Map();
+            for (const row of res.rows) {
+                map.set(row.url, {
+                    extracted_count: Number(row.extracted_count || 0),
+                    processed_at: Number(row.processed_at || 0),
+                });
+            }
+            return map;
+        } catch (err) {
+            console.warn(`  Could not read processed_pdfs table (${err.message}). Will process without cache.`);
+            return new Map();
+        }
+    }
+
+    async markPDFProcessed(pdfUrl, extractedCount) {
+        const db = getDb();
+        try {
+            await db.execute({
+                sql: `INSERT INTO processed_pdfs (url, extracted_count, processed_at)
+                      VALUES (?, ?, ?)
+                      ON CONFLICT(url) DO UPDATE SET
+                        extracted_count = excluded.extracted_count,
+                        processed_at    = excluded.processed_at`,
+                args: [pdfUrl, extractedCount, Date.now()],
+            });
+        } catch (err) {
+            console.warn(`  Failed to record processed PDF ${pdfUrl}: ${err.message}`);
+        }
+    }
+
     async processPDF(pdfUrl) {
         console.log(`  PDF: ${pdfUrl}`);
         try {
@@ -505,10 +577,10 @@ class DOTMScraper {
             const text = await parsePDF(buf);
             const licenses = parseLicenses(text);
             console.log(`    → ${licenses.length} licenses extracted`);
-            return licenses;
+            return { success: true, licenses };
         } catch (err) {
             console.error(`    → Failed: ${err.message}`);
-            return [];
+            return { success: false, error: err.message, licenses: [] };
         }
     }
 
@@ -561,8 +633,21 @@ class DOTMScraper {
         }
     }
 
-    async scrapeAll() {
+    async scrapeAll(options = {}) {
+        const force = Boolean(
+            options.force ||
+            process.argv.includes('--force') ||
+            process.env.FORCE_SCRAPE === '1' ||
+            process.env.FORCE_SCRAPE === 'true'
+        );
+
         console.log('\n═══ DOTM License Scraper ═══\n');
+        if (force) {
+            console.log('⚡ Force mode enabled: will re-extract all PDFs regardless of previous history.\n');
+        } else {
+            console.log('💡 Incremental mode: previously extracted PDFs will be skipped automatically.\n');
+        }
+
         const startTime = Date.now();
         await ensureSchema();
 
@@ -572,31 +657,51 @@ class DOTMScraper {
             return false;
         }
 
-        let pendingLicenses = [];
+        const processedMap = force ? new Map() : await this.getProcessedPDFs();
+        if (!force && processedMap.size > 0) {
+            console.log(`📋 Found ${processedMap.size} previously extracted PDFs in database history.`);
+        }
+
+        let newPdfsCount = 0;
+        let skippedPdfsCount = 0;
 
         for (let i = 0; i < pdfUrls.length; i++) {
-            console.log(`\n[${i + 1}/${pdfUrls.length}]`);
-            const licenses = await this.processPDF(pdfUrls[i]);
-            this.stats.scraped += licenses.length;
-            pendingLicenses = pendingLicenses.concat(licenses);
+            const pdfUrl = pdfUrls[i];
+            console.log(`\n[${i + 1}/${pdfUrls.length}] ${pdfUrl}`);
 
-            // Save in batches of 1000 to avoid memory buildup
-            if (pendingLicenses.length >= 1000) {
-                await this.saveBatch(pendingLicenses);
-                pendingLicenses = [];
+            // Skip if already extracted in a previous workflow run
+            if (!force && processedMap.has(pdfUrl)) {
+                const prev = processedMap.get(pdfUrl);
+                const dateStr = prev.processed_at ? new Date(prev.processed_at).toISOString().split('T')[0] : 'previously';
+                console.log(`  ⏭️  Skipping: already extracted on ${dateStr} (${prev.extracted_count} licenses previously indexed)`);
+                this.stats.skipped++;
+                skippedPdfsCount++;
+                continue;
             }
+
+            newPdfsCount++;
+            const result = await this.processPDF(pdfUrl);
+            if (!result.success) {
+                this.stats.failed++;
+                continue;
+            }
+
+            this.stats.scraped += result.licenses.length;
+
+            if (result.licenses.length > 0) {
+                await this.saveBatch(result.licenses);
+            }
+
+            // Mark this PDF as processed so future workflows skip it
+            await this.markPDFProcessed(pdfUrl, result.licenses.length);
 
             await sleep(1000);
         }
 
-        // Save remainder
-        if (pendingLicenses.length) {
-            await this.saveBatch(pendingLicenses);
-        }
-
         const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
         console.log(`\n═══ Done in ${elapsed}s ═══`);
-        console.log(`Scraped: ${this.stats.scraped} | Saved: ${this.stats.saved} | Failed: ${this.stats.failed}`);
+        console.log(`PDFs: ${pdfUrls.length} total | ${newPdfsCount} processed | ${skippedPdfsCount} skipped (already in DB)`);
+        console.log(`Licenses: ${this.stats.scraped} scraped | ${this.stats.saved} saved | ${this.stats.failed} failed`);
         return true;
     }
 }

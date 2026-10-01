@@ -4,6 +4,12 @@ on:
   schedule:
     - cron: '0 2 15 2,5,8,11 *'
   workflow_dispatch:
+    inputs:
+      force:
+        description: 'Force re-scrape all PDFs (ignore already processed cache)'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -45,4 +51,11 @@ jobs:
           fi
 
       - name: Run DOTM scraper
-        run: npm run cron:scrape
+        run: |
+          if [ "${{ github.event.inputs.force }}" = "true" ]; then
+            echo "⚡ Force re-scrape requested: processing all PDFs..."
+            npm run cron:scrape -- --force
+          else
+            echo "💡 Running incremental scrape: skipping already processed PDFs..."
+            npm run cron:scrape
+          fi

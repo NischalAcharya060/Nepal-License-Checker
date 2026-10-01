@@ -1,10 +1,11 @@
 // scripts/update-data.js
 const DOTMScraper = require('./scraper');
 
-async function runScraper() {
+async function runScraper(options = {}) {
+    const force = Boolean(options.force || process.argv.includes('--force'));
     const scraper = new DOTMScraper();
     try {
-        const ranToEnd = await scraper.scrapeAll();
+        const ranToEnd = await scraper.scrapeAll({ force });
         const success = Boolean(ranToEnd && scraper.stats.failed === 0);
         const result = {
             success,
