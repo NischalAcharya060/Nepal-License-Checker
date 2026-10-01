@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
 import { getTurso } from '@/lib/turso'
+ 
+ export const dynamic = 'force-dynamic'
+ export const runtime = 'nodejs'
 
 type MetaRow = {
     last_updated: number | string | null
@@ -14,7 +17,7 @@ export async function GET() {
             'SELECT MAX(updated_at) AS last_updated, COUNT(*) AS total_records FROM licenses'
         )
 
-        const rawRow = result.rows[0] as Record<string, unknown> | undefined
+        const rawRow = result.rows[0] as unknown as MetaRow | undefined
 
         const lastUpdatedMs = Number(rawRow?.last_updated ?? 0)
         const totalRecords = Number(rawRow?.total_records ?? 0)

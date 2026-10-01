@@ -15,8 +15,22 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: now,
       alternates: {
         languages: {
-          en: baseUrl,
-          ne: `${baseUrl}/?lang=ne`,
+          'en-NP': baseUrl,
+          'ne-NP': `${baseUrl}/?lang=ne`,
+          'x-default': baseUrl,
+        },
+      },
+    },
+    {
+      url: `${baseUrl}/?lang=ne`,
+      changeFrequency: 'daily',
+      priority: 0.95,
+      lastModified: now,
+      alternates: {
+        languages: {
+          'en-NP': baseUrl,
+          'ne-NP': `${baseUrl}/?lang=ne`,
+          'x-default': baseUrl,
         },
       },
     },

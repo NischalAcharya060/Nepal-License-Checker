@@ -2,7 +2,7 @@ import { en } from './en'
 import { ne } from './ne'
 import type { UICopy } from './types'
 
-export type { UICopy, HomeCopy, HomeTileCopy, LicenseFormCopy, LicenseResultCopy } from './types'
+export * from './types'
 
 export type Language = 'en' | 'ne'
 

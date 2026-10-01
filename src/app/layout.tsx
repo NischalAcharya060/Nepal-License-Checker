@@ -1,7 +1,29 @@
 import type { Metadata, Viewport } from 'next'
+import { Plus_Jakarta_Sans, Mukta, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import { Toaster } from 'react-hot-toast'
 import { getSiteUrl } from '@/lib/siteUrl'
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-sans',
+  display: 'swap',
+})
+
+const mukta = Mukta({
+  subsets: ['devanagari', 'latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-devanagari',
+  display: 'swap',
+})
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  weight: ['400', '600'],
+  variable: '--font-mono',
+  display: 'swap',
+})
 
 const siteUrl = getSiteUrl()
 
@@ -86,6 +108,7 @@ const structuredData = {
       '@id': `${siteUrl}/#org`,
       name: 'Nepal License Checker',
       url: siteUrl,
+      logo: `${siteUrl}/License-Checker-Nepal-logo.png`,
       description: appDescription,
       founder: {
         '@type': 'Person',
@@ -353,8 +376,26 @@ export const metadata: Metadata = {
   description: appDescription,
   applicationName: 'Nepal License Checker',
   icons: {
-    icon: '/favicon.ico',
+    icon: [
+      { url: '/favicon/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon.ico' },
+    ],
+    apple: [
+      { url: '/favicon/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+    other: [
+      {
+        rel: 'android-chrome-192x192',
+        url: '/favicon/android-chrome-192x192.png',
+      },
+      {
+        rel: 'android-chrome-512x512',
+        url: '/favicon/android-chrome-512x512.png',
+      },
+    ],
   },
+  manifest: '/favicon/site.webmanifest',
   openGraph: {
     title: appTitle,
     description: appDescription,
@@ -366,9 +407,9 @@ export const metadata: Metadata = {
     countryName: 'Nepal',
     images: [
       {
-        url: '/logo.webp',
-        width: 512,
-        height: 512,
+        url: '/License-Checker-Nepal-logo.png',
+        width: 1254,
+        height: 1254,
         alt: 'Nepal License Checker - Smart Card Driving License Status',
       },
     ],
@@ -378,7 +419,7 @@ export const metadata: Metadata = {
     title: appTitle,
     description: appDescription,
     creator: '@nischal_dev',
-    images: ['/logo.webp'],
+    images: ['/License-Checker-Nepal-logo.png'],
   },
   keywords: [
     // English
@@ -466,19 +507,17 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={`${plusJakartaSans.variable} ${mukta.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <head>
         {/* prevent hydration mismatch */}
         <script
           suppressHydrationWarning
           dangerouslySetInnerHTML={{ __html: themeInitScript }}
         />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Mukta:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
-          rel="stylesheet"
-        />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
+        <link rel="manifest" href="/favicon/site.webmanifest" />
         <link rel="alternate" hrefLang="en-NP" href={siteUrl} />
         <link rel="alternate" hrefLang="ne-NP" href={`${siteUrl}/?lang=ne`} />
         <link rel="alternate" hrefLang="x-default" href={siteUrl} />
@@ -494,6 +533,7 @@ export default function RootLayout({
 
         <Toaster
           position="top-center"
+          containerClassName="print:hidden"
           toastOptions={{
             duration: 4000,
             style: {

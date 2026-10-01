@@ -9,13 +9,20 @@ Instantly check whether your **Nepal smart card driving license** has been print
 ## Features
 
 - **Instant status lookup** — enter your license number (`XX-XX-XXXXXXXX`) and get a "Ready" / "Not Ready" result in seconds
-- **Smart input** — hyphens are inserted automatically as you type, with inline validation and progress feedback
-- **Bilingual UI** — full English ⇄ नेपाली switching (`?lang=ne` is also URL-selectable)
+- **Smart input with Nepali digits** — supports both English (`0-9`) and Nepali Devanagari (`०-९`) numerals, auto-inserts hyphens, inline validation, and progress feedback
+- **Transport Office auto-detection** — identifies the issuing Yatayat Karyalaya from the first 2 digits of the license number
+- **Vehicle category explainer** — breaks down category codes (`A`, `B`, `C`, `K`, etc.) with authorized vehicle descriptions and badges
+- **Recent searches history** — saves previous license lookups locally for one-click re-checking
+- **Printable verification slip** — clean, official printable slip with checklist of documents to bring to the office
+- **One-click sharing** — share result via WhatsApp, Viber, or copy direct link (`/?number=...`)
+- **Transport offices directory** — searchable guide to 23+ transport offices across all 7 provinces with contact phone numbers and addresses
+- **DOTM SMS service guide** — quick instructions for checking status via SMS to `31003`
+- **Bilingual UI** — complete English ⇄ नेपाली switching (`?lang=ne` is also URL-selectable and indexed)
 - **Light & dark themes** — saved to localStorage and respects `prefers-color-scheme`
 - **100K+ indexed records** — fast lookups served from a Turso (LibSQL) database
 - **Live DOTM fallback** — if a number isn't in the database, the API scrapes the latest DOTM published PDFs on the fly and caches the result
 - **Weekly data sync** — a GitHub Actions cron keeps the indexed list fresh
-- **SEO-ready** — structured data (FAQPage, HowTo, GovernmentService), sitemap, and bilingual canonical links
+- **SEO-ready** — dual-language sitemap, structured data (FAQPage, HowTo, GovernmentService), and AEO/GEO AI crawler compliance
 
 ## How it works
 

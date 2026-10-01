@@ -3,6 +3,9 @@ import { getTurso, type LicenseRow } from '@/lib/turso'
 import { RateLimiter } from '@/lib/rateLimit'
 import { sanitizeInput } from '@/utils/sanitize'
 import { License } from '@/types'
+ 
+ export const dynamic = 'force-dynamic'
+ export const runtime = 'nodejs'
 
 const rateLimiter = new RateLimiter(15, 60000) // 15 requests per minute per IP
 

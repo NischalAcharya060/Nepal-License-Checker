@@ -23,6 +23,7 @@ export interface HomeCopy {
     serverError: string
     found: string
     notFound: string
+    copied: string
   }
 }
 
@@ -34,6 +35,10 @@ export interface LicenseFormCopy {
   checkingLabel: string
   formatLabel: string
   formatHint: string
+  detectedOfficeLabel: string
+  recentSearchesLabel: string
+  clearRecentLabel: string
+  pasteHint: string
   loadingMessages: string[]
   errors: {
     required: string
@@ -68,10 +73,47 @@ export interface LicenseResultCopy {
   readyForCollectionTitle: string
   readyForCollectionDescription: string
   checkAnotherLabel: string
+  categoryBreakdownTitle: string
+  authorizedVehiclesLabel: string
+  printSlipLabel: string
+  shareResultLabel: string
+  copyDetailsLabel: string
+  officeDetailsTitle: string
+  officePhoneLabel: string
+  officeAddressLabel: string
+  whatToBringTitle: string
+  requiredDocs: string[]
+}
+
+export interface OfficesModalCopy {
+  title: string
+  subtitle: string
+  searchPlaceholder: string
+  codeLabel: string
+  locationLabel: string
+  phoneLabel: string
+  provinceLabel: string
+  noMatch: string
+  closeLabel: string
+}
+
+export interface SmsGuideCopy {
+  title: string
+  subtitle: string
+  step1Title: string
+  step1Desc: string
+  step2Title: string
+  step2Desc: string
+  step3Title: string
+  step3Desc: string
+  carrierNote: string
+  closeLabel: string
 }
 
 export interface UICopy {
   home: HomeCopy
   form: LicenseFormCopy
   result: LicenseResultCopy
+  officesModal: OfficesModalCopy
+  smsGuide: SmsGuideCopy
 }
