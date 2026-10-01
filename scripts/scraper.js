@@ -7,15 +7,21 @@ const { URL } = require('url');
 const { createClient } = require('@libsql/client');
 
 // ── Turso (libSQL) init ──────────────────────────────────────────────────────
-if (!process.env.TURSO_DATABASE_URL) {
-    throw new Error('TURSO_DATABASE_URL is not set — add it to .env');
+let dbClient = null;
+function getDb() {
+    if (dbClient) return dbClient;
+    if (!process.env.TURSO_DATABASE_URL) {
+        throw new Error('TURSO_DATABASE_URL is not set — add it to .env');
+    }
+    dbClient = createClient({
+        url: process.env.TURSO_DATABASE_URL,
+        authToken: process.env.TURSO_AUTH_TOKEN,
+    });
+    return dbClient;
 }
-const db = createClient({
-    url: process.env.TURSO_DATABASE_URL,
-    authToken: process.env.TURSO_AUTH_TOKEN,
-});
 
 async function ensureSchema() {
+    const db = getDb();
     await db.execute(`
         CREATE TABLE IF NOT EXISTS licenses (
             license_number TEXT PRIMARY KEY,
@@ -507,6 +513,7 @@ class DOTMScraper {
     }
 
     async saveBatch(licenses) {
+        const db = getDb();
         // libSQL batches: chunk to keep request payload manageable
         const BATCH_SIZE = 200;
         for (let i = 0; i < licenses.length; i += BATCH_SIZE) {

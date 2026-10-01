@@ -4,8 +4,8 @@ export interface License {
     holder_name: string;
     office: string;
     category: string;
-    createdAt: Date | any;
-    updatedAt: Date | any;
+    createdAt: Date | string | number;
+    updatedAt: Date | string | number;
 }
 
 export interface APIResponse {

@@ -194,3 +194,83 @@
     box-shadow: none !important;
   }
 }
+
+@media print {
+  @page {
+    /* size: auto allows the browser print dialog to let user choose A4, Letter, etc. */
+    size: auto;
+    margin: 8mm 10mm;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    background-image: none !important;
+    color: #000000 !important;
+    font-size: 9.5pt !important;
+    line-height: 1.35 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  main {
+    overflow: visible !important;
+    min-height: 0 !important;
+    height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  header,
+  nav,
+  footer,
+  #how-to-check,
+  #faq,
+  form,
+  .print\:hidden,
+  .pointer-events-none,
+  [data-toaster-id],
+  [role="status"],
+  [aria-live],
+  .toaster,
+  .react-hot-toast,
+  body > div[style*="fixed"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+  }
+
+  #printable-verification-slip {
+    display: block !important;
+    visibility: visible !important;
+    width: 100% !important;
+    max-width: 170mm !important; /* leaves safe margins on both A4 (210mm) and Letter (216mm) */
+    margin: 0 auto !important;
+    padding: 2mm 3mm !important;
+    box-sizing: border-box !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-before: auto !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  #printable-verification-slip * {
+    box-sizing: border-box !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  #printable-verification-slip table {
+    table-layout: fixed !important;
+    width: 100% !important;
+    border-collapse: collapse !important;
+    box-sizing: border-box !important;
+  }
+}
+
