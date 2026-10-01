@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Plus_Jakarta_Sans, Mukta, JetBrains_Mono } from 'next/font/google'
+import { Plus_Jakarta_Sans, Mukta } from 'next/font/google'
 import './globals.css'
 import { Toaster } from 'react-hot-toast'
 import { getSiteUrl } from '@/lib/siteUrl'
@@ -15,13 +15,6 @@ const mukta = Mukta({
   subsets: ['devanagari', 'latin'],
   weight: ['400', '500', '600', '700'],
   variable: '--font-devanagari',
-  display: 'swap',
-})
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ['latin'],
-  weight: ['400', '600'],
-  variable: '--font-mono',
   display: 'swap',
 })
 
@@ -507,7 +500,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${plusJakartaSans.variable} ${mukta.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${plusJakartaSans.variable} ${mukta.variable}`} suppressHydrationWarning>
       <head>
         {/* prevent hydration mismatch */}
         <script

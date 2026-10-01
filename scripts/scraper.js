@@ -620,15 +620,25 @@ class DOTMScraper {
                 ],
             }));
 
-            try {
-                await db.batch(stmts, 'write');
-                this.stats.saved += chunk.length;
-                if ((i / BATCH_SIZE) % 25 === 0) {
-                    console.log(`    saved ${this.stats.saved} so far...`);
+            let batchSaved = false;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    await db.batch(stmts, 'write');
+                    this.stats.saved += chunk.length;
+                    batchSaved = true;
+                    if ((i / BATCH_SIZE) % 25 === 0) {
+                        console.log(`    saved ${this.stats.saved} so far...`);
+                    }
+                    break;
+                } catch (err) {
+                    if (attempt < 3) {
+                        console.warn(`    Batch write attempt ${attempt}/3 failed (${err.message}). Retrying in ${attempt * 1500}ms...`);
+                        await sleep(attempt * 1500);
+                    } else {
+                        console.error(`Batch write failed (${chunk.length} rows after 3 attempts): ${err.message}`);
+                        this.stats.failed += chunk.length;
+                    }
                 }
-            } catch (err) {
-                console.error(`Batch write failed (${chunk.length} rows): ${err.message}`);
-                this.stats.failed += chunk.length;
             }
         }
     }
