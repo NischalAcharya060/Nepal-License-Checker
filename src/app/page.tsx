@@ -710,7 +710,7 @@ export default function Home() {
                           { q: 'लाइसेन्स लिन के के लैजानु पर्छ?', a: 'नागरिकता प्रमाणपत्र, पुरानो सवारी चालक अनुमतिपत्र (यदि भए), र भुक्तानी रसिद। यी कागजात लिएर सम्बन्धित यातायात कार्यालयमा जानुहोस्।' },
                           { q: '"छपाइ हुन बाँकी" देखाइयो भने के गर्ने?', a: 'अझ छपाइ हुन बाँकी हुन सक्छ। DOTM ले नियमित रूपमा सूची अद्यावधिक गर्छ — केही दिनपछि पुनः जाँच गर्नुहोस्। वा dotm.gov.np मा गएर पूर्ण सूची हेर्न सकिन्छ।' },
                           { q: 'सूची कति पटक अद्यावधिक हुन्छ?', a: 'विभागले साप्ताहिक रूपमा छपाइ भएका लाइसेन्सहरूको सूची सार्वजनिक गर्छ। हाम्रो प्रणालीले पनि नियमित रूपमा त्यो सूची अद्यावधिक गर्छ।' },
-                          { q: 'के एसएमएस (SMS) बाट पनि बुझ्न सकिन्छ?', a: 'हो, आफ्नो मोबाइलबाट LC <space> <Application ID> टाइप गरी ३१००३ मा एसएमएस गरेर पनि अवस्था थाहा पाउन सकिन्छ।' },
+                          { q: 'के एसएमएस (SMS) बाट पनि बुझ्न सकिन्छ?', a: 'हो, आफ्नो मोबाइलबाट LC <space> <Application ID वा License No> टाइप गरी ३३००१, ३४९४९ वा ३१००३ मा पठाउनुहोस् — यो NTC, Ncell र Smart Cell सबैमा चल्छ।' },
                           { q: 'के यो आधिकारिक सरकारी वेबसाइट हो?', a: 'होइन। यो स्वतन्त्र रूपमा बनाइएको नागरिक सहायता खोज उपकरण हो। तथ्याङ्क dotm.gov.np बाट लिइएको हो र त्यहीँ आधिकारिक सूची उपलब्ध छ।' },
                           { q: 'के यो सेवा निःशुल्क हो?', a: 'हो। यो सेवा पूर्ण रूपमा निःशुल्क हो र कुनै दर्ता आवश्यक छैन।' },
                           { q: 'मेरो व्यक्तिगत जानकारी सुरक्षित छ?', a: 'तपाईंले राख्ने नम्बर खोजका लागि मात्र प्रयोग गरिन्छ। हामी कुनै पनि व्यक्तिगत डेटा सुरक्षित गर्दैनौं।' },
@@ -721,7 +721,7 @@ export default function Home() {
                           { q: 'Where can I find my license number?', a: 'It’s printed on your old smart card license, on your exam receipt, or on the temporary slip your transport office gave you when you applied.' },
                           { q: 'What do I need to bring to collect the license?', a: 'Your original Citizenship card, your old driving license (if you have one), and your payment receipt. Bring them to the transport office where you applied.' },
                           { q: 'My result says “Not Printed Yet” — what should I do?', a: 'Your card is likely still in the print backlog. DOTM updates the list regularly, so check back in a few days. You can also view the full list at dotm.gov.np.' },
-                          { q: 'Can I also check via SMS?', a: 'Yes! Send LC <space> <Application ID> to shortcode 31003 from your NTC or Ncell mobile phone to receive status via SMS.' },
+                          { q: 'Can I also check via SMS?', a: 'Yes! Send your license number (LC <space> <Application ID or License No>) to 33001, 34949 or 31003 — works on NTC, Ncell, and Smart Cell.' },
                           { q: 'How often is the data updated?', a: 'DOTM publishes the printed-license list approximately weekly. Our system syncs that list regularly so results stay current.' },
                           { q: 'Is this the official government website?', a: 'No. This is an independent public utility. The underlying data comes from dotm.gov.np, which is the official source.' },
                           { q: 'Is this service free to use?', a: 'Yes — it is 100% free and requires no sign-up or registration.' },
@@ -776,7 +776,7 @@ export default function Home() {
             </button>
             <span>•</span>
             <button type="button" onClick={() => setIsSmsModalOpen(true)} className="hover:text-[var(--nepal-blue)] hover:underline">
-              {language === 'ne' ? 'एसएमएस सेवा (३१००३)' : 'SMS Service (31003)'}
+              {language === 'ne' ? 'एसएमएस सेवा (३३००१ / ३४९४९ / ३१००३)' : 'SMS Service (33001 / 34949 / 31003)'}
             </button>
             <span>•</span>
             <a href="https://dotm.gov.np" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--nepal-blue)] hover:underline">
@@ -795,33 +795,33 @@ export default function Home() {
 
       {/* Sample License Image Guide Modal */}
       {isSampleModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in" onClick={() => setIsSampleModalOpen(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-3 sm:p-4 backdrop-blur-md animate-fade-in" onClick={() => setIsSampleModalOpen(false)}>
           <div
             role="dialog"
             aria-modal="true"
             aria-label="License format guide"
-            className="relative w-full max-w-xl overflow-hidden rounded-2xl bg-[var(--surface-primary)] shadow-2xl animate-rise-in border border-[var(--border-default)]"
+            className="relative w-full max-w-xl overflow-hidden rounded-3xl bg-[var(--surface-primary)] shadow-2xl animate-rise-in border border-[var(--border-default)]"
             onClick={(event) => event.stopPropagation()}
           >
             <button
               aria-label="Close guide"
               onClick={() => setIsSampleModalOpen(false)}
-              className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-md transition-colors hover:bg-[var(--nepal-red)]"
+              className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md transition-all hover:bg-[var(--nepal-red)] hover:scale-105 active:scale-95 shadow-md"
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18" />
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
 
-            <div className="p-2">
-              <Image src="/license-sample2.png" alt="License format guide" width={1200} height={760} className="h-auto w-full rounded-xl object-cover" priority />
+            <div className="p-3 bg-[var(--bg-secondary)]/50">
+              <Image src="/license-sample2.png" alt="License format guide" width={1200} height={760} className="h-auto w-full rounded-2xl object-cover shadow-xs border border-[var(--border-default)]" priority />
             </div>
-            <div className="p-4 text-center">
-              <h3 className="text-sm font-bold uppercase tracking-wide text-[var(--text-primary)]">
+            <div className="p-5 text-center">
+              <h3 className="text-sm font-extrabold uppercase tracking-wide text-[var(--text-primary)]">
                 {language === 'ne' ? 'ढाँचा निर्देशिका' : 'Format Guide'}
               </h3>
-              <p className="mt-1 text-xs text-[var(--text-secondary)]">
+              <p className="mt-1 text-xs text-[var(--text-secondary)] leading-relaxed">
                 {language === 'ne'
                   ? 'तपाईंको अनुमति पत्र नम्बर अस्थायी रसिद वा पुरानो स्मार्ट कार्डमा फेला पार्न सक्नुहुन्छ।'
                   : 'You can find your license number on your temporary receipt or your old smart card.'}
@@ -845,6 +845,7 @@ export default function Home() {
         onClose={() => setIsSmsModalOpen(false)}
         copy={copy.smsGuide}
         language={language}
+        initialNumber={lastSearched || externalNumber || ''}
       />
     </main>
   )

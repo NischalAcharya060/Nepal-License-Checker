@@ -16,7 +16,7 @@ Instantly check whether your **Nepal smart card driving license** has been print
 - **Printable verification slip** — clean, official printable slip with checklist of documents to bring to the office
 - **One-click sharing** — share result via WhatsApp, Viber, or copy direct link (`/?number=...`)
 - **Transport offices directory** — searchable guide to 23+ transport offices across all 7 provinces with contact phone numbers and addresses
-- **DOTM SMS service guide** — quick instructions for checking status via SMS to `31003`
+- **DOTM SMS service guide** — quick instructions for checking status via SMS to `33001`, `34949`, or `31003` (works on NTC, Ncell, Smart Cell)
 - **Bilingual UI** — complete English ⇄ नेपाली switching (`?lang=ne` is also URL-selectable and indexed)
 - **Light & dark themes** — saved to localStorage and respects `prefers-color-scheme`
 - **100K+ indexed records** — fast lookups served from a Turso (LibSQL) database

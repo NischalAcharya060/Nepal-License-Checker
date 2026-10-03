@@ -1,7 +1,5 @@
 'use client'
 
-import { useState } from 'react'
-import toast from 'react-hot-toast'
 import type { SmsGuideCopy } from '@/lib/i18n'
 
 interface SmsModalProps {
@@ -9,22 +7,13 @@ interface SmsModalProps {
   onClose: () => void
   copy: SmsGuideCopy
   language: 'en' | 'ne'
+  initialNumber?: string
 }
 
-export default function SmsModal({ isOpen, onClose, copy, language }: SmsModalProps) {
-  const [copied, setCopied] = useState(false)
-
+export default function SmsModal({ isOpen, onClose, copy }: SmsModalProps) {
   if (!isOpen) return null
 
   const sampleFormat = 'LC 12345678'
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(sampleFormat).then(() => {
-      setCopied(true)
-      toast.success(language === 'ne' ? 'ढाँचा प्रतिलिपि गरियो!' : 'Format copied!')
-      setTimeout(() => setCopied(false), 2000)
-    })
-  }
 
   return (
     <div
@@ -41,7 +30,7 @@ export default function SmsModal({ isOpen, onClose, copy, language }: SmsModalPr
         {/* Header */}
         <div className="flex items-start justify-between border-b border-[var(--border-default)] bg-gradient-to-r from-[var(--nepal-blue-soft)] to-transparent p-4 sm:p-5">
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--nepal-blue)] text-white text-lg font-bold">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--nepal-blue)] text-white text-lg font-bold shadow-sm">
               📱
             </span>
             <div>
@@ -65,7 +54,7 @@ export default function SmsModal({ isOpen, onClose, copy, language }: SmsModalPr
         </div>
 
         {/* Steps */}
-        <div className="space-y-4 p-5">
+        <div className="space-y-3.5 p-5">
           <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-4">
             <div className="text-xs font-bold text-[var(--text-primary)]">{copy.step1Title}</div>
             <p className="mt-1 text-xs text-[var(--text-secondary)]">{copy.step1Desc}</p>
@@ -75,15 +64,8 @@ export default function SmsModal({ isOpen, onClose, copy, language }: SmsModalPr
             <div className="text-xs font-bold text-[var(--text-primary)]">{copy.step2Title}</div>
             <p className="mt-1 text-xs text-[var(--text-secondary)]">{copy.step2Desc}</p>
 
-            <div className="mt-2.5 flex items-center justify-between rounded-lg border border-[var(--nepal-blue)]/30 bg-[var(--surface-primary)] px-3 py-2 font-mono text-sm font-bold text-[var(--nepal-blue)]">
-              <span>{sampleFormat}</span>
-              <button
-                type="button"
-                onClick={handleCopy}
-                className="text-[11px] font-sans font-semibold text-[var(--nepal-blue)] hover:underline"
-              >
-                {copied ? (language === 'ne' ? 'प्रतिलिपि गरियो' : 'Copied!') : (language === 'ne' ? 'प्रतिलिपि' : 'Copy')}
-              </button>
+            <div className="mt-2.5 rounded-lg border border-[var(--nepal-blue)]/30 bg-[var(--surface-primary)] px-3 py-2 font-mono text-sm font-bold text-[var(--nepal-blue)]">
+              {sampleFormat}
             </div>
           </div>
 
@@ -102,7 +84,7 @@ export default function SmsModal({ isOpen, onClose, copy, language }: SmsModalPr
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-2 text-xs font-bold text-[var(--text-secondary)] transition hover:bg-[var(--bg-secondary)]"
+            className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-2 text-xs font-bold text-[var(--text-secondary)] transition hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"
           >
             {copy.closeLabel}
           </button>

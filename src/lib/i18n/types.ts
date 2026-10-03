@@ -100,6 +100,8 @@ export interface OfficesModalCopy {
 export interface SmsGuideCopy {
   title: string
   subtitle: string
+  numbersLabel: string
+  carriersLabel: string
   step1Title: string
   step1Desc: string
   step2Title: string
