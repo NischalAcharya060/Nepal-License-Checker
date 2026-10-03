@@ -424,25 +424,25 @@ export const metadata: Metadata = {
   applicationName: 'Nepal License Checker',
   icons: {
     icon: [
-      { url: '/favicon/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
-      { url: '/favicon/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
-      { url: '/favicon.ico' },
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
     ],
     apple: [
-      { url: '/favicon/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
     ],
     other: [
       {
         rel: 'android-chrome-192x192',
-        url: '/favicon/android-chrome-192x192.png',
+        url: '/android-chrome-192x192.png',
       },
       {
         rel: 'android-chrome-512x512',
-        url: '/favicon/android-chrome-512x512.png',
+        url: '/android-chrome-512x512.png',
       },
     ],
   },
-  manifest: '/favicon/site.webmanifest',
+  manifest: '/site.webmanifest',
   openGraph: {
     title: appTitle,
     description: appDescription,
@@ -454,9 +454,9 @@ export const metadata: Metadata = {
     countryName: 'Nepal',
     images: [
       {
-        url: '/License-Checker-Nepal-logo.png',
-        width: 1254,
-        height: 1254,
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
         alt: 'Nepal License Checker - Smart Card Driving License Status',
       },
     ],
@@ -466,7 +466,7 @@ export const metadata: Metadata = {
     title: appTitle,
     description: appDescription,
     creator: '@nischal_dev',
-    images: ['/License-Checker-Nepal-logo.png'],
+    images: ['/twitter-image.png'],
   },
   keywords: [
     // Top Google Search Console Queries (High Impressions & Clicks)
@@ -737,6 +737,9 @@ export const metadata: Metadata = {
   ],
   creator: 'Nischal Acharya',
   publisher: 'Nepal License Checker',
+  other: {
+    developer: 'Nischal Acharya',
+  },
   formatDetection: {
     telephone: false,
     date: false,
@@ -747,7 +750,9 @@ export const metadata: Metadata = {
   alternates: {
     canonical: '/',
     languages: {
+      'en': '/',
       'en-NP': '/',
+      'ne': '/?lang=ne',
       'ne-NP': '/?lang=ne',
       'x-default': '/',
     },
@@ -791,13 +796,6 @@ export default function RootLayout({
           suppressHydrationWarning
           dangerouslySetInnerHTML={{ __html: themeInitScript }}
         />
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
-        <link rel="manifest" href="/favicon/site.webmanifest" />
-        <link rel="alternate" hrefLang="en-NP" href={siteUrl} />
-        <link rel="alternate" hrefLang="ne-NP" href={`${siteUrl}/?lang=ne`} />
-        <link rel="alternate" hrefLang="x-default" href={siteUrl} />
         <script
           type="application/ld+json"
           suppressHydrationWarning

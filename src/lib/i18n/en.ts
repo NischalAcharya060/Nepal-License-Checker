@@ -33,7 +33,7 @@ export const en: UICopy = {
     footerSuffix: 'DOTM, Nepal',
     viewsLabel: 'Views',
     totalViewsLabel: 'Total Views',
-    developerCreditLabel: 'Engineered by',
+    developerCreditLabel: 'Developed by',
     developerPortfolioLabel: 'Portfolio',
     toasts: {
       rateLimit: 'Too many queries. Please wait a minute before searching again.',

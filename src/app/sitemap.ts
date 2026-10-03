@@ -10,12 +10,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     {
       url: baseUrl,
+      lastModified: now,
       changeFrequency: 'daily',
       priority: 1.0,
-      lastModified: now,
       alternates: {
         languages: {
+          'en': baseUrl,
           'en-NP': baseUrl,
+          'ne': `${baseUrl}/?lang=ne`,
           'ne-NP': `${baseUrl}/?lang=ne`,
           'x-default': baseUrl,
         },
@@ -23,12 +25,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: `${baseUrl}/?lang=ne`,
-      changeFrequency: 'daily',
-      priority: 0.95,
       lastModified: now,
+      changeFrequency: 'daily',
+      priority: 0.9,
       alternates: {
         languages: {
+          'en': baseUrl,
           'en-NP': baseUrl,
+          'ne': `${baseUrl}/?lang=ne`,
           'ne-NP': `${baseUrl}/?lang=ne`,
           'x-default': baseUrl,
         },
