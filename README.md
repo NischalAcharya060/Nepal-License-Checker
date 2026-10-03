@@ -127,6 +127,10 @@ scripts/
   update-data.js       # scraper runner (used by cron)
 ```
 
+## Contributing
+
+If you are a developer and want to contribute to this project, the repository is open for contributions. Found an issue or bug? Please report it on [GitHub Issues](https://github.com/NischalAcharya060/Nepal-License-Checker/issues).
+
 ## License
 
 This project is provided as-is for personal and educational use.

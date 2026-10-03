@@ -51,9 +51,11 @@ export default function Home() {
   })
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null)
   const [indexedRecords, setIndexedRecords] = useState<number | null>(null)
+  const [viewCount, setViewCount] = useState<number | null>(null)
   const [isSampleModalOpen, setIsSampleModalOpen] = useState(false)
   const [isOfficesModalOpen, setIsOfficesModalOpen] = useState(false)
   const [isSmsModalOpen, setIsSmsModalOpen] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [language, setLanguage] = useState<Language>(() => {
     if (typeof window === 'undefined') return 'en'
     try {
@@ -93,15 +95,44 @@ export default function Home() {
   useEffect(() => {
     let cancelled = false
 
-    const loadMeta = async () => {
+    const loadMetaAndViews = async () => {
       try {
-        const response = await fetch('/api/meta', { cache: 'no-store' })
-        if (!response.ok) return
-        const payload = await response.json()
+        const hasCounted =
+          typeof window !== 'undefined' &&
+          window.sessionStorage.getItem('nepal_license_view_counted') === '1'
+        const viewMethod = hasCounted ? 'GET' : 'POST'
+
+        const [metaRes, viewRes] = await Promise.all([
+          fetch('/api/meta', { cache: 'no-store' }).catch(() => null),
+          fetch('/api/views', { method: viewMethod, cache: 'no-store' }).catch(() => null),
+        ])
+
         if (cancelled) return
 
-        setLastUpdatedAt(payload?.data?.lastUpdated ?? null)
-        setIndexedRecords(typeof payload?.data?.totalRecords === 'number' ? payload.data.totalRecords : null)
+        if (metaRes && metaRes.ok) {
+          const metaPayload = await metaRes.json()
+          if (!cancelled && metaPayload?.data) {
+            setLastUpdatedAt(metaPayload.data.lastUpdated ?? null)
+            setIndexedRecords(
+              typeof metaPayload.data.totalRecords === 'number'
+                ? metaPayload.data.totalRecords
+                : null
+            )
+            if (typeof metaPayload.data.totalViews === 'number') {
+              setViewCount(metaPayload.data.totalViews)
+            }
+          }
+        }
+
+        if (viewRes && viewRes.ok) {
+          const viewPayload = await viewRes.json()
+          if (!cancelled && typeof viewPayload?.data?.views === 'number') {
+            if (!hasCounted && viewMethod === 'POST' && typeof window !== 'undefined') {
+              window.sessionStorage.setItem('nepal_license_view_counted', '1')
+            }
+            setViewCount(viewPayload.data.views)
+          }
+        }
       } catch {
         if (!cancelled) {
           setLastUpdatedAt(null)
@@ -110,7 +141,7 @@ export default function Home() {
       }
     }
 
-    loadMeta()
+    loadMetaAndViews()
     return () => {
       cancelled = true
     }
@@ -265,31 +296,45 @@ export default function Home() {
 
       {/* Sticky top navigation bar */}
       <nav className="sticky top-0 z-40 border-b border-[var(--border-default)]/70 bg-[var(--bg-primary)]/80 backdrop-blur-md print:hidden">
-        <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
+        <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-2 px-3 py-2 sm:gap-3 sm:px-6 sm:py-2.5">
           {/* Logo & Portal Branding */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             <Image
               src="/License-Checker-Nepal-logo.png"
               alt="Nepal License Checker Logo"
               width={56}
               height={56}
-              className="h-11 w-11 sm:h-13 sm:w-13 rounded-xl shadow-sm object-contain transition-transform hover:scale-105"
+              className="h-9 w-9 sm:h-12 sm:w-12 rounded-xl shadow-xs object-contain transition-transform hover:scale-105 shrink-0"
               priority
             />
-            <div className="flex flex-col">
-              <span className="text-sm font-extrabold tracking-tight text-[var(--text-primary)] sm:text-base leading-tight">
+            <div className="flex flex-col min-w-0">
+              <span className="truncate text-xs font-extrabold tracking-tight text-[var(--text-primary)] sm:text-base leading-tight">
                 {language === 'ne' ? 'नेपाल लाइसेन्स जाँच' : 'Nepal License Checker'}
               </span>
-              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--text-secondary)]">
-                <span className="inline-flex h-2 w-2 rounded-full bg-[var(--success)] animate-glow-pulse" aria-hidden />
-                <span>DOTM · dotm.gov.np</span>
+              <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-semibold text-[var(--text-secondary)]">
+                <span className="inline-flex h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-[var(--success)] animate-glow-pulse shrink-0" aria-hidden />
+                <span className="truncate">DOTM · dotm.gov.np</span>
               </div>
             </div>
           </div>
 
           {/* Quick Actions & Navigation */}
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            {/* Offices Directory button */}
+          <div className="flex items-center justify-end gap-1.5 sm:gap-2 shrink-0">
+            {/* Live Viewer Counter (Desktop/Tablet) */}
+            {viewCount !== null && (
+              <span
+                className="hidden items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1 text-[11px] font-semibold text-[var(--text-secondary)] md:inline-flex shadow-2xs"
+                title={language === 'ne' ? `कुल अवलोकन: ${viewCount.toLocaleString(dateLocale)}` : `Total views: ${viewCount.toLocaleString(dateLocale)}`}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                <span>{viewCount.toLocaleString(dateLocale)}</span>
+              </span>
+            )}
+
+            {/* Offices Directory button (Desktop) */}
             <button
               type="button"
               onClick={() => setIsOfficesModalOpen(true)}
@@ -299,7 +344,7 @@ export default function Home() {
               <span>{language === 'ne' ? 'कार्यालयहरू' : 'Offices'}</span>
             </button>
 
-            {/* SMS Guide button */}
+            {/* SMS Guide button (Desktop) */}
             <button
               type="button"
               onClick={() => setIsSmsModalOpen(true)}
@@ -309,9 +354,9 @@ export default function Home() {
               <span>{language === 'ne' ? 'एसएमएस सेवा' : 'SMS Check'}</span>
             </button>
 
-            {/* Language Switcher */}
+            {/* Language Switcher - compact on mobile */}
             <div
-              className="inline-flex items-center gap-1 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] p-1 text-[11px]"
+              className="inline-flex items-center rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] p-0.5 sm:p-1 text-[11px]"
               role="group"
               aria-label="Language switch"
             >
@@ -320,9 +365,9 @@ export default function Home() {
                 id="lang-en"
                 aria-pressed={language === 'en'}
                 onClick={() => setLanguage('en')}
-                className={`rounded-full px-2.5 py-1 font-semibold transition ${
+                className={`rounded-full px-2 py-0.5 sm:px-2.5 sm:py-1 font-semibold transition ${
                   language === 'en'
-                    ? 'bg-[var(--nepal-blue)] text-white shadow-sm'
+                    ? 'bg-[var(--nepal-blue)] text-white shadow-xs'
                     : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'
                 }`}
               >
@@ -334,48 +379,181 @@ export default function Home() {
                 aria-pressed={language === 'ne'}
                 onClick={() => setLanguage('ne')}
                 lang="ne"
-                className={`rounded-full px-2.5 py-1 font-semibold transition ${
+                className={`rounded-full px-2 py-0.5 sm:px-2.5 sm:py-1 font-semibold transition ${
                   language === 'ne'
-                    ? 'bg-[var(--nepal-red)] text-white shadow-sm'
+                    ? 'bg-[var(--nepal-red)] text-white shadow-xs'
                     : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'
                 }`}
               >
-                नेपाली
+                <span className="sm:hidden">ने</span>
+                <span className="hidden sm:inline">नेपाली</span>
               </button>
             </div>
 
-            {/* Theme Switcher */}
-            <div className="inline-flex items-center gap-1 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] p-1 text-[11px]" role="group" aria-label="Theme switch">
-              <button
-                type="button"
-                aria-pressed={theme === 'light'}
-                aria-label={copy.home.lightLabel}
-                onClick={() => setTheme('light')}
-                className={`rounded-full px-2 py-1 transition ${
-                  theme === 'light' ? 'bg-[var(--nepal-blue)] text-white shadow-sm' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'
-                }`}
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            {/* 1-Click Theme Toggle Button (Compact) */}
+            <button
+              type="button"
+              aria-label={theme === 'dark' ? copy.home.lightLabel : copy.home.darkLabel}
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-secondary)] transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] active:scale-95"
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {theme === 'dark' ? (
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400">
                   <circle cx="12" cy="12" r="4" />
                   <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
                 </svg>
-              </button>
-              <button
-                type="button"
-                aria-pressed={theme === 'dark'}
-                aria-label={copy.home.darkLabel}
-                onClick={() => setTheme('dark')}
-                className={`rounded-full px-2 py-1 transition ${
-                  theme === 'dark' ? 'bg-[var(--nepal-blue)] text-white shadow-sm' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'
-                }`}
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              ) : (
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 12.79A9 9 0 1 1 11.21 3A7 7 0 0 0 21 12.79z" />
                 </svg>
-              </button>
-            </div>
+              )}
+            </button>
+
+            {/* GitHub Repo Button (Desktop) */}
+            <a
+              href="https://github.com/NischalAcharya060/Nepal-License-Checker"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden h-8 w-8 items-center justify-center rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-secondary)] transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] active:scale-95 sm:inline-flex"
+              title="GitHub Repository & Contribute"
+              aria-label="GitHub Repository"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+              </svg>
+            </a>
+
+            {/* Mobile Menu Hamburger Button (<sm) */}
+            <button
+              type="button"
+              onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+              aria-expanded={isMobileMenuOpen}
+              aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-secondary)] transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] active:scale-95 sm:hidden"
+            >
+              {isMobileMenuOpen ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="3" y1="12" x2="21" y2="12" />
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <line x1="3" y1="18" x2="21" y2="18" />
+                </svg>
+              )}
+            </button>
           </div>
         </div>
+
+        {/* Collapsible Mobile Menu Drawer (<sm) */}
+        {isMobileMenuOpen && (
+          <div className="border-t border-[var(--border-default)]/70 bg-[var(--bg-primary)]/95 backdrop-blur-md px-4 py-3 sm:hidden animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="flex flex-col gap-2">
+              {/* Offices */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOfficesModalOpen(true)
+                  setIsMobileMenuOpen(false)
+                }}
+                className="flex items-center justify-between rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3.5 py-2.5 text-left transition hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue-soft)] active:scale-[0.99]"
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--nepal-blue-soft)] text-base">🏢</span>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-[var(--text-primary)]">
+                      {language === 'ne' ? 'यातायात कार्यालयहरू' : 'Transport Offices Directory'}
+                    </span>
+                    <span className="text-[10px] text-[var(--text-secondary)]">
+                      {language === 'ne' ? 'काठमाडौं, पोखरा, बुटवल, इटहरी, जनकपुर र अन्य' : 'Addresses, codes & phone numbers'}
+                    </span>
+                  </div>
+                </div>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-muted)]">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+
+              {/* SMS Check */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSmsModalOpen(true)
+                  setIsMobileMenuOpen(false)
+                }}
+                className="flex items-center justify-between rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3.5 py-2.5 text-left transition hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue-soft)] active:scale-[0.99]"
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-base text-emerald-600 dark:text-emerald-400">📱</span>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-[var(--text-primary)]">
+                      {language === 'ne' ? 'एसएमएस (SMS) सेवा' : 'SMS Print Status Service'}
+                    </span>
+                    <span className="text-[10px] text-[var(--text-secondary)]">
+                      {language === 'ne' ? 'LC <ID> लेखेर ३३००१ मा पठाउनुहोस्' : 'Send "LC <ApplicationID>" to 33001'}
+                    </span>
+                  </div>
+                </div>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-muted)]">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+
+              {/* Sample Format */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSampleModalOpen(true)
+                  setIsMobileMenuOpen(false)
+                }}
+                className="flex items-center justify-between rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3.5 py-2.5 text-left transition hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue-soft)] active:scale-[0.99]"
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-base text-amber-600 dark:text-amber-400">🔍</span>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-[var(--text-primary)]">
+                      {language === 'ne' ? 'लाइसेन्स नम्बर ढाँचा' : 'License Number Format'}
+                    </span>
+                    <span className="text-[10px] text-[var(--text-secondary)]">
+                      {language === 'ne' ? '८ अंकको लाइसेन्स नम्बर कसरी पत्ता लगाउने' : 'Sample smart card & 8-digit guide'}
+                    </span>
+                  </div>
+                </div>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-muted)]">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+
+              {/* GitHub Link & Views in mobile menu */}
+              <div className="mt-1 flex items-center justify-between pt-2 border-t border-[var(--border-default)]/60 text-[11px]">
+                <a
+                  href="https://github.com/NischalAcharya060/Nepal-License-Checker"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 font-semibold text-[var(--text-secondary)] hover:text-[var(--nepal-blue)]"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+                  </svg>
+                  <span>GitHub Repository</span>
+                </a>
+
+                {viewCount !== null && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--text-muted)]">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                    <span>{viewCount.toLocaleString(dateLocale)} views</span>
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </nav>
 
       <div className="relative z-10 mx-auto w-full max-w-4xl px-4 pb-14 pt-6 sm:px-6 sm:pt-10 print:p-0 print:m-0 print:max-w-none">
@@ -414,7 +592,7 @@ export default function Home() {
         </header>
 
         {/* Trust & Authority Stats Bar */}
-        <div className="mx-auto mb-6 flex max-w-lg flex-wrap items-center justify-center gap-x-6 gap-y-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)]/80 px-4 py-2.5 text-[11px] font-medium text-[var(--text-secondary)] shadow-sm animate-rise-in print:hidden" style={{ animationDelay: '0.16s' }}>
+        <div className="mx-auto mb-6 flex max-w-2xl flex-wrap items-center justify-center gap-x-5 gap-y-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)]/80 px-4 py-2.5 text-[11px] font-medium text-[var(--text-secondary)] shadow-sm animate-rise-in print:hidden" style={{ animationDelay: '0.16s' }}>
           <span className="inline-flex items-center gap-1.5">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             {indexedRecords !== null
@@ -429,10 +607,15 @@ export default function Home() {
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             {language === 'ne' ? 'साप्ताहिक अद्यावधिक' : 'Updated weekly'}
           </span>
-          <span className="inline-flex items-center gap-1.5">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 7l-5-5-5 5"/><path d="M7 17l5 5 5-5"/></svg>
-            {language === 'ne' ? 'पूर्णतः निःशुल्क' : 'Completely free'}
-          </span>
+          {viewCount !== null && (
+            <span className="inline-flex items-center gap-1.5 font-semibold text-[var(--text-primary)]">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              <span>{viewCount.toLocaleString(dateLocale)} {copy.home.viewsLabel}</span>
+            </span>
+          )}
           <span className="inline-flex items-center gap-1.5" title={lastUpdatedAt ? new Date(lastUpdatedAt).toISOString() : undefined}>
             <span className="inline-flex h-1.5 w-1.5 rounded-full bg-[var(--success)]" />
             {(language === 'ne' ? 'स्रोत' : 'Source')}: dotm.gov.np
@@ -704,6 +887,8 @@ export default function Home() {
                   const faqs =
                     language === 'ne'
                       ? [
+                          { q: 'DOTM को स्मार्ट लाइसेन्स छापिएको सूची (Smart Licence Printed List) अनलाइन कसरी चेक गर्ने?', a: 'आफ्नो सवारी चालक अनुमतिपत्र नम्बर XX-XX-XXXXXXXX ढाँचामा माथिको खोज बाकसमा राखेर "स्थिति जाँच्नुहोस्" मा क्लिक गर्नुहोस्। हाम्रो प्रणालीले १० लाख+ आधिकारिक रेकर्डहरूबाट तपाईंको कार्ड छापिएको छ वा छैन तुरुन्तै देखाउँछ।' },
+                          { q: 'के नागरिकता नम्बर वा नामबाट लाइसेन्स छापिएको कि छैन चेक गर्न सकिन्छ?', a: 'हाल यातायात व्यवस्था विभाग (DOTM) ले सार्वजनिक गर्ने स्मार्ट लाइसेन्स छापिएको सूचीमा केवल अनुमतिपत्र नम्बर (XX-XX-XXXXXXXX) बाट मात्र खोजी गर्न सकिन्छ। व्यक्तिगत गोपनीयताका कारण नागरिकता नम्बर वा नामबाट मात्र अनलाइन छपाइ सूची हेर्ने व्यवस्था छैन। तपाईंको परीक्षा उत्तीर्ण रसिद वा राजस्व रसिदमा लाइसेन्स नम्बर उल्लेख हुन्छ।' },
                           { q: 'मेरो लाइसेन्स छापिएको कि छैन कसरी थाहा पाउने?', a: 'माथिको खोज बक्समा आफ्नो अनुमतिपत्र नम्बर हाल्नुहोस् र "स्थिति जाँच्नुहोस्" थिच्नुहोस्। DOTM को आधिकारिक सूचीमा भएमा "कार्ड छापिइसकेको छ" देखाइनेछ।' },
                           { q: 'अनुमतिपत्र नम्बरको ढाँचा के हो?', a: 'XX-XX-XXXXXXXX — पहिलो २ अंक कार्यालय कोड, दोस्रो २ अंक जिल्ला कोड, र अन्तिम ८ अंक व्यक्तिगत नम्बर। उदाहरण: ०१-०१-१२३४५६७८।' },
                           { q: 'मेरो नम्बर कहाँ पाउन सकिन्छ?', a: 'पुरानो स्मार्ट कार्ड लाइसेन्स, परीक्षा रसिद, वा यातायात कार्यालयले दिएको अस्थायी रसिदमा तपाईंको नम्बर लेखिएको हुन्छ।' },
@@ -716,6 +901,8 @@ export default function Home() {
                           { q: 'मेरो व्यक्तिगत जानकारी सुरक्षित छ?', a: 'तपाईंले राख्ने नम्बर खोजका लागि मात्र प्रयोग गरिन्छ। हामी कुनै पनि व्यक्तिगत डेटा सुरक्षित गर्दैनौं।' },
                         ]
                       : [
+                          { q: 'How to check smart licence printed list online on dotm.gov.np?', a: 'Enter your driving license number in the XX-XX-XXXXXXXX format in our search tool above and click “Check Status”. Our system instantly searches across 1,000,000+ official DOTM printed records and shows whether your card is printed and ready for pickup at your local transport office.' },
+                          { q: 'Can I check my driving license print status by citizenship number or name?', a: 'Currently, the Department of Transport Management (DOTM Nepal) publishes the printed license list strictly by Driving License Number (XX-XX-XXXXXXXX). Direct search by citizenship number or applicant name is not supported on the public print list due to privacy protection. You can find your license number on your exam pass slip, payment receipt, or old license card.' },
                           { q: 'How do I know if my license has been printed?', a: 'Enter your license number in the search box above and press “Check Status”. If your record appears in the official DOTM list, the page will show “Card is Printed & Ready” with complete details.' },
                           { q: 'What is the license number format?', a: 'XX-XX-XXXXXXXX — the first two digits are your office code, the next two are the district code, and the last eight are your personal number. Example: 01-01-12345678.' },
                           { q: 'Where can I find my license number?', a: 'It’s printed on your old smart card license, on your exam receipt, or on the temporary slip your transport office gave you when you applied.' },
@@ -752,44 +939,175 @@ export default function Home() {
               </div>
             </section>
 
-            {/* Related searches */}
-            <p className="mt-6 px-1 text-[11px] leading-5 text-[var(--text-muted)]">
-              {language === 'ne'
-                ? 'सम्बन्धित खोजहरू: सवारी चालक अनुमतिपत्र छापिएको कि छैन, स्मार्ट कार्ड लाइसेन्स स्थिति नेपाल, यातायात व्यवस्था विभाग लाइसेन्स, DOTM smart card print status, license chhapieko ki chaina, sawari chalak anumati patra Nepal.'
-                : 'Related searches: Nepal smart card driving license status, DOTM printed license list, सवारी चालक अनुमतिपत्र छापिएको कि छैन, स्मार्ट कार्ड लाइसेन्स स्थिति, license chhapieko ki chaina, sawari chalak anumati patra.'}
-            </p>
           </section>
         )}
 
-        {/* Footer */}
-        <footer className="mt-10 border-t border-[var(--border-default)]/70 pt-6 text-center text-xs text-[var(--text-muted)] space-y-2 print:hidden">
-          <p>
-            {copy.home.footerPrefix}{' '}
-            <a href="https://dotm.gov.np/category/details-of-printed-licenses/" target="_blank" rel="noopener noreferrer" className="font-semibold text-[var(--nepal-blue)] hover:underline">
-              dotm.gov.np
-            </a>{' '}
-            · {copy.home.footerSuffix}
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px]">
-            <button type="button" onClick={() => setIsOfficesModalOpen(true)} className="hover:text-[var(--nepal-blue)] hover:underline">
-              {language === 'ne' ? 'यातायात कार्यालयहरू' : 'Transport Offices Directory'}
-            </button>
-            <span>•</span>
-            <button type="button" onClick={() => setIsSmsModalOpen(true)} className="hover:text-[var(--nepal-blue)] hover:underline">
-              {language === 'ne' ? 'एसएमएस सेवा (३३००१ / ३४९४९ / ३१००३)' : 'SMS Service (33001 / 34949 / 31003)'}
-            </button>
-            <span>•</span>
-            <a href="https://dotm.gov.np" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--nepal-blue)] hover:underline">
-              DOTM Official
-            </a>
+        {/* Modern Unified Footer */}
+        <footer className="mt-14 border-t border-[var(--border-default)]/70 pt-8 pb-10 print:hidden text-xs text-[var(--text-secondary)]">
+          {/* Developer & Open Source Contribution Box */}
+          <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 shadow-sm transition hover:border-[var(--nepal-blue)]/40 mb-8">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[var(--text-primary)] text-[var(--surface-primary)] shadow-sm">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-[var(--text-primary)] text-xs sm:text-sm">
+                      {language === 'ne' ? 'खुला-स्रोत परियोजना (Open Source)' : 'Open Source Project'}
+                    </span>
+                    <span className="rounded-full bg-[var(--nepal-blue)]/10 px-2 py-0.5 text-[10px] font-semibold text-[var(--nepal-blue)]">
+                      Public Repo
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-xs text-[var(--text-secondary)] leading-relaxed max-w-xl">
+                    {language === 'ne'
+                      ? 'यदि तपाईं डेभलपर हुनुहुन्छ र यस परियोजनामा योगदान दिन चाहनुहुन्छ भने गिटहबमा स्वागत छ। कुनै समस्या वा बग भेटिएमा GitHub Issues मा रिपोर्ट गर्नुहोस्।'
+                      : 'If you are a developer and want to contribute to this project, the repository is open for contributions. Found an issue or bug? Please report it on GitHub Issues.'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex items-center gap-2 sm:flex-shrink-0">
+                <a
+                  href="https://github.com/NischalAcharya060/Nepal-License-Checker"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--text-primary)] px-3.5 py-2 text-xs font-semibold text-[var(--surface-primary)] shadow-sm transition hover:opacity-90 active:scale-95"
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                    <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+                  </svg>
+                  <span>{language === 'ne' ? 'गिटहब रिपो' : 'Contribute'}</span>
+                </a>
+                <a
+                  href="https://github.com/NischalAcharya060/Nepal-License-Checker/issues"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] active:scale-95"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-red)]">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                  <span>{language === 'ne' ? 'समस्या रिपोर्ट' : 'Report Issue'}</span>
+                </a>
+              </div>
+            </div>
           </div>
-          <p className="pt-2 text-[11px]">
-            {copy.home.developerCreditLabel}{' '}
-            <a href="https://acharyanischal.com.np/" target="_blank" rel="noopener noreferrer" className="font-semibold text-[var(--nepal-blue)] hover:underline">
-              Nischal Acharya
-            </a>{' '}
-            · <span className="font-mono text-[10px] text-[var(--text-muted)]">v2.0.0</span>
-          </p>
+
+          {/* Links & Navigation Row */}
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2.5 pb-6 border-b border-[var(--border-default)]/60 text-xs">
+            <button
+              type="button"
+              onClick={() => setIsOfficesModalOpen(true)}
+              className="inline-flex items-center gap-1.5 font-medium hover:text-[var(--nepal-blue)] transition"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]">
+                <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
+                <path d="M9 22v-4h6v4" />
+                <path d="M8 6h.01M16 6h.01M12 6h.01M12 10h.01M12 14h.01M16 10h.01M16 14h.01M8 10h.01M8 14h.01" />
+              </svg>
+              <span>{language === 'ne' ? 'यातायात कार्यालयहरू' : 'Transport Offices'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsSmsModalOpen(true)}
+              className="inline-flex items-center gap-1.5 font-medium hover:text-[var(--nepal-blue)] transition"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]">
+                <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+                <line x1="12" y1="18" x2="12.01" y2="18" />
+              </svg>
+              <span>{language === 'ne' ? 'एसएमएस सेवा (३३००१)' : 'SMS Service (33001)'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsSampleModalOpen(true)}
+              className="inline-flex items-center gap-1.5 font-medium hover:text-[var(--nepal-blue)] transition"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]">
+                <rect x="3" y="4" width="18" height="16" rx="3" />
+                <circle cx="9" cy="10" r="2" />
+                <path d="M15 8h2M15 12h2M7 16h10" />
+              </svg>
+              <span>{language === 'ne' ? 'नम्बर ढाँचा गाइड' : 'License Format Guide'}</span>
+            </button>
+
+            <a
+              href="https://dotm.gov.np/category/details-of-printed-licenses/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 font-medium hover:text-[var(--nepal-blue)] transition"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="2" y1="12" x2="22" y2="12" />
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+              </svg>
+              <span>DOTM Official</span>
+            </a>
+
+            <button
+              type="button"
+              onClick={() => {
+                const el = document.getElementById('faq');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="inline-flex items-center gap-1.5 font-medium hover:text-[var(--nepal-blue)] transition"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+              <span>{language === 'ne' ? 'प्रायः सोधिने प्रश्नहरू' : 'FAQs'}</span>
+            </button>
+          </div>
+
+          {/* Bottom Attribution & Status Bar */}
+          <div className="pt-6 flex flex-col items-center justify-between gap-3 sm:flex-row text-[11px] text-[var(--text-muted)] text-center sm:text-left">
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+              <span className="font-semibold text-[var(--text-primary)]">Nepal License Checker</span>
+              <span>·</span>
+              <span className="inline-flex items-center gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--success)]" />
+                <span>Data from <a href="https://dotm.gov.np" target="_blank" rel="noopener noreferrer" className="font-medium text-[var(--nepal-blue)] hover:underline">dotm.gov.np</a></span>
+              </span>
+              <span>·</span>
+              <span className="font-mono text-[10px]">v2.0.0</span>
+              {viewCount !== null && (
+                <>
+                  <span>·</span>
+                  <span className="inline-flex items-center gap-1 font-medium text-[var(--text-secondary)]">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                    <span>{viewCount.toLocaleString(dateLocale)} {copy.home.totalViewsLabel}</span>
+                  </span>
+                </>
+              )}
+            </div>
+
+            <div className="flex items-center justify-center gap-1">
+              <span>{copy.home.developerCreditLabel}</span>
+              <a
+                href="https://acharyanischal.com.np/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-[var(--nepal-blue)] hover:underline"
+              >
+                Nischal Acharya
+              </a>
+            </div>
+          </div>
         </footer>
       </div>
 

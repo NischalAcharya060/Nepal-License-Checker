@@ -22,6 +22,16 @@ export async function GET() {
         const lastUpdatedMs = Number(rawRow?.last_updated ?? 0)
         const totalRecords = Number(rawRow?.total_records ?? 0)
 
+        let totalViews = 0
+        try {
+            const viewsResult = await db.execute(
+                "SELECT value FROM site_stats WHERE key = 'page_views' LIMIT 1"
+            )
+            totalViews = Number(viewsResult.rows[0]?.value ?? 0)
+        } catch {
+            // site_stats table may not exist yet
+        }
+
         return NextResponse.json({
             status: 'success',
             data: {
@@ -30,6 +40,7 @@ export async function GET() {
                         ? new Date(lastUpdatedMs).toISOString()
                         : null,
                 totalRecords,
+                totalViews,
             },
         })
     } catch (error) {

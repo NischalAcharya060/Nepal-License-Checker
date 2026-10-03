@@ -31,6 +31,8 @@ export const ne: UICopy = {
     ],
     footerPrefix: 'आधिकारिक अभिलेख स्रोत',
     footerSuffix: 'यातायात व्यवस्था विभाग, नेपाल',
+    viewsLabel: 'हेराइहरू',
+    totalViewsLabel: 'कुल हेराइ',
     developerCreditLabel: 'इन्जिनियरिङ',
     developerPortfolioLabel: 'पोर्टफोलियो',
     toasts: {
