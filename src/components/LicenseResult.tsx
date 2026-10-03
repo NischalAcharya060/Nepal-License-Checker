@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { formatDate } from '@/utils/helpers'
-import { getTransportOfficeByLicense } from '@/lib/offices'
+import { getTransportOfficeByOfficeName } from '@/lib/offices'
 import { parseCategoryCodes } from '@/lib/categories'
 import { SearchState, LicenseData } from '@/app/page'
 import type { LicenseResultCopy } from '@/lib/i18n'
@@ -55,8 +55,14 @@ export default function LicenseResult({
 }: LicenseResultProps) {
   const [copied, setCopied] = useState(false)
 
-  const officeInfo = getTransportOfficeByLicense(result?.license_number || licenseNumber)
+  const officeInfo = getTransportOfficeByOfficeName(result?.office)
   const categoryList = parseCategoryCodes(result?.category || '')
+
+  const displayOfficeName = officeInfo
+    ? (language === 'ne' ? officeInfo.nameNe : officeInfo.nameEn)
+    : (result?.office && result.office !== 'Unknown'
+        ? result.office
+        : (language === 'ne' ? 'यातायात व्यवस्था विभाग' : 'Department of Transport Management (DOTM)'))
 
   const handleCopyDetails = () => {
     if (!result) return
@@ -65,7 +71,7 @@ export default function LicenseResult({
       `License Number: ${result.license_number}`,
       `Name: ${result.holder_name}`,
       `Status: PRINTED & READY TO COLLECT`,
-      `Office: ${result.office || (officeInfo ? (language === 'ne' ? officeInfo.nameNe : officeInfo.nameEn) : 'DOTM')}`,
+      `Office: ${displayOfficeName}`,
       `Category: ${result.category}`,
       `Verified via: license-checker.acharyanischal.com.np`,
     ].join('\n')
@@ -79,7 +85,7 @@ export default function LicenseResult({
 
   const handleShare = async () => {
     if (!result) return
-    const shareText = `🇳🇵 Nepal Smart Driving License Update:\nLicense No: ${result.license_number}\nHolder: ${result.holder_name}\nStatus: PRINTED & READY TO COLLECT!\nOffice: ${result.office || 'DOTM'}\n\nCheck your license at: https://license-checker.acharyanischal.com.np/?number=${encodeURIComponent(result.license_number)}`
+    const shareText = `🇳🇵 Nepal Smart Driving License Update:\nLicense No: ${result.license_number}\nHolder: ${result.holder_name}\nStatus: PRINTED & READY TO COLLECT!\nOffice: ${displayOfficeName}\n\nCheck your license at: https://license-checker.acharyanischal.com.np/?number=${encodeURIComponent(result.license_number)}`
 
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
@@ -245,9 +251,6 @@ export default function LicenseResult({
       hour: '2-digit',
       minute: '2-digit',
     })
-
-    const displayOfficeName =
-      result.office || (officeInfo ? (language === 'ne' ? officeInfo.nameNe : officeInfo.nameEn) : 'Transport Management Office')
 
     return (
       <>

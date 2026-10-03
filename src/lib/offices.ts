@@ -366,16 +366,319 @@ export const TRANSPORT_OFFICES: Record<string, TransportOffice> = {
     addressEn: 'Gurjudhara, Chandragiri, Kathmandu',
     addressNe: 'गुर्जुधारा, चन्द्रागिरि, काठमाडौं',
   },
+  '26': {
+    code: '26',
+    nameEn: 'TMSO Bardibas (Mahottari)',
+    nameNe: 'यातायात व्यवस्था सेवा कार्यालय (बर्दिबास, महोत्तरी)',
+    locationEn: 'Bardibas, Mahottari',
+    locationNe: 'बर्दिबास, महोत्तरी',
+    provinceEn: 'Madhesh Province',
+    provinceNe: 'मधेश प्रदेश',
+    email: 'info@dotm.gov.np',
+    website: 'https://dotm.gov.np',
+    addressEn: 'Bardibas, Mahottari',
+    addressNe: 'बर्दिबास, महोत्तरी',
+  },
+  '27': {
+    code: '27',
+    nameEn: 'TMSO Kawasoti (Nawalpur)',
+    nameNe: 'यातायात व्यवस्था सेवा कार्यालय (कावासोती, नवलपुर)',
+    locationEn: 'Kawasoti, Nawalpur',
+    locationNe: 'कावासोती, नवलपुर',
+    provinceEn: 'Gandaki Province',
+    provinceNe: 'गण्डकी प्रदेश',
+    email: 'info@dotm.gov.np',
+    website: 'https://dotm.gov.np',
+    addressEn: 'Kawasoti, Nawalparasi East',
+    addressNe: 'कावासोती, नवलपुर',
+  },
+  '28': {
+    code: '28',
+    nameEn: 'TMSO Dumre (Tanahun)',
+    nameNe: 'यातायात व्यवस्था सेवा कार्यालय (डुम्रे, तनहुँ)',
+    locationEn: 'Dumre, Tanahun',
+    locationNe: 'डुम्रे, तनहुँ',
+    provinceEn: 'Gandaki Province',
+    provinceNe: 'गण्डकी प्रदेश',
+    email: 'info@dotm.gov.np',
+    website: 'https://dotm.gov.np',
+    addressEn: 'Bandipur / Dumre, Tanahun',
+    addressNe: 'डुम्रे, बन्दीपुर, तनहुँ',
+  },
+  '29': {
+    code: '29',
+    nameEn: 'TMSO Gaur (Rautahat)',
+    nameNe: 'यातायात व्यवस्था सेवा कार्यालय (गौर, रौतहट)',
+    locationEn: 'Gaur, Rautahat',
+    locationNe: 'गौर, रौतहट',
+    provinceEn: 'Madhesh Province',
+    provinceNe: 'मधेश प्रदेश',
+    email: 'info@dotm.gov.np',
+    website: 'https://dotm.gov.np',
+    addressEn: 'Gaur Bazaar, Rautahat',
+    addressNe: 'गौर बजार, रौतहट',
+  },
+  '30': {
+    code: '30',
+    nameEn: 'TMSO Sarlahi (Malangwa)',
+    nameNe: 'यातायात व्यवस्था सेवा कार्यालय (मलङ्गवा, सर्लाही)',
+    locationEn: 'Malangwa, Sarlahi',
+    locationNe: 'मलङ्गवा, सर्लाही',
+    provinceEn: 'Madhesh Province',
+    provinceNe: 'मधेश प्रदेश',
+    email: 'info@dotm.gov.np',
+    website: 'https://dotm.gov.np',
+    addressEn: 'Malangwa, Sarlahi',
+    addressNe: 'मलङ्गवा, सर्लाही',
+  },
+  '31': {
+    code: '31',
+    nameEn: 'TMO Nawalparasi (Parasi)',
+    nameNe: 'यातायात व्यवस्था कार्यालय (परासी, नवलपरासी)',
+    locationEn: 'Parasi, Nawalparasi West',
+    locationNe: 'परासी, नवलपरासी (सुस्ता पश्चिम)',
+    provinceEn: 'Lumbini Province',
+    provinceNe: 'लुम्बिनी प्रदेश',
+    email: 'info@dotm.gov.np',
+    website: 'https://dotm.gov.np',
+    addressEn: 'Ramgram, Parasi, Nawalparasi West',
+    addressNe: 'रामग्राम, परासी, नवलपरासी पश्चिम',
+  },
+  '32': {
+    code: '32',
+    nameEn: 'TMSO Palpa (Tansen)',
+    nameNe: 'यातायात व्यवस्था सेवा कार्यालय (तानसेन, पाल्पा)',
+    locationEn: 'Tansen, Palpa',
+    locationNe: 'तानसेन, पाल्पा',
+    provinceEn: 'Lumbini Province',
+    provinceNe: 'लुम्बिनी प्रदेश',
+    email: 'info@dotm.gov.np',
+    website: 'https://dotm.gov.np',
+    addressEn: 'Tansen Bazaar, Palpa',
+    addressNe: 'तानसेन बजार, पाल्पा',
+  },
+  '33': {
+    code: '33',
+    nameEn: 'TMSO Banepa (Kavre)',
+    nameNe: 'यातायात व्यवस्था सेवा कार्यालय (बनेपा, काभ्रे)',
+    locationEn: 'Banepa, Kavrepalanchok',
+    locationNe: 'बनेपा, काभ्रेपलाञ्चोक',
+    provinceEn: 'Bagmati Province',
+    provinceNe: 'बागमती प्रदेश',
+    email: 'info@dotm.gov.np',
+    website: 'https://dotm.gov.np',
+    addressEn: 'Banepa, Kavrepalanchok',
+    addressNe: 'बनेपा, काभ्रेपलाञ्चोक',
+  },
+  '34': {
+    code: '34',
+    nameEn: 'TMSO Saptari (Rajbiraj)',
+    nameNe: 'यातायात व्यवस्था सेवा कार्यालय (राजविराज, सप्तरी)',
+    locationEn: 'Rajbiraj, Saptari',
+    locationNe: 'राजविराज, सप्तरी',
+    provinceEn: 'Madhesh Province',
+    provinceNe: 'मधेश प्रदेश',
+    email: 'info@dotm.gov.np',
+    website: 'https://dotm.gov.np',
+    addressEn: 'Rajbiraj, Saptari',
+    addressNe: 'राजविराज, सप्तरी',
+  },
+  '35': {
+    code: '35',
+    nameEn: 'TMSO Gaighat (Udayapur)',
+    nameNe: 'यातायात व्यवस्था सेवा कार्यालय (गाईघाट, उदयपुर)',
+    locationEn: 'Gaighat, Udayapur',
+    locationNe: 'गाईघाट, उदयपुर',
+    provinceEn: 'Koshi Province',
+    provinceNe: 'कोशी प्रदेश',
+    email: 'info@dotm.gov.np',
+    website: 'https://dotm.gov.np',
+    addressEn: 'Gaighat, Triyuga, Udayapur',
+    addressNe: 'गाईघाट, त्रियुगा, उदयपुर',
+  },
+  '36': {
+    code: '36',
+    nameEn: 'TMSO Dhankuta',
+    nameNe: 'यातायात व्यवस्था सेवा कार्यालय (धनकुटा)',
+    locationEn: 'Dhankuta',
+    locationNe: 'धनकुटा',
+    provinceEn: 'Koshi Province',
+    provinceNe: 'कोशी प्रदेश',
+    email: 'info@dotm.gov.np',
+    website: 'https://dotm.gov.np',
+    addressEn: 'Dhankuta Bazaar, Dhankuta',
+    addressNe: 'धनकुटा बजार, धनकुटा',
+  },
+  '37': {
+    code: '37',
+    nameEn: 'TMSO Khurkot (Sindhuli)',
+    nameNe: 'यातायात व्यवस्था सेवा कार्यालय (खूर्कोट, सिन्धुली)',
+    locationEn: 'Khurkot, Sindhuli',
+    locationNe: 'खूर्कोट, सिन्धुली',
+    provinceEn: 'Bagmati Province',
+    provinceNe: 'बागमती प्रदेश',
+    email: 'info@dotm.gov.np',
+    website: 'https://dotm.gov.np',
+    addressEn: 'Khurkot, Golanjor, Sindhuli',
+    addressNe: 'खूर्कोट, गोलन्जोर, सिन्धुली',
+  },
+  '38': {
+    code: '38',
+    nameEn: 'TMSO Dadeldhura',
+    nameNe: 'यातायात व्यवस्था सेवा कार्यालय (डडेल्धुरा)',
+    locationEn: 'Dadeldhura',
+    locationNe: 'डडेल्धुरा',
+    provinceEn: 'Sudurpashchim Province',
+    provinceNe: 'सुदूरपश्चिम प्रदेश',
+    email: 'info@dotm.gov.np',
+    website: 'https://dotm.gov.np',
+    addressEn: 'Amargadhi, Dadeldhura',
+    addressNe: 'अमरगढी, डडेल्धुरा',
+  },
+  '39': {
+    code: '39',
+    nameEn: 'TMSO Rukum (Musikot)',
+    nameNe: 'यातायात व्यवस्था सेवा कार्यालय (रुकुम)',
+    locationEn: 'Musikot, Rukum West',
+    locationNe: 'मुसिकोट, रुकुम पश्चिम',
+    provinceEn: 'Karnali Province',
+    provinceNe: 'कर्णाली प्रदेश',
+    email: 'info@dotm.gov.np',
+    website: 'https://dotm.gov.np',
+    addressEn: 'Musikot, Rukum West',
+    addressNe: 'मुसिकोट, रुकुम पश्चिम',
+  },
 }
 
 /**
- * Given a license number (e.g. "01-01-12345678"), extract the first 2 digits
- * and return the matching transport office if known.
+ * Match a raw office name or code from the database record (e.g. "JHAPA", "Thulobharyang",
+ * "RADHERADHE", "KALAIYA", "ITAHARI") to the verified TransportOffice directory entry.
  */
-export function getTransportOfficeByLicense(licenseNumber: string): TransportOffice | null {
-  if (!licenseNumber) return null
-  const code = licenseNumber.slice(0, 2)
-  return TRANSPORT_OFFICES[code] || null
+export function getTransportOfficeByOfficeName(rawOffice?: string | null): TransportOffice | null {
+  if (!rawOffice) return null
+  const cleaned = rawOffice.trim().toUpperCase()
+  if (!cleaned || cleaned === 'UNKNOWN' || cleaned === 'DOTM') return null
+
+  // 1. Direct code lookup if numeric
+  if (TRANSPORT_OFFICES[cleaned]) return TRANSPORT_OFFICES[cleaned]
+
+  // 2. Canonical mapping of database office values to office codes
+  const aliasToCode: Record<string, string> = {
+    JHAPA: '16',
+    BIRTAMOD: '16',
+    BIRTAMODE: '16',
+    THULOBHARYANG: '02',
+    'THULO BHARYANG': '02',
+    SWAYAMBHU: '02',
+    CHABAHIL: '03',
+    SUKEDHARA: '03',
+    RADHERADHE: '04',
+    'RADHE RADHE': '04',
+    JAGATI: '04',
+    BHAKTAPUR: '04',
+    ITAHARI: '05',
+    SUNSARI: '05',
+    POKHARA: '06',
+    KASKI: '06',
+    BUTWAL: '07',
+    RUPANDEHI: '07',
+    BIRGUNJ: '08',
+    PARSA: '08',
+    JANAKPUR: '09',
+    JANAKPURDHAM: '09',
+    DHANUSHA: '09',
+    LAHAN: '10',
+    SIRAHA: '10',
+    NEPALGUNJ: '11',
+    BANKE: '11',
+    DHANGADI: '12',
+    DHANGADHI: '12',
+    KAILALI: '12',
+    KANCHANPUR: '13',
+    MAHENDRANAGAR: '13',
+    DANG: '14',
+    TULSIPUR: '14',
+    SURKHET: '15',
+    BIRENDRANAGAR: '15',
+    BAGLUNG: '17',
+    HETAUDA: '18',
+    MAKWANPUR: '18',
+    CHITWAN: '19',
+    BHARATPUR: '19',
+    ILLAM: '20',
+    ILAM: '20',
+    JUMLA: '21',
+    OKHALDHUNGA: '22',
+    DOTI: '23',
+    DIPAYAL: '23',
+    SILGADHI: '23',
+    KALAIYA: '24',
+    BARA: '24',
+    GURJUDHARA: '25',
+    EKANTAKUNA: '01',
+    LALITPUR: '01',
+    BARDIBAS: '26',
+    MAHOTTARI: '26',
+    KAWASOTI: '27',
+    NAWALPUR: '27',
+    DUMRE: '28',
+    TANAHUN: '28',
+    GAUR: '29',
+    RAUTAHAT: '29',
+    SARLAHI: '30',
+    MALANGWA: '30',
+    NAWALPARASI: '31',
+    PARASI: '31',
+    PALPA: '32',
+    TANSEN: '32',
+    BANEPA: '33',
+    KAVRE: '33',
+    KAVREPALANCHOK: '33',
+    SAPTARI: '34',
+    RAJBIRAJ: '34',
+    GAIGHAT: '35',
+    UDAYAPUR: '35',
+    DHANKUTA: '36',
+    KHURKOT: '37',
+    SINDHULI: '37',
+    DADELDHURA: '38',
+    RUKUM: '39',
+  }
+
+  const mappedCode = aliasToCode[cleaned]
+  if (mappedCode && TRANSPORT_OFFICES[mappedCode]) {
+    return TRANSPORT_OFFICES[mappedCode]
+  }
+
+  // 3. Fallback: fuzzy/partial match on alias
+  for (const [alias, code] of Object.entries(aliasToCode)) {
+    if (cleaned.includes(alias) || alias.includes(cleaned)) {
+      if (TRANSPORT_OFFICES[code]) return TRANSPORT_OFFICES[code]
+    }
+  }
+
+  // 4. Fallback: search in English name or location
+  for (const office of Object.values(TRANSPORT_OFFICES)) {
+    if (
+      office.nameEn.toUpperCase().includes(cleaned) ||
+      office.locationEn.toUpperCase().includes(cleaned) ||
+      cleaned.includes(office.locationEn.toUpperCase())
+    ) {
+      return office
+    }
+  }
+
+  return null
+}
+
+/**
+ * Kept for backwards compatibility. Note: In Nepal, the license number prefix (e.g. "01-01-")
+ * does not uniquely identify the issuing transport office; the issuing office is stored in the
+ * database record (see getTransportOfficeByOfficeName).
+ */
+export function getTransportOfficeByLicense(_licenseNumber?: string): TransportOffice | null {
+  void _licenseNumber
+  return null
 }
 
 export function getAllTransportOffices(): TransportOffice[] {

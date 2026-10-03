@@ -3,7 +3,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { validateLicenseNumber, formatLicenseNumber } from '@/utils/validation'
 import { devanagariToAsciiDigits } from '@/utils/sanitize'
-import { getTransportOfficeByLicense } from '@/lib/offices'
 import type { LicenseFormCopy } from '@/lib/i18n'
 
 interface LicenseFormProps {
@@ -22,9 +21,10 @@ export default function LicenseForm({
   onReset,
   loading,
   copy,
-  language = 'en',
+  language: _language = 'en',
   externalNumber,
 }: LicenseFormProps) {
+  void _language
   const [licenseNumber, setLicenseNumber] = useState(() => {
     return externalNumber ? formatLicenseNumber(externalNumber) : ''
   })
@@ -165,7 +165,6 @@ export default function LicenseForm({
 
   const isValid = validateLicenseNumber(licenseNumber)
   const progress = Math.min((licenseNumber.replace(/-/g, '').length / 12) * 100, 100)
-  const detectedOffice = licenseNumber.length >= 2 ? getTransportOfficeByLicense(licenseNumber) : null
 
   return (
     <div className="hover-lift animate-rise-in rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-sm sm:p-6">
@@ -269,24 +268,6 @@ export default function LicenseForm({
                 background: isValid ? 'var(--success)' : error ? 'var(--error)' : 'var(--nepal-blue)',
               }}
             />
-          </div>
-        )}
-
-        {/* Detected Transport Office preview chip */}
-        {detectedOffice && !error && (
-          <div className="flex animate-fade-in items-center gap-2 rounded-lg border border-[var(--nepal-blue)]/20 bg-[var(--nepal-blue-soft)]/60 px-3 py-1.5 text-xs text-[var(--nepal-blue)]">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
-              <path d="M3 21h18" />
-              <path d="M5 21V7l8-4v18" />
-              <path d="M19 21V11l-6-4" />
-              <line x1="9" y1="9" x2="9" y2="9.01" />
-              <line x1="9" y1="13" x2="9" y2="13.01" />
-              <line x1="9" y1="17" x2="9" y2="17.01" />
-            </svg>
-            <span className="font-semibold">{copy.detectedOfficeLabel}</span>
-            <span className="font-medium text-[var(--text-primary)]">
-              {language === 'ne' ? detectedOffice.nameNe : detectedOffice.nameEn} ({language === 'ne' ? detectedOffice.locationNe : detectedOffice.locationEn})
-            </span>
           </div>
         )}
 
