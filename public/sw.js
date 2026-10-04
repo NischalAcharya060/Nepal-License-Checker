@@ -9,7 +9,7 @@
  *  - never cached     : non-GET requests, cross-origin requests, video/audio
  */
 
-const VERSION = 'v2'
+const VERSION = 'v3'
 const PRECACHE = `nlc-precache-${VERSION}`
 const PAGES = `nlc-pages-${VERSION}`
 const ASSETS = `nlc-assets-${VERSION}`
@@ -124,9 +124,9 @@ async function handleApi(request, url) {
   const cacheable = request.method === 'GET' && !url.searchParams.has('_rsc')
 
   try {
-    const response = await fetchWithTimeout(request, undefined, API_TIMEOUT)
+    const response = await fetch(request)
     if (cacheable && response && response.ok) {
-      await putInCache(API, request, response)
+      await putInCache(API, request, response.clone())
       trimCache(API, MAX_API_ENTRIES)
     }
     return response
@@ -201,6 +201,7 @@ async function staleWhileRevalidate(request) {
 }
 
 self.addEventListener('install', (event) => {
+  self.skipWaiting()
   event.waitUntil(
     (async () => {
       const cache = await caches.open(PRECACHE)

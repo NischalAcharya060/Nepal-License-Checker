@@ -191,6 +191,12 @@ export default function Home() {
           return
         }
 
+        if (data?.offline) {
+          toast.error(copy.pwa.offlineMessage)
+          setSearchState('error')
+          return
+        }
+
         if (response.status === 503) {
           window.location.href = '/maintenance'
           return
@@ -200,11 +206,6 @@ export default function Home() {
         const isFromCache = response.headers.get('X-From-Cache') === '1'
 
         if (!response.ok) {
-          if (data?.offline) {
-            toast.error(copy.pwa.offlineMessage)
-            setSearchState('error')
-            return
-          }
           throw new Error(data.error || 'Server error')
         }
 
