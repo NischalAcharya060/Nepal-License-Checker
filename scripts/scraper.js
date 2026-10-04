@@ -422,7 +422,7 @@ class DOTMScraper {
     constructor() {
         this.BASE = 'https://dotm.gov.np';
         this.CATEGORY = `${this.BASE}/category/details-of-printed-licenses/`;
-        this.stats = { scraped: 0, saved: 0, updated: 0, failed: 0, skipped: 0 };
+        this.stats = { scraped: 0, saved: 0, updated: 0, failed: 0, skipped: 0, circuitBreakerTripped: false };
     }
 
     async getPageHTML(url) {
@@ -674,6 +674,12 @@ class DOTMScraper {
 
         let newPdfsCount = 0;
         let skippedPdfsCount = 0;
+        let consecutiveFailures = 0;
+        const maxConsecutiveFailures = Math.max(1, Number(
+            options.maxConsecutiveFailures ||
+            process.env.SCRAPER_CIRCUIT_BREAKER ||
+            5
+        ));
 
         for (let i = 0; i < pdfUrls.length; i++) {
             const pdfUrl = pdfUrls[i];
@@ -693,9 +699,20 @@ class DOTMScraper {
             const result = await this.processPDF(pdfUrl);
             if (!result.success) {
                 this.stats.failed++;
+                consecutiveFailures++;
+
+                if (consecutiveFailures >= maxConsecutiveFailures) {
+                    this.stats.circuitBreakerTripped = true;
+                    console.warn(`\n🛑 [CIRCUIT BREAKER] Tripped after ${consecutiveFailures} consecutive PDF download failures.`);
+                    console.warn(`   Last error encountered: ${result.error || 'Unknown network error'}`);
+                    console.warn(`   The DOTM CDN (giwmscdnone.gov.np) is currently offline or actively dropping connections.`);
+                    console.warn(`   Aborting remaining ${pdfUrls.length - (i + 1)} PDF(s) to avoid hanging and save CI runner minutes.\n`);
+                    break;
+                }
                 continue;
             }
 
+            consecutiveFailures = 0;
             this.stats.scraped += result.licenses.length;
 
             if (result.licenses.length > 0) {
@@ -710,8 +727,11 @@ class DOTMScraper {
 
         const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
         console.log(`\n═══ Done in ${elapsed}s ═══`);
-        console.log(`PDFs: ${pdfUrls.length} total | ${newPdfsCount} processed | ${skippedPdfsCount} skipped (already in DB)`);
+        console.log(`PDFs: ${pdfUrls.length} total | ${newPdfsCount} attempted | ${skippedPdfsCount} skipped (already in DB)`);
         console.log(`Licenses: ${this.stats.scraped} scraped | ${this.stats.saved} saved | ${this.stats.failed} failed`);
+        if (this.stats.circuitBreakerTripped) {
+            console.log(`Status: ⚠️ Aborted early by circuit breaker due to government CDN outage.`);
+        }
 
         try {
             const countRes = await getDb().execute('SELECT COUNT(*) AS total FROM licenses');
@@ -727,7 +747,7 @@ class DOTMScraper {
             console.warn(`Could not update total_records stat: ${e.message}`);
         }
 
-        return true;
+        return !this.stats.circuitBreakerTripped;
     }
 }
 

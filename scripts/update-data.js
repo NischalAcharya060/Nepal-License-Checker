@@ -11,7 +11,9 @@ async function runScraper(options = {}) {
             success,
             message: success
                 ? 'DOTM data updated successfully'
-                : 'Scraper finished with issues (check stats.failed)',
+                : scraper.stats.circuitBreakerTripped
+                    ? 'Scraper stopped early: government CDN is offline (circuit breaker tripped)'
+                    : 'Scraper finished with issues (check stats.failed)',
             timestamp: new Date().toISOString(),
             stats: scraper.stats,
         };
