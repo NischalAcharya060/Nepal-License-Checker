@@ -162,12 +162,19 @@
   50% { box-shadow: 0 0 0 8px rgba(0, 56, 147, 0); }
 }
 
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
+}
+
 .animate-slide-up { animation: slideUp 0.3s ease-out; }
 .animate-fade-in  { animation: fadeIn 0.25s ease-out; }
 .animate-spin-smooth { animation: spin 0.85s linear infinite; }
 .animate-float-soft { animation: floatSoft 4.8s ease-in-out infinite; }
 .animate-rise-in { animation: riseIn 0.35s ease-out both; }
 .animate-glow-pulse { animation: glowPulse 2.4s ease-in-out infinite; }
+.animate-shake { animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
 
 .hover-lift {
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
@@ -185,7 +192,8 @@
   .animate-spin-smooth,
   .animate-float-soft,
   .animate-rise-in,
-  .animate-glow-pulse {
+  .animate-glow-pulse,
+  .animate-shake {
     animation: none !important;
   }
 
