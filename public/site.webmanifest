@@ -48,11 +48,32 @@
   ],
   "screenshots": [
     {
-      "src": "/product-screenshot.png",
+      "src": "/screenshot/iPhone-13-PRO-demo.png",
+      "sizes": "1170x2532",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Search and check license status on mobile"
+    },
+    {
+      "src": "/screenshot/iPhone-13-PRO-search-demo.png",
+      "sizes": "1170x2532",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "License details view on mobile"
+    },
+    {
+      "src": "/screenshot/desktop-demo.png",
       "sizes": "1900x985",
       "type": "image/png",
       "form_factor": "wide",
       "label": "Instant DOTM smart licence print status check"
+    },
+    {
+      "src": "/screenshot/desktop-search-demo.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Desktop search results view"
     }
   ],
   "shortcuts": [
