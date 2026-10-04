@@ -30,6 +30,19 @@ export default function HeroHeader({
   return (
     <>
       <header className="mb-8 text-center sm:mb-10 print:hidden">
+        {/* Waving Nepal flag */}
+        <div className="mb-3 flex justify-center animate-rise-in">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/Nepal-flag.gif"
+            alt=""
+            aria-hidden
+            width={50}
+            height={68}
+            className="h-14 w-auto object-contain drop-shadow-sm"
+          />
+        </div>
+
         {/* Nepal flag accent ribbon */}
         <div className="mb-4 flex items-center justify-center gap-2" aria-hidden>
           <div className="h-1.5 w-12 rounded-l-full bg-[var(--nepal-red)]" />

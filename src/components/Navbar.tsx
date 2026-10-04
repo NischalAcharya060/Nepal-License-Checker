@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import InstallAppButton from '@/components/InstallAppButton'
 import type { Language } from '@/lib/i18n'
 
 export type ThemeMode = 'light' | 'dark'
@@ -193,6 +194,9 @@ export default function Navbar({
       {isMobileMenuOpen && (
         <div className="border-t border-[var(--border-default)]/70 bg-[var(--bg-primary)]/95 backdrop-blur-md px-4 py-3 sm:hidden animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="flex flex-col gap-2">
+            {/* Install App */}
+            <InstallAppButton language={language} variant="tile" />
+
             {/* Offices */}
             <button
               type="button"

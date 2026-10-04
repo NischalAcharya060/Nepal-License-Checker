@@ -22,6 +22,7 @@ Instantly check whether your **Nepal smart card driving license** has been print
 - **100K+ indexed records** — fast lookups served from a Turso (LibSQL) database
 - **Live DOTM fallback** — if a number isn't in the database, the API scrapes the latest DOTM published PDFs on the fly and caches the result
 - **Weekly data sync** — a GitHub Actions cron keeps the indexed list fresh
+- **Installable PWA** — add to home screen on Android/iOS/desktop, works offline, with an offline fallback page and cached recent lookups
 - **SEO-ready** — dual-language sitemap, structured data (FAQPage, HowTo, GovernmentService), and AEO/GEO AI crawler compliance
 
 ## How it works
@@ -109,6 +110,38 @@ Checks a license number against the indexed database, then falls back to a live 
 
 Returns index metadata (`lastUpdated`, `totalRecords`) for display on the home page.
 
+## PWA
+
+The site ships as an installable progressive web app.
+
+| File | Purpose |
+| --- | --- |
+| `public/site.webmanifest` | App name, icons (any + maskable), theme colours, shortcuts |
+| `public/sw.js` | Service worker: offline shell, asset cache, API cache |
+| `public/offline.html` | Fallback page served when a navigation fails offline |
+| `src/components/PwaProvider.tsx` | SW registration, install prompt, update prompts, online/offline state |
+| `src/components/InstallAppButton.tsx` | Navbar install button (native prompt + iOS "Add to Home Screen" guide) |
+| `src/components/OfflineBanner.tsx` | Connection-lost banner |
+
+### Caching strategy
+
+| Request type | Strategy |
+| --- | --- |
+| Navigations | network-first (4s timeout) → cached page → `/offline.html` |
+| `GET /api/*` | network-first (7s timeout) → last successful response (max 60 entries) |
+| `/_next/static/*`, images, fonts | cache-first (content-hashed files never change) |
+| Other same-origin GET | stale-while-revalidate |
+| Non-GET, cross-origin, video/audio | never cached (passes through) |
+
+Cached API responses are tagged with `X-From-Cache: 1`, which the UI uses to warn that a result may be stale. Cache data stays on the device — nothing about a lookup is stored server-side.
+
+### Notes for maintainers
+
+- The service worker is registered in production builds only, so `next dev` never serves stale HMR assets.
+- Bump `VERSION` in `public/sw.js` when you change caching logic — old caches are deleted on activate.
+- `/sw.js` and `/offline.html` are sent with `no-store` in `next.config.ts` so browsers always check for a new worker.
+- To add or resize icons, keep both `purpose: "any"` and `purpose: "maskable"` variants (maskable art needs a full-bleed background with the logo inside the inner 80% safe zone).
+
 ## Project structure
 
 ```
@@ -118,13 +151,17 @@ src/
       license/         # license status lookup (DB + live scrape)
       meta/            # index metadata
       cron/            # protected scraper trigger endpoint
-  components/          # LicenseForm, LicenseResult
+  components/          # LicenseForm, LicenseResult, PwaProvider, …
   lib/                 # turso, i18n, rate limiting, site URL
   types/               # shared TypeScript types
   utils/               # validation, sanitization, helpers
 scripts/
   scraper.js           # DOTM PDF scraper
   update-data.js       # scraper runner (used by cron)
+public/
+  sw.js                # service worker
+  site.webmanifest     # PWA manifest
+  offline.html         # offline fallback
 ```
 
 ## Contributing

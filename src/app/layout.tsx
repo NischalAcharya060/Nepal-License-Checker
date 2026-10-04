@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans, Mukta } from 'next/font/google'
 import './globals.css'
 import { Toaster } from 'react-hot-toast'
 import { getSiteUrl } from '@/lib/siteUrl'
+import { PwaProvider } from '@/components/PwaProvider'
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -443,6 +444,11 @@ export const metadata: Metadata = {
     ],
   },
   manifest: '/site.webmanifest',
+  appleWebApp: {
+    capable: true,
+    title: 'License Checker',
+    statusBarStyle: 'black-translucent',
+  },
   openGraph: {
     title: appTitle,
     description: appDescription,
@@ -804,44 +810,46 @@ export default function RootLayout({
       </head>
 
       <body suppressHydrationWarning>
-        {children}
+        <PwaProvider>
+          {children}
 
-        <Toaster
-          position="top-center"
-          containerClassName="print:hidden"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              fontFamily: "'Plus Jakarta Sans', 'Mukta', sans-serif",
-              fontSize: '14px',
-              fontWeight: '500',
-              borderRadius: '10px',
-              padding: '12px 16px',
-            },
-            success: {
+          <Toaster
+            position="top-center"
+            containerClassName="print:hidden"
+            toastOptions={{
+              duration: 4000,
               style: {
-                background: 'var(--success-bg)',
-                color: 'var(--success)',
-                border: '1px solid var(--success-border)',
+                fontFamily: "'Plus Jakarta Sans', 'Mukta', sans-serif",
+                fontSize: '14px',
+                fontWeight: '500',
+                borderRadius: '10px',
+                padding: '12px 16px',
               },
-              iconTheme: {
-                primary: 'var(--success)',
-                secondary: 'var(--success-bg)',
+              success: {
+                style: {
+                  background: 'var(--success-bg)',
+                  color: 'var(--success)',
+                  border: '1px solid var(--success-border)',
+                },
+                iconTheme: {
+                  primary: 'var(--success)',
+                  secondary: 'var(--success-bg)',
+                },
               },
-            },
-            error: {
-              style: {
-                background: 'var(--error-bg)',
-                color: 'var(--error)',
-                border: '1px solid var(--error-border)',
+              error: {
+                style: {
+                  background: 'var(--error-bg)',
+                  color: 'var(--error)',
+                  border: '1px solid var(--error-border)',
+                },
+                iconTheme: {
+                  primary: 'var(--error)',
+                  secondary: 'var(--error-bg)',
+                },
               },
-              iconTheme: {
-                primary: 'var(--error)',
-                secondary: 'var(--error-bg)',
-              },
-            },
-          }}
-        />
+            }}
+          />
+        </PwaProvider>
       </body>
     </html>
   )

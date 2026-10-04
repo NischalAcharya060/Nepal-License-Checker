@@ -114,10 +114,25 @@ export interface SmsGuideCopy {
   closeLabel: string
 }
 
+export interface PwaCopy {
+  installButton: string
+  installAriaLabel: string
+  installTitle: string
+  installBody: string
+  iosStep1: string
+  iosStep2: string
+  iosNote: string
+  gotItLabel: string
+  offlineTitle: string
+  offlineMessage: string
+  offlineCachedHint: string
+}
+
 export interface UICopy {
   home: HomeCopy
   form: LicenseFormCopy
   result: LicenseResultCopy
   officesModal: OfficesModalCopy
   smsGuide: SmsGuideCopy
+  pwa: PwaCopy
 }

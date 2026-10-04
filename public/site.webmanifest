@@ -1,19 +1,81 @@
 {
+  "id": "/?source=manifest",
   "name": "Nepal License Checker · नेपाल लाइसेन्स जाँच",
   "short_name": "License Checker",
+  "description": "Check whether your Nepal smart card driving license has been printed by DOTM and is ready to collect — offline capable.",
+  "lang": "en-NP",
+  "dir": "ltr",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "orientation": "any",
+  "theme_color": "#003893",
+  "background_color": "#edf1f7",
+  "categories": ["government", "utilities", "productivity"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/android-chrome-192x192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/android-chrome-512x512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/maskable-icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/maskable-icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
     }
   ],
-  "theme_color": "#003893",
-  "background_color": "#ffffff",
-  "display": "standalone"
+  "screenshots": [
+    {
+      "src": "/product-screenshot.png",
+      "sizes": "1900x985",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Instant DOTM smart licence print status check"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Check Licence Status",
+      "short_name": "Check Status",
+      "description": "Search your driving licence number in the DOTM printed list",
+      "url": "/?source=shortcut-status",
+      "icons": [{ "src": "/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "यातायात कार्यालयहरू",
+      "short_name": "कार्यालय",
+      "description": "Transport office codes, addresses and phone numbers",
+      "url": "/?view=offices&source=shortcut",
+      "icons": [{ "src": "/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "DOTM SMS Service",
+      "short_name": "SMS Guide",
+      "description": "Check print status by SMS to 33001, 34949 or 31003",
+      "url": "/?view=sms&source=shortcut",
+      "icons": [{ "src": "/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
 }

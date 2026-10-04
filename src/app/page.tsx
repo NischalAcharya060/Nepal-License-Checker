@@ -14,6 +14,7 @@ import SampleModal from '@/components/SampleModal'
 import OfficesModal from '@/components/OfficesModal'
 import SmsModal from '@/components/SmsModal'
 import ScrollProgressButton from '@/components/ScrollProgressButton'
+import OfflineBanner from '@/components/OfflineBanner'
 import { translations } from '@/lib/i18n'
 import type { Language } from '@/lib/i18n'
 
@@ -38,6 +39,16 @@ function applyLangToDocument(lang: Language) {
   document.documentElement.setAttribute('lang', lang === 'ne' ? 'ne-NP' : 'en-NP')
 }
 
+/** Reads `?view=` once, for PWA app shortcuts that deep-link into a modal. */
+function readViewParam() {
+  if (typeof window === 'undefined') return ''
+  try {
+    return new URLSearchParams(window.location.search).get('view') || ''
+  } catch {
+    return ''
+  }
+}
+
 export default function Home() {
   const [searchState, setSearchState] = useState<SearchState>('idle')
   const [result, setResult] = useState<LicenseData | null>(null)
@@ -59,8 +70,9 @@ export default function Home() {
   const [indexedRecords, setIndexedRecords] = useState<number | null>(null)
   const [viewCount, setViewCount] = useState<number | null>(null)
   const [isSampleModalOpen, setIsSampleModalOpen] = useState(false)
-  const [isOfficesModalOpen, setIsOfficesModalOpen] = useState(false)
-  const [isSmsModalOpen, setIsSmsModalOpen] = useState(false)
+  // Modal deep-links from PWA shortcuts (/?view=offices|sms).
+  const [isOfficesModalOpen, setIsOfficesModalOpen] = useState(() => readViewParam() === 'offices')
+  const [isSmsModalOpen, setIsSmsModalOpen] = useState(() => readViewParam() === 'sms')
   const [language, setLanguage] = useState<Language>(() => {
     if (typeof window === 'undefined') return 'en'
     try {
@@ -84,6 +96,19 @@ export default function Home() {
       return ''
     }
   })
+
+  // Clean up shortcut-only params so a refresh does not reopen a modal.
+  useEffect(() => {
+    try {
+      const url = new URL(window.location.href)
+      if (!url.searchParams.has('view') && !url.searchParams.has('source')) return
+      url.searchParams.delete('view')
+      url.searchParams.delete('source')
+      window.history.replaceState({}, '', url.toString())
+    } catch {
+      // Ignore
+    }
+  }, [])
 
   const copy = translations[language]
 
@@ -189,8 +214,20 @@ export default function Home() {
           return
         }
 
+        // Served by the service worker from cache (offline or stale connection).
+        const isFromCache = response.headers.get('X-From-Cache') === '1'
+
         if (!response.ok) {
+          if (data?.offline) {
+            toast.error(copy.pwa.offlineMessage)
+            setSearchState('error')
+            return
+          }
           throw new Error(data.error || 'Server error')
+        }
+
+        if (isFromCache) {
+          toast(copy.pwa.offlineCachedHint, { icon: '📶' })
         }
 
         if (data.status === 'success' && data.data) {
@@ -204,7 +241,11 @@ export default function Home() {
       } catch (error) {
         console.error('Error checking license:', error)
         setSearchState('error')
-        toast.error(copy.home.toasts.serverError)
+        toast.error(
+          typeof navigator !== 'undefined' && !navigator.onLine
+            ? copy.pwa.offlineMessage
+            : copy.home.toasts.serverError
+        )
       }
     },
     [copy]
@@ -225,6 +266,9 @@ export default function Home() {
 
   return (
     <main className="relative min-h-screen overflow-hidden print:min-h-0 print:overflow-visible print:static">
+      {/* Offline / connection-lost notice */}
+      <OfflineBanner language={language} />
+
       {/* Background ambient blobs */}
       <div className="pointer-events-none absolute inset-0 -z-0 print:hidden">
         <div className="animate-float-soft absolute -top-20 -left-20 h-56 w-56 rounded-full bg-[var(--nepal-blue)]/10 blur-3xl" />

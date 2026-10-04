@@ -138,4 +138,18 @@ export const en: UICopy = {
     carrierNote: 'Standard SMS rates may apply. Works on NTC, Ncell, and Smart Cell. Service provided in coordination with Department of Transport Management.',
     closeLabel: 'Close Guide',
   },
+  pwa: {
+    installButton: 'Install App',
+    installAriaLabel: 'Install Nepal License Checker on this device',
+    installTitle: 'Install this app',
+    installBody:
+      'Add Nepal License Checker to your home screen for instant lookups that keep working when the network drops.',
+    iosStep1: 'Tap the Share button in the Safari toolbar (the square with an arrow).',
+    iosStep2: 'Scroll down and choose "Add to Home Screen", then tap Add.',
+    iosNote: 'Safari does not show an install button, so these two steps are all you need.',
+    gotItLabel: 'Got it',
+    offlineTitle: "You're offline",
+    offlineMessage: 'No internet connection right now. Licence numbers you already checked still work.',
+    offlineCachedHint: 'Cached results may be a few days old — reconnect to confirm the latest DOTM list.',
+  },
 }
