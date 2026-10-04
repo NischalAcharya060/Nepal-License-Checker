@@ -9,7 +9,7 @@
  *  - never cached     : non-GET requests, cross-origin requests, video/audio
  */
 
-const VERSION = 'v1'
+const VERSION = 'v2'
 const PRECACHE = `nlc-precache-${VERSION}`
 const PAGES = `nlc-pages-${VERSION}`
 const ASSETS = `nlc-assets-${VERSION}`
@@ -21,8 +21,8 @@ const OFFLINE_HTML = `<!doctype html><html lang="en"><head><meta charset="utf-8"
 <title>Offline · Nepal License Checker</title></head><body style="font-family:system-ui,sans-serif;padding:2rem;text-align:center">
 <h1>You are offline</h1><p>Open the app once while online to enable offline mode.</p>
 <a href="/">Try again</a></body></html>`
-const NAV_TIMEOUT = 4000
-const API_TIMEOUT = 7000
+const NAV_TIMEOUT = 8000
+const API_TIMEOUT = 15000
 const MAX_API_ENTRIES = 60
 
 const PRECACHE_URLS = [

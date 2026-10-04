@@ -7,7 +7,7 @@ import { License } from '@/types'
  export const dynamic = 'force-dynamic'
  export const runtime = 'nodejs'
 
-const rateLimiter = new RateLimiter(15, 60000) // 15 requests per minute per IP
+const rateLimiter = new RateLimiter(60, 60000) // 60 requests per minute per IP
 
 export async function GET(request: NextRequest) {
     try {
@@ -69,8 +69,14 @@ export async function GET(request: NextRequest) {
             })
         }
 
-        // 2. Not in DB — try live scrape from DOTM
-        const liveResult = await scrapeLicenseLive(licenseNumber)
+        // 2. Not in DB — try live scrape with a 3.5s deadline to avoid Vercel (10s) and Service Worker (7s) timeouts
+        let liveResult: License | null = null
+        try {
+            const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3500))
+            liveResult = await Promise.race([scrapeLicenseLive(licenseNumber), timeoutPromise])
+        } catch {
+            liveResult = null
+        }
 
         if (liveResult) {
             // Save newly discovered license to Turso for future lookups

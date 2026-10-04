@@ -214,6 +214,11 @@ export default function Home() {
           return
         }
 
+        if (response.status === 503) {
+          window.location.href = '/maintenance'
+          return
+        }
+
         // Served by the service worker from cache (offline or stale connection).
         const isFromCache = response.headers.get('X-From-Cache') === '1'
 
