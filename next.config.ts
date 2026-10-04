@@ -1,5 +1,19 @@
+// Set NEXT_PUBLIC_MAINTENANCE=1 to temporarily serve /maintenance at the root.
+// beforeFiles runs ahead of the filesystem, so this wins over src/app/page.tsx.
+// /maintenance itself stays reachable, and /api/* is untouched so the page can
+// poll /api/meta and detect when the database is back.
+const maintenanceMode = process.env.NEXT_PUBLIC_MAINTENANCE === '1'
+
 const nextConfig = {
     devIndicators: false,
+    async rewrites() {
+        if (!maintenanceMode) return []
+        return {
+            beforeFiles: [
+                { source: '/', destination: '/maintenance' },
+            ],
+        }
+    },
     async headers() {
         return [
             {
