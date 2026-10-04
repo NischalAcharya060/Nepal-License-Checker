@@ -133,7 +133,7 @@ export default function Home() {
         const viewMethod = hasCounted ? 'GET' : 'POST'
 
         const [metaRes, viewRes] = await Promise.all([
-          fetch('/api/meta', { cache: 'no-store' }).catch(() => null),
+          fetch('/api/meta').catch(() => null),
           fetch('/api/views', { method: viewMethod, cache: 'no-store' }).catch(() => null),
         ])
 

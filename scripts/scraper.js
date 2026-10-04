@@ -712,6 +712,21 @@ class DOTMScraper {
         console.log(`\n═══ Done in ${elapsed}s ═══`);
         console.log(`PDFs: ${pdfUrls.length} total | ${newPdfsCount} processed | ${skippedPdfsCount} skipped (already in DB)`);
         console.log(`Licenses: ${this.stats.scraped} scraped | ${this.stats.saved} saved | ${this.stats.failed} failed`);
+
+        try {
+            const countRes = await getDb().execute('SELECT COUNT(*) AS total FROM licenses');
+            const total = Number(countRes.rows[0]?.total || 0);
+            await getDb().execute({
+                sql: `INSERT INTO site_stats (key, value, updated_at)
+                      VALUES ('total_records', ?, ?)
+                      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+                args: [total, Date.now()],
+            });
+            console.log(`Updated site_stats total_records: ${total}`);
+        } catch (e) {
+            console.warn(`Could not update total_records stat: ${e.message}`);
+        }
+
         return true;
     }
 }
