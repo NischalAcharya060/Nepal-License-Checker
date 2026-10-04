@@ -7,9 +7,7 @@ import { VEHICLE_CATEGORIES } from '@/lib/categories'
 
 interface FooterProps {
   language: Language
-  viewCount: number | null
   dateLocale: string
-  totalViewsLabel: string
   developerCreditLabel: string
   onOpenOffices: () => void
   onOpenSms: () => void
@@ -21,9 +19,7 @@ interface FooterProps {
 
 export default function Footer({
   language,
-  viewCount,
   dateLocale,
-  totalViewsLabel,
   developerCreditLabel,
   onOpenOffices,
   onOpenSms,
@@ -469,16 +465,6 @@ export default function Footer({
 
           {/* Right: Live Stats Badges */}
           <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2">
-            {viewCount !== null && (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1 font-medium text-[var(--text-secondary)] shadow-2xs">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                  <circle cx="12" cy="12" r="3" />
-                </svg>
-                <span>{viewCount.toLocaleString(dateLocale)} {totalViewsLabel}</span>
-              </span>
-            )}
-
             {typeof indexedRecords === 'number' && (
               <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1 font-medium text-[var(--text-secondary)] shadow-2xs">
                 <span className="h-1.5 w-1.5 rounded-full bg-[var(--success)]" />

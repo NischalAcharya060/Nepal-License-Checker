@@ -9,7 +9,6 @@ let cachedMetadata: {
   data: {
     lastUpdated: string | null
     totalRecords: number
-    totalViews: number
   }
   cachedAt: number
 } | null = null
@@ -32,27 +31,20 @@ export async function GET() {
 
     const db = getTurso()
 
-    // 1. Fast read from site_stats (reads only 2 rows instead of a 1.2M row full table scan)
-    let totalRecords = 1186574
-    let totalViews = 0
+    // 1. Fast read from site_stats (reads only 1 row instead of a 1.2M row full table scan)
+    let totalRecords = 1185710
     let lastUpdatedMs = 0
 
     try {
       const statsRes = await db.execute(
-        "SELECT key, value, updated_at FROM site_stats WHERE key IN ('total_records', 'page_views')"
+        "SELECT key, value, updated_at FROM site_stats WHERE key = 'total_records' LIMIT 1"
       )
 
-      for (const row of statsRes.rows) {
-        if (row.key === 'total_records') {
-          totalRecords = Number(row.value)
-          lastUpdatedMs = Math.max(lastUpdatedMs, Number(row.updated_at || 0))
-        } else if (row.key === 'page_views') {
-          totalViews = Number(row.value)
-        }
-      }
-
-      // If total_records was never recorded in site_stats, do a single fallback count and save it
-      if (!statsRes.rows.some((r) => r.key === 'total_records')) {
+      if (statsRes.rows.length > 0) {
+        totalRecords = Number(statsRes.rows[0].value)
+        lastUpdatedMs = Number(statsRes.rows[0].updated_at || 0)
+      } else {
+        // If total_records was never recorded in site_stats, do a single fallback count and save it
         const countRes = await db.execute(
           'SELECT MAX(updated_at) AS last_updated, COUNT(*) AS total_records FROM licenses'
         )
@@ -78,7 +70,6 @@ export async function GET() {
           ? new Date(lastUpdatedMs).toISOString()
           : null,
       totalRecords,
-      totalViews,
     }
 
     cachedMetadata = { data: payload, cachedAt: now }

@@ -31,8 +31,6 @@ export const en: UICopy = {
     ],
     footerPrefix: 'Official records mirrored from',
     footerSuffix: 'DOTM, Nepal',
-    viewsLabel: 'Views',
-    totalViewsLabel: 'Total Views',
     developerCreditLabel: 'Developed by',
     developerPortfolioLabel: 'Portfolio',
     toasts: {
