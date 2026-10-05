@@ -135,10 +135,13 @@ export default function AdminPage() {
         }
     }, [isAuthenticated, page, limit, searchFilter, statusFilter, refreshKey])
 
-    // 3. Auto-refresh polling every 12 seconds
+    // 3. Auto-refresh polling every 12 seconds (pauses when browser tab is hidden/inactive)
     useEffect(() => {
         if (!isAuthenticated || !autoRefresh) return
         const timer = setInterval(() => {
+            if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+                return
+            }
             setRefreshKey((k) => k + 1)
         }, 12000)
         return () => clearInterval(timer)

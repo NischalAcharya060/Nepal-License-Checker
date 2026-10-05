@@ -79,6 +79,16 @@ export async function logSearch(entry: {
                 now,
             ],
         })
+
+        // Rolling retention: keep search_logs lean by pruning entries outside the latest 2,000 rows (~5% probability)
+        if (Math.random() < 0.05) {
+            db.execute(`
+                DELETE FROM search_logs
+                WHERE id NOT IN (
+                    SELECT id FROM search_logs ORDER BY created_at DESC LIMIT 2000
+                )
+            `).catch(() => {})
+        }
     } catch (err) {
         console.error('Failed to record search log in background:', err)
     }

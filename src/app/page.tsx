@@ -206,6 +206,38 @@ export default function Home() {
 
   const checkLicense = useCallback(
     async (licenseNumber: string) => {
+      const now = Date.now()
+
+      // If currently locked out, prevent searching
+      if (lockoutUntil && now < lockoutUntil) {
+        return
+      }
+
+      // Client-side spam guard: prevents spamming searches even when Vercel Edge CDN caches duplicate queries
+      try {
+        const rawHistory = window.sessionStorage.getItem('nepal_license_client_searches')
+        const history: number[] = rawHistory ? JSON.parse(rawHistory) : []
+        const activeHistory = history.filter((ts) => now - ts < 60000)
+        activeHistory.push(now)
+
+        if (activeHistory.length > 15) {
+          const lockoutDurationMs = 5 * 60 * 1000 // 5 minutes penalty
+          const until = now + lockoutDurationMs
+          setLockoutUntil(until)
+          window.sessionStorage.setItem('nepal_license_lockout_until', String(until))
+          window.sessionStorage.removeItem('nepal_license_client_searches')
+
+          const rateMsg = copy.home.toasts.rateLimit
+          toast.error(rateMsg, { duration: 6000 })
+          setSearchState('error')
+          return
+        }
+
+        window.sessionStorage.setItem('nepal_license_client_searches', JSON.stringify(activeHistory))
+      } catch {
+        // Ignore storage errors
+      }
+
       setSearchState('loading')
       setResult(null)
       setLastSearched(licenseNumber)
@@ -278,7 +310,7 @@ export default function Home() {
         )
       }
     },
-    [copy]
+    [copy, lockoutUntil]
   )
 
   const reset = useCallback(() => {
