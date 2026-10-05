@@ -6,20 +6,33 @@ import { sanitizeInput } from '@/utils/sanitize'
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
-const rateLimiter = new RateLimiter(60, 60000) // 60 requests per minute per IP
+// Allow up to 15 searches per minute. If exceeded, lock out the IP for 5 minutes (300,000ms).
+const rateLimiter = new RateLimiter(15, 60000, 300000)
 
 export async function GET(request: NextRequest) {
     try {
-        // Rate limiting
+        // Rate limiting with 5-minute spam lockout penalty
         const ip =
             request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
             request.headers.get('x-real-ip') ||
             'anonymous'
 
-        if (!rateLimiter.check(ip)) {
+        const rateStatus = rateLimiter.checkLimit(ip)
+        if (!rateStatus.allowed) {
+            const minutes = Math.ceil(rateStatus.retryAfter / 60)
+            const waitMsg = minutes > 1 ? `${minutes} minutes` : `${rateStatus.retryAfter} seconds`
             return NextResponse.json(
-                { error: 'Rate limit exceeded. Please wait a moment before trying again.', retryAfter: 60 },
-                { status: 429, headers: { 'Retry-After': '60' } }
+                {
+                    error: `Too many searches. Please wait ${waitMsg} before searching again.`,
+                    retryAfter: rateStatus.retryAfter,
+                },
+                {
+                    status: 429,
+                    headers: {
+                        'Retry-After': String(rateStatus.retryAfter),
+                        'Cache-Control': 'no-store, no-cache',
+                    },
+                }
             )
         }
 
@@ -54,26 +67,40 @@ export async function GET(request: NextRequest) {
 
         if (result.rows.length) {
             const row = result.rows[0] as unknown as LicenseRow
-            return NextResponse.json({
-                status: 'success',
-                source: 'database',
-                data: {
-                    holder_name: row.holder_name,
-                    license_number: row.license_number,
-                    office: row.office,
-                    category: row.category,
-                    createdAt: new Date(Number(row.created_at)),
-                    updatedAt: new Date(Number(row.updated_at)),
+            return NextResponse.json(
+                {
+                    status: 'success',
+                    source: 'database',
+                    data: {
+                        holder_name: row.holder_name,
+                        license_number: row.license_number,
+                        office: row.office,
+                        category: row.category,
+                        createdAt: new Date(Number(row.created_at)),
+                        updatedAt: new Date(Number(row.updated_at)),
+                    },
                 },
-            })
+                {
+                    headers: {
+                        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+                    },
+                }
+            )
         }
 
         // Not found in database — card is not printed yet
-        return NextResponse.json({
-            status: 'success',
-            data: null,
-            message: 'License not found in printed records',
-        })
+        return NextResponse.json(
+            {
+                status: 'success',
+                data: null,
+                message: 'License not found in printed records',
+            },
+            {
+                headers: {
+                    'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+                },
+            }
+        )
 
     } catch (error) {
         console.error('API Error:', error)

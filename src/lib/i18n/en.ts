@@ -36,7 +36,7 @@ export const en: UICopy = {
     developerCreditLabel: 'Developed by',
     developerPortfolioLabel: 'Portfolio',
     toasts: {
-      rateLimit: 'Too many queries. Please wait a minute before searching again.',
+      rateLimit: 'Too many queries. Please wait a few minutes before searching again.',
       serverError: 'Service temporarily busy. Please try again.',
       found: 'Success! Your smart card license is printed.',
       notFound: 'License number is not in the latest published printed list.',

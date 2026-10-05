@@ -141,6 +141,7 @@ export default function LicenseForm({
   }
 
   const handleSelectRecent = (num: string) => {
+    if (loading) return
     setLicenseNumber(num)
     setError('')
     onSubmit(num)
@@ -148,6 +149,7 @@ export default function LicenseForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (loading) return
     if (!licenseNumber) {
       setError(copy.errors.required)
       return

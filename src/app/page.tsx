@@ -209,7 +209,8 @@ export default function Home() {
         const data = await response.json()
 
         if (response.status === 429) {
-          toast.error(copy.home.toasts.rateLimit)
+          const rateMsg = data?.error || copy.home.toasts.rateLimit
+          toast.error(rateMsg, { duration: 6000 })
           setSearchState('error')
           return
         }
