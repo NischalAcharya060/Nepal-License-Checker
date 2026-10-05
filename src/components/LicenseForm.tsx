@@ -12,6 +12,7 @@ interface LicenseFormProps {
   copy: LicenseFormCopy
   language?: 'en' | 'ne'
   externalNumber?: string
+  lockoutUntil?: number | null
 }
 
 const RECENT_SEARCHES_KEY = 'nepal_license_recent_history_v1'
@@ -21,10 +22,43 @@ export default function LicenseForm({
   onReset,
   loading,
   copy,
-  language: _language = 'en',
+  language = 'en',
   externalNumber,
+  lockoutUntil,
 }: LicenseFormProps) {
-  void _language
+  const [now, setNow] = useState(() => Date.now())
+
+  useEffect(() => {
+    if (!lockoutUntil || lockoutUntil <= Date.now()) {
+      return
+    }
+
+    const timer = setInterval(() => {
+      const current = Date.now()
+      setNow(current)
+      if (current >= lockoutUntil) {
+        clearInterval(timer)
+        try {
+          window.sessionStorage.removeItem('nepal_license_lockout_until')
+        } catch {
+          // Ignore
+        }
+      }
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [lockoutUntil])
+
+  const formatCountdown = (totalSecs: number) => {
+    const mins = Math.floor(totalSecs / 60)
+    const secs = totalSecs % 60
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`
+  }
+
+  const remainingSeconds = lockoutUntil ? Math.max(0, Math.ceil((lockoutUntil - now) / 1000)) : 0
+  const isLockedOut = remainingSeconds > 0
+  const countdownText = formatCountdown(remainingSeconds)
+
   const [licenseNumber, setLicenseNumber] = useState(() => {
     return externalNumber ? formatLicenseNumber(externalNumber) : ''
   })
@@ -141,7 +175,7 @@ export default function LicenseForm({
   }
 
   const handleSelectRecent = (num: string) => {
-    if (loading) return
+    if (loading || isLockedOut) return
     setLicenseNumber(num)
     setError('')
     onSubmit(num)
@@ -149,7 +183,7 @@ export default function LicenseForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (loading) return
+    if (loading || isLockedOut) return
     if (!licenseNumber) {
       setError(copy.errors.required)
       return
@@ -240,10 +274,18 @@ export default function LicenseForm({
 
           <button
             type="submit"
-            disabled={loading || !!error || !licenseNumber}
+            disabled={loading || isLockedOut || !!error || !licenseNumber}
             className="inline-flex h-12 min-w-[150px] items-center justify-center gap-2 rounded-xl bg-[var(--nepal-blue)] px-5 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[var(--nepal-blue-mid)] hover:shadow-md active:translate-y-0 disabled:cursor-not-allowed disabled:bg-[var(--text-muted)] disabled:shadow-none sm:h-[52px]"
           >
-            {loading ? (
+            {isLockedOut ? (
+              <span className="flex items-center gap-1.5 font-mono text-white/95">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="animate-pulse">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+                <span>{language === 'ne' ? `पर्खनुहोस् (${countdownText})` : `Wait (${countdownText})`}</span>
+              </span>
+            ) : loading ? (
               <>
                 <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                 <span>{copy.checkingLabel}</span>
@@ -274,7 +316,20 @@ export default function LicenseForm({
         )}
 
         {/* Errors, Loading Messages & Format Hints */}
-        {error ? (
+        {isLockedOut ? (
+          <div className="flex items-center gap-2 rounded-xl border border-[var(--warning-border)] bg-[var(--warning-bg)] p-2.5 text-xs font-semibold text-[var(--warning-text)] animate-fade-in">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-[var(--warning-text)]">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <span>
+              {language === 'ne'
+                ? `धेरै खोजी प्रयास भयो। अर्को खोजी गर्न कृपया ${countdownText} मिनेट पर्खनुहोस्।`
+                : `Rate limit active. Please wait ${countdownText} before submitting another search.`}
+            </span>
+          </div>
+        ) : error ? (
           <p className="flex items-center gap-1.5 text-xs font-semibold text-[var(--error)] animate-fade-in">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10" />
@@ -337,8 +392,9 @@ export default function LicenseForm({
                 <button
                   key={num}
                   type="button"
+                  disabled={isLockedOut}
                   onClick={() => handleSelectRecent(num)}
-                  className="inline-flex items-center gap-1 rounded-full border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2.5 py-1 font-mono text-[11px] font-medium text-[var(--text-secondary)] transition hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue-soft)] hover:text-[var(--nepal-blue)]"
+                  className="inline-flex items-center gap-1 rounded-full border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2.5 py-1 font-mono text-[11px] font-medium text-[var(--text-secondary)] transition hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue-soft)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <span>{num}</span>
                 </button>

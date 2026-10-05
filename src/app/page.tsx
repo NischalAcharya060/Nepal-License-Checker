@@ -96,6 +96,21 @@ export default function Home() {
       return ''
     }
   })
+  const [lockoutUntil, setLockoutUntil] = useState<number | null>(() => {
+    if (typeof window === 'undefined') return null
+    try {
+      const stored = window.sessionStorage.getItem('nepal_license_lockout_until')
+      if (stored) {
+        const parsed = parseInt(stored, 10)
+        if (!isNaN(parsed) && parsed > Date.now()) {
+          return parsed
+        }
+      }
+    } catch {
+      // Ignore
+    }
+    return null
+  })
 
   // Clean up shortcut-only params so a refresh does not reopen a modal.
   useEffect(() => {
@@ -209,6 +224,14 @@ export default function Home() {
         const data = await response.json()
 
         if (response.status === 429) {
+          const retryAfterSec = typeof data?.retryAfter === 'number' ? data.retryAfter : 300
+          const until = Date.now() + retryAfterSec * 1000
+          setLockoutUntil(until)
+          try {
+            window.sessionStorage.setItem('nepal_license_lockout_until', String(until))
+          } catch {
+            // Ignore
+          }
           const rateMsg = data?.error || copy.home.toasts.rateLimit
           toast.error(rateMsg, { duration: 6000 })
           setSearchState('error')
@@ -328,6 +351,7 @@ export default function Home() {
             copy={copy.form}
             language={language}
             externalNumber={externalNumber}
+            lockoutUntil={lockoutUntil}
           />
         </div>
 
