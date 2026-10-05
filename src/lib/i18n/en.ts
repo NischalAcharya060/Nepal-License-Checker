@@ -148,8 +148,8 @@ export const en: UICopy = {
     iosStep2: 'Scroll down and choose "Add to Home Screen", then tap Add.',
     iosNote: 'Safari does not show an install button, so these two steps are all you need.',
     gotItLabel: 'Got it',
-    offlineTitle: "You're offline",
-    offlineMessage: 'No internet connection right now. Licence numbers you already checked still work.',
-    offlineCachedHint: 'Cached results may be a few days old — reconnect to confirm the latest DOTM list.',
+    offlineTitle: "You're Currently Offline",
+    offlineMessage: 'An active internet connection is required to check driving license print records.',
+    offlineCachedHint: 'Please connect to Wi-Fi or mobile data to search. The app will reconnect automatically.',
   },
 }

@@ -48,9 +48,15 @@ export default function OfflineBanner({ language }: { language: Language }) {
         </svg>
 
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-bold text-[var(--warning-text)]">{copy.offlineTitle}</p>
-          <p className="text-[11px] leading-4 text-[var(--warning-text)]/90">
-            {copy.offlineMessage} <span className="opacity-80">{copy.offlineCachedHint}</span>
+          <div className="flex items-center gap-2">
+            <p className="text-xs font-bold text-[var(--warning-text)]">{copy.offlineTitle}</p>
+            <span className="inline-flex h-1.5 w-1.5 rounded-full bg-[var(--warning-text)]/70 animate-pulse" />
+          </div>
+          <p className="mt-0.5 text-[11px] leading-4 text-[var(--warning-text)]/95 font-medium">
+            {copy.offlineMessage}
+          </p>
+          <p className="mt-0.5 text-[10px] text-[var(--warning-text)]/75">
+            {copy.offlineCachedHint}
           </p>
         </div>
 
