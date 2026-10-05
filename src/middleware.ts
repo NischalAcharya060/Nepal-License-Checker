@@ -10,6 +10,9 @@ const PUBLIC_PATHS = new Set([
     '/maintenance/login',
     '/api/maintenance/auth',
     '/api/maintenance/status',
+    '/admin',
+    '/api/admin/auth',
+    '/api/admin/logs',
 ])
 
 export async function middleware(request: NextRequest) {

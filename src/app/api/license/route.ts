@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getTurso, type LicenseRow } from '@/lib/turso'
 import { RateLimiter } from '@/lib/rateLimit'
 import { sanitizeInput } from '@/utils/sanitize'
+import { extractGeo } from '@/lib/geo'
+import { logSearch } from '@/lib/searchLogger'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -12,10 +14,8 @@ const rateLimiter = new RateLimiter(15, 60000, 300000)
 export async function GET(request: NextRequest) {
     try {
         // Rate limiting with 5-minute spam lockout penalty
-        const ip =
-            request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
-            request.headers.get('x-real-ip') ||
-            'anonymous'
+        const geo = extractGeo(request)
+        const ip = geo.ip
 
         const rateStatus = rateLimiter.checkLimit(ip)
         if (!rateStatus.allowed) {
@@ -67,6 +67,21 @@ export async function GET(request: NextRequest) {
 
         if (result.rows.length) {
             const row = result.rows[0] as unknown as LicenseRow
+
+            // Record search log asynchronously in background
+            logSearch({
+                license_number: licenseNumber,
+                status: 'found',
+                holder_name: row.holder_name,
+                office: row.office,
+                category: row.category,
+                ip: geo.ip,
+                country: geo.country,
+                city: geo.city,
+                region: geo.region,
+                user_agent: request.headers.get('user-agent'),
+            }).catch(() => {})
+
             return NextResponse.json(
                 {
                     status: 'success',
@@ -89,6 +104,17 @@ export async function GET(request: NextRequest) {
         }
 
         // Not found in database — card is not printed yet
+        // Record search log asynchronously in background
+        logSearch({
+            license_number: licenseNumber,
+            status: 'not_found',
+            ip: geo.ip,
+            country: geo.country,
+            city: geo.city,
+            region: geo.region,
+            user_agent: request.headers.get('user-agent'),
+        }).catch(() => {})
+
         return NextResponse.json(
             {
                 status: 'success',

@@ -12,13 +12,13 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: '*',
         allow: '/',
         // Only block private APIs; NEVER block /_next/ so search engines can render CSS and JS
-        disallow: ['/api/'],
+        disallow: ['/api/', '/admin', '/maintenance'],
       },
       // Major Search Engine Crawlers
       {
         userAgent: ['Googlebot', 'Bingbot', 'Applebot', 'YandexBot', 'DuckDuckBot', 'Baiduspider'],
         allow: '/',
-        disallow: ['/api/'],
+        disallow: ['/api/', '/admin', '/maintenance'],
       },
       // AI Crawlers & Answer Engines (AEO / GEO for citations)
       {
@@ -34,7 +34,7 @@ export default function robots(): MetadataRoute.Robots {
           'CCBot',
         ],
         allow: '/',
-        disallow: ['/api/'],
+        disallow: ['/api/', '/admin', '/maintenance'],
       },
     ],
     sitemap: `${siteUrl}/sitemap.xml`,
