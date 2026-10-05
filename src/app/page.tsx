@@ -68,6 +68,7 @@ export default function Home() {
   })
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null)
   const [indexedRecords, setIndexedRecords] = useState<number | null>(null)
+  const [viewCount, setViewCount] = useState<number | null>(null)
   const [isSampleModalOpen, setIsSampleModalOpen] = useState(false)
   // Modal deep-links from PWA shortcuts (/?view=offices|sms).
   const [isOfficesModalOpen, setIsOfficesModalOpen] = useState(() => readViewParam() === 'offices')
@@ -124,9 +125,18 @@ export default function Home() {
   useEffect(() => {
     let cancelled = false
 
-    const loadMeta = async () => {
+    const loadMetaAndViews = async () => {
       try {
-        const metaRes = await fetch('/api/meta').catch(() => null)
+        const hasCounted =
+          typeof window !== 'undefined' &&
+          window.sessionStorage.getItem('nepal_license_view_counted') === '1'
+        const viewMethod = hasCounted ? 'GET' : 'POST'
+
+        const [metaRes, viewRes] = await Promise.all([
+          fetch('/api/meta').catch(() => null),
+          fetch('/api/views', { method: viewMethod, cache: 'no-store' }).catch(() => null),
+        ])
+
         if (cancelled) return
 
         if (metaRes && metaRes.ok) {
@@ -138,6 +148,19 @@ export default function Home() {
                 ? metaPayload.data.totalRecords
                 : null
             )
+            if (typeof metaPayload.data.totalViews === 'number') {
+              setViewCount(metaPayload.data.totalViews)
+            }
+          }
+        }
+
+        if (viewRes && viewRes.ok) {
+          const viewPayload = await viewRes.json()
+          if (!cancelled && typeof viewPayload?.data?.views === 'number') {
+            if (!hasCounted && viewMethod === 'POST' && typeof window !== 'undefined') {
+              window.sessionStorage.setItem('nepal_license_view_counted', '1')
+            }
+            setViewCount(viewPayload.data.views)
           }
         }
       } catch {
@@ -148,7 +171,7 @@ export default function Home() {
       }
     }
 
-    loadMeta()
+    loadMetaAndViews()
     return () => {
       cancelled = true
     }
@@ -271,6 +294,7 @@ export default function Home() {
         setLanguage={setLanguage}
         theme={theme}
         setTheme={setTheme}
+        viewCount={viewCount}
         dateLocale={dateLocale}
         lightLabel={copy.home.lightLabel}
         darkLabel={copy.home.darkLabel}
@@ -287,7 +311,9 @@ export default function Home() {
           title={copy.home.title}
           titleAccent={copy.home.titleAccent}
           description={copy.home.description}
+          viewsLabel={copy.home.viewsLabel}
           indexedRecords={indexedRecords}
+          viewCount={viewCount}
           lastUpdatedAt={lastUpdatedAt}
           dateLocale={dateLocale}
         />
@@ -344,7 +370,9 @@ export default function Home() {
       {/* Modular Modern Footer - Landscape wide */}
       <Footer
         language={language}
+        viewCount={viewCount}
         dateLocale={dateLocale}
+        totalViewsLabel={copy.home.totalViewsLabel}
         developerCreditLabel={copy.home.developerCreditLabel}
         onOpenOffices={() => setIsOfficesModalOpen(true)}
         onOpenSms={() => setIsSmsModalOpen(true)}

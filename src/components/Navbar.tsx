@@ -12,6 +12,7 @@ interface NavbarProps {
   setLanguage: (lang: Language) => void
   theme: ThemeMode
   setTheme: (theme: ThemeMode) => void
+  viewCount: number | null
   dateLocale: string
   lightLabel: string
   darkLabel: string
@@ -25,6 +26,7 @@ export default function Navbar({
   setLanguage,
   theme,
   setTheme,
+  viewCount,
   dateLocale,
   lightLabel,
   darkLabel,
@@ -60,6 +62,19 @@ export default function Navbar({
 
         {/* Quick Actions & Navigation */}
         <div className="flex items-center justify-end gap-1.5 sm:gap-2 shrink-0">
+          {/* Live Viewer Counter (Desktop/Tablet) */}
+          {viewCount !== null && (
+            <span
+              className="hidden items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1 text-[11px] font-semibold text-[var(--text-secondary)] md:inline-flex shadow-2xs"
+              title={language === 'ne' ? `कुल अवलोकन: ${viewCount.toLocaleString(dateLocale)}` : `Total views: ${viewCount.toLocaleString(dateLocale)}`}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              <span>{viewCount.toLocaleString(dateLocale)}</span>
+            </span>
+          )}
 
           {/* Offices Directory button (Desktop) */}
           <button
@@ -270,6 +285,16 @@ export default function Navbar({
                 </svg>
                 <span>GitHub Repository</span>
               </a>
+
+              {viewCount !== null && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--text-muted)]">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                  <span>{viewCount.toLocaleString(dateLocale)} views</span>
+                </span>
+              )}
             </div>
           </div>
         </div>

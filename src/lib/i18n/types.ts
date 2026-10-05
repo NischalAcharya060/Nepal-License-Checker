@@ -16,6 +16,8 @@ export interface HomeCopy {
   tiles: HomeTileCopy[]
   footerPrefix: string
   footerSuffix: string
+  viewsLabel: string
+  totalViewsLabel: string
   developerCreditLabel: string
   developerPortfolioLabel: string
   toasts: {
