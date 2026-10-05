@@ -9,7 +9,7 @@
  *  - never cached     : non-GET requests, cross-origin requests, video/audio
  */
 
-const VERSION = 'v3'
+const VERSION = 'v4'
 const PRECACHE = `nlc-precache-${VERSION}`
 const PAGES = `nlc-pages-${VERSION}`
 const ASSETS = `nlc-assets-${VERSION}`
@@ -121,6 +121,15 @@ async function handleNavigation(request) {
 }
 
 async function handleApi(request, url) {
+  // Never cache administrative, maintenance, or internal cron operations in offline storage
+  if (
+    url.pathname.startsWith('/api/admin') ||
+    url.pathname.startsWith('/api/maintenance') ||
+    url.pathname.startsWith('/api/cron')
+  ) {
+    return fetch(request)
+  }
+
   const cacheable = request.method === 'GET' && !url.searchParams.has('_rsc')
 
   try {

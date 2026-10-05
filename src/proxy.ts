@@ -15,7 +15,7 @@ const PUBLIC_PATHS = new Set([
     '/api/admin/logs',
 ])
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
     const maintenanceActive = isMaintenanceEnabled()
     const { pathname } = request.nextUrl
 
@@ -66,6 +66,8 @@ export async function middleware(request: NextRequest) {
         },
     })
 }
+
+export default proxy
 
 export const config = {
     // Skip static assets, Next.js internals, and any files with extensions (favicon, sw.js, images)
