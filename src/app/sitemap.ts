@@ -23,18 +23,21 @@ export default function sitemap(): MetadataRoute.Sitemap {
         },
       },
     },
+    // NOTE: only canonical URLs belong here. `/?lang=ne` is an hreflang
+    // language variant of `/` (canonical points back to `/`), so listing it
+    // would make Google report "Alternative page with proper canonical tag".
     {
-      url: `${baseUrl}/?lang=ne`,
+      url: `${baseUrl}/tutorial`,
       lastModified: now,
-      changeFrequency: 'daily',
-      priority: 0.9,
+      changeFrequency: 'monthly',
+      priority: 0.7,
       alternates: {
         languages: {
-          'en': baseUrl,
-          'en-NP': baseUrl,
-          'ne': `${baseUrl}/?lang=ne`,
-          'ne-NP': `${baseUrl}/?lang=ne`,
-          'x-default': baseUrl,
+          'en': `${baseUrl}/tutorial`,
+          'en-NP': `${baseUrl}/tutorial`,
+          'ne': `${baseUrl}/tutorial?lang=ne`,
+          'ne-NP': `${baseUrl}/tutorial?lang=ne`,
+          'x-default': `${baseUrl}/tutorial`,
         },
       },
     },

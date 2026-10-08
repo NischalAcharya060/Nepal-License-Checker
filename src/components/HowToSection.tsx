@@ -1,5 +1,7 @@
 'use client'
 
+import Image from 'next/image'
+import Link from 'next/link'
 import type { Language } from '@/lib/i18n'
 
 interface HowToSectionProps {
@@ -104,11 +106,42 @@ export default function HowToSection({ language, lastUpdatedAt }: HowToSectionPr
         </p>
       </div>
 
-      {/* Tutorial video */}
+      {/* Video tutorial — thumbnail links to the /tutorial watch page */}
       <div className="px-5 py-4 sm:px-6 sm:py-5">
-        <video className="aspect-video w-full overflow-hidden rounded-xl border border-[var(--border-default)] bg-black shadow-sm" controls preload="metadata" playsInline>
-          <source src="/tutorial.mp4" type="video/mp4" />
-        </video>
+        <Link
+          href="/tutorial"
+          className="group relative block aspect-video w-full overflow-hidden rounded-xl border border-[var(--border-default)] bg-black shadow-sm transition-shadow hover:shadow-md"
+          aria-label={
+            language === 'ne'
+              ? 'भिडियो ट्युटोरियल हेर्नुहोस्'
+              : 'Watch the video tutorial'
+          }
+        >
+          <Image
+            src="/tutorial-poster.jpg"
+            alt={
+              language === 'ne'
+                ? 'सवारी चालक अनुमतिपत्र छापिएको कि छैन जाँच्ने भिडियो ट्युटोरियल'
+                : 'Video tutorial: how to check if your Nepal driving licence is printed'
+            }
+            fill
+            sizes="(max-width: 768px) 100vw, 720px"
+            className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+          />
+          <span className="absolute inset-0 flex items-center justify-center" aria-hidden>
+            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-black/55 backdrop-blur-sm transition-all duration-200 group-hover:scale-110 group-hover:bg-[var(--nepal-blue)]/85">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="white" aria-hidden>
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </span>
+          </span>
+          <span className="absolute bottom-2 right-2 rounded-md bg-black/70 px-1.5 py-0.5 text-[10px] font-bold text-white">
+            0:19
+          </span>
+          <span className="absolute bottom-2 left-2 rounded-md bg-black/70 px-2 py-0.5 text-[11px] font-bold text-white">
+            {language === 'ne' ? 'भिडियो ट्युटोरियल हेर्नुहोस्' : 'Watch video tutorial'}
+          </span>
+        </Link>
       </div>
 
       <ol className="divide-y divide-[var(--border-default)]/70">
