@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import type { Language } from '@/lib/i18n'
 import { VEHICLE_CATEGORIES } from '@/lib/categories'
+import { formatNepalDateTime, formatTimeUntil } from '@/lib/cronHelper'
 
 interface FooterProps {
   language: Language
@@ -15,6 +16,7 @@ interface FooterProps {
   onOpenSms: () => void
   onOpenSample: () => void
   lastUpdatedAt?: string | null
+  nextScraperRun?: string | null
   indexedRecords?: number | null
   onReset?: () => void
 }
@@ -29,6 +31,7 @@ export default function Footer({
   onOpenSms,
   onOpenSample,
   lastUpdatedAt,
+  nextScraperRun,
   indexedRecords,
   onReset,
 }: FooterProps) {
@@ -108,18 +111,40 @@ export default function Footer({
                   ? 'यातायात व्यवस्था विभाग (DOTM) को सार्वजनिक छपाइ सूची खोज्न बनाइएको खुला तथा स्वतन्त्र नागरिक सेवा।'
                   : 'Independent civic platform mirroring Department of Transport Management (DOTM) smart card print records.'}
               </p>
-              {lastUpdatedAt && (
-                <div className="mt-1 text-[10px] text-[var(--text-muted)] flex items-center gap-1">
-                  <span>{isNe ? 'पछिल्लो ब्याच अद्यावधिक:' : 'Last batch synced:'}</span>
-                  <span className="font-medium text-[var(--text-secondary)]">
-                    {new Date(lastUpdatedAt).toLocaleDateString(dateLocale, {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                    })}
-                  </span>
-                </div>
-              )}
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-[var(--text-muted)]">
+                {lastUpdatedAt && (
+                  <div className="flex items-center gap-1">
+                    <span>{isNe ? 'पछिल्लो ब्याच अद्यावधिक:' : 'Last batch synced:'}</span>
+                    <span className="font-medium text-[var(--text-secondary)]">
+                      {new Date(lastUpdatedAt).toLocaleDateString(dateLocale, {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </span>
+                  </div>
+                )}
+                {nextScraperRun && (
+                  <div
+                    className="flex items-center gap-1 cursor-help transition hover:text-[var(--nepal-blue)]"
+                    title={`${isNe ? 'अर्को तालिकाबद्ध सिङ्क:' : 'Next scheduled sync:'} ${formatNepalDateTime(nextScraperRun, isNe ? 'ne' : 'en')} (NPT)`}
+                  >
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]">
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                    <span>{isNe ? 'अर्को तालिकाबद्ध सिङ्क:' : 'Next scheduled sync:'}</span>
+                    <span className="font-medium text-[var(--text-secondary)]">
+                      {new Date(nextScraperRun).toLocaleDateString(dateLocale, {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}{' '}
+                      ({formatTimeUntil(nextScraperRun, isNe ? 'ne' : 'en')})
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

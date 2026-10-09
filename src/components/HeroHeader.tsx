@@ -1,6 +1,7 @@
 'use client'
 
 import type { Language } from '@/lib/i18n'
+import { formatNepalDateTime, formatTimeUntil } from '@/lib/cronHelper'
 
 interface HeroHeaderProps {
   language: Language
@@ -9,9 +10,11 @@ interface HeroHeaderProps {
   titleAccent: string
   description: string
   viewsLabel?: string
+  nextSyncLabel?: string
   indexedRecords: number | null
   viewCount?: number | null
   lastUpdatedAt: string | null
+  nextScraperRun?: string | null
   dateLocale: string
 }
 
@@ -22,9 +25,11 @@ export default function HeroHeader({
   titleAccent,
   description,
   viewsLabel = 'Views',
+  nextSyncLabel,
   indexedRecords,
   viewCount = null,
   lastUpdatedAt,
+  nextScraperRun,
   dateLocale,
 }: HeroHeaderProps) {
   return (
@@ -78,7 +83,7 @@ export default function HeroHeader({
 
       {/* Trust & Authority Stats Bar */}
       <div
-        className="mx-auto mb-6 flex max-w-2xl flex-wrap items-center justify-center gap-x-5 gap-y-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)]/80 px-4 py-2.5 text-[11px] font-medium text-[var(--text-secondary)] shadow-sm animate-rise-in print:hidden"
+        className="mx-auto mb-6 flex max-w-3xl flex-wrap items-center justify-center gap-x-5 gap-y-2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)]/80 px-4 py-2.5 text-[11px] font-medium text-[var(--text-secondary)] shadow-sm animate-rise-in print:hidden"
         style={{ animationDelay: '0.16s' }}
       >
         <span className="inline-flex items-center gap-1.5">
@@ -93,13 +98,26 @@ export default function HeroHeader({
               ? '१ लाख+ अभिलेख'
               : '100K+ records'}
         </span>
-        <span className="inline-flex items-center gap-1.5">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <polyline points="12 6 12 12 16 14" />
-          </svg>
-          {language === 'ne' ? 'साप्ताहिक अद्यावधिक' : 'Updated weekly'}
-        </span>
+
+        {/* Next Scheduled Scraper Sync */}
+        {nextScraperRun && (
+          <span
+            className="inline-flex items-center gap-1.5 cursor-help transition hover:text-[var(--nepal-blue)]"
+            title={`${language === 'ne' ? 'अर्को तालिकाबद्ध सिङ्क:' : 'Next scheduled sync:'} ${formatNepalDateTime(nextScraperRun, language)} (NPT)`}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)] animate-pulse">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            <span>
+              {nextSyncLabel || (language === 'ne' ? 'अर्को सिङ्क' : 'Next Sync')}:{' '}
+              <strong className="font-semibold text-[var(--text-primary)]">
+                {formatTimeUntil(nextScraperRun, language)}
+              </strong>
+            </span>
+          </span>
+        )}
+
         {viewCount !== null && (
           <span className="inline-flex items-center gap-1.5 font-semibold text-[var(--text-primary)]">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]">
@@ -109,6 +127,7 @@ export default function HeroHeader({
             <span>{viewCount.toLocaleString(dateLocale)} {viewsLabel}</span>
           </span>
         )}
+
         <span className="inline-flex items-center gap-1.5" title={lastUpdatedAt ? new Date(lastUpdatedAt).toISOString() : undefined}>
           <span className="inline-flex h-1.5 w-1.5 rounded-full bg-[var(--success)]" />
           {(language === 'ne' ? 'स्रोत' : 'Source')}: dotm.gov.np

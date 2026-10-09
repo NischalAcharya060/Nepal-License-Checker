@@ -11,6 +11,8 @@ export const en: UICopy = {
     darkLabel: 'Dark',
     lastUpdatedLabel: 'Last updated',
     lastUpdatedFallback: 'Syncing regularly',
+    nextSyncLabel: 'Next Sync',
+    nextSyncTooltip: 'Automated GitHub Actions Scraper Schedule',
     tiles: [
       {
         title: 'Number Format',

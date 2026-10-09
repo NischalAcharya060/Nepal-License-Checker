@@ -6,6 +6,7 @@ import {
 } from '@/lib/adminAuth'
 import { getSearchLogs, getSearchStats } from '@/lib/searchLogger'
 import { getTurso } from '@/lib/turso'
+import { DEFAULT_CRON_SCHEDULE, getNextCronRun } from '@/lib/cronHelper'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -15,6 +16,64 @@ async function checkAuth(request: NextRequest): Promise<boolean> {
     if (!secret) return false
     const token = request.cookies.get(ADMIN_COOKIE)?.value
     return verifyAdminSessionToken(token, secret)
+}
+
+async function getAdminScraperMeta(db: ReturnType<typeof getTurso>) {
+    const now = Date.now()
+    let scraperLastRunRaw: string | null = null
+    let nextScraperRunMs: number | null = null
+    let scraperSchedule = DEFAULT_CRON_SCHEDULE
+    let totalRecords = 0
+
+    try {
+        const statsRes = await db.execute(
+            "SELECT key, value, updated_at FROM site_stats WHERE key IN ('total_records', 'scraper_last_run', 'next_scraper_run', 'scraper_schedule')"
+        )
+        for (const row of statsRes.rows) {
+            const key = String(row.key)
+            if (key === 'total_records') {
+                totalRecords = Number(row.value) || 0
+            } else if (key === 'scraper_last_run') {
+                scraperLastRunRaw = String(row.value)
+            } else if (key === 'next_scraper_run') {
+                nextScraperRunMs = Number(row.value)
+            } else if (key === 'scraper_schedule') {
+                if (row.value && String(row.value).trim()) {
+                    scraperSchedule = String(row.value).trim()
+                }
+            }
+        }
+    } catch {
+        // Ignore fallback
+    }
+
+    let lastRun: Record<string, unknown> | null = null
+    if (scraperLastRunRaw) {
+        try {
+            lastRun = JSON.parse(scraperLastRunRaw) as Record<string, unknown>
+        } catch {
+            // Ignore
+        }
+    }
+
+    let nextRunDate: Date | null = null
+    if (nextScraperRunMs && nextScraperRunMs > now) {
+        nextRunDate = new Date(nextScraperRunMs)
+    } else {
+        nextRunDate = getNextCronRun(scraperSchedule, new Date())
+    }
+
+    const nextRunTimestamp = nextRunDate ? nextRunDate.getTime() : now + 30 * 24 * 60 * 60 * 1000
+
+    return {
+        totalRecords,
+        lastRun,
+        nextRun: {
+            timestamp: nextRunTimestamp,
+            iso: new Date(nextRunTimestamp).toISOString(),
+        },
+        schedule: scraperSchedule,
+    }
 }
 
 export async function GET(request: NextRequest) {
@@ -36,9 +95,11 @@ export async function GET(request: NextRequest) {
             : 'all'
 
     try {
-        const [logsData, stats] = await Promise.all([
+        const db = getTurso()
+        const [logsData, stats, scraper] = await Promise.all([
             getSearchLogs({ page, limit, search, status }),
             getSearchStats(),
+            getAdminScraperMeta(db),
         ])
 
         return NextResponse.json({
@@ -46,6 +107,7 @@ export async function GET(request: NextRequest) {
             data: {
                 ...logsData,
                 stats,
+                scraper,
             },
         })
     } catch (err) {

@@ -5,6 +5,7 @@ const https = require('https');
 const http = require('http');
 const { URL } = require('url');
 const { createClient } = require('@libsql/client');
+const { DEFAULT_CRON_SCHEDULE, getNextCronRun } = require('./cronHelper');
 
 // ── Turso (libSQL) init ──────────────────────────────────────────────────────
 let dbClient = null;
@@ -664,6 +665,14 @@ class DOTMScraper {
         const pdfUrls = await this.getOfficePDFs();
         if (!pdfUrls.length) {
             console.log('No PDFs found. Exiting.');
+            const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+            await this.recordRunStats({
+                status: 'empty',
+                elapsed,
+                newPdfsCount: 0,
+                skippedPdfsCount: 0,
+                totalPdfsCount: 0,
+            });
             return false;
         }
 
@@ -747,7 +756,80 @@ class DOTMScraper {
             console.warn(`Could not update total_records stat: ${e.message}`);
         }
 
+        const runStatus = this.stats.circuitBreakerTripped
+            ? 'circuit_breaker'
+            : (this.stats.failed > 0 ? 'partial' : 'success');
+
+        await this.recordRunStats({
+            status: runStatus,
+            elapsed,
+            newPdfsCount,
+            skippedPdfsCount,
+            totalPdfsCount: pdfUrls.length,
+        });
+
         return !this.stats.circuitBreakerTripped;
+    }
+
+    async recordRunStats({ status, elapsed, newPdfsCount = 0, skippedPdfsCount = 0, totalPdfsCount = 0 }) {
+        try {
+            const db = getDb();
+            const now = Date.now();
+            const rawEvent = process.env.GITHUB_EVENT_NAME;
+            const trigger = rawEvent === 'schedule'
+                ? 'scheduled'
+                : rawEvent === 'workflow_dispatch'
+                    ? 'manual_github'
+                    : rawEvent
+                        ? rawEvent
+                        : 'manual';
+
+            const runSummary = {
+                timestamp: now,
+                trigger,
+                status,
+                scraped: this.stats.scraped,
+                saved: this.stats.saved,
+                failed: this.stats.failed,
+                newPdfsCount,
+                skippedPdfsCount,
+                totalPdfsCount,
+                durationSeconds: parseFloat(elapsed) || 0,
+                circuitBreakerTripped: Boolean(this.stats.circuitBreakerTripped),
+            };
+
+            // 1. Record last run summary
+            await db.execute({
+                sql: `INSERT INTO site_stats (key, value, updated_at)
+                      VALUES ('scraper_last_run', ?, ?)
+                      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+                args: [JSON.stringify(runSummary), now],
+            });
+
+            // 2. Calculate and record next scheduled run
+            const cronSchedule = process.env.SCRAPER_CRON_SCHEDULE || DEFAULT_CRON_SCHEDULE;
+            const nextRun = getNextCronRun(cronSchedule);
+            if (nextRun) {
+                await db.execute({
+                    sql: `INSERT INTO site_stats (key, value, updated_at)
+                          VALUES ('next_scraper_run', ?, ?)
+                          ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+                    args: [nextRun.getTime(), now],
+                });
+            }
+
+            // 3. Store schedule string
+            await db.execute({
+                sql: `INSERT INTO site_stats (key, value, updated_at)
+                      VALUES ('scraper_schedule', ?, ?)
+                      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+                args: [cronSchedule, now],
+            });
+
+            console.log(`📊 Scraper stats recorded in site_stats. Trigger: ${trigger} | Next run: ${nextRun ? nextRun.toISOString() : 'N/A'}`);
+        } catch (err) {
+            console.warn(`Could not update scraper site_stats: ${err.message}`);
+        }
     }
 }
 

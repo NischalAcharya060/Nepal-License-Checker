@@ -13,6 +13,8 @@ export interface HomeCopy {
   darkLabel: string
   lastUpdatedLabel: string
   lastUpdatedFallback: string
+  nextSyncLabel: string
+  nextSyncTooltip: string
   tiles: HomeTileCopy[]
   footerPrefix: string
   footerSuffix: string

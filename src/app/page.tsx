@@ -67,6 +67,7 @@ export default function Home() {
     return 'light'
   })
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null)
+  const [nextScraperRun, setNextScraperRun] = useState<string | null>(null)
   const [indexedRecords, setIndexedRecords] = useState<number | null>(null)
   const [viewCount, setViewCount] = useState<number | null>(null)
   const [isSampleModalOpen, setIsSampleModalOpen] = useState(false)
@@ -148,7 +149,7 @@ export default function Home() {
         const viewMethod = hasCounted ? 'GET' : 'POST'
 
         const [metaRes, viewRes] = await Promise.all([
-          fetch('/api/meta').catch(() => null),
+          fetch('/api/meta', { cache: 'no-store' }).catch(() => null),
           fetch('/api/views', { method: viewMethod, cache: 'no-store' }).catch(() => null),
         ])
 
@@ -158,6 +159,11 @@ export default function Home() {
           const metaPayload = await metaRes.json()
           if (!cancelled && metaPayload?.data) {
             setLastUpdatedAt(metaPayload.data.lastUpdated ?? null)
+            setNextScraperRun(
+              metaPayload.data.nextScheduledRun ||
+                metaPayload.data.scraper?.nextRun?.iso ||
+                null
+            )
             setIndexedRecords(
               typeof metaPayload.data.totalRecords === 'number'
                 ? metaPayload.data.totalRecords
@@ -181,6 +187,7 @@ export default function Home() {
       } catch {
         if (!cancelled) {
           setLastUpdatedAt(null)
+          setNextScraperRun(null)
           setIndexedRecords(null)
         }
       }
@@ -368,6 +375,8 @@ export default function Home() {
           titleAccent={copy.home.titleAccent}
           description={copy.home.description}
           viewsLabel={copy.home.viewsLabel}
+          nextSyncLabel={copy.home.nextSyncLabel}
+          nextScraperRun={nextScraperRun}
           indexedRecords={indexedRecords}
           viewCount={viewCount}
           lastUpdatedAt={lastUpdatedAt}
@@ -435,6 +444,7 @@ export default function Home() {
         onOpenSms={() => setIsSmsModalOpen(true)}
         onOpenSample={() => setIsSampleModalOpen(true)}
         lastUpdatedAt={lastUpdatedAt}
+        nextScraperRun={nextScraperRun}
         indexedRecords={indexedRecords}
         onReset={reset}
       />

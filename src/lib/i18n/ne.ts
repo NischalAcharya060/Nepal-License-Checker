@@ -11,6 +11,8 @@ export const ne: UICopy = {
     darkLabel: 'अँध्यारो',
     lastUpdatedLabel: 'अन्तिम अद्यावधिक',
     lastUpdatedFallback: 'नियमित सिंक हुँदैछ',
+    nextSyncLabel: 'अर्को सिङ्क',
+    nextSyncTooltip: 'स्वचालित गिटहब कार्यतालिका',
     tiles: [
       {
         title: 'नम्बर ढाँचा',
