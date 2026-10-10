@@ -392,8 +392,16 @@ async function sendAvailableLicenseEmail({
         `Nepal License Checker (license-checker.acharyanischal.com.np)`;
 
     const subject = `Your Nepal Driving License (${licenseNumber}) is Printed & Ready to Collect! 🇳🇵`;
-    const defaultSender = 'Nepal License Checker <notifications@acharyanischal.com.np>';
-    const fromAddress = process.env.SMTP_FROM || defaultSender;
+    const defaultSender = 'Nepal License Checker <license-checker@acharyanischal.com.np>';
+    let fromAddress = (process.env.SMTP_FROM || defaultSender).trim();
+
+    // Sanitize fromAddress: normalize spaces inside angle brackets and ensure valid @ format
+    if (fromAddress.includes('<') && fromAddress.includes('>')) {
+        fromAddress = fromAddress.replace(/<\s+/g, '<').replace(/\s+>/g, '>');
+        if (!fromAddress.includes('@') && fromAddress.toLowerCase().includes('acharyanischal.com.np')) {
+            fromAddress = fromAddress.replace(/<([^@>]+)\.acharyanischal\.com\.np>/i, '<$1@acharyanischal.com.np>');
+        }
+    }
 
     // 1. Resend API (HTTP REST)
     if (process.env.RESEND_API_KEY) {
