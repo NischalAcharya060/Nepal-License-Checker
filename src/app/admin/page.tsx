@@ -51,6 +51,27 @@ interface SearchStats {
     topLocations: Array<{ city: string; country: string; count: number }>
 }
 
+interface NotificationLog {
+    id: string
+    license_number: string
+    email: string
+    status: 'pending' | 'processing' | 'sent' | 'cancelled'
+    created_at: number
+    updated_at: number
+    sent_at?: number | null
+    cancelled_at?: number | null
+    holder_name?: string | null
+    office?: string | null
+}
+
+interface NotificationStatsData {
+    total: number
+    pending: number
+    sent: number
+    cancelled: number
+    deliveryRate: number
+}
+
 function getFlag(countryCode?: string | null): string {
     if (!countryCode || countryCode.length !== 2) return '🌐'
     const code = countryCode.toUpperCase()
@@ -78,7 +99,10 @@ export default function AdminPage() {
     const [loginSubmitting, setLoginSubmitting] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
 
-    // Dashboard State
+    // View Tabs: 'searches' or 'notifications'
+    const [activeTab, setActiveTab] = useState<'searches' | 'notifications'>('searches')
+
+    // Dashboard State - Searches
     const [logs, setLogs] = useState<SearchLog[]>([])
     const [stats, setStats] = useState<SearchStats | null>(null)
     const [scraperData, setScraperData] = useState<AdminScraperData | null>(null)
@@ -93,6 +117,18 @@ export default function AdminPage() {
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
     const [refreshKey, setRefreshKey] = useState(0)
     const [copiedKey, setCopiedKey] = useState<string | null>(null)
+
+    // Dashboard State - Email Notifications
+    const [notificationStats, setNotificationStats] = useState<NotificationStatsData | null>(null)
+    const [notificationLogs, setNotificationLogs] = useState<NotificationLog[]>([])
+    const [notifTotal, setNotifTotal] = useState(0)
+    const [notifPage, setNotifPage] = useState(1)
+    const [notifLimit, setNotifLimit] = useState(50)
+    const [notifTotalPages, setNotifTotalPages] = useState(1)
+    const [notifSearchFilter, setNotifSearchFilter] = useState('')
+    const [notifStatusFilter, setNotifStatusFilter] = useState<'all' | 'pending' | 'sent' | 'cancelled'>('all')
+    const [notifLoading, setNotifLoading] = useState(false)
+
     const [, startTransition] = useTransition()
 
     // 1. Check Auth Status on Load
@@ -149,6 +185,9 @@ export default function AdminPage() {
                     if (json.data.scraper) {
                         setScraperData(json.data.scraper)
                     }
+                    if (json.data.notificationStats) {
+                        setNotificationStats(json.data.notificationStats)
+                    }
                     setLastUpdated(new Date())
                 }
                 setDataLoading(false)
@@ -161,6 +200,47 @@ export default function AdminPage() {
             cancelled = true
         }
     }, [isAuthenticated, page, limit, searchFilter, statusFilter, refreshKey])
+
+    // 2b. Fetch Notification Logs & Subscriber Stats
+    useEffect(() => {
+        if (!isAuthenticated) return
+        let cancelled = false
+
+        const params = new URLSearchParams({
+            page: String(notifPage),
+            limit: String(notifLimit),
+            search: notifSearchFilter,
+            status: notifStatusFilter,
+        })
+
+        fetch(`/api/admin/notifications?${params.toString()}`, { cache: 'no-store' })
+            .then((res) => {
+                if (res.status === 401) {
+                    if (!cancelled) setIsAuthenticated(false)
+                    return null
+                }
+                return res.json()
+            })
+            .then((json) => {
+                if (cancelled || !json) return
+                if (json.status === 'success' && json.data) {
+                    setNotificationLogs(json.data.logs || [])
+                    setNotifTotal(json.data.total || 0)
+                    setNotifTotalPages(json.data.totalPages || 1)
+                    if (json.data.stats) {
+                        setNotificationStats(json.data.stats)
+                    }
+                }
+                setNotifLoading(false)
+            })
+            .catch(() => {
+                if (!cancelled) setNotifLoading(false)
+            })
+
+        return () => {
+            cancelled = true
+        }
+    }, [isAuthenticated, notifPage, notifLimit, notifSearchFilter, notifStatusFilter, refreshKey])
 
     // 3. Auto-refresh polling every 12 seconds (pauses when browser tab is hidden/inactive)
     useEffect(() => {
@@ -176,6 +256,7 @@ export default function AdminPage() {
 
     const handleManualRefresh = () => {
         setDataLoading(true)
+        setNotifLoading(true)
         setRefreshKey((k) => k + 1)
     }
 
@@ -252,6 +333,46 @@ export default function AdminPage() {
         a.download = `nepal-license-search-logs-${new Date().toISOString().slice(0, 10)}.csv`
         a.click()
         URL.revokeObjectURL(url)
+    }
+
+    // 8. Notification CSV Export
+    const exportNotificationCsv = () => {
+        if (!notificationLogs.length) return
+        const headers = ['ID', 'Date (ISO)', 'License Number', 'User Email', 'Status', 'Delivered At', 'Holder Name', 'Issuing Office']
+        const rows = notificationLogs.map((l) => [
+            `"${l.id}"`,
+            new Date(l.created_at).toISOString(),
+            `"${l.license_number}"`,
+            `"${l.email}"`,
+            l.status,
+            l.sent_at ? new Date(l.sent_at).toISOString() : '',
+            `"${l.holder_name || ''}"`,
+            `"${l.office || ''}"`,
+        ])
+        const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n')
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `nepal-license-notification-logs-${new Date().toISOString().slice(0, 10)}.csv`
+        a.click()
+        URL.revokeObjectURL(url)
+    }
+
+    // 9. Delete Notification Log
+    const handleDeleteNotification = async (id: string, license: string) => {
+        if (!confirm(`Are you sure you want to delete notification entry for license ${license}?`)) {
+            return
+        }
+        try {
+            const res = await fetch(`/api/admin/notifications?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
+            if (res.ok) {
+                setNotificationLogs((prev) => prev.filter((item) => item.id !== id))
+                setRefreshKey((k) => k + 1)
+            }
+        } catch {
+            // Error
+        }
     }
 
     // ----------------------------------------------------
@@ -475,10 +596,10 @@ export default function AdminPage() {
                         {/* Export CSV */}
                         <button
                             type="button"
-                            onClick={exportCsv}
-                            disabled={!logs.length}
+                            onClick={activeTab === 'searches' ? exportCsv : exportNotificationCsv}
+                            disabled={activeTab === 'searches' ? !logs.length : !notificationLogs.length}
                             className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 text-xs font-semibold text-[var(--text-secondary)] shadow-xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:opacity-50"
-                            title="Export visible logs to CSV"
+                            title={activeTab === 'searches' ? 'Export search queries to CSV' : 'Export notification logs to CSV'}
                         >
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -755,286 +876,731 @@ export default function AdminPage() {
                     </div>
                 </div>
 
-                {/* Search & Filter Toolbar */}
-                <div className="mt-5 flex flex-col gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4 shadow-sm">
-                    {/* Search Input */}
-                    <div className="relative flex-1">
-                        <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2.2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
+                {/* View Mode Tab Switcher */}
+                <div className="mt-6 flex flex-col gap-3 border-b border-[var(--border-default)] pb-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="inline-flex rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-1 shadow-xs">
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('searches')}
+                            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold transition ${
+                                activeTab === 'searches'
+                                    ? 'bg-[var(--nepal-blue)] text-white shadow-xs'
+                                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                            }`}
                         >
-                            <circle cx="11" cy="11" r="8" />
-                            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                        </svg>
-                        <input
-                            type="text"
-                            value={searchFilter}
-                            onChange={(e) => {
-                                setSearchFilter(e.target.value)
-                                startTransition(() => setPage(1))
-                            }}
-                            placeholder="Filter by license, IP, holder name, city..."
-                            className="h-10 w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] pl-9 pr-9 text-xs text-[var(--text-primary)] transition focus:border-[var(--nepal-blue)] focus:bg-[var(--surface-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--nepal-blue)]/20 sm:text-sm"
-                        />
-                        {searchFilter && (
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setSearchFilter('')
-                                    setPage(1)
-                                }}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-                            >
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                    <line x1="18" y1="6" x2="6" y2="18" />
-                                    <line x1="6" y1="6" x2="18" y2="18" />
-                                </svg>
-                            </button>
-                        )}
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="11" cy="11" r="8" />
+                                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                            </svg>
+                            <span>Search Queries Log</span>
+                            <span className={`rounded-full px-2 py-0.5 font-mono text-[10px] ${
+                                activeTab === 'searches' ? 'bg-white/20 text-white' : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'
+                            }`}>
+                                {total.toLocaleString()}
+                            </span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('notifications')}
+                            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold transition ${
+                                activeTab === 'notifications'
+                                    ? 'bg-[var(--nepal-blue)] text-white shadow-xs'
+                                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                            }`}
+                        >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="2" y="4" width="20" height="16" rx="2" />
+                                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                            </svg>
+                            <span>Email Notifications Log</span>
+                            <span className={`rounded-full px-2 py-0.5 font-mono text-[10px] ${
+                                activeTab === 'notifications' ? 'bg-white/20 text-white' : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'
+                            }`}>
+                                {notifTotal.toLocaleString()}
+                            </span>
+                        </button>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        {/* Status Filter */}
-                        <div className="inline-flex rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-1 text-xs font-semibold">
-                            {(['all', 'found', 'not_found'] as const).map((st) => (
-                                <button
-                                    key={st}
-                                    type="button"
-                                    onClick={() => {
-                                        setStatusFilter(st)
-                                        setPage(1)
-                                    }}
-                                    className={`rounded-lg px-2.5 py-1 capitalize transition ${
-                                        statusFilter === st
-                                            ? 'bg-[var(--surface-primary)] text-[var(--nepal-blue)] shadow-xs font-bold'
-                                            : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-                                    }`}
-                                >
-                                    {st === 'not_found' ? 'Not Found' : st}
-                                </button>
-                            ))}
+                    {activeTab === 'notifications' && notificationStats && (
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-muted)]">
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1">
+                                <span className="h-1.5 w-1.5 rounded-full bg-[var(--success)]" />
+                                <span className="font-medium text-[var(--text-secondary)]">Delivered:</span>
+                                <strong className="font-bold text-[var(--text-primary)]">{notificationStats.sent}</strong>
+                            </span>
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1">
+                                <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                <span className="font-medium text-[var(--text-secondary)]">In Queue:</span>
+                                <strong className="font-bold text-[var(--text-primary)]">{notificationStats.pending}</strong>
+                            </span>
                         </div>
-
-                        {/* Limit Selector */}
-                        <select
-                            value={limit}
-                            onChange={(e) => {
-                                setLimit(Number(e.target.value))
-                                setPage(1)
-                            }}
-                            className="h-9 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] focus:outline-none"
-                        >
-                            <option value={25}>25 rows</option>
-                            <option value={50}>50 rows</option>
-                            <option value={100}>100 rows</option>
-                        </select>
-                    </div>
+                    )}
                 </div>
 
-                {/* Search Logs Table */}
-                <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-sm">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs">
-                            <thead className="border-b border-[var(--border-default)] bg-[var(--bg-secondary)]/50 text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                                <tr>
-                                    <th className="py-3 pl-4 pr-3">Time</th>
-                                    <th className="px-3 py-3">License Number</th>
-                                    <th className="px-3 py-3">Result</th>
-                                    <th className="px-3 py-3">Holder Name</th>
-                                    <th className="px-3 py-3">IP Address</th>
-                                    <th className="py-3 pl-3 pr-4">Location (Origin)</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-[var(--border-default)]/60">
-                                {dataLoading && !logs.length ? (
-                                    <tr>
-                                        <td colSpan={6} className="py-12 text-center text-xs text-[var(--text-muted)]">
-                                            <div className="flex flex-col items-center justify-center gap-2">
-                                                <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-[var(--nepal-blue)]/30 border-t-[var(--nepal-blue)]" />
-                                                <span>Loading search queries...</span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ) : logs.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={6} className="py-12 text-center text-xs text-[var(--text-muted)]">
-                                            <div className="flex flex-col items-center justify-center gap-2">
-                                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-muted)]">
-                                                    <circle cx="12" cy="12" r="10" />
-                                                    <line x1="8" y1="12" x2="16" y2="12" />
-                                                </svg>
-                                                <span className="font-semibold text-[var(--text-secondary)]">No search records found.</span>
-                                                <p className="text-[11px]">When users query licenses on the site, their searches will appear here in real-time.</p>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    logs.map((log) => {
-                                        const isFound = log.status === 'found'
-                                        return (
-                                            <tr
-                                                key={log.id}
-                                                className="group transition-colors hover:bg-[var(--bg-secondary)]/40"
-                                            >
-                                                {/* Timestamp */}
-                                                <td className="whitespace-nowrap py-3 pl-4 pr-3 font-mono text-[11px] text-[var(--text-secondary)]">
-                                                    <span title={new Date(log.created_at).toLocaleString()}>
-                                                        {formatTimeAgo(log.created_at)}
-                                                    </span>
-                                                </td>
+                {activeTab === 'searches' ? (
+                    <>
+                        {/* Search & Filter Toolbar */}
+                        <div className="mt-5 flex flex-col gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4 shadow-sm">
+                            {/* Search Input */}
+                            <div className="relative flex-1">
+                                <svg
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2.2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
+                                >
+                                    <circle cx="11" cy="11" r="8" />
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                                </svg>
+                                <input
+                                    type="text"
+                                    value={searchFilter}
+                                    onChange={(e) => {
+                                        setSearchFilter(e.target.value)
+                                        startTransition(() => setPage(1))
+                                    }}
+                                    placeholder="Filter by license, IP, holder name, city..."
+                                    className="h-10 w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] pl-9 pr-9 text-xs text-[var(--text-primary)] transition focus:border-[var(--nepal-blue)] focus:bg-[var(--surface-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--nepal-blue)]/20 sm:text-sm"
+                                />
+                                {searchFilter && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSearchFilter('')
+                                            setPage(1)
+                                        }}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                                    >
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                            <line x1="18" y1="6" x2="6" y2="18" />
+                                            <line x1="6" y1="6" x2="18" y2="18" />
+                                        </svg>
+                                    </button>
+                                )}
+                            </div>
 
-                                                {/* License Number */}
-                                                <td className="whitespace-nowrap px-3 py-3">
-                                                    <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-[var(--text-primary)]">
-                                                        <span>{log.license_number}</span>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => copyToClipboard(log.license_number, `lic-${log.id}`)}
-                                                            className="text-[var(--text-muted)] opacity-0 transition group-hover:opacity-100 hover:text-[var(--nepal-blue)]"
-                                                            title="Copy license number"
-                                                        >
-                                                            {copiedKey === `lic-${log.id}` ? (
-                                                                <span className="text-[10px] font-bold text-[var(--success)]">✓</span>
-                                                            ) : (
-                                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                                                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                                                                </svg>
-                                                            )}
-                                                        </button>
-                                                    </div>
-                                                </td>
+                            <div className="flex items-center gap-2">
+                                {/* Status Filter */}
+                                <div className="inline-flex rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-1 text-xs font-semibold">
+                                    {(['all', 'found', 'not_found'] as const).map((st) => (
+                                        <button
+                                            key={st}
+                                            type="button"
+                                            onClick={() => {
+                                                setStatusFilter(st)
+                                                setPage(1)
+                                            }}
+                                            className={`rounded-lg px-2.5 py-1 capitalize transition ${
+                                                statusFilter === st
+                                                    ? 'bg-[var(--surface-primary)] text-[var(--nepal-blue)] shadow-xs font-bold'
+                                                    : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                                            }`}
+                                        >
+                                            {st === 'not_found' ? 'Not Found' : st}
+                                        </button>
+                                    ))}
+                                </div>
 
-                                                {/* Result Status Badge */}
-                                                <td className="whitespace-nowrap px-3 py-3">
-                                                    {isFound ? (
-                                                        <span className="inline-flex items-center gap-1 rounded-full border border-[var(--success-border)] bg-[var(--success-bg)] px-2 py-0.5 text-[10px] font-bold text-[var(--success)]">
-                                                            <span>✓</span>
-                                                            <span>Found</span>
-                                                        </span>
-                                                    ) : (
-                                                        <span className="inline-flex items-center gap-1 rounded-full border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2 py-0.5 text-[10px] font-semibold text-[var(--text-muted)]">
-                                                            <span>✕</span>
-                                                            <span>Not Found</span>
-                                                        </span>
-                                                    )}
-                                                </td>
+                                {/* Limit Selector */}
+                                <select
+                                    value={limit}
+                                    onChange={(e) => {
+                                        setLimit(Number(e.target.value))
+                                        setPage(1)
+                                    }}
+                                    className="h-9 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] focus:outline-none"
+                                >
+                                    <option value={25}>25 rows</option>
+                                    <option value={50}>50 rows</option>
+                                    <option value={100}>100 rows</option>
+                                </select>
+                            </div>
+                        </div>
 
-                                                {/* Holder Name */}
-                                                <td className="whitespace-nowrap px-3 py-3 text-xs">
-                                                    {log.holder_name ? (
-                                                        <div>
-                                                            <span className="font-bold text-[var(--text-primary)]">
-                                                                {log.holder_name}
-                                                            </span>
-                                                            {log.office && (
-                                                                <p className="text-[10px] text-[var(--text-muted)]">
-                                                                    {log.office}
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                    ) : (
-                                                        <span className="text-[var(--text-muted)]">—</span>
-                                                    )}
-                                                </td>
-
-                                                {/* IP Address */}
-                                                <td className="whitespace-nowrap px-3 py-3 font-mono text-xs">
-                                                    <div className="flex items-center gap-1.5 text-[var(--text-secondary)]">
-                                                        <span>{log.ip}</span>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => copyToClipboard(log.ip, `ip-${log.id}`)}
-                                                            className="text-[var(--text-muted)] opacity-0 transition group-hover:opacity-100 hover:text-[var(--nepal-blue)]"
-                                                            title="Copy IP"
-                                                        >
-                                                            {copiedKey === `ip-${log.id}` ? (
-                                                                <span className="text-[10px] font-bold text-[var(--success)]">✓</span>
-                                                            ) : (
-                                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                                                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                                                                </svg>
-                                                            )}
-                                                        </button>
-                                                    </div>
-                                                </td>
-
-                                                {/* Location / Origin */}
-                                                <td className="whitespace-nowrap py-3 pl-3 pr-4 text-xs">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <span className="text-base" title={log.country || 'Unknown'}>
-                                                            {getFlag(log.country)}
-                                                        </span>
-                                                        <div>
-                                                            <span className="font-semibold text-[var(--text-primary)]">
-                                                                {log.city || 'Unknown City'}
-                                                            </span>
-                                                            {log.region && (
-                                                                <span className="text-[10px] text-[var(--text-muted)]">
-                                                                    , {log.region}
-                                                                </span>
-                                                            )}
-                                                        </div>
+                        {/* Search Logs Table */}
+                        <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-sm">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left text-xs">
+                                    <thead className="border-b border-[var(--border-default)] bg-[var(--bg-secondary)]/50 text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                                        <tr>
+                                            <th className="py-3 pl-4 pr-3">Time</th>
+                                            <th className="px-3 py-3">License Number</th>
+                                            <th className="px-3 py-3">Result</th>
+                                            <th className="px-3 py-3">Holder Name</th>
+                                            <th className="px-3 py-3">IP Address</th>
+                                            <th className="py-3 pl-3 pr-4">Location (Origin)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-[var(--border-default)]/60">
+                                        {dataLoading && !logs.length ? (
+                                            <tr>
+                                                <td colSpan={6} className="py-12 text-center text-xs text-[var(--text-muted)]">
+                                                    <div className="flex flex-col items-center justify-center gap-2">
+                                                        <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-[var(--nepal-blue)]/30 border-t-[var(--nepal-blue)]" />
+                                                        <span>Loading search queries...</span>
                                                     </div>
                                                 </td>
                                             </tr>
-                                        )
-                                    })
+                                        ) : logs.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={6} className="py-12 text-center text-xs text-[var(--text-muted)]">
+                                                    <div className="flex flex-col items-center justify-center gap-2">
+                                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-muted)]">
+                                                            <circle cx="12" cy="12" r="10" />
+                                                            <line x1="8" y1="12" x2="16" y2="12" />
+                                                        </svg>
+                                                        <span className="font-semibold text-[var(--text-secondary)]">No search records found.</span>
+                                                        <p className="text-[11px]">When users query licenses on the site, their searches will appear here in real-time.</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            logs.map((log) => {
+                                                const isFound = log.status === 'found'
+                                                return (
+                                                    <tr
+                                                        key={log.id}
+                                                        className="group transition-colors hover:bg-[var(--bg-secondary)]/40"
+                                                    >
+                                                        {/* Timestamp */}
+                                                        <td className="whitespace-nowrap py-3 pl-4 pr-3 font-mono text-[11px] text-[var(--text-secondary)]">
+                                                            <span title={new Date(log.created_at).toLocaleString()}>
+                                                                {formatTimeAgo(log.created_at)}
+                                                            </span>
+                                                        </td>
+
+                                                        {/* License Number */}
+                                                        <td className="whitespace-nowrap px-3 py-3">
+                                                            <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-[var(--text-primary)]">
+                                                                <span>{log.license_number}</span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => copyToClipboard(log.license_number, `lic-${log.id}`)}
+                                                                    className="text-[var(--text-muted)] opacity-0 transition group-hover:opacity-100 hover:text-[var(--nepal-blue)]"
+                                                                    title="Copy license number"
+                                                                >
+                                                                    {copiedKey === `lic-${log.id}` ? (
+                                                                        <span className="text-[10px] font-bold text-[var(--success)]">✓</span>
+                                                                    ) : (
+                                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                                                        </svg>
+                                                                    )}
+                                                                </button>
+                                                            </div>
+                                                        </td>
+
+                                                        {/* Result Status Badge */}
+                                                        <td className="whitespace-nowrap px-3 py-3">
+                                                            {isFound ? (
+                                                                <span className="inline-flex items-center gap-1 rounded-full border border-[var(--success-border)] bg-[var(--success-bg)] px-2 py-0.5 text-[10px] font-bold text-[var(--success)]">
+                                                                    <span>✓</span>
+                                                                    <span>Found</span>
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center gap-1 rounded-full border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2 py-0.5 text-[10px] font-semibold text-[var(--text-muted)]">
+                                                                    <span>✕</span>
+                                                                    <span>Not Found</span>
+                                                                </span>
+                                                            )}
+                                                        </td>
+
+                                                        {/* Holder Name */}
+                                                        <td className="whitespace-nowrap px-3 py-3 text-xs">
+                                                            {log.holder_name ? (
+                                                                <div>
+                                                                    <span className="font-bold text-[var(--text-primary)]">
+                                                                        {log.holder_name}
+                                                                    </span>
+                                                                    {log.office && (
+                                                                        <p className="text-[10px] text-[var(--text-muted)]">
+                                                                            {log.office}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-[var(--text-muted)]">—</span>
+                                                            )}
+                                                        </td>
+
+                                                        {/* IP Address */}
+                                                        <td className="whitespace-nowrap px-3 py-3 font-mono text-xs">
+                                                            <div className="flex items-center gap-1.5 text-[var(--text-secondary)]">
+                                                                <span>{log.ip}</span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => copyToClipboard(log.ip, `ip-${log.id}`)}
+                                                                    className="text-[var(--text-muted)] opacity-0 transition group-hover:opacity-100 hover:text-[var(--nepal-blue)]"
+                                                                    title="Copy IP"
+                                                                >
+                                                                    {copiedKey === `ip-${log.id}` ? (
+                                                                        <span className="text-[10px] font-bold text-[var(--success)]">✓</span>
+                                                                    ) : (
+                                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                                                        </svg>
+                                                                    )}
+                                                                </button>
+                                                            </div>
+                                                        </td>
+
+                                                        {/* Location / Origin */}
+                                                        <td className="whitespace-nowrap py-3 pl-3 pr-4 text-xs">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="text-base" title={log.country || 'Unknown'}>
+                                                                    {getFlag(log.country)}
+                                                                </span>
+                                                                <div>
+                                                                    <span className="font-semibold text-[var(--text-primary)]">
+                                                                        {log.city || 'Unknown City'}
+                                                                    </span>
+                                                                    {log.region && (
+                                                                        <span className="text-[10px] text-[var(--text-muted)]">
+                                                                            , {log.region}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                )
+                                            })
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Pagination Bar */}
+                            <div className="flex flex-col items-center justify-between gap-3 border-t border-[var(--border-default)] px-4 py-3 sm:flex-row">
+                                <div className="text-xs text-[var(--text-muted)]">
+                                    Showing <span className="font-bold text-[var(--text-primary)]">{logs.length ? (page - 1) * limit + 1 : 0}</span> to{' '}
+                                    <span className="font-bold text-[var(--text-primary)]">{Math.min(page * limit, total)}</span> of{' '}
+                                    <span className="font-bold text-[var(--text-primary)]">{total.toLocaleString()}</span> queries
+                                    {lastUpdated && (
+                                        <span className="ml-2 hidden text-[11px] text-[var(--text-muted)] sm:inline">
+                                            (Updated: {lastUpdated.toLocaleTimeString()})
+                                        </span>
+                                    )}
+                                </div>
+
+                                <div className="flex items-center gap-1.5">
+                                    <button
+                                        type="button"
+                                        disabled={page <= 1 || dataLoading}
+                                        onClick={() => setPage(page - 1)}
+                                        className="inline-flex h-8 items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] shadow-xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-40"
+                                    >
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="15 18 9 12 15 6" />
+                                        </svg>
+                                        <span>Prev</span>
+                                    </button>
+                                    <span className="px-2 font-mono text-xs font-bold text-[var(--text-secondary)]">
+                                        {page} / {totalPages}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        disabled={page >= totalPages || dataLoading}
+                                        onClick={() => setPage(page + 1)}
+                                        className="inline-flex h-8 items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] shadow-xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-40"
+                                    >
+                                        <span>Next</span>
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="9 18 15 12 9 6" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        {/* Email Notification KPI Metrics */}
+                        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+                            {/* Total Subscribers */}
+                            <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-sm">
+                                <div className="flex items-center justify-between text-[var(--text-muted)]">
+                                    <span className="text-xs font-bold uppercase tracking-wider">Subscribers</span>
+                                    <span className="rounded-lg bg-[var(--nepal-blue-soft)] p-1.5 text-[var(--nepal-blue)]">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                            <rect x="2" y="4" width="20" height="16" rx="2" />
+                                            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                                        </svg>
+                                    </span>
+                                </div>
+                                <p className="mt-2 text-2xl font-black tracking-tight text-[var(--text-primary)]">
+                                    {notificationStats ? notificationStats.total.toLocaleString() : notifTotal.toLocaleString()}
+                                </p>
+                                <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">Registered for print alerts</p>
+                            </div>
+
+                            {/* Successfully Delivered */}
+                            <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-sm">
+                                <div className="flex items-center justify-between text-[var(--text-muted)]">
+                                    <span className="text-xs font-bold uppercase tracking-wider">Delivered</span>
+                                    <span className="rounded-lg bg-[var(--success-bg)] p-1.5 text-[var(--success)]">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                                            <polyline points="22 4 12 14.01 9 11.01" />
+                                        </svg>
+                                    </span>
+                                </div>
+                                <div className="mt-2 flex items-baseline gap-2">
+                                    <p className="text-2xl font-black tracking-tight text-[var(--success)]">
+                                        {notificationStats ? notificationStats.sent.toLocaleString() : '0'}
+                                    </p>
+                                    <span className="text-xs text-[var(--text-muted)]">
+                                        ({notificationStats ? `${notificationStats.deliveryRate}%` : '0%'} sent)
+                                    </span>
+                                </div>
+                                <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-[var(--bg-secondary)]">
+                                    <div
+                                        className="h-full rounded-full bg-[var(--success)] transition-all duration-500"
+                                        style={{ width: `${notificationStats ? notificationStats.deliveryRate : 0}%` }}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Pending in Queue */}
+                            <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-sm">
+                                <div className="flex items-center justify-between text-[var(--text-muted)]">
+                                    <span className="text-xs font-bold uppercase tracking-wider">In Queue</span>
+                                    <span className="rounded-lg bg-amber-500/10 p-1.5 text-amber-600 dark:text-amber-400">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                            <circle cx="12" cy="12" r="10" />
+                                            <polyline points="12 6 12 12 16 14" />
+                                        </svg>
+                                    </span>
+                                </div>
+                                <p className="mt-2 text-2xl font-black tracking-tight text-amber-600 dark:text-amber-400">
+                                    {notificationStats ? notificationStats.pending.toLocaleString() : '0'}
+                                </p>
+                                <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">Awaiting DOTM publication</p>
+                            </div>
+
+                            {/* Cancelled / Unsubscribed */}
+                            <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-sm">
+                                <div className="flex items-center justify-between text-[var(--text-muted)]">
+                                    <span className="text-xs font-bold uppercase tracking-wider">Cancelled</span>
+                                    <span className="rounded-lg bg-gray-500/10 p-1.5 text-gray-500">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                            <line x1="18" y1="6" x2="6" y2="18" />
+                                            <line x1="6" y1="6" x2="18" y2="18" />
+                                        </svg>
+                                    </span>
+                                </div>
+                                <p className="mt-2 text-2xl font-black tracking-tight text-[var(--text-primary)]">
+                                    {notificationStats ? notificationStats.cancelled.toLocaleString() : '0'}
+                                </p>
+                                <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">Unsubscribed by user</p>
+                            </div>
+                        </div>
+
+                        {/* Notification Search & Filter Toolbar */}
+                        <div className="mt-5 flex flex-col gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4 shadow-sm">
+                            <div className="relative flex-1">
+                                <svg
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2.2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
+                                >
+                                    <circle cx="11" cy="11" r="8" />
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                                </svg>
+                                <input
+                                    type="text"
+                                    value={notifSearchFilter}
+                                    onChange={(e) => {
+                                        setNotifSearchFilter(e.target.value)
+                                        startTransition(() => setNotifPage(1))
+                                    }}
+                                    placeholder="Filter by email, license number, or holder name..."
+                                    className="h-10 w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] pl-9 pr-9 text-xs text-[var(--text-primary)] transition focus:border-[var(--nepal-blue)] focus:bg-[var(--surface-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--nepal-blue)]/20 sm:text-sm"
+                                />
+                                {notifSearchFilter && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setNotifSearchFilter('')
+                                            setNotifPage(1)
+                                        }}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                                    >
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                            <line x1="18" y1="6" x2="6" y2="18" />
+                                            <line x1="6" y1="6" x2="18" y2="18" />
+                                        </svg>
+                                    </button>
                                 )}
-                            </tbody>
-                        </table>
-                    </div>
+                            </div>
 
-                    {/* Pagination Bar */}
-                    <div className="flex flex-col items-center justify-between gap-3 border-t border-[var(--border-default)] px-4 py-3 sm:flex-row">
-                        <div className="text-xs text-[var(--text-muted)]">
-                            Showing <span className="font-bold text-[var(--text-primary)]">{logs.length ? (page - 1) * limit + 1 : 0}</span> to{' '}
-                            <span className="font-bold text-[var(--text-primary)]">{Math.min(page * limit, total)}</span> of{' '}
-                            <span className="font-bold text-[var(--text-primary)]">{total.toLocaleString()}</span> queries
-                            {lastUpdated && (
-                                <span className="ml-2 hidden text-[11px] text-[var(--text-muted)] sm:inline">
-                                    (Updated: {lastUpdated.toLocaleTimeString()})
-                                </span>
-                            )}
+                            <div className="flex items-center gap-2">
+                                {/* Status Filter */}
+                                <div className="inline-flex rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-1 text-xs font-semibold">
+                                    {(['all', 'pending', 'sent', 'cancelled'] as const).map((st) => (
+                                        <button
+                                            key={st}
+                                            type="button"
+                                            onClick={() => {
+                                                setNotifStatusFilter(st)
+                                                setNotifPage(1)
+                                            }}
+                                            className={`rounded-lg px-2.5 py-1 capitalize transition ${
+                                                notifStatusFilter === st
+                                                    ? 'bg-[var(--surface-primary)] text-[var(--nepal-blue)] shadow-xs font-bold'
+                                                    : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                                            }`}
+                                        >
+                                            {st === 'sent' ? 'Delivered' : st === 'pending' ? 'In Queue' : st}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Limit Selector */}
+                                <select
+                                    value={notifLimit}
+                                    onChange={(e) => {
+                                        setNotifLimit(Number(e.target.value))
+                                        setNotifPage(1)
+                                    }}
+                                    className="h-9 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] focus:outline-none"
+                                >
+                                    <option value={25}>25 rows</option>
+                                    <option value={50}>50 rows</option>
+                                    <option value={100}>100 rows</option>
+                                </select>
+                            </div>
                         </div>
 
-                        <div className="flex items-center gap-1.5">
-                            <button
-                                type="button"
-                                disabled={page <= 1 || dataLoading}
-                                onClick={() => setPage(page - 1)}
-                                className="inline-flex h-8 items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] shadow-xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-40"
-                            >
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <polyline points="15 18 9 12 15 6" />
-                                </svg>
-                                <span>Prev</span>
-                            </button>
-                            <span className="px-2 font-mono text-xs font-bold text-[var(--text-secondary)]">
-                                {page} / {totalPages}
-                            </span>
-                            <button
-                                type="button"
-                                disabled={page >= totalPages || dataLoading}
-                                onClick={() => setPage(page + 1)}
-                                className="inline-flex h-8 items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] shadow-xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-40"
-                            >
-                                <span>Next</span>
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <polyline points="9 18 15 12 9 6" />
-                                </svg>
-                            </button>
+                        {/* Notifications Logs Table */}
+                        <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-sm">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left text-xs">
+                                    <thead className="border-b border-[var(--border-default)] bg-[var(--bg-secondary)]/50 text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                                        <tr>
+                                            <th className="py-3 pl-4 pr-3">Subscribed</th>
+                                            <th className="px-3 py-3">License Number</th>
+                                            <th className="px-3 py-3">User Email</th>
+                                            <th className="px-3 py-3">Status & Delivery</th>
+                                            <th className="px-3 py-3">License Match (DOTM)</th>
+                                            <th className="py-3 pl-3 pr-4 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-[var(--border-default)]/60">
+                                        {notifLoading && !notificationLogs.length ? (
+                                            <tr>
+                                                <td colSpan={6} className="py-12 text-center text-xs text-[var(--text-muted)]">
+                                                    <div className="flex flex-col items-center justify-center gap-2">
+                                                        <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-[var(--nepal-blue)]/30 border-t-[var(--nepal-blue)]" />
+                                                        <span>Loading email notifications...</span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ) : notificationLogs.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={6} className="py-12 text-center text-xs text-[var(--text-muted)]">
+                                                    <div className="flex flex-col items-center justify-center gap-2">
+                                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-muted)]">
+                                                            <rect x="2" y="4" width="20" height="16" rx="2" />
+                                                            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                                                        </svg>
+                                                        <span className="font-semibold text-[var(--text-secondary)]">No notification subscriptions found.</span>
+                                                        <p className="text-[11px]">When users subscribe for license print alerts, their requests and delivery logs will appear here.</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            notificationLogs.map((log) => {
+                                                return (
+                                                    <tr
+                                                        key={log.id}
+                                                        className="group transition-colors hover:bg-[var(--bg-secondary)]/40"
+                                                    >
+                                                        {/* Timestamp */}
+                                                        <td className="whitespace-nowrap py-3 pl-4 pr-3 font-mono text-[11px] text-[var(--text-secondary)]">
+                                                            <span title={new Date(log.created_at).toLocaleString()}>
+                                                                {formatTimeAgo(log.created_at)}
+                                                            </span>
+                                                        </td>
+
+                                                        {/* License Number */}
+                                                        <td className="whitespace-nowrap px-3 py-3">
+                                                            <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-[var(--text-primary)]">
+                                                                <span>{log.license_number}</span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => copyToClipboard(log.license_number, `notif-lic-${log.id}`)}
+                                                                    className="text-[var(--text-muted)] opacity-0 transition group-hover:opacity-100 hover:text-[var(--nepal-blue)]"
+                                                                    title="Copy license number"
+                                                                >
+                                                                    {copiedKey === `notif-lic-${log.id}` ? (
+                                                                        <span className="text-[10px] font-bold text-[var(--success)]">✓</span>
+                                                                    ) : (
+                                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                                                        </svg>
+                                                                    )}
+                                                                </button>
+                                                            </div>
+                                                        </td>
+
+                                                        {/* User Email */}
+                                                        <td className="whitespace-nowrap px-3 py-3">
+                                                            <div className="flex items-center gap-1.5 font-mono text-xs text-[var(--text-primary)]">
+                                                                <span>{log.email}</span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => copyToClipboard(log.email, `notif-mail-${log.id}`)}
+                                                                    className="text-[var(--text-muted)] opacity-0 transition group-hover:opacity-100 hover:text-[var(--nepal-blue)]"
+                                                                    title="Copy email address"
+                                                                >
+                                                                    {copiedKey === `notif-mail-${log.id}` ? (
+                                                                        <span className="text-[10px] font-bold text-[var(--success)]">✓</span>
+                                                                    ) : (
+                                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                                                        </svg>
+                                                                    )}
+                                                                </button>
+                                                            </div>
+                                                        </td>
+
+                                                        {/* Status / Delivery Badge */}
+                                                        <td className="whitespace-nowrap px-3 py-3">
+                                                            {log.status === 'sent' ? (
+                                                                <div className="flex flex-col gap-0.5">
+                                                                    <span className="inline-flex w-fit items-center gap-1 rounded-full border border-[var(--success-border)] bg-[var(--success-bg)] px-2 py-0.5 text-[10px] font-bold text-[var(--success)]">
+                                                                        <span>✓</span>
+                                                                        <span>Delivered</span>
+                                                                    </span>
+                                                                    {log.sent_at && (
+                                                                        <span className="text-[10px] text-[var(--text-muted)]" title={new Date(log.sent_at).toLocaleString()}>
+                                                                            Sent {formatTimeAgo(log.sent_at)}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            ) : log.status === 'cancelled' ? (
+                                                                <div className="flex flex-col gap-0.5">
+                                                                    <span className="inline-flex w-fit items-center gap-1 rounded-full border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2 py-0.5 text-[10px] font-semibold text-[var(--text-muted)]">
+                                                                        <span>✕</span>
+                                                                        <span>Cancelled</span>
+                                                                    </span>
+                                                                    {log.cancelled_at && (
+                                                                        <span className="text-[10px] text-[var(--text-muted)]" title={new Date(log.cancelled_at).toLocaleString()}>
+                                                                            {formatTimeAgo(log.cancelled_at)}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex flex-col gap-0.5">
+                                                                    <span className="inline-flex w-fit items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                                                                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                                                        <span>In Queue</span>
+                                                                    </span>
+                                                                    <span className="text-[10px] text-[var(--text-muted)]">
+                                                                        Awaiting print
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                        </td>
+
+                                                        {/* License Match / Holder */}
+                                                        <td className="whitespace-nowrap px-3 py-3 text-xs">
+                                                            {log.holder_name ? (
+                                                                <div>
+                                                                    <span className="font-bold text-[var(--text-primary)]">
+                                                                        {log.holder_name}
+                                                                    </span>
+                                                                    {log.office && (
+                                                                        <p className="text-[10px] text-[var(--text-muted)]">
+                                                                            {log.office}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-[11px] text-[var(--text-muted)] italic">
+                                                                    Not in records yet
+                                                                </span>
+                                                            )}
+                                                        </td>
+
+                                                        {/* Actions */}
+                                                        <td className="whitespace-nowrap py-3 pl-3 pr-4 text-right">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleDeleteNotification(log.id, log.license_number)}
+                                                                className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--border-default)] text-[var(--text-muted)] transition hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)]"
+                                                                title="Delete notification record"
+                                                            >
+                                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                                    <polyline points="3 6 5 6 21 6" />
+                                                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                                                </svg>
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                )
+                                            })
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Notification Pagination Bar */}
+                            <div className="flex flex-col items-center justify-between gap-3 border-t border-[var(--border-default)] px-4 py-3 sm:flex-row">
+                                <div className="text-xs text-[var(--text-muted)]">
+                                    Showing <span className="font-bold text-[var(--text-primary)]">{notificationLogs.length ? (notifPage - 1) * notifLimit + 1 : 0}</span> to{' '}
+                                    <span className="font-bold text-[var(--text-primary)]">{Math.min(notifPage * notifLimit, notifTotal)}</span> of{' '}
+                                    <span className="font-bold text-[var(--text-primary)]">{notifTotal.toLocaleString()}</span> subscriptions
+                                </div>
+
+                                <div className="flex items-center gap-1.5">
+                                    <button
+                                        type="button"
+                                        disabled={notifPage <= 1 || notifLoading}
+                                        onClick={() => setNotifPage(notifPage - 1)}
+                                        className="inline-flex h-8 items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] shadow-xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-40"
+                                    >
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="15 18 9 12 15 6" />
+                                        </svg>
+                                        <span>Prev</span>
+                                    </button>
+                                    <span className="px-2 font-mono text-xs font-bold text-[var(--text-secondary)]">
+                                        {notifPage} / {notifTotalPages}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        disabled={notifPage >= notifTotalPages || notifLoading}
+                                        onClick={() => setNotifPage(notifPage + 1)}
+                                        className="inline-flex h-8 items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] shadow-xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-40"
+                                    >
+                                        <span>Next</span>
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="9 18 15 12 9 6" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
+                    </>
+                )}
             </main>
         </div>
     )

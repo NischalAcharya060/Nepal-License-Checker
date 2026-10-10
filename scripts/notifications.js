@@ -553,6 +553,99 @@ async function processPendingNotifications(db) {
     return { totalFound: rows.length, sentCount, failedCount };
 }
 
+/**
+ * Get notification statistics for admin dashboard
+ */
+async function getNotificationStats(db) {
+    if (!db) return { total: 0, pending: 0, sent: 0, cancelled: 0, deliveryRate: 0 };
+    await ensureNotificationsTable(db);
+
+    const res = await db.execute(`
+        SELECT status, COUNT(*) as count
+        FROM license_notifications
+        GROUP BY status
+    `);
+
+    let total = 0;
+    let pending = 0;
+    let sent = 0;
+    let cancelled = 0;
+
+    for (const row of res.rows || []) {
+        const s = String(row.status);
+        const c = Number(row.count) || 0;
+        if (s === 'pending' || s === 'processing') pending += c;
+        else if (s === 'sent') sent += c;
+        else if (s === 'cancelled') cancelled += c;
+        total += c;
+    }
+
+    const deliveryRate = total > 0 ? Math.round((sent / total) * 100) : 0;
+
+    return {
+        total,
+        pending,
+        sent,
+        cancelled,
+        deliveryRate,
+    };
+}
+
+/**
+ * Get paginated notification logs for admin dashboard
+ */
+async function getNotificationLogs(db, { page = 1, limit = 50, search = '', status = 'all' } = {}) {
+    if (!db) return { logs: [], total: 0, page: 1, limit: 50, totalPages: 1 };
+    await ensureNotificationsTable(db);
+
+    const offset = (page - 1) * limit;
+    const whereClauses = [];
+    const args = [];
+
+    if (status && status !== 'all') {
+        whereClauses.push('n.status = ?');
+        args.push(status);
+    }
+
+    if (search && search.trim()) {
+        const term = `%${search.trim().toLowerCase()}%`;
+        whereClauses.push('(LOWER(n.license_number) LIKE ? OR LOWER(n.email) LIKE ? OR LOWER(l.holder_name) LIKE ?)');
+        args.push(term, term, term);
+    }
+
+    const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+    // Total count
+    const countSql = `
+        SELECT COUNT(*) as total
+        FROM license_notifications n
+        LEFT JOIN licenses l ON n.license_number = l.license_number
+        ${whereSql}
+    `;
+    const countRes = await db.execute({ sql: countSql, args });
+    const total = Number(countRes.rows?.[0]?.total || 0);
+
+    // Rows
+    const dataSql = `
+        SELECT n.id, n.license_number, n.email, n.status, n.created_at, n.updated_at, n.sent_at, n.cancelled_at,
+               l.holder_name, l.office
+        FROM license_notifications n
+        LEFT JOIN licenses l ON n.license_number = l.license_number
+        ${whereSql}
+        ORDER BY n.created_at DESC
+        LIMIT ? OFFSET ?
+    `;
+    const dataRes = await db.execute({ sql: dataSql, args: [...args, limit, offset] });
+
+    return {
+        logs: dataRes.rows || [],
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit) || 1,
+    };
+}
+
 module.exports = {
     ensureNotificationsTable,
     createNotification,
@@ -560,6 +653,9 @@ module.exports = {
     getNotificationByToken,
     sendAvailableLicenseEmail,
     processPendingNotifications,
+    getNotificationStats,
+    getNotificationLogs,
     maskEmail,
     getAppSiteUrl,
 };
+

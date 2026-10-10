@@ -5,6 +5,7 @@ import {
     verifyAdminSessionToken,
 } from '@/lib/adminAuth'
 import { getSearchLogs, getSearchStats } from '@/lib/searchLogger'
+import { getNotificationStats } from '@/lib/notifications'
 import { getTurso } from '@/lib/turso'
 import { DEFAULT_CRON_SCHEDULE, getNextCronRun } from '@/lib/cronHelper'
 
@@ -96,10 +97,11 @@ export async function GET(request: NextRequest) {
 
     try {
         const db = getTurso()
-        const [logsData, stats, scraper] = await Promise.all([
+        const [logsData, stats, scraper, notificationStats] = await Promise.all([
             getSearchLogs({ page, limit, search, status }),
             getSearchStats(),
             getAdminScraperMeta(db),
+            getNotificationStats().catch(() => ({ total: 0, pending: 0, sent: 0, cancelled: 0, deliveryRate: 0 })),
         ])
 
         return NextResponse.json({
@@ -108,6 +110,7 @@ export async function GET(request: NextRequest) {
                 ...logsData,
                 stats,
                 scraper,
+                notificationStats,
             },
         })
     } catch (err) {

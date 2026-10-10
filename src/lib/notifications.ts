@@ -72,6 +72,51 @@ export async function processPendingNotifications() {
   return notificationService.processPendingNotifications(db)
 }
 
+export interface NotificationStats {
+  total: number
+  pending: number
+  sent: number
+  cancelled: number
+  deliveryRate: number
+}
+
+export interface NotificationLogItem {
+  id: string
+  license_number: string
+  email: string
+  status: 'pending' | 'processing' | 'sent' | 'cancelled'
+  created_at: number
+  updated_at: number
+  sent_at?: number | null
+  cancelled_at?: number | null
+  holder_name?: string | null
+  office?: string | null
+}
+
+export interface NotificationLogsResult {
+  logs: NotificationLogItem[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}
+
+export async function getNotificationStats(): Promise<NotificationStats> {
+  const db = getTurso()
+  return notificationService.getNotificationStats(db)
+}
+
+export async function getNotificationLogs(params?: {
+  page?: number
+  limit?: number
+  search?: string
+  status?: string
+}): Promise<NotificationLogsResult> {
+  const db = getTurso()
+  return notificationService.getNotificationLogs(db, params)
+}
+
 export function maskEmail(email: string): string {
   return notificationService.maskEmail(email)
 }
+
