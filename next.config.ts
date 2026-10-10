@@ -97,6 +97,14 @@ const nextConfig = {
             },
         ];
     },
+    async rewrites() {
+        return [
+            {
+                source: '/notifications/cancel',
+                destination: '/unsubscribe',
+            },
+        ];
+    },
 }
 
 export default nextConfig;

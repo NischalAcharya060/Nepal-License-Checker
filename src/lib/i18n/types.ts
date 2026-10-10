@@ -130,11 +130,55 @@ export interface PwaCopy {
   offlineCachedHint: string
 }
 
+export interface NotificationCopy {
+  cardTitle: string
+  cardDescription: string
+  nextScrapeLabel: string
+  nextScrapePrefix: string
+  emailPlaceholder: string
+  submitButton: string
+  submittingButton: string
+  privacyNote: string
+  successTitle: string
+  successDescription: string
+  cancelAlertLink: string
+  alreadySubscribedNotice: string
+  alreadyPrintedNotice: string
+  refreshResultButton: string
+  invalidEmailError: string
+  rateLimitError: string
+  cancelledSuccessNotice: string
+}
+
+export interface UnsubscribeCopy {
+  pageTitle: string
+  pageSubtitle: string
+  tokenLookupTitle: string
+  tokenLookupDescription: string
+  cancelButton: string
+  cancellingButton: string
+  cancelledTitle: string
+  cancelledDescription: string
+  alreadyCancelledText: string
+  alreadySentText: string
+  backHomeButton: string
+  manualTitle: string
+  manualDescription: string
+  licenseLabel: string
+  emailLabel: string
+  manualCancelButton: string
+  notFoundError: string
+  invalidInputError: string
+}
+
 export interface UICopy {
   home: HomeCopy
   form: LicenseFormCopy
   result: LicenseResultCopy
+  notifications: NotificationCopy
+  unsubscribe: UnsubscribeCopy
   officesModal: OfficesModalCopy
   smsGuide: SmsGuideCopy
   pwa: PwaCopy
 }
+

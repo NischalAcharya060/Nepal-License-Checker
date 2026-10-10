@@ -6,6 +6,7 @@ const http = require('http');
 const { URL } = require('url');
 const { createClient } = require('@libsql/client');
 const { DEFAULT_CRON_SCHEDULE, getNextCronRun } = require('./cronHelper');
+const { ensureNotificationsTable, processPendingNotifications } = require('./notifications');
 
 // ── Turso (libSQL) init ──────────────────────────────────────────────────────
 let dbClient = null;
@@ -64,6 +65,9 @@ async function ensureSchema() {
         )
     `);
     await db.execute(`CREATE INDEX IF NOT EXISTS processed_pdfs_processed_at_idx ON processed_pdfs(processed_at)`);
+
+    // Ensure email notifications schema
+    await ensureNotificationsTable(db);
 }
 
 // ── HTTP helpers ─────────────────────────────────────────────────────────────
@@ -767,6 +771,19 @@ class DOTMScraper {
             skippedPdfsCount,
             totalPdfsCount: pdfUrls.length,
         });
+
+        // Check and send pending email notifications for newly printed records
+        if (!this.stats.circuitBreakerTripped) {
+            try {
+                console.log('Checking for pending user email notifications...');
+                const notifStats = await processPendingNotifications(db);
+                if (notifStats.sentCount > 0) {
+                    console.log(`✉️ Processed pending notifications: sent ${notifStats.sentCount} emails.`);
+                }
+            } catch (notifErr) {
+                console.warn(`Could not process pending notifications: ${notifErr.message}`);
+            }
+        }
 
         return !this.stats.circuitBreakerTripped;
     }

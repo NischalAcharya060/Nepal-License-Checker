@@ -6,7 +6,8 @@ import { formatDate } from '@/utils/helpers'
 import { getTransportOfficeByOfficeName } from '@/lib/offices'
 import { parseCategoryCodes } from '@/lib/categories'
 import { SearchState, LicenseData } from '@/app/page'
-import type { LicenseResultCopy } from '@/lib/i18n'
+import type { LicenseResultCopy, NotificationCopy } from '@/lib/i18n'
+import LicenseNotificationCard from '@/components/LicenseNotificationCard'
 
 interface LicenseResultProps {
   state: SearchState
@@ -16,6 +17,9 @@ interface LicenseResultProps {
   copy: LicenseResultCopy
   dateLocale: string
   language?: 'en' | 'ne'
+  nextScraperRun?: string | null
+  notificationsCopy?: NotificationCopy
+  onFoundExisting?: (license: LicenseData) => void
 }
 
 function Field({
@@ -52,6 +56,9 @@ export default function LicenseResult({
   copy,
   dateLocale,
   language = 'en',
+  nextScraperRun,
+  notificationsCopy,
+  onFoundExisting,
 }: LicenseResultProps) {
   const [copied, setCopied] = useState(false)
 
@@ -197,6 +204,17 @@ export default function LicenseResult({
               </div>
             )}
           </div>
+
+          {/* Email Notification Option for Unavailable Records */}
+          {notificationsCopy && (
+            <LicenseNotificationCard
+              licenseNumber={licenseNumber}
+              copy={notificationsCopy}
+              language={language}
+              nextScraperRun={nextScraperRun}
+              onFoundExisting={onFoundExisting}
+            />
+          )}
 
           <div className="rounded-xl border border-[var(--warning-border)] bg-[var(--warning-bg)] p-4">
             <p className="mb-2.5 text-sm font-bold text-[var(--warning-text)]">

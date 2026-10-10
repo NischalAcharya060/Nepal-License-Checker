@@ -26,6 +26,14 @@ jobs:
     env:
       TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL || vars.TURSO_DATABASE_URL }}
       TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN || vars.TURSO_AUTH_TOKEN }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY || vars.RESEND_API_KEY }}
+      SMTP_SERVICE: ${{ secrets.SMTP_SERVICE || vars.SMTP_SERVICE }}
+      SMTP_HOST: ${{ secrets.SMTP_HOST || vars.SMTP_HOST }}
+      SMTP_PORT: ${{ secrets.SMTP_PORT || vars.SMTP_PORT }}
+      SMTP_USER: ${{ secrets.SMTP_USER || vars.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS || vars.SMTP_PASS }}
+      SMTP_FROM: ${{ secrets.SMTP_FROM || vars.SMTP_FROM }}
+      NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL || vars.NEXT_PUBLIC_SITE_URL }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4

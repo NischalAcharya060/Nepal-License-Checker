@@ -407,6 +407,12 @@ export default function Home() {
               copy={copy.result}
               dateLocale={dateLocale}
               language={language}
+              nextScraperRun={nextScraperRun}
+              notificationsCopy={copy.notifications}
+              onFoundExisting={(foundData) => {
+                setResult(foundData)
+                setSearchState('found')
+              }}
             />
           </div>
         )}

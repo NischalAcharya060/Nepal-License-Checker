@@ -22,6 +22,8 @@ Instantly check whether your **Nepal smart card driving license** has been print
 - **100K+ indexed records** — fast lookups served from a Turso (LibSQL) database
 - **Live DOTM fallback** — if a number isn't in the database, the API scrapes the latest DOTM published PDFs on the fly and caches the result
 - **Weekly data sync** — a GitHub Actions cron keeps the indexed list fresh
+- **Email alerts for unavailable licenses** — users whose license is not yet printed can enter their email to get notified automatically the instant DoTM publishes their record, with duplicate prevention and one-click unsubscribe
+- **Next scheduled sync display** — transparently shows the exact date, time, and relative countdown for upcoming DoTM data scraping runs
 - **Installable PWA** — add to home screen on Android/iOS/desktop, works offline, with an offline fallback page and cached recent lookups
 - **SEO-ready** — dual-language sitemap, structured data (FAQPage, HowTo, GovernmentService), and AEO/GEO AI crawler compliance
 
@@ -30,12 +32,14 @@ Instantly check whether your **Nepal smart card driving license** has been print
 1. **Fast path:** the requested number is matched against the Turso database of indexed printed records.
 2. **Live path:** on a miss, the API downloads the DOTM printed-license PDFs, extracts text, and searches for the number.
 3. **Newly found licenses** are upserted back into the database so repeat lookups are instant.
+4. **Automated user alerts:** when DoTM publishes updated records and the scraper runs, the system matches saved license requests, dispatches email notifications, and avoids duplicate sends.
 
 ## Tech stack
 
 - **Framework:** Next.js 16 (App Router) · React 19 · TypeScript
 - **Styling:** Tailwind CSS v4
 - **Database:** Turso (LibSQL) via `@libsql/client`
+- **Email Delivery:** Resend API & Nodemailer SMTP
 - **Scraping:** custom DOTM scraper (`scripts/scraper.js`) using Axios + Cheerio + PDF text extraction
 - **Deployment:** Vercel (`vercel.json` extends API function duration)
 
@@ -62,6 +66,9 @@ Copy `.env.example` to `.env` and fill in:
 | `TURSO_AUTH_TOKEN` | Turso auth token (required) |
 | `CRON_SECRET` | Secret used to protect the cron endpoint |
 | `NEXT_PUBLIC_SITE_URL` | Public site URL (optional; defaults to the Vercel domain) |
+| `RESEND_API_KEY` | Resend API key for sending email notifications (optional) |
+| `SMTP_HOST` / `SMTP_USER` / `SMTP_PASS` | SMTP credentials for Nodemailer (alternative to Resend) |
+| `SMTP_FROM` | Sender email address (e.g. `Nepal License Checker <notifications@acharyanischal.com.np>`) |
 
 ### 3. Run the dev server
 
