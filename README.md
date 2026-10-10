@@ -4,7 +4,7 @@ Instantly check whether your **Nepal smart card driving license** has been print
 
 > This site is **not** the official source. Data is mirrored from [dotm.gov.np](https://dotm.gov.np) and updated regularly.
 
-![Nepal License Checker product screenshot](public/product-screenshot.png)
+![Nepal License Checker product screenshot](public/screenshot/desktop-demo.png)
 
 ## Features
 

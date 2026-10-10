@@ -491,7 +491,7 @@ export const metadata: Metadata = {
     title: appTitle,
     description: appDescription,
     creator: '@nischal_dev',
-    images: ['/twitter-image.png'],
+    images: ['/og-image.png'],
   },
   keywords: [
     // Top Google Search Console Queries (High Impressions & Clicks)
