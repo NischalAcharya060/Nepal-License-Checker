@@ -41,6 +41,16 @@ const themeInitScript = `
       : (prefersDark ? 'dark' : 'light');
     document.documentElement.setAttribute('data-theme', theme);
     document.documentElement.classList.toggle('dark', theme === 'dark');
+    const updateManifest = (isDark) => {
+      const link = document.querySelector('link[rel="manifest"]');
+      if (link) {
+        link.setAttribute('href', isDark ? '/site-dark.webmanifest' : '/site.webmanifest');
+      }
+    };
+    updateManifest(theme === 'dark');
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => updateManifest(theme === 'dark'), { once: true });
+    }
   } catch {}
 })();
 `
@@ -426,6 +436,7 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
+      { url: '/maskable-icon.svg', type: 'image/svg+xml' },
       { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
       { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
     ],
@@ -440,6 +451,14 @@ export const metadata: Metadata = {
       {
         rel: 'android-chrome-512x512',
         url: '/android-chrome-512x512.png',
+      },
+      {
+        rel: 'maskable-icon',
+        url: '/maskable-icon-512x512.png',
+      },
+      {
+        rel: 'maskable-icon-dark',
+        url: '/maskable-icon-dark-512x512.png',
       },
     ],
   },

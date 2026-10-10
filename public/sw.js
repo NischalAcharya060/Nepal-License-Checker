@@ -9,7 +9,7 @@
  *  - never cached     : non-GET requests, cross-origin requests, video/audio
  */
 
-const VERSION = 'v4'
+const VERSION = 'v5'
 const PRECACHE = `nlc-precache-${VERSION}`
 const PAGES = `nlc-pages-${VERSION}`
 const ASSETS = `nlc-assets-${VERSION}`
@@ -28,11 +28,15 @@ const MAX_API_ENTRIES = 60
 const PRECACHE_URLS = [
   OFFLINE_URL,
   '/site.webmanifest',
+  '/site-dark.webmanifest',
   '/License-Checker-Nepal-logo.png',
   '/android-chrome-192x192.png',
   '/android-chrome-512x512.png',
   '/maskable-icon-192x192.png',
   '/maskable-icon-512x512.png',
+  '/maskable-icon-dark-192x192.png',
+  '/maskable-icon-dark-512x512.png',
+  '/maskable-icon.svg',
   '/apple-touch-icon.png',
   '/',
 ]

@@ -33,6 +33,10 @@ function applyThemeToDocument(theme: ThemeMode) {
   const root = document.documentElement
   root.setAttribute('data-theme', theme)
   root.classList.toggle('dark', theme === 'dark')
+  const manifestLink = document.querySelector<HTMLLinkElement>('link[rel="manifest"]')
+  if (manifestLink) {
+    manifestLink.href = theme === 'dark' ? '/site-dark.webmanifest' : '/site.webmanifest'
+  }
 }
 
 function applyLangToDocument(lang: Language) {
@@ -132,6 +136,19 @@ export default function Home() {
     applyThemeToDocument(theme)
     window.localStorage.setItem('ui-theme', theme)
   }, [theme])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const media = window.matchMedia('(prefers-color-scheme: dark)')
+    const handler = (e: MediaQueryListEvent) => {
+      const explicit = window.localStorage.getItem('ui-theme')
+      if (!explicit) {
+        setTheme(e.matches ? 'dark' : 'light')
+      }
+    }
+    media.addEventListener('change', handler)
+    return () => media.removeEventListener('change', handler)
+  }, [])
 
   useEffect(() => {
     window.localStorage.setItem('ui-language', language)
