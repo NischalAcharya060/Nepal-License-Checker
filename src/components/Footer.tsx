@@ -19,6 +19,7 @@ interface FooterProps {
   nextScraperRun?: string | null
   indexedRecords?: number | null
   onReset?: () => void
+  onOpenFeedback?: () => void
 }
 
 export default function Footer({
@@ -34,6 +35,7 @@ export default function Footer({
   nextScraperRun,
   indexedRecords,
   onReset,
+  onOpenFeedback,
 }: FooterProps) {
   const [isDocsModalOpen, setIsDocsModalOpen] = useState(false)
   const [isCategoriesModalOpen, setIsCategoriesModalOpen] = useState(false)
@@ -191,6 +193,29 @@ export default function Footer({
               </svg>
               <span>{isNe ? 'समस्या रिपोर्ट' : 'Report Bug'}</span>
             </a>
+
+            {onOpenFeedback ? (
+              <button
+                type="button"
+                onClick={onOpenFeedback}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] active:scale-95 shadow-2xs cursor-pointer"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+                <span>{isNe ? 'प्रतिक्रिया / समस्या' : 'Contact / Feedback'}</span>
+              </button>
+            ) : (
+              <a
+                href="/feedback"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] active:scale-95 shadow-2xs"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+                <span>{isNe ? 'प्रतिक्रिया / समस्या' : 'Contact / Feedback'}</span>
+              </a>
+            )}
           </div>
         </div>
 
@@ -400,6 +425,30 @@ export default function Footer({
                   </svg>
                   <span>{isNe ? 'छपाइ हुन किन समय लाग्छ?' : 'Why is Printing Delayed?'}</span>
                 </button>
+              </li>
+              <li>
+                {onOpenFeedback ? (
+                  <button
+                    type="button"
+                    onClick={onOpenFeedback}
+                    className="group flex items-center gap-2 text-left font-medium text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] transition cursor-pointer w-full"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)] shrink-0 transition-transform group-hover:scale-110">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    </svg>
+                    <span>{isNe ? 'समस्या सोधपुछ / प्रतिक्रिया फारम' : 'Help & Feedback Form'}</span>
+                  </button>
+                ) : (
+                  <a
+                    href="/feedback"
+                    className="group flex items-center gap-2 text-left font-medium text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] transition w-full"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)] shrink-0 transition-transform group-hover:scale-110">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    </svg>
+                    <span>{isNe ? 'समस्या सोधपुछ / प्रतिक्रिया फारम' : 'Help & Feedback Form'}</span>
+                  </a>
+                )}
               </li>
             </ul>
           </div>

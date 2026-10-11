@@ -20,6 +20,7 @@ interface LicenseResultProps {
   nextScraperRun?: string | null
   notificationsCopy?: NotificationCopy
   onFoundExisting?: (license: LicenseData) => void
+  onOpenFeedback?: () => void
 }
 
 function Field({
@@ -59,6 +60,7 @@ export default function LicenseResult({
   nextScraperRun,
   notificationsCopy,
   onFoundExisting,
+  onOpenFeedback,
 }: LicenseResultProps) {
   const [copied, setCopied] = useState(false)
 
@@ -153,6 +155,19 @@ export default function LicenseResult({
             </svg>
             {copy.checkAnotherLabel}
           </button>
+
+          {onOpenFeedback && (
+            <div className="pt-1 text-center text-xs text-[var(--text-muted)]">
+              <span>{language === 'ne' ? 'समस्या आइरहेको छ? ' : 'Facing issues checking status? '}</span>
+              <button
+                type="button"
+                onClick={onOpenFeedback}
+                className="font-semibold text-[var(--nepal-blue)] underline hover:text-[var(--nepal-blue-mid)] transition"
+              >
+                {language === 'ne' ? 'हामीलाई सोध्नुहोस् / समस्या टिपाउनुहोस्' : 'Contact Support / Send Feedback'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     )
@@ -255,6 +270,19 @@ export default function LicenseResult({
             </svg>
             {copy.checkAnotherLabel}
           </button>
+
+          {onOpenFeedback && (
+            <div className="pt-1 text-center text-xs text-[var(--text-muted)]">
+              <span>{language === 'ne' ? 'लाइसेन्स फेला परेन वा समस्या छ? ' : 'Cannot find your license or details incorrect? '}</span>
+              <button
+                type="button"
+                onClick={onOpenFeedback}
+                className="font-semibold text-[var(--nepal-blue)] underline hover:text-[var(--nepal-blue-mid)] transition"
+              >
+                {language === 'ne' ? 'हामीलाई सोध्नुहोस् / समस्या टिपाउनुहोस्' : 'Submit inquiry / Contact support'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     )

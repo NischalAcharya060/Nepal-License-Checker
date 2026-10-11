@@ -19,6 +19,7 @@ interface NavbarProps {
   onOpenOffices: () => void
   onOpenSms: () => void
   onOpenSample: () => void
+  onOpenFeedback?: () => void
 }
 
 export default function Navbar({
@@ -33,6 +34,7 @@ export default function Navbar({
   onOpenOffices,
   onOpenSms,
   onOpenSample,
+  onOpenFeedback,
 }: NavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
@@ -95,6 +97,19 @@ export default function Navbar({
             <span>📱</span>
             <span>{language === 'ne' ? 'एसएमएस सेवा' : 'SMS Check'}</span>
           </button>
+
+          {/* Feedback & Support button (Desktop) */}
+          {onOpenFeedback && (
+            <button
+              type="button"
+              onClick={onOpenFeedback}
+              className="hidden items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-[11px] font-semibold text-[var(--text-secondary)] transition hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue-soft)] hover:text-[var(--nepal-blue)] sm:inline-flex"
+              title={language === 'ne' ? 'प्रतिक्रिया तथा सहायता' : 'Feedback & Support'}
+            >
+              <span>💬</span>
+              <span>{language === 'ne' ? 'प्रतिक्रिया' : 'Feedback'}</span>
+            </button>
+          )}
 
           {/* Language Switcher - compact on mobile */}
           <div
@@ -271,6 +286,33 @@ export default function Navbar({
                 <polyline points="9 18 15 12 9 6" />
               </svg>
             </button>
+
+            {/* Feedback & Support (Mobile) */}
+            {onOpenFeedback && (
+              <button
+                type="button"
+                onClick={() => {
+                  onOpenFeedback()
+                  setIsMobileMenuOpen(false)
+                }}
+                className="flex items-center justify-between rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3.5 py-2.5 text-left transition hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue-soft)] active:scale-[0.99]"
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-500/10 text-base text-sky-600 dark:text-sky-400">💬</span>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-[var(--text-primary)]">
+                      {language === 'ne' ? 'प्रतिक्रिया तथा सहायता' : 'Feedback & Support'}
+                    </span>
+                    <span className="text-[10px] text-[var(--text-secondary)]">
+                      {language === 'ne' ? 'समस्या रिपोर्ट गर्नुहोस् वा सुझाव दिनुहोस्' : 'Ask questions or report an issue'}
+                    </span>
+                  </div>
+                </div>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-muted)]">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+            )}
 
             {/* GitHub Link & Views in mobile menu */}
             <div className="mt-1 flex items-center justify-between pt-2 border-t border-[var(--border-default)]/60 text-[11px]">

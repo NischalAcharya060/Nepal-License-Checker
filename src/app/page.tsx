@@ -13,6 +13,7 @@ import Footer from '@/components/Footer'
 import SampleModal from '@/components/SampleModal'
 import OfficesModal from '@/components/OfficesModal'
 import SmsModal from '@/components/SmsModal'
+import FeedbackModal from '@/components/FeedbackModal'
 import ScrollProgressButton from '@/components/ScrollProgressButton'
 import OfflineBanner from '@/components/OfflineBanner'
 import { translations } from '@/lib/i18n'
@@ -78,6 +79,7 @@ export default function Home() {
   // Modal deep-links from PWA shortcuts (/?view=offices|sms).
   const [isOfficesModalOpen, setIsOfficesModalOpen] = useState(() => readViewParam() === 'offices')
   const [isSmsModalOpen, setIsSmsModalOpen] = useState(() => readViewParam() === 'sms')
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(() => readViewParam() === 'feedback')
   const [language, setLanguage] = useState<Language>(() => {
     if (typeof window === 'undefined') return 'en'
     try {
@@ -381,6 +383,7 @@ export default function Home() {
         onOpenOffices={() => setIsOfficesModalOpen(true)}
         onOpenSms={() => setIsSmsModalOpen(true)}
         onOpenSample={() => setIsSampleModalOpen(true)}
+        onOpenFeedback={() => setIsFeedbackModalOpen(true)}
       />
 
       <div className="relative z-10 mx-auto w-full max-w-4xl px-4 pb-14 pt-6 sm:px-6 sm:pt-10 print:p-0 print:m-0 print:max-w-none">
@@ -430,6 +433,7 @@ export default function Home() {
                 setResult(foundData)
                 setSearchState('found')
               }}
+              onOpenFeedback={() => setIsFeedbackModalOpen(true)}
             />
           </div>
         )}
@@ -470,6 +474,7 @@ export default function Home() {
         nextScraperRun={nextScraperRun}
         indexedRecords={indexedRecords}
         onReset={reset}
+        onOpenFeedback={() => setIsFeedbackModalOpen(true)}
       />
 
       {/* Floating Dynamic Scroll Progress & Back-to-Top Button */}
@@ -497,6 +502,14 @@ export default function Home() {
         copy={copy.smsGuide}
         language={language}
         initialNumber={lastSearched || externalNumber || ''}
+      />
+
+      {/* User Contact & Feedback Modal */}
+      <FeedbackModal
+        isOpen={isFeedbackModalOpen}
+        onClose={() => setIsFeedbackModalOpen(false)}
+        language={language}
+        initialLicenseNumber={lastSearched || externalNumber || ''}
       />
     </main>
   )

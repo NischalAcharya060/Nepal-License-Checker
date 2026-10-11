@@ -6,6 +6,7 @@ import {
 } from '@/lib/adminAuth'
 import { getSearchLogs, getSearchStats } from '@/lib/searchLogger'
 import { getNotificationStats } from '@/lib/notifications'
+import { getFeedbackStats } from '@/lib/feedback'
 import { getTurso } from '@/lib/turso'
 import { DEFAULT_CRON_SCHEDULE, getNextCronRun } from '@/lib/cronHelper'
 
@@ -97,11 +98,12 @@ export async function GET(request: NextRequest) {
 
     try {
         const db = getTurso()
-        const [logsData, stats, scraper, notificationStats] = await Promise.all([
+        const [logsData, stats, scraper, notificationStats, feedbackStats] = await Promise.all([
             getSearchLogs({ page, limit, search, status }),
             getSearchStats(),
             getAdminScraperMeta(db),
             getNotificationStats().catch(() => ({ total: 0, pending: 0, sent: 0, cancelled: 0, deliveryRate: 0 })),
+            getFeedbackStats().catch(() => ({ total: 0, newCount: 0, resolvedCount: 0, problemCount: 0, suggestionCount: 0 })),
         ])
 
         return NextResponse.json({
@@ -111,6 +113,7 @@ export async function GET(request: NextRequest) {
                 stats,
                 scraper,
                 notificationStats,
+                feedbackStats,
             },
         })
     } catch (err) {
