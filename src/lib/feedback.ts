@@ -41,6 +41,7 @@ export interface FeedbackStats {
     resolvedCount: number
     problemCount: number
     suggestionCount: number
+    todayCount: number
 }
 
 export interface FeedbackLogsResult {
@@ -166,12 +167,23 @@ export async function getFeedbackStats(): Promise<FeedbackStats> {
         }
     }
 
+    const startOfToday = new Date()
+    startOfToday.setHours(0, 0, 0, 0)
+    const todayTimestamp = startOfToday.getTime()
+
+    const todayRes = await db.execute({
+        sql: 'SELECT COUNT(*) as count FROM user_feedbacks WHERE created_at >= ?',
+        args: [todayTimestamp],
+    })
+    const todayCount = Number(todayRes.rows?.[0]?.count) || 0
+
     return {
         total,
         newCount,
         resolvedCount,
         problemCount,
         suggestionCount,
+        todayCount,
     }
 }
 

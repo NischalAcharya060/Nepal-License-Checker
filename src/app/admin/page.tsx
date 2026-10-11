@@ -1823,7 +1823,7 @@ export default function AdminPage() {
                                     </span>
                                 </div>
                                 <p className="mt-2 text-2xl font-black tracking-tight text-[var(--text-primary)]">
-                                    {feedbackStats ? feedbackStats.total.toLocaleString() : feedbackTotal.toLocaleString()}
+                                    {(feedbackStats?.total ?? feedbackTotal ?? 0).toLocaleString()}
                                 </p>
                                 <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">User messages submitted</p>
                             </div>
@@ -1841,7 +1841,7 @@ export default function AdminPage() {
                                     </span>
                                 </div>
                                 <p className="mt-2 text-2xl font-black tracking-tight text-amber-600 dark:text-amber-400">
-                                    {feedbackStats ? feedbackStats.newCount.toLocaleString() : '0'}
+                                    {(feedbackStats?.newCount ?? 0).toLocaleString()}
                                 </p>
                                 <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">Awaiting administrator review</p>
                             </div>
@@ -1858,7 +1858,7 @@ export default function AdminPage() {
                                     </span>
                                 </div>
                                 <p className="mt-2 text-2xl font-black tracking-tight text-[var(--success)]">
-                                    {feedbackStats ? feedbackStats.resolvedCount.toLocaleString() : '0'}
+                                    {(feedbackStats?.resolvedCount ?? 0).toLocaleString()}
                                 </p>
                                 <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">Handled or answered inquiries</p>
                             </div>
@@ -1877,7 +1877,7 @@ export default function AdminPage() {
                                     </span>
                                 </div>
                                 <p className="mt-2 text-2xl font-black tracking-tight text-[var(--text-primary)]">
-                                    {feedbackStats ? feedbackStats.todayCount.toLocaleString() : '0'}
+                                    {(feedbackStats?.todayCount ?? 0).toLocaleString()}
                                 </p>
                                 <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">Submitted today</p>
                             </div>
@@ -2010,15 +2010,33 @@ export default function AdminPage() {
                                             </tr>
                                         ) : feedbackLogs.length === 0 ? (
                                             <tr>
-                                                <td colSpan={7} className="py-12 text-center text-sm text-[var(--text-muted)]">
-                                                    <div className="flex flex-col items-center justify-center gap-2">
-                                                        <span className="text-2xl">📬</span>
-                                                        <span className="font-semibold text-[var(--text-primary)]">No feedback entries found</span>
-                                                        <p className="text-xs text-[var(--text-muted)]">
+                                                <td colSpan={7} className="py-14 text-center text-sm text-[var(--text-muted)]">
+                                                    <div className="flex flex-col items-center justify-center gap-2.5">
+                                                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--nepal-blue-soft)] text-2xl text-[var(--nepal-blue)]">
+                                                            💬
+                                                        </div>
+                                                        <span className="text-base font-bold text-[var(--text-primary)]">
+                                                            There is no data in feedback form
+                                                        </span>
+                                                        <p className="max-w-md text-xs text-[var(--text-muted)]">
                                                             {feedbackSearchFilter || feedbackStatusFilter !== 'all' || feedbackCategoryFilter !== 'all'
-                                                                ? 'Try adjusting your filters or search keywords.'
-                                                                : 'User submitted inquiries and suggestions will appear here.'}
+                                                                ? 'No inquiries match your current search or filter criteria.'
+                                                                : 'User submitted inquiries and suggestions will appear here once visitors submit feedback through the website.'}
                                                         </p>
+                                                        {(feedbackSearchFilter || feedbackStatusFilter !== 'all' || feedbackCategoryFilter !== 'all') && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setFeedbackSearchFilter('')
+                                                                    setFeedbackStatusFilter('all')
+                                                                    setFeedbackCategoryFilter('all')
+                                                                    setFeedbackPage(1)
+                                                                }}
+                                                                className="mt-2 inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3 py-1.5 text-xs font-semibold text-[var(--nepal-blue)] transition hover:border-[var(--nepal-blue)] hover:bg-[var(--surface-primary)]"
+                                                            >
+                                                                Clear filters
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </td>
                                             </tr>
