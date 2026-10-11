@@ -259,93 +259,145 @@ function generateNotificationEmailHtml({
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Your Nepal Driving License is Printed & Ready to Collect!</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f6f9; color: #1f2937; }
-    .container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e5e7eb; }
-    .header { background: linear-gradient(135deg, #003893 0%, #001f52 100%); padding: 32px 24px; text-align: center; color: #ffffff; }
-    .flag-badge { display: inline-block; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); border-radius: 20px; padding: 4px 14px; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px; }
-    .header h1 { margin: 0 0 8px 0; font-size: 24px; font-weight: 800; line-height: 1.3; }
-    .header p { margin: 0; font-size: 14px; color: rgba(255,255,255,0.9); }
-    .content { padding: 28px 24px; }
-    .status-card { background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 12px; padding: 16px; margin-bottom: 24px; text-align: center; }
-    .status-card .tag { color: #065f46; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; }
-    .status-card .status-text { color: #047857; font-size: 18px; font-weight: 800; margin-top: 4px; }
-    .table-container { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; margin-bottom: 24px; }
-    .data-row { display: flex; border-bottom: 1px solid #e5e7eb; padding: 12px 16px; }
-    .data-row:last-child { border-bottom: none; }
-    .data-label { width: 40%; font-size: 12px; font-weight: 700; text-transform: uppercase; color: #6b7280; }
-    .data-val { width: 60%; font-size: 14px; font-weight: 600; color: #111827; }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
-    .instructions { background: #eff6ff; border-left: 4px solid #2563eb; padding: 16px; border-radius: 8px; margin-bottom: 24px; }
-    .instructions h4 { margin: 0 0 8px 0; font-size: 14px; font-weight: 700; color: #1e40af; }
-    .instructions ul { margin: 0; padding-left: 20px; font-size: 13px; color: #1e3a8a; line-height: 1.6; }
-    .cta-btn { display: block; text-align: center; background: #003893; color: #ffffff !important; padding: 14px 24px; border-radius: 10px; font-size: 15px; font-weight: 700; text-decoration: none; margin-bottom: 20px; }
-    .footer { background: #f9fafb; border-top: 1px solid #e5e7eb; padding: 20px 24px; font-size: 11px; color: #6b7280; text-align: center; line-height: 1.6; }
-    .footer a { color: #003893; text-decoration: underline; }
-    .disclaimer { font-size: 10px; color: #9ca3af; margin-top: 12px; border-top: 1px solid #e5e7eb; padding-top: 12px; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background-color: #f1f5f9; color: #1e293b; -webkit-font-smoothing: antialiased; }
+    table { border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    td { vertical-align: top; }
+    .cta-btn:hover { background: #002566 !important; }
   </style>
 </head>
-<body>
-  <div class="container">
-    <div class="header">
-      <div class="flag-badge">🇳🇵 Nepal License Verification</div>
-      <h1>Good News! Your License is Ready</h1>
-      <p>यातायात व्यवस्था विभाग (DoTM) को पछिल्लो अभिलेखमा तपाईंको लाइसेन्स छापिएको भेटिएको छ।</p>
+<body style="margin: 0; padding: 24px 12px; background-color: #f1f5f9;">
+  <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;">
+    
+    <!-- Header (Light high-contrast for mobile & desktop readability) -->
+    <div style="background: linear-gradient(180deg, #eff6ff 0%, #f8fafc 100%); border-top: 5px solid #003893; border-bottom: 1px solid #e2e8f0; padding: 34px 24px 28px; text-align: center;">
+      <div style="display: inline-block; background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 20px; padding: 5px 16px; font-size: 11px; font-weight: 800; color: #0369a1; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px;">
+        🇳🇵 Nepal License Verification · आधिकारिक सूचना
+      </div>
+      <h1 style="margin: 0 0 8px 0; font-size: 23px; font-weight: 800; line-height: 1.3; color: #003893;">
+        Good News! Your License is Printed
+      </h1>
+      <p style="margin: 0; font-size: 14px; color: #334155; line-height: 1.5; font-weight: 500;">
+        यातायात व्यवस्था विभाग (DoTM) को अभिलेखमा तपाईंको लाइसेन्स छापिएको भेटिएको छ।
+      </p>
     </div>
 
-    <div class="content">
-      <div class="status-card">
-        <div class="tag">DoTM Print Status</div>
-        <div class="status-text">✓ PRINTED &amp; READY FOR COLLECTION</div>
-      </div>
-
-      <div class="table-container">
-        <div class="data-row">
-          <div class="data-label">License Number</div>
-          <div class="data-val mono"><strong>${licenseNumber}</strong></div>
+    <!-- Main Content -->
+    <div style="padding: 28px 24px;">
+      
+      <!-- Status Banner -->
+      <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; text-align: center;">
+        <div style="color: #065f46; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px;">
+          DoTM Official Status
         </div>
-        <div class="data-row">
-          <div class="data-label">Holder Name</div>
-          <div class="data-val">${holderName}</div>
+        <div style="color: #047857; font-size: 18px; font-weight: 800;">
+          ✓ PRINTED &amp; READY FOR COLLECTION
         </div>
-        <div class="data-row">
-          <div class="data-label">Issuing Office</div>
-          <div class="data-val">${office}</div>
-        </div>
-        <div class="data-row">
-          <div class="data-label">Vehicle Category</div>
-          <div class="data-val mono">${category}</div>
+        <div style="color: #065f46; font-size: 12px; margin-top: 4px; font-weight: 500;">
+          कार्ड मुद्रण भइसकेको छ, अब कार्यालयबाट संकलन गर्न सकिन्छ।
         </div>
       </div>
 
-      <div class="instructions">
-        <h4>📋 Mandatory Documents to Bring When Collecting:</h4>
-        <ul>
-          <li>Original Nepali Citizenship Certificate (सक्कल नागरिकता)</li>
-          <li>Original Revenue / Payment Voucher (राजस्व तिरेको सक्कल रसिद)</li>
-          <li>Previous Driving License card (if renewal or category addition)</li>
+      <!-- License Details Table -->
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: separate; border-spacing: 0; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin-bottom: 24px;">
+        <tbody>
+          <!-- License Number -->
+          <tr style="background-color: #f0f7ff;">
+            <td style="padding: 14px 18px; width: 38%; font-size: 13px; font-weight: 700; color: #1e3a8a; border-bottom: 1px solid #e2e8f0; white-space: nowrap;">
+              License Number :
+            </td>
+            <td style="padding: 14px 18px; width: 62%; font-size: 15px; font-weight: 800; color: #003893; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; border-bottom: 1px solid #e2e8f0;">
+              <span style="background-color: #dbeafe; padding: 4px 10px; border-radius: 6px; border: 1px solid #bfdbfe; display: inline-block;">
+                ${licenseNumber}
+              </span>
+            </td>
+          </tr>
+          <!-- Holder Name -->
+          <tr>
+            <td style="padding: 13px 18px; font-size: 13px; font-weight: 700; color: #475569; border-bottom: 1px solid #f1f5f9; white-space: nowrap;">
+              Holder Name :
+            </td>
+            <td style="padding: 13px 18px; font-size: 14px; font-weight: 700; color: #0f172a; border-bottom: 1px solid #f1f5f9;">
+              ${holderName || '—'}
+            </td>
+          </tr>
+          <!-- Issuing Office -->
+          <tr>
+            <td style="padding: 13px 18px; font-size: 13px; font-weight: 700; color: #475569; border-bottom: 1px solid #f1f5f9; white-space: nowrap;">
+              Issuing Office :
+            </td>
+            <td style="padding: 13px 18px; font-size: 14px; font-weight: 600; color: #1e293b; border-bottom: 1px solid #f1f5f9;">
+              ${office || '—'}
+            </td>
+          </tr>
+          <!-- Vehicle Category -->
+          <tr>
+            <td style="padding: 13px 18px; font-size: 13px; font-weight: 700; color: #475569; border-bottom: 1px solid #f1f5f9; white-space: nowrap;">
+              Vehicle Category :
+            </td>
+            <td style="padding: 13px 18px; font-size: 14px; font-weight: 700; color: #0f172a; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; border-bottom: 1px solid #f1f5f9;">
+              <span style="background-color: #f1f5f9; padding: 3px 8px; border-radius: 4px; border: 1px solid #e2e8f0; display: inline-block;">
+                ${category || 'A'}
+              </span>
+            </td>
+          </tr>
+          <!-- Source Authority -->
+          <tr>
+            <td style="padding: 13px 18px; font-size: 13px; font-weight: 700; color: #475569; white-space: nowrap;">
+              Data Source :
+            </td>
+            <td style="padding: 13px 18px; font-size: 13px; font-weight: 600; color: #166534;">
+              Department of Transport Management (DoTM Nepal)
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Mandatory Documents Checklist -->
+      <div style="background-color: #fefce8; border: 1px solid #fef08a; border-left: 5px solid #eab308; padding: 18px 20px; border-radius: 10px; margin-bottom: 24px;">
+        <h4 style="margin: 0 0 10px 0; font-size: 14px; font-weight: 800; color: #854d0e;">
+          📋 लाइसेन्स लिन जाँदा लैजानुपर्ने कागजातहरू (Checklist):
+        </h4>
+        <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #713f12; line-height: 1.7;">
+          <li><strong>सक्कल नेपाली नागरिकता</strong> (Original Nepali Citizenship Certificate)</li>
+          <li><strong>राजस्व तिरेको सक्कल रसिद</strong> (Original Revenue Payment Voucher)</li>
+          <li><strong>पुरानो लाइसेन्स कार्ड</strong> (Old Driving License Card - नवीकरण वा वर्ग थप भएमा)</li>
+          <li><strong>प्रिन्ट स्लिप</strong> (Online Verification Slip or Token screenshot)</li>
         </ul>
       </div>
 
-      <a href="${checkUrl}" class="cta-btn" target="_blank" rel="noopener">
-        View Official Print Slip Online →
-      </a>
+      <!-- Action Button -->
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 20px;">
+        <tr>
+          <td align="center">
+            <a href="${checkUrl}" target="_blank" rel="noopener" class="cta-btn" style="display: inline-block; background: #003893; color: #ffffff !important; text-decoration: none; padding: 15px 36px; border-radius: 12px; font-size: 15px; font-weight: 800; letter-spacing: 0.02em; box-shadow: 0 4px 14px rgba(0, 56, 147, 0.35); text-align: center;">
+              View Official Print Slip Online →
+            </a>
+          </td>
+        </tr>
+      </table>
 
-      <p style="font-size: 12px; color: #4b5563; text-align: center; margin: 0;">
-        You can generate and print your official verification reference slip directly on Nepal License Checker.
-      </p>
+      <!-- Office Hours Tip -->
+      <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 16px; margin-bottom: 20px; text-align: center;">
+        <p style="margin: 0; font-size: 12px; color: #64748b; line-height: 1.5;">
+          💡 <strong>Office Hours Tip:</strong> आइतबारदेखि शुक्रबारसम्म (बिहान १०:०० - दिउँसो ३:००) सम्बन्धित यातायात कार्यालयको वितरण काउन्टरबाट कार्ड लिन सक्नुहुन्छ।
+        </p>
+      </div>
+
     </div>
 
-    <div class="footer">
-      <p style="margin: 0 0 6px 0;">
-        This email was sent to you because you requested an alert when license <strong>${licenseNumber}</strong> was printed.
+    <!-- Footer -->
+    <div style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 22px 24px; font-size: 11px; color: #64748b; text-align: center; line-height: 1.6;">
+      <p style="margin: 0 0 8px 0; font-size: 12px; color: #475569;">
+        This email alert was sent for license: <strong style="color: #0f172a; font-family: ui-monospace, monospace;">${licenseNumber}</strong>
       </p>
-      <p style="margin: 0;">
-        <a href="${unsubscribeUrl}">Cancel or Unsubscribe from this alert</a> · <a href="${siteUrl}">Visit Nepal License Checker</a>
+      <p style="margin: 0 0 12px 0;">
+        <a href="${unsubscribeUrl}" style="color: #dc2626; text-decoration: underline; font-weight: 600;">Cancel or Unsubscribe from this alert</a> · <a href="${siteUrl}" style="color: #003893; text-decoration: underline; font-weight: 600;">Visit Nepal License Checker</a>
       </p>
-      <div class="disclaimer">
-        ⚠️ Notice: Nepal License Checker is an independent public utility portal indexing publicly published data from dotm.gov.np. This notification is purely informational and holds no legal authority. It cannot be presented as a driving license to traffic police or law enforcement.
+      <div style="font-size: 10px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 12px; line-height: 1.5;">
+        ⚠️ <strong>Notice:</strong> Nepal License Checker (license-checker.acharyanischal.com.np) is an independent public utility portal indexing publicly published records from dotm.gov.np. This notification is purely informational and holds no legal authority. It cannot be presented as a driving license to traffic police or law enforcement.
       </div>
     </div>
+
   </div>
 </body>
 </html>`;
@@ -377,15 +429,16 @@ async function sendAvailableLicenseEmail({
 
     const text = `🇳🇵 Nepal Smart Driving License Update\n\n` +
         `Good news! Your driving license record has been published by the Department of Transport Management (DoTM).\n\n` +
-        `Status: PRINTED & READY FOR COLLECTION\n` +
-        `License Number: ${licenseNumber}\n` +
-        `Holder Name: ${holderName}\n` +
-        `Issuing Office: ${office}\n` +
-        `Category: ${category}\n\n` +
+        `Status           : PRINTED & READY FOR COLLECTION\n` +
+        `License Number   : ${licenseNumber}\n` +
+        `Holder Name      : ${holderName}\n` +
+        `Issuing Office   : ${office}\n` +
+        `Vehicle Category : ${category}\n\n` +
         `Mandatory Documents to Collect:\n` +
-        `1. Original Nepali Citizenship Card\n` +
-        `2. Original Revenue Payment Voucher\n` +
-        `3. Old Driving License (if renewal or addition)\n\n` +
+        `1. Original Nepali Citizenship Card (सक्कल नागरिकता)\n` +
+        `2. Original Revenue Payment Voucher (राजस्व तिरेको सक्कल रसिद)\n` +
+        `3. Old Driving License (if renewal or addition)\n` +
+        `4. Printed verification slip or screenshot\n\n` +
         `View print status slip online: ${checkUrl}\n\n` +
         `To unsubscribe or cancel this notification: ${unsubscribeUrl}\n\n` +
         `--- \n` +
