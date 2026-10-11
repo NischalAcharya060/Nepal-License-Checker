@@ -72,13 +72,34 @@ export function getNextCronRun(
 
 /**
  * Formats a given date to Nepal Standard Time (UTC+5:45).
+ * Resilient to null/undefined, strings, epoch numbers (both seconds and milliseconds).
  */
 export function formatNepalDateTime(
-  dateInput: string | number | Date,
-  language: 'en' | 'ne' = 'en'
+  dateInput: string | number | Date | null | undefined,
+  language: 'en' | 'ne' = 'en',
+  includeSeconds: boolean = false
 ): string {
-  const d = typeof dateInput === 'string' || typeof dateInput === 'number' ? new Date(dateInput) : dateInput
-  if (isNaN(d.getTime())) return ''
+  if (!dateInput) return '—'
+  let ms: number
+  if (typeof dateInput === 'number') {
+    ms = dateInput
+  } else if (typeof dateInput === 'string') {
+    const num = Number(dateInput)
+    ms = !isNaN(num) && dateInput.trim() !== '' ? num : new Date(dateInput).getTime()
+  } else if (dateInput instanceof Date) {
+    ms = dateInput.getTime()
+  } else {
+    return '—'
+  }
+
+  if (isNaN(ms) || ms <= 0) return '—'
+  // Auto-convert timestamps in seconds to milliseconds
+  if (ms < 100000000000) {
+    ms *= 1000
+  }
+
+  const d = new Date(ms)
+  if (isNaN(d.getTime())) return '—'
 
   const locale = language === 'ne' ? 'ne-NP' : 'en-NP'
   return d.toLocaleString(locale, {
@@ -88,7 +109,22 @@ export function formatNepalDateTime(
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    ...(includeSeconds ? { second: '2-digit' } : {}),
   })
+}
+
+/**
+ * Returns unix epoch milliseconds for 00:00:00 (midnight) today in Nepal Standard Time (Asia/Kathmandu, UTC+5:45).
+ */
+export function getNepalMidnightTimestamp(now: Date = new Date()): number {
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kathmandu',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  })
+  const nepalDateString = formatter.format(now)
+  return new Date(`${nepalDateString}T00:00:00+05:45`).getTime()
 }
 
 /**

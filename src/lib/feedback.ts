@@ -1,5 +1,6 @@
 // src/lib/feedback.ts
 import { getTurso } from './turso'
+import { getNepalMidnightTimestamp } from './cronHelper'
 import crypto from 'crypto'
 
 export interface FeedbackCategoryItem {
@@ -167,9 +168,7 @@ export async function getFeedbackStats(): Promise<FeedbackStats> {
         }
     }
 
-    const startOfToday = new Date()
-    startOfToday.setHours(0, 0, 0, 0)
-    const todayTimestamp = startOfToday.getTime()
+    const todayTimestamp = getNepalMidnightTimestamp()
 
     const todayRes = await db.execute({
         sql: 'SELECT COUNT(*) as count FROM user_feedbacks WHERE created_at >= ?',

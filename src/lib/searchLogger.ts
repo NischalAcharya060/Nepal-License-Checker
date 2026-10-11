@@ -1,4 +1,5 @@
 import { getTurso } from './turso'
+import { getNepalMidnightTimestamp } from './cronHelper'
 
 export interface SearchLogRecord {
     id: number
@@ -181,9 +182,7 @@ export async function getSearchStats(): Promise<SearchLogsStats> {
     await ensureSearchLogsTable()
     const db = getTurso()
 
-    const todayStart = new Date()
-    todayStart.setHours(0, 0, 0, 0)
-    const todayTimestamp = todayStart.getTime()
+    const todayTimestamp = getNepalMidnightTimestamp()
 
     try {
         const batchResults = await db.batch(

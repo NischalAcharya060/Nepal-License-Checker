@@ -100,16 +100,28 @@ function getFlag(countryCode?: string | null): string {
     return String.fromCodePoint(...code.split('').map((c) => 127397 + c.charCodeAt(0)))
 }
 
-function formatTimeAgo(timestamp: number): string {
-    const diff = Math.max(0, Math.floor((Date.now() - timestamp) / 1000))
-    if (diff < 15) return 'Just now'
-    if (diff < 60) return `${diff}s ago`
-    const mins = Math.floor(diff / 60)
+function formatTimeAgo(timestamp: number | string | null | undefined): string {
+    if (!timestamp) return '—'
+    let ms = typeof timestamp === 'string' ? Number(timestamp) : timestamp
+    if (isNaN(ms) || ms <= 0) return '—'
+    // Normalize timestamps in seconds to milliseconds
+    if (ms < 100000000000) {
+        ms *= 1000
+    }
+    const diffSecs = Math.floor((Date.now() - ms) / 1000)
+    if (diffSecs < 15) return 'Just now'
+    if (diffSecs < 60) return `${diffSecs}s ago`
+    const mins = Math.floor(diffSecs / 60)
     if (mins < 60) return `${mins}m ago`
-    const hours = Math.floor(diff / 60)
+    const hours = Math.floor(mins / 60)
     if (hours < 24) return `${hours}h ago`
     const days = Math.floor(hours / 24)
-    return `${days}d ago`
+    if (days === 1) return 'Yesterday'
+    if (days < 30) return `${days}d ago`
+    const months = Math.floor(days / 30)
+    if (months < 12) return `${months}mo ago`
+    const years = Math.floor(days / 365)
+    return `${years}y ago`
 }
 
 export default function AdminPage() {
@@ -393,9 +405,10 @@ export default function AdminPage() {
     // 7. CSV Export
     const exportCsv = () => {
         if (!logs.length) return
-        const headers = ['ID', 'Date (ISO)', 'License Number', 'Status', 'Holder Name', 'Office', 'Category', 'IP Address', 'Country', 'City', 'Region']
+        const headers = ['ID', 'Date (NPT)', 'Date (ISO)', 'License Number', 'Status', 'Holder Name', 'Office', 'Category', 'IP Address', 'Country', 'City', 'Region']
         const rows = logs.map((l) => [
             l.id,
+            `"${formatNepalDateTime(l.created_at, 'en', true)}"`,
             new Date(l.created_at).toISOString(),
             `"${l.license_number}"`,
             l.status,
@@ -420,13 +433,15 @@ export default function AdminPage() {
     // 8. Notification CSV Export
     const exportNotificationCsv = () => {
         if (!notificationLogs.length) return
-        const headers = ['ID', 'Date (ISO)', 'License Number', 'User Email', 'Status', 'Delivered At', 'Holder Name', 'Issuing Office']
+        const headers = ['ID', 'Subscribed At (NPT)', 'Subscribed At (ISO)', 'License Number', 'User Email', 'Status', 'Delivered At (NPT)', 'Delivered At (ISO)', 'Holder Name', 'Issuing Office']
         const rows = notificationLogs.map((l) => [
             `"${l.id}"`,
+            `"${formatNepalDateTime(l.created_at, 'en', true)}"`,
             new Date(l.created_at).toISOString(),
             `"${l.license_number}"`,
             `"${l.email}"`,
             l.status,
+            l.sent_at ? `"${formatNepalDateTime(l.sent_at, 'en', true)}"` : '',
             l.sent_at ? new Date(l.sent_at).toISOString() : '',
             `"${l.holder_name || ''}"`,
             `"${l.office || ''}"`,
@@ -460,9 +475,10 @@ export default function AdminPage() {
     // 10. Feedback CSV Export
     const exportFeedbackCsv = () => {
         if (!feedbackLogs.length) return
-        const headers = ['ID', 'Date (ISO)', 'Name', 'Email', 'Category', 'Subject', 'Message', 'License Number', 'Status', 'IP']
+        const headers = ['ID', 'Received At (NPT)', 'Received At (ISO)', 'Name', 'Email', 'Category', 'Subject', 'Message', 'License Number', 'Status', 'IP']
         const rows = feedbackLogs.map((l) => [
             `"${l.id}"`,
+            `"${formatNepalDateTime(l.created_at, 'en', true)}"`,
             new Date(l.created_at).toISOString(),
             `"${(l.name || '').replace(/"/g, '""')}"`,
             `"${(l.email || '').replace(/"/g, '""')}"`,
@@ -1018,8 +1034,8 @@ export default function AdminPage() {
                                 )}
                             </div>
                             <p className="mt-1 text-[11px] text-[var(--text-muted)]">
-                                {scraperData?.lastRun?.durationSeconds
-                                    ? `Executed in ${scraperData.lastRun.durationSeconds}s`
+                                {scraperData?.lastRun?.timestamp
+                                    ? `${formatNepalDateTime(scraperData.lastRun.timestamp, 'en')} (NPT) • ${scraperData.lastRun.durationSeconds ? `${scraperData.lastRun.durationSeconds}s` : 'Done'}`
                                     : 'Runs incrementally on schedule'}
                             </p>
                         </div>
@@ -1237,7 +1253,7 @@ export default function AdminPage() {
                                 <table className="w-full text-left text-xs">
                                     <thead className="border-b border-[var(--border-default)] bg-[var(--bg-secondary)]/50 text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
                                         <tr>
-                                            <th className="py-3 pl-4 pr-3">Time</th>
+                                            <th className="py-3 pl-4 pr-3">Time (NPT)</th>
                                             <th className="px-3 py-3">License Number</th>
                                             <th className="px-3 py-3">Result</th>
                                             <th className="px-3 py-3">Holder Name</th>
@@ -1277,10 +1293,15 @@ export default function AdminPage() {
                                                         className="group transition-colors hover:bg-[var(--bg-secondary)]/40"
                                                     >
                                                         {/* Timestamp */}
-                                                        <td className="whitespace-nowrap py-3 pl-4 pr-3 font-mono text-[11px] text-[var(--text-secondary)]">
-                                                            <span title={new Date(log.created_at).toLocaleString()}>
-                                                                {formatTimeAgo(log.created_at)}
-                                                            </span>
+                                                        <td className="whitespace-nowrap py-3 pl-4 pr-3 font-mono text-[11px]">
+                                                            <div className="flex flex-col gap-0.5">
+                                                                <span className="font-semibold text-[var(--text-primary)]" title={`${formatNepalDateTime(log.created_at, 'en', true)} (NPT, UTC+5:45)`}>
+                                                                    {formatNepalDateTime(log.created_at)}
+                                                                </span>
+                                                                <span className="text-[10px] text-[var(--text-muted)]">
+                                                                    {formatTimeAgo(log.created_at)}
+                                                                </span>
+                                                            </div>
                                                         </td>
 
                                                         {/* License Number */}
@@ -1394,7 +1415,7 @@ export default function AdminPage() {
                                     <span className="font-bold text-[var(--text-primary)]">{total.toLocaleString()}</span> queries
                                     {lastUpdated && (
                                         <span className="ml-2 hidden text-[11px] text-[var(--text-muted)] sm:inline">
-                                            (Updated: {lastUpdated.toLocaleTimeString()})
+                                            (Updated: {lastUpdated.toLocaleTimeString('en-NP', { timeZone: 'Asia/Kathmandu', hour: '2-digit', minute: '2-digit', second: '2-digit' })} NPT)
                                         </span>
                                     )}
                                 </div>
@@ -1600,7 +1621,7 @@ export default function AdminPage() {
                                 <table className="w-full text-left text-xs">
                                     <thead className="border-b border-[var(--border-default)] bg-[var(--bg-secondary)]/50 text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
                                         <tr>
-                                            <th className="py-3 pl-4 pr-3">Subscribed</th>
+                                            <th className="py-3 pl-4 pr-3">Subscribed (NPT)</th>
                                             <th className="px-3 py-3">License Number</th>
                                             <th className="px-3 py-3">User Email</th>
                                             <th className="px-3 py-3">Status & Delivery</th>
@@ -1639,10 +1660,15 @@ export default function AdminPage() {
                                                         className="group transition-colors hover:bg-[var(--bg-secondary)]/40"
                                                     >
                                                         {/* Timestamp */}
-                                                        <td className="whitespace-nowrap py-3 pl-4 pr-3 font-mono text-[11px] text-[var(--text-secondary)]">
-                                                            <span title={new Date(log.created_at).toLocaleString()}>
-                                                                {formatTimeAgo(log.created_at)}
-                                                            </span>
+                                                        <td className="whitespace-nowrap py-3 pl-4 pr-3 font-mono text-[11px]">
+                                                            <div className="flex flex-col gap-0.5">
+                                                                <span className="font-semibold text-[var(--text-primary)]" title={`${formatNepalDateTime(log.created_at, 'en', true)} (NPT, UTC+5:45)`}>
+                                                                    {formatNepalDateTime(log.created_at)}
+                                                                </span>
+                                                                <span className="text-[10px] text-[var(--text-muted)]">
+                                                                    {formatTimeAgo(log.created_at)}
+                                                                </span>
+                                                            </div>
                                                         </td>
 
                                                         {/* License Number */}
@@ -1698,8 +1724,8 @@ export default function AdminPage() {
                                                                         <span>Delivered</span>
                                                                     </span>
                                                                     {log.sent_at && (
-                                                                        <span className="text-[10px] text-[var(--text-muted)]" title={new Date(log.sent_at).toLocaleString()}>
-                                                                            Sent {formatTimeAgo(log.sent_at)}
+                                                                        <span className="text-[10px] text-[var(--text-muted)]" title={`${formatNepalDateTime(log.sent_at, 'en', true)} (NPT, UTC+5:45)`}>
+                                                                            Sent: {formatNepalDateTime(log.sent_at)} ({formatTimeAgo(log.sent_at)})
                                                                         </span>
                                                                     )}
                                                                 </div>
@@ -1710,8 +1736,8 @@ export default function AdminPage() {
                                                                         <span>Cancelled</span>
                                                                     </span>
                                                                     {log.cancelled_at && (
-                                                                        <span className="text-[10px] text-[var(--text-muted)]" title={new Date(log.cancelled_at).toLocaleString()}>
-                                                                            {formatTimeAgo(log.cancelled_at)}
+                                                                        <span className="text-[10px] text-[var(--text-muted)]" title={`${formatNepalDateTime(log.cancelled_at, 'en', true)} (NPT, UTC+5:45)`}>
+                                                                            Cancelled: {formatNepalDateTime(log.cancelled_at)} ({formatTimeAgo(log.cancelled_at)})
                                                                         </span>
                                                                     )}
                                                                 </div>
@@ -1994,7 +2020,7 @@ export default function AdminPage() {
                                             <th className="px-3 py-3">Category & Subject</th>
                                             <th className="px-3 py-3">License No.</th>
                                             <th className="px-3 py-3">Message</th>
-                                            <th className="px-3 py-3">Received</th>
+                                            <th className="px-3 py-3">Received (NPT)</th>
                                             <th className="py-3 pl-3 pr-4 text-right">Actions</th>
                                         </tr>
                                     </thead>
@@ -2154,8 +2180,15 @@ export default function AdminPage() {
                                                         </td>
 
                                                         {/* Received */}
-                                                        <td className="whitespace-nowrap px-3 py-3 text-xs text-[var(--text-muted)]" title={new Date(item.created_at).toLocaleString()}>
-                                                            {formatTimeAgo(item.created_at)}
+                                                        <td className="whitespace-nowrap px-3 py-3 text-xs" title={`${formatNepalDateTime(item.created_at, 'en', true)} (NPT, UTC+5:45)`}>
+                                                            <div className="flex flex-col gap-0.5 font-mono">
+                                                                <span className="font-semibold text-[var(--text-primary)]">
+                                                                    {formatNepalDateTime(item.created_at)}
+                                                                </span>
+                                                                <span className="text-[10px] text-[var(--text-muted)]">
+                                                                    {formatTimeAgo(item.created_at)}
+                                                                </span>
+                                                            </div>
                                                         </td>
 
                                                         {/* Actions */}
@@ -2277,8 +2310,8 @@ export default function AdminPage() {
                                         }`}>
                                             {selectedFeedbackMessage.status === 'new' ? '● New Inquiry' : '✓ Resolved'}
                                         </span>
-                                        <span className="text-xs text-[var(--text-muted)]">
-                                            {new Date(selectedFeedbackMessage.created_at).toLocaleString()}
+                                        <span className="text-xs text-[var(--text-muted)] font-mono" title={`${formatNepalDateTime(selectedFeedbackMessage.created_at, 'en', true)} (NPT, UTC+5:45)`}>
+                                            {formatNepalDateTime(selectedFeedbackMessage.created_at, 'en', true)} (NPT) • {formatTimeAgo(selectedFeedbackMessage.created_at)}
                                         </span>
                                     </div>
                                     <h3 className="mt-1.5 text-base font-black text-[var(--text-primary)]">

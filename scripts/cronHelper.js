@@ -62,9 +62,28 @@ function getNextCronRun(cronExpr = DEFAULT_CRON_SCHEDULE, fromDate = new Date())
     return null;
 }
 
-function formatNepalDateTime(dateInput, language = 'en') {
-    const d = typeof dateInput === 'string' || typeof dateInput === 'number' ? new Date(dateInput) : dateInput;
-    if (isNaN(d.getTime())) return '';
+function formatNepalDateTime(dateInput, language = 'en', includeSeconds = false) {
+    if (!dateInput) return '—';
+    let ms;
+    if (typeof dateInput === 'number') {
+        ms = dateInput;
+    } else if (typeof dateInput === 'string') {
+        const num = Number(dateInput);
+        ms = !isNaN(num) && dateInput.trim() !== '' ? num : new Date(dateInput).getTime();
+    } else if (dateInput instanceof Date) {
+        ms = dateInput.getTime();
+    } else {
+        return '—';
+    }
+
+    if (isNaN(ms) || ms <= 0) return '—';
+    if (ms < 100000000000) {
+        ms *= 1000;
+    }
+
+    const d = new Date(ms);
+    if (isNaN(d.getTime())) return '—';
+
     const locale = language === 'ne' ? 'ne-NP' : 'en-NP';
     return d.toLocaleString(locale, {
         timeZone: 'Asia/Kathmandu',
@@ -73,7 +92,19 @@ function formatNepalDateTime(dateInput, language = 'en') {
         day: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
+        ...(includeSeconds ? { second: '2-digit' } : {}),
     });
+}
+
+function getNepalMidnightTimestamp(now = new Date()) {
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Kathmandu',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+    });
+    const nepalDateString = formatter.format(now);
+    return new Date(`${nepalDateString}T00:00:00+05:45`).getTime();
 }
 
 function formatTimeUntil(targetDateInput, language = 'en') {
@@ -100,5 +131,6 @@ module.exports = {
     DEFAULT_CRON_SCHEDULE,
     getNextCronRun,
     formatNepalDateTime,
+    getNepalMidnightTimestamp,
     formatTimeUntil,
 };
