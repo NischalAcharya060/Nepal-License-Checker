@@ -128,6 +128,13 @@ export interface PwaCopy {
   offlineTitle: string
   offlineMessage: string
   offlineCachedHint: string
+  popupTitle: string
+  popupSubtitle: string
+  popupDescription: string
+  notNowLabel: string
+  androidStep1: string
+  androidStep2: string
+  androidNote: string
 }
 
 export interface NotificationCopy {

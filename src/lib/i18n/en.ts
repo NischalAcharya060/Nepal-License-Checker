@@ -153,6 +153,13 @@ export const en: UICopy = {
     offlineTitle: "You're Currently Offline",
     offlineMessage: 'An active internet connection is required to check driving license print records.',
     offlineCachedHint: 'Please connect to Wi-Fi or mobile data to search. The app will reconnect automatically.',
+    popupTitle: 'Install Nepal License Checker',
+    popupSubtitle: '⚡ Faster checks · 📶 Works offline',
+    popupDescription: 'Add to your home screen for instant 1-tap access without typing the URL each time.',
+    notNowLabel: 'Not now',
+    androidStep1: 'Tap the browser menu (⋮) in the top right corner.',
+    androidStep2: 'Select "Install app" or "Add to Home screen".',
+    androidNote: 'The app icon will be added to your home screen immediately.',
   },
   notifications: {
     cardTitle: 'Get Notified When Your License Is Printed',

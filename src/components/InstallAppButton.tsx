@@ -12,7 +12,7 @@ interface InstallAppButtonProps {
 }
 
 export default function InstallAppButton({ language, variant = 'pill' }: InstallAppButtonProps) {
-  const { canInstall, isInstalled, needsIosHelp, install } = usePwa()
+  const { canInstall, isInstalled, install } = usePwa()
   const [isHelpOpen, setIsHelpOpen] = useState(false)
   const copy = translations[language].pwa
 
@@ -25,9 +25,7 @@ export default function InstallAppButton({ language, variant = 'pill' }: Install
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [isHelpOpen])
 
-  const isIosFlow = !canInstall && needsIosHelp
-
-  if (isInstalled || (!canInstall && !isIosFlow)) return null
+  if (isInstalled) return null
 
   const handleClick = () => {
     if (canInstall) {
@@ -48,7 +46,7 @@ export default function InstallAppButton({ language, variant = 'pill' }: Install
           className="flex w-full items-center justify-between rounded-xl border border-[var(--nepal-blue)]/30 bg-[var(--nepal-blue-soft)] px-3.5 py-2.5 text-left transition hover:border-[var(--nepal-blue)] active:scale-[0.99]"
         >
           <span className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--nepal-blue)] text-white">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--nepal-blue)] text-white shadow-xs">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                 <path d="M12 3v12" />
                 <path d="m7 12 5 5 5-5" />
@@ -57,7 +55,7 @@ export default function InstallAppButton({ language, variant = 'pill' }: Install
             </span>
             <span className="flex flex-col">
               <span className="text-xs font-bold text-[var(--text-primary)]">{copy.installTitle}</span>
-              <span className="text-[10px] text-[var(--text-secondary)]">{copy.offlineMessage}</span>
+              <span className="text-[10px] text-[var(--text-secondary)]">{copy.popupSubtitle}</span>
             </span>
           </span>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]" aria-hidden>
@@ -100,7 +98,9 @@ type InstallHelpModalProps = {
   onClose: () => void
 }
 
-function InstallHelpModal({ copy, onClose }: InstallHelpModalProps) {
+export function InstallHelpModal({ copy, onClose }: InstallHelpModalProps) {
+  const isIos = typeof navigator !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1))
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in print:hidden"
@@ -147,18 +147,22 @@ function InstallHelpModal({ copy, onClose }: InstallHelpModalProps) {
             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--nepal-blue)] text-[11px] font-bold text-white">
               1
             </span>
-            <p className="text-xs leading-5 text-[var(--text-secondary)]">{copy.iosStep1}</p>
+            <p className="text-xs leading-5 text-[var(--text-secondary)]">
+              {isIos ? copy.iosStep1 : copy.androidStep1}
+            </p>
           </div>
 
           <div className="flex gap-3 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-3.5">
             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--nepal-blue)] text-[11px] font-bold text-white">
               2
             </span>
-            <p className="text-xs leading-5 text-[var(--text-secondary)]">{copy.iosStep2}</p>
+            <p className="text-xs leading-5 text-[var(--text-secondary)]">
+              {isIos ? copy.iosStep2 : copy.androidStep2}
+            </p>
           </div>
 
           <p className="rounded-xl border border-[var(--info-border)] bg-[var(--info-bg)] p-3 text-[11px] leading-5 text-[var(--info-text)]">
-            ℹ️ {copy.iosNote}
+            ℹ️ {isIos ? copy.iosNote : copy.androidNote}
           </p>
         </div>
 

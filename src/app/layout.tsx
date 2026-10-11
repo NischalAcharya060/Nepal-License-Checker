@@ -52,6 +52,13 @@ const themeInitScript = `
       document.addEventListener('DOMContentLoaded', () => updateManifest(theme === 'dark'), { once: true });
     }
   } catch {}
+  try {
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      window.__deferredPrompt = e;
+      window.dispatchEvent(new CustomEvent('pwa-prompt-available'));
+    });
+  } catch {}
 })();
 `
 

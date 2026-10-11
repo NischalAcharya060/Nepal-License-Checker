@@ -16,6 +16,7 @@ import SmsModal from '@/components/SmsModal'
 import FeedbackModal from '@/components/FeedbackModal'
 import ScrollProgressButton from '@/components/ScrollProgressButton'
 import OfflineBanner from '@/components/OfflineBanner'
+import PwaInstallPopup from '@/components/PwaInstallPopup'
 import { translations } from '@/lib/i18n'
 import type { Language } from '@/lib/i18n'
 
@@ -511,6 +512,9 @@ export default function Home() {
         language={language}
         initialLicenseNumber={lastSearched || externalNumber || ''}
       />
+
+      {/* Mobile PWA Install Popup */}
+      <PwaInstallPopup language={language} />
     </main>
   )
 }

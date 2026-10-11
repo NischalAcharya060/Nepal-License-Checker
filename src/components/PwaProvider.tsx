@@ -72,7 +72,12 @@ function isIosBrowser() {
 }
 
 export function PwaProvider({ children }: { children: React.ReactNode }) {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(() => {
+    if (typeof window !== 'undefined') {
+      return (window as unknown as { __deferredPrompt?: BeforeInstallPromptEvent }).__deferredPrompt || null
+    }
+    return null
+  })
   const [isUpdateReady, setIsUpdateReady] = useState(false)
   const waitingWorkerRef = useRef<ServiceWorker | null>(null)
   const reloadingRef = useRef(false)
@@ -86,16 +91,30 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const onBeforeInstallPrompt = (event: Event) => {
       event.preventDefault()
-      setDeferredPrompt(event as BeforeInstallPromptEvent)
+      const promptEvent = event as BeforeInstallPromptEvent
+      ;(window as unknown as { __deferredPrompt?: BeforeInstallPromptEvent }).__deferredPrompt = promptEvent
+      setDeferredPrompt(promptEvent)
     }
 
-    const onInstalled = () => setDeferredPrompt(null)
+    const onPromptAvailable = () => {
+      const promptEvent = (window as unknown as { __deferredPrompt?: BeforeInstallPromptEvent }).__deferredPrompt
+      if (promptEvent) {
+        setDeferredPrompt(promptEvent)
+      }
+    }
+
+    const onInstalled = () => {
+      ;(window as unknown as { __deferredPrompt?: null }).__deferredPrompt = null
+      setDeferredPrompt(null)
+    }
 
     window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt)
+    window.addEventListener('pwa-prompt-available', onPromptAvailable)
     window.addEventListener('appinstalled', onInstalled)
 
     return () => {
       window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt)
+      window.removeEventListener('pwa-prompt-available', onPromptAvailable)
       window.removeEventListener('appinstalled', onInstalled)
     }
   }, [])
@@ -214,8 +233,10 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
         toast.success(isNe ? 'एप इन्स्टल भयो।' : 'App installed. Find it on your home screen.')
       }
       setDeferredPrompt(null)
+      ;(window as unknown as { __deferredPrompt?: null }).__deferredPrompt = null
     } catch {
       setDeferredPrompt(null)
+      ;(window as unknown as { __deferredPrompt?: null }).__deferredPrompt = null
     }
   }, [deferredPrompt])
 
