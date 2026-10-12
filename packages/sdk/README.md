@@ -1,4 +1,4 @@
-# nepal-license-checker 🇳🇵
+# Nepal License Checker 🇳🇵
 
 [![npm version](https://img.shields.io/npm/v/nepal-license-checker.svg)](https://www.npmjs.com/package/nepal-license-checker)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
@@ -14,12 +14,25 @@ Official, zero-dependency JavaScript and TypeScript SDK for checking Nepal smart
 
 ## Installation
 
+### Option 1: npm Registry (Recommended)
+
 ```bash
 npm install nepal-license-checker
 # or
 yarn add nepal-license-checker
 # or
 pnpm add nepal-license-checker
+```
+
+### Option 2: GitHub Packages
+
+```bash
+npm install @nischalacharya060/nepal-license-checker
+```
+
+If needed, add the following to your project's `.npmrc`:
+```ini
+@nischalacharya060:registry=https://npm.pkg.github.com
 ```
 
 ---

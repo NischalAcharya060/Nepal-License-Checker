@@ -87,77 +87,79 @@ export default function Footer({
   return (
     <footer className="w-full border-t border-[var(--border-default)]/80 bg-[var(--bg-primary)]/60 backdrop-blur-xs pt-10 pb-12 print:hidden text-xs text-[var(--text-secondary)]">
       <div className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8">
-        {/* Top Landscape Header: Brand Info + Operational Status + Action Buttons (Flat, No Boxes) */}
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between pb-8 border-b border-[var(--border-default)]/70">
-          {/* Left: Brand Identity & Live Status */}
-          <div className="flex items-start sm:items-center gap-3.5">
-            <Image
-              src="/License-Checker-Nepal-logo.png"
-              alt="Nepal License Checker Logo"
-              width={48}
-              height={48}
-              className="h-11 w-11 sm:h-12 sm:w-12 rounded-xl shadow-xs object-contain shrink-0"
-            />
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="text-base font-extrabold text-[var(--text-primary)] tracking-tight">
-                  {isNe ? 'नेपाल लाइसेन्स जाँच' : 'Nepal License Checker'}
-                </h3>
-                <span className="inline-flex items-center rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-0.5 text-[10px] font-semibold text-[var(--text-secondary)] shadow-2xs">
-                  <span>{isNe ? 'DOTM लाइभ सिङ्क' : 'DOTM Live Sync'}</span>
-                </span>
-                <span className="rounded-full bg-[var(--nepal-blue)]/10 px-2 py-0.5 text-[10px] font-semibold text-[var(--nepal-blue)]">
-                  MIT Open Source
-                </span>
+        {/* Top Landscape Header: Brand Info + Operational Status + Action Buttons */}
+        <div className="pb-8 border-b border-[var(--border-default)]/70 space-y-5">
+          {/* Top Row: Brand Identity & Live Status */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-3.5 min-w-0">
+              <Image
+                src="/License-Checker-Nepal-logo.png"
+                alt="Nepal License Checker Logo"
+                width={48}
+                height={48}
+                className="h-12 w-12 rounded-2xl shadow-xs object-contain shrink-0 border border-[var(--border-default)]/60 bg-[var(--surface-primary)] p-0.5"
+              />
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-base sm:text-lg font-black text-[var(--text-primary)] tracking-tight whitespace-nowrap">
+                    {isNe ? 'नेपाल लाइसेन्स जाँच' : 'Nepal License Checker'}
+                  </h3>
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>{isNe ? 'DOTM लाइभ सिङ्क' : 'DOTM Live Sync'}</span>
+                  </span>
+                  <span className="rounded-full bg-[var(--nepal-blue)]/15 px-2.5 py-0.5 text-[10px] font-bold text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/25 shrink-0">
+                    MIT Open Source
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-[var(--text-secondary)] max-w-2xl leading-relaxed">
+                  {isNe
+                    ? 'यातायात व्यवस्था विभाग (DOTM) को सार्वजनिक छपाइ सूची खोज्न बनाइएको खुला तथा स्वतन्त्र नागरिक सेवा।'
+                    : 'Independent civic platform mirroring Department of Transport Management (DOTM) smart card print records.'}
+                </p>
               </div>
-              <p className="mt-0.5 text-xs text-[var(--text-secondary)] max-w-xl leading-relaxed">
-                {isNe
-                  ? 'यातायात व्यवस्था विभाग (DOTM) को सार्वजनिक छपाइ सूची खोज्न बनाइएको खुला तथा स्वतन्त्र नागरिक सेवा।'
-                  : 'Independent civic platform mirroring Department of Transport Management (DOTM) smart card print records.'}
-              </p>
-              <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-[var(--text-muted)]">
-                {lastUpdatedAt && (
-                  <div className="flex items-center gap-1">
-                    <span>{isNe ? 'पछिल्लो ब्याच अद्यावधिक:' : 'Last batch synced:'}</span>
-                    <span className="font-medium text-[var(--text-secondary)]">
-                      {new Date(lastUpdatedAt).toLocaleDateString(dateLocale, {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                      })}
-                    </span>
-                  </div>
-                )}
-                {nextScraperRun && (
-                  <div
-                    className="flex items-center gap-1 cursor-help transition hover:text-[var(--nepal-blue)]"
-                    title={`${isNe ? 'अर्को तालिकाबद्ध सिङ्क:' : 'Next scheduled sync:'} ${formatNepalDateTime(nextScraperRun, isNe ? 'ne' : 'en')} (NPT)`}
-                  >
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]">
-                      <circle cx="12" cy="12" r="10" />
-                      <polyline points="12 6 12 12 16 14" />
-                    </svg>
-                    <span>{isNe ? 'अर्को तालिकाबद्ध सिङ्क:' : 'Next scheduled sync:'}</span>
-                    <span className="font-medium text-[var(--text-secondary)]">
-                      {new Date(nextScraperRun).toLocaleDateString(dateLocale, {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                      })}{' '}
-                      ({formatTimeUntil(nextScraperRun, isNe ? 'ne' : 'en')})
-                    </span>
-                  </div>
-                )}
-              </div>
+            </div>
+
+            {/* Operational Sync Status Chips */}
+            <div className="flex flex-wrap items-center gap-2 sm:flex-col sm:items-end sm:gap-1.5 shrink-0">
+              {lastUpdatedAt && (
+                <div className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1 text-[10.5px] font-medium text-[var(--text-secondary)] shadow-2xs">
+                  <span className="text-[var(--text-muted)]">{isNe ? 'पछिल्लो अद्यावधिक:' : 'Last batch:'}</span>
+                  <span className="font-bold text-[var(--text-primary)]">
+                    {new Date(lastUpdatedAt).toLocaleDateString(dateLocale, {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </span>
+                </div>
+              )}
+              {nextScraperRun && (
+                <div
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1 text-[10.5px] font-medium text-[var(--text-secondary)] shadow-2xs cursor-help"
+                  title={`${isNe ? 'अर्को तालिकाबद्ध सिङ्क:' : 'Next scheduled sync:'} ${formatNepalDateTime(nextScraperRun, isNe ? 'ne' : 'en')} (NPT)`}
+                >
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--nepal-blue)]" />
+                  <span className="text-[var(--text-muted)]">{isNe ? 'अर्को सिङ्क:' : 'Next sync:'}</span>
+                  <span className="font-bold text-[var(--text-primary)]">
+                    {new Date(nextScraperRun).toLocaleDateString(dateLocale, {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                    })}{' '}
+                    <span className="text-[var(--nepal-blue)] font-bold">({formatTimeUntil(nextScraperRun, isNe ? 'ne' : 'en')})</span>
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Right: Flat Action Buttons Bar */}
-          <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+          {/* Action Buttons Toolbar */}
+          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[var(--border-default)]/50">
             <button
               type="button"
               onClick={scrollToSearch}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--nepal-blue-soft)] border border-[var(--nepal-blue)]/30 px-3 py-1.5 text-xs font-semibold text-[var(--nepal-blue)] transition hover:bg-[var(--nepal-blue)] hover:text-white active:scale-95 cursor-pointer shadow-2xs"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white px-3.5 py-1.5 text-xs font-bold transition active:scale-95 cursor-pointer shadow-xs shadow-blue-600/25"
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="8" />
@@ -165,6 +167,19 @@ export default function Footer({
               </svg>
               <span>{isNe ? 'लाइसेन्स जाँच्नुहोस्' : 'Check a License'}</span>
             </button>
+
+            {onOpenNpm && (
+              <button
+                type="button"
+                onClick={onOpenNpm}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-xs font-semibold text-[var(--text-primary)] transition hover:border-[var(--nepal-red)] hover:text-[var(--nepal-red)] active:scale-95 shadow-2xs cursor-pointer group"
+              >
+                <span className="rounded bg-[var(--nepal-red)]/10 px-1 py-0.5 font-mono text-[9.5px] font-black text-[var(--nepal-red)] group-hover:bg-[var(--nepal-red)] group-hover:text-white transition-colors">
+                  npm
+                </span>
+                <span>{isNe ? 'विकासकर्ता SDK (npm & GitHub)' : 'Developer SDK (npm & GitHub)'}</span>
+              </button>
+            )}
 
             <a
               href="https://github.com/NischalAcharya060/Nepal-License-Checker"
@@ -182,20 +197,6 @@ export default function Footer({
               <span>{isNe ? 'गिटहब रिपो' : 'Star on GitHub'}</span>
             </a>
 
-            <a
-              href="https://github.com/NischalAcharya060/Nepal-License-Checker/issues"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] transition hover:border-[var(--nepal-red)] hover:text-[var(--nepal-red)] active:scale-95 shadow-2xs"
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-red)]">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
-              <span>{isNe ? 'समस्या रिपोर्ट' : 'Report Bug'}</span>
-            </a>
-
             {onOpenFeedback ? (
               <button
                 type="button"
@@ -205,7 +206,7 @@ export default function Footer({
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]">
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                 </svg>
-                <span>{isNe ? 'प्रतिक्रिया / समस्या' : 'Contact / Feedback'}</span>
+                <span>{isNe ? 'प्रतिक्रिया' : 'Contact / Feedback'}</span>
               </button>
             ) : (
               <a
@@ -215,20 +216,23 @@ export default function Footer({
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]">
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                 </svg>
-                <span>{isNe ? 'प्रतिक्रिया / समस्या' : 'Contact / Feedback'}</span>
+                <span>{isNe ? 'प्रतिक्रिया' : 'Contact / Feedback'}</span>
               </a>
             )}
 
-            {onOpenNpm && (
-              <button
-                type="button"
-                onClick={onOpenNpm}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] transition hover:border-[var(--nepal-red)] hover:text-[var(--nepal-red)] active:scale-95 shadow-2xs cursor-pointer"
-              >
-                <span className="font-mono text-[10px] font-black text-[var(--nepal-red)]">npm</span>
-                <span>{isNe ? 'NPM प्याकेज (SDK)' : 'NPM Package'}</span>
-              </button>
-            )}
+            <a
+              href="https://github.com/NischalAcharya060/Nepal-License-Checker/issues"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] transition hover:border-[var(--nepal-red)] hover:text-[var(--nepal-red)] active:scale-95 shadow-2xs sm:ml-auto"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-red)]">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              <span>{isNe ? 'समस्या रिपोर्ट' : 'Report Bug'}</span>
+            </a>
           </div>
         </div>
 
@@ -249,7 +253,7 @@ export default function Footer({
                     className="group flex items-center gap-2 text-left font-medium text-[var(--text-secondary)] hover:text-[var(--nepal-red)] transition cursor-pointer w-full"
                   >
                     <span className="font-mono text-[10px] font-bold text-[var(--nepal-red)] shrink-0">npm</span>
-                    <span>{isNe ? 'विकासकर्ता NPM प्याकेज (SDK)' : 'Developer NPM Package (SDK)'}</span>
+                    <span>{isNe ? 'विकासकर्ता SDK (npm & GitHub)' : 'Developer SDK (npm & GitHub)'}</span>
                   </button>
                 </li>
               )}

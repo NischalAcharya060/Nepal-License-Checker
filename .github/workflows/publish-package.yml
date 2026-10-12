@@ -1,0 +1,61 @@
+name: Publish to GitHub Packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version bump type (patch, minor, major) or specific version (leave empty to use current version)'
+        required: false
+        default: ''
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish-github-package:
+    name: Build, Test & Publish to GitHub Packages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@nischalacharya060'
+
+      - name: Install SDK dependencies
+        working-directory: packages/sdk
+        run: npm install
+
+      - name: Build SDK bundle
+        working-directory: packages/sdk
+        run: npm run build
+
+      - name: Run SDK tests
+        working-directory: packages/sdk
+        run: npm test
+
+      - name: Optional version bump
+        if: ${{ github.event.inputs.version != '' }}
+        working-directory: packages/sdk
+        run: npm version ${{ github.event.inputs.version }} --no-git-tag-version
+
+      - name: Set scoped name for GitHub Packages
+        working-directory: packages/sdk
+        run: |
+          npm pkg set name="@nischalacharya060/nepal-license-checker"
+          npm pkg set publishConfig.registry="https://npm.pkg.github.com"
+
+      - name: Publish to GitHub Packages
+        working-directory: packages/sdk
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

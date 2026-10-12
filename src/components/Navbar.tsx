@@ -113,16 +113,16 @@ export default function Navbar({
             </button>
           )}
 
-          {/* NPM Package button (Desktop) */}
+          {/* NPM / GitHub Package button (Desktop) */}
           {onOpenNpm && (
             <button
               type="button"
               onClick={onOpenNpm}
               className="hidden items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-[11px] font-semibold text-[var(--text-secondary)] transition hover:border-[var(--nepal-red)] hover:bg-[var(--nepal-red)]/10 hover:text-[var(--nepal-red)] sm:inline-flex cursor-pointer"
-              title={language === 'ne' ? 'विकासकर्ता NPM प्याकेज' : 'Developer NPM Package'}
+              title={language === 'ne' ? 'विकासकर्ता SDK (npm & GitHub Packages)' : 'Developer SDK (npm & GitHub Packages)'}
             >
               <span className="font-mono text-[10px] font-black text-[var(--nepal-red)]">npm</span>
-              <span>{language === 'ne' ? 'NPM प्याकेज' : 'NPM SDK'}</span>
+              <span>{language === 'ne' ? 'SDK प्याकेज' : 'SDK / NPM'}</span>
             </button>
           )}
 
@@ -343,10 +343,10 @@ export default function Navbar({
                   <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/10 font-mono text-xs font-black text-red-600 dark:text-red-400">npm</span>
                   <div className="flex flex-col">
                     <span className="text-xs font-bold text-[var(--text-primary)]">
-                      {language === 'ne' ? 'विकासकर्ता NPM प्याकेज' : 'Developer NPM Package'}
+                      {language === 'ne' ? 'विकासकर्ता SDK (npm & GitHub)' : 'Developer SDK (npm & GitHub)'}
                     </span>
                     <span className="text-[10px] text-[var(--text-secondary)]">
-                      {language === 'ne' ? 'npm i nepal-license-checker' : 'Zero-dependency SDK for developers'}
+                      {language === 'ne' ? 'npm वा GitHub Packages बाट इन्स्टल गर्नुहोस्' : 'Install via npm or GitHub Packages'}
                     </span>
                   </div>
                 </div>

@@ -46,6 +46,7 @@
   :root[data-theme="dark"],
   html.dark,
   [data-theme="dark"] {
+    --nepal-blue: #4f8cf6;
     --nepal-blue-mid: #3b6ecf;
     --nepal-blue-light: #1f355f;
     --nepal-blue-soft: #12203b;
