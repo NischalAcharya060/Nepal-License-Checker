@@ -324,7 +324,7 @@ checkLicense('01-01-12345678').then((result) => {
               <span>npm Registry ↗</span>
             </a>
             <a
-              href="https://github.com/NischalAcharya060/Nepal-License-Checker/packages"
+              href="https://github.com/NischalAcharya060/Nepal-License-Checker/pkgs/npm/nepal-license-checker"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex flex-1 min-w-[140px] items-center justify-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3.5 py-2.5 text-xs font-bold text-[var(--text-primary)] shadow-xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] active:scale-95"
