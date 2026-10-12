@@ -17,6 +17,7 @@ import FeedbackModal from '@/components/FeedbackModal'
 import ScrollProgressButton from '@/components/ScrollProgressButton'
 import OfflineBanner from '@/components/OfflineBanner'
 import PwaInstallPopup from '@/components/PwaInstallPopup'
+import NpmModal from '@/components/NpmModal'
 import { translations } from '@/lib/i18n'
 import type { Language } from '@/lib/i18n'
 
@@ -81,6 +82,7 @@ export default function Home() {
   const [isOfficesModalOpen, setIsOfficesModalOpen] = useState(() => readViewParam() === 'offices')
   const [isSmsModalOpen, setIsSmsModalOpen] = useState(() => readViewParam() === 'sms')
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(() => readViewParam() === 'feedback')
+  const [isNpmModalOpen, setIsNpmModalOpen] = useState(() => readViewParam() === 'npm')
   const [language, setLanguage] = useState<Language>(() => {
     if (typeof window === 'undefined') return 'en'
     try {
@@ -385,6 +387,7 @@ export default function Home() {
         onOpenSms={() => setIsSmsModalOpen(true)}
         onOpenSample={() => setIsSampleModalOpen(true)}
         onOpenFeedback={() => setIsFeedbackModalOpen(true)}
+        onOpenNpm={() => setIsNpmModalOpen(true)}
       />
 
       <div className="relative z-10 mx-auto w-full max-w-4xl px-4 pb-14 pt-6 sm:px-6 sm:pt-10 print:p-0 print:m-0 print:max-w-none">
@@ -452,6 +455,7 @@ export default function Home() {
               onOpenOffices={() => setIsOfficesModalOpen(true)}
               onOpenSms={() => setIsSmsModalOpen(true)}
               onOpenSample={() => setIsSampleModalOpen(true)}
+              onOpenNpm={() => setIsNpmModalOpen(true)}
             />
 
             <HowToSection language={language} lastUpdatedAt={lastUpdatedAt} />
@@ -476,6 +480,7 @@ export default function Home() {
         indexedRecords={indexedRecords}
         onReset={reset}
         onOpenFeedback={() => setIsFeedbackModalOpen(true)}
+        onOpenNpm={() => setIsNpmModalOpen(true)}
       />
 
       {/* Floating Dynamic Scroll Progress & Back-to-Top Button */}
@@ -511,6 +516,13 @@ export default function Home() {
         onClose={() => setIsFeedbackModalOpen(false)}
         language={language}
         initialLicenseNumber={lastSearched || externalNumber || ''}
+      />
+
+      {/* Developer NPM Package SDK Modal */}
+      <NpmModal
+        isOpen={isNpmModalOpen}
+        onClose={() => setIsNpmModalOpen(false)}
+        language={language}
       />
 
       {/* Mobile PWA Install Popup */}

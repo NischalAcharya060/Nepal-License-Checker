@@ -12,6 +12,7 @@ interface EducationalSectionProps {
   onOpenOffices: () => void
   onOpenSms: () => void
   onOpenSample: () => void
+  onOpenNpm?: () => void
 }
 
 export default function EducationalSection({
@@ -24,6 +25,7 @@ export default function EducationalSection({
   onOpenOffices,
   onOpenSms,
   onOpenSample,
+  onOpenNpm,
 }: EducationalSectionProps) {
   const infoTiles = [
     {
@@ -140,6 +142,23 @@ export default function EducationalSection({
                 {tile.metaSub && <div className="mt-1 text-[10px] text-[var(--text-secondary)]">{tile.metaSub}</div>}
               </div>
             )}
+
+            {tile.key === 'recent' && onOpenNpm && (
+              <div className="mt-2.5 flex items-center justify-between rounded-lg border border-[var(--border-default)] bg-[var(--bg-secondary)]/70 px-3 py-2 text-[11px]">
+                <div className="flex items-center gap-1.5 font-semibold text-[var(--text-primary)]">
+                  <span className="font-mono text-[10px] font-extrabold text-[var(--nepal-red)]">npm</span>
+                  <span>{language === 'ne' ? 'विकासकर्ता प्याकेज (SDK)' : 'Developer NPM Package'}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={onOpenNpm}
+                  className="inline-flex items-center gap-1 rounded-md bg-[var(--surface-primary)] border border-[var(--border-default)] px-2 py-0.5 text-[10px] font-bold text-[var(--nepal-blue)] transition hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue)] hover:text-white cursor-pointer"
+                >
+                  <span>{language === 'ne' ? 'डाउनलोड / हेर्नुहोस्' : 'Download / View'}</span>
+                  <span>→</span>
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -162,6 +181,16 @@ export default function EducationalSection({
           <span>📱</span>
           <span>{language === 'ne' ? 'एसएमएसबाट जाँच्ने' : 'SMS Check (31003)'}</span>
         </button>
+        {onOpenNpm && (
+          <button
+            type="button"
+            onClick={onOpenNpm}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 text-xs font-bold text-[var(--text-primary)] shadow-sm"
+          >
+            <span className="font-mono text-[10px] font-extrabold text-[var(--nepal-red)]">npm</span>
+            <span>{language === 'ne' ? 'विकासकर्ता NPM प्याकेज' : 'Developer NPM Package'}</span>
+          </button>
+        )}
       </div>
     </section>
   )

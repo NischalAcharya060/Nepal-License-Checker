@@ -72,7 +72,13 @@ export async function checkLicense(
       signal: options?.signal,
     });
 
-    const json = (await res.json().catch(() => null)) as any;
+    const json = (await res.json().catch(() => null)) as {
+      status?: string;
+      data?: import('./types').LicenseData | null;
+      message?: string;
+      error?: string;
+      retryAfter?: number;
+    } | null;
 
     if (res.status === 429) {
       return {
@@ -104,8 +110,8 @@ export async function checkLicense(
       message: json?.message,
       statusCode: res.status,
     };
-  } catch (error: any) {
-    if (error?.name === 'AbortError') {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.name === 'AbortError') {
       return {
         status: 'error',
         isReady: false,
@@ -114,11 +120,12 @@ export async function checkLicense(
       };
     }
 
+    const message = error instanceof Error ? error.message : 'Failed to fetch license data.';
     return {
       status: 'error',
       isReady: false,
       data: null,
-      error: error?.message || 'Failed to fetch license data.',
+      error: message,
     };
   }
 }

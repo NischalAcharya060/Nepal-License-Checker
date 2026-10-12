@@ -20,6 +20,7 @@ interface FooterProps {
   indexedRecords?: number | null
   onReset?: () => void
   onOpenFeedback?: () => void
+  onOpenNpm?: () => void
 }
 
 export default function Footer({
@@ -36,6 +37,7 @@ export default function Footer({
   indexedRecords,
   onReset,
   onOpenFeedback,
+  onOpenNpm,
 }: FooterProps) {
   const [isDocsModalOpen, setIsDocsModalOpen] = useState(false)
   const [isCategoriesModalOpen, setIsCategoriesModalOpen] = useState(false)
@@ -216,6 +218,17 @@ export default function Footer({
                 <span>{isNe ? 'प्रतिक्रिया / समस्या' : 'Contact / Feedback'}</span>
               </a>
             )}
+
+            {onOpenNpm && (
+              <button
+                type="button"
+                onClick={onOpenNpm}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] transition hover:border-[var(--nepal-red)] hover:text-[var(--nepal-red)] active:scale-95 shadow-2xs cursor-pointer"
+              >
+                <span className="font-mono text-[10px] font-black text-[var(--nepal-red)]">npm</span>
+                <span>{isNe ? 'NPM प्याकेज (SDK)' : 'NPM Package'}</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -228,6 +241,18 @@ export default function Footer({
               <span>{isNe ? 'सेवा तथा उपकरणहरू' : 'Services & Tools'}</span>
             </div>
             <ul className="space-y-2 text-xs">
+              {onOpenNpm && (
+                <li>
+                  <button
+                    type="button"
+                    onClick={onOpenNpm}
+                    className="group flex items-center gap-2 text-left font-medium text-[var(--text-secondary)] hover:text-[var(--nepal-red)] transition cursor-pointer w-full"
+                  >
+                    <span className="font-mono text-[10px] font-bold text-[var(--nepal-red)] shrink-0">npm</span>
+                    <span>{isNe ? 'विकासकर्ता NPM प्याकेज (SDK)' : 'Developer NPM Package (SDK)'}</span>
+                  </button>
+                </li>
+              )}
               <li>
                 <button
                   type="button"

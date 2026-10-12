@@ -20,6 +20,7 @@ interface NavbarProps {
   onOpenSms: () => void
   onOpenSample: () => void
   onOpenFeedback?: () => void
+  onOpenNpm?: () => void
 }
 
 export default function Navbar({
@@ -35,6 +36,7 @@ export default function Navbar({
   onOpenSms,
   onOpenSample,
   onOpenFeedback,
+  onOpenNpm,
 }: NavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
@@ -108,6 +110,19 @@ export default function Navbar({
             >
               <span>💬</span>
               <span>{language === 'ne' ? 'प्रतिक्रिया' : 'Feedback'}</span>
+            </button>
+          )}
+
+          {/* NPM Package button (Desktop) */}
+          {onOpenNpm && (
+            <button
+              type="button"
+              onClick={onOpenNpm}
+              className="hidden items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-[11px] font-semibold text-[var(--text-secondary)] transition hover:border-[var(--nepal-red)] hover:bg-[var(--nepal-red)]/10 hover:text-[var(--nepal-red)] sm:inline-flex cursor-pointer"
+              title={language === 'ne' ? 'विकासकर्ता NPM प्याकेज' : 'Developer NPM Package'}
+            >
+              <span className="font-mono text-[10px] font-black text-[var(--nepal-red)]">npm</span>
+              <span>{language === 'ne' ? 'NPM प्याकेज' : 'NPM SDK'}</span>
             </button>
           )}
 
@@ -305,6 +320,33 @@ export default function Navbar({
                     </span>
                     <span className="text-[10px] text-[var(--text-secondary)]">
                       {language === 'ne' ? 'समस्या रिपोर्ट गर्नुहोस् वा सुझाव दिनुहोस्' : 'Ask questions or report an issue'}
+                    </span>
+                  </div>
+                </div>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-muted)]">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+            )}
+
+            {/* NPM Package (Mobile) */}
+            {onOpenNpm && (
+              <button
+                type="button"
+                onClick={() => {
+                  onOpenNpm()
+                  setIsMobileMenuOpen(false)
+                }}
+                className="flex items-center justify-between rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3.5 py-2.5 text-left transition hover:border-[var(--nepal-red)] hover:bg-[var(--nepal-red)]/10 active:scale-[0.99]"
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/10 font-mono text-xs font-black text-red-600 dark:text-red-400">npm</span>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-[var(--text-primary)]">
+                      {language === 'ne' ? 'विकासकर्ता NPM प्याकेज' : 'Developer NPM Package'}
+                    </span>
+                    <span className="text-[10px] text-[var(--text-secondary)]">
+                      {language === 'ne' ? 'npm i nepal-license-checker' : 'Zero-dependency SDK for developers'}
                     </span>
                   </div>
                 </div>
