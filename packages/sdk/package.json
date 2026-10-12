@@ -1,0 +1,48 @@
+{
+  "name": "nepal-license-checker",
+  "version": "1.0.0",
+  "description": "Zero-dependency JavaScript and TypeScript SDK to check Nepal smart driving license print status via DOTM mirrored API.",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "node --test test/index.test.mjs"
+  },
+  "keywords": [
+    "nepal",
+    "driving-license",
+    "nepal-license",
+    "nepal-license-checker",
+    "dotm",
+    "yatayat",
+    "license-checker"
+  ],
+  "author": "Nischal Acharya",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NischalAcharya060/Nepal-License-Checker.git",
+    "directory": "packages/sdk"
+  },
+  "homepage": "https://license-checker.acharyanischal.com.np",
+  "bugs": {
+    "url": "https://github.com/NischalAcharya060/Nepal-License-Checker/issues"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.6",
+    "typescript": "^5.0.0"
+  }
+}

@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "cron:scrape": "node scripts/update-data.js"
+    "cron:scrape": "node scripts/update-data.js",
+    "sdk:build": "npm --prefix packages/sdk run build",
+    "sdk:test": "npm --prefix packages/sdk test"
   },
   "dependencies": {
     "@libsql/client": "^0.17.3",
