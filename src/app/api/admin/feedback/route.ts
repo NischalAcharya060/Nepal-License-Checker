@@ -10,7 +10,9 @@ import {
     getFeedbackStats,
     updateFeedbackStatus,
     deleteFeedback,
+    ensureFeedbackTable,
 } from '@/lib/feedback'
+import { getTurso } from '@/lib/turso'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -76,18 +78,35 @@ export async function PATCH(request: NextRequest) {
 
     try {
         const body = await request.json()
-        const { id, status, adminNotes } = body
-
-        if (!id || typeof id !== 'string') {
-            return NextResponse.json(
-                { status: 'error', error: 'Feedback ID is required.' },
-                { status: 400 }
-            )
-        }
+        const { id, ids, status, adminNotes } = body
 
         if (status !== 'new' && status !== 'resolved') {
             return NextResponse.json(
                 { status: 'error', error: "Status must be either 'new' or 'resolved'." },
+                { status: 400 }
+            )
+        }
+
+        if (Array.isArray(ids) && ids.length > 0) {
+            await ensureFeedbackTable()
+            const db = getTurso()
+            const cleanIds = ids.map((x: unknown) => String(x || '').trim()).filter(Boolean)
+            if (cleanIds.length > 0) {
+                const placeholders = cleanIds.map(() => '?').join(', ')
+                await db.execute({
+                    sql: `UPDATE user_feedbacks SET status = ?, updated_at = ? WHERE id IN (${placeholders})`,
+                    args: [status, Date.now(), ...cleanIds],
+                })
+            }
+            return NextResponse.json({
+                status: 'success',
+                message: `Selected feedback marked as ${status}.`,
+            })
+        }
+
+        if (!id || typeof id !== 'string') {
+            return NextResponse.json(
+                { status: 'error', error: 'Feedback ID is required.' },
                 { status: 400 }
             )
         }
@@ -125,26 +144,68 @@ export async function DELETE(request: NextRequest) {
     try {
         const { searchParams } = request.nextUrl
         const id = searchParams.get('id')
+        const idsParam = searchParams.get('ids')
+        const status = searchParams.get('status')
+        const all = searchParams.get('all')
 
-        if (!id) {
-            return NextResponse.json(
-                { status: 'error', error: 'Specify an id to delete.' },
-                { status: 400 }
-            )
+        await ensureFeedbackTable()
+        const db = getTurso()
+
+        if (id) {
+            const success = await deleteFeedback(id)
+            if (!success) {
+                return NextResponse.json(
+                    { status: 'error', error: 'Feedback record not found.' },
+                    { status: 404 }
+                )
+            }
+            return NextResponse.json({
+                status: 'success',
+                message: 'Feedback deleted successfully.',
+            })
         }
 
-        const success = await deleteFeedback(id)
-        if (!success) {
-            return NextResponse.json(
-                { status: 'error', error: 'Feedback record not found.' },
-                { status: 404 }
-            )
+        if (idsParam) {
+            const ids = idsParam
+                .split(',')
+                .map((x) => x.trim())
+                .filter(Boolean)
+            if (ids.length > 0) {
+                const placeholders = ids.map(() => '?').join(', ')
+                await db.execute({
+                    sql: `DELETE FROM user_feedbacks WHERE id IN (${placeholders})`,
+                    args: ids,
+                })
+            }
+            return NextResponse.json({
+                status: 'success',
+                message: 'Selected feedback entries deleted.',
+            })
         }
 
-        return NextResponse.json({
-            status: 'success',
-            message: 'Feedback deleted successfully.',
-        })
+        if (status === 'resolved' || status === 'new') {
+            await db.execute({
+                sql: 'DELETE FROM user_feedbacks WHERE status = ?',
+                args: [status],
+            })
+            return NextResponse.json({
+                status: 'success',
+                message: `All ${status} feedback entries deleted.`,
+            })
+        }
+
+        if (all === 'true') {
+            await db.execute('DELETE FROM user_feedbacks')
+            return NextResponse.json({
+                status: 'success',
+                message: 'All feedback entries deleted.',
+            })
+        }
+
+        return NextResponse.json(
+            { status: 'error', error: 'Specify id, ids, status, or all=true to delete.' },
+            { status: 400 }
+        )
     } catch (err: unknown) {
         console.error('Failed to delete feedback:', err)
         const error = err as Error

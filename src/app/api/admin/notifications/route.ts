@@ -69,7 +69,9 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl
     const id = searchParams.get('id')
+    const idsParam = searchParams.get('ids')
     const status = searchParams.get('status')
+    const all = searchParams.get('all')
     const db = getTurso()
 
     if (id) {
@@ -80,15 +82,36 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ status: 'success', message: 'Notification log deleted.' })
     }
 
-    if (status === 'cancelled') {
+    if (idsParam) {
+      const ids = idsParam
+        .split(',')
+        .map((x) => x.trim())
+        .filter(Boolean)
+      if (ids.length > 0) {
+        const placeholders = ids.map(() => '?').join(', ')
+        await db.execute({
+          sql: `DELETE FROM license_notifications WHERE id IN (${placeholders})`,
+          args: ids,
+        })
+      }
+      return NextResponse.json({ status: 'success', message: 'Selected notification logs deleted.' })
+    }
+
+    if (status === 'cancelled' || status === 'sent' || status === 'pending') {
       await db.execute({
-        sql: "DELETE FROM license_notifications WHERE status = 'cancelled'",
+        sql: 'DELETE FROM license_notifications WHERE status = ?',
+        args: [status],
       })
-      return NextResponse.json({ status: 'success', message: 'All cancelled notifications pruned.' })
+      return NextResponse.json({ status: 'success', message: `All ${status} notifications deleted.` })
+    }
+
+    if (all === 'true') {
+      await db.execute('DELETE FROM license_notifications')
+      return NextResponse.json({ status: 'success', message: 'All notifications deleted.' })
     }
 
     return NextResponse.json(
-      { status: 'error', error: 'Specify an id or status to delete.' },
+      { status: 'error', error: 'Specify id, ids, status, or all=true to delete.' },
       { status: 400 }
     )
   } catch (err: unknown) {

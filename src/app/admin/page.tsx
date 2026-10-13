@@ -49,6 +49,28 @@ interface SearchStats {
     uniqueIps: number
     foundRate: number
     topLocations: Array<{ city: string; country: string; count: number }>
+    dailyTrend?: Array<{
+        date: string
+        label: string
+        total: number
+        found: number
+        notFound: number
+    }>
+    topLicenses?: Array<{
+        license_number: string
+        status: string
+        count: number
+    }>
+    topOffices?: Array<{
+        office: string
+        count: number
+    }>
+    topIps?: Array<{
+        ip: string
+        city: string
+        country: string
+        count: number
+    }>
 }
 
 interface NotificationLog {
@@ -165,6 +187,8 @@ export default function AdminPage() {
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
     const [refreshKey, setRefreshKey] = useState(0)
     const [copiedKey, setCopiedKey] = useState<string | null>(null)
+    const [selectedSearchIds, setSelectedSearchIds] = useState<number[]>([])
+    const [searchSelectMode, setSearchSelectMode] = useState(false)
 
     // Dashboard State - Email Notifications
     const [notificationStats, setNotificationStats] = useState<NotificationStatsData | null>(null)
@@ -176,6 +200,8 @@ export default function AdminPage() {
     const [notifSearchFilter, setNotifSearchFilter] = useState('')
     const [notifStatusFilter, setNotifStatusFilter] = useState<'all' | 'pending' | 'sent' | 'cancelled'>('all')
     const [notifLoading, setNotifLoading] = useState(false)
+    const [selectedNotifIds, setSelectedNotifIds] = useState<string[]>([])
+    const [notifSelectMode, setNotifSelectMode] = useState(false)
 
     // Dashboard State - User Feedback & Inquiries
     const [feedbackStats, setFeedbackStats] = useState<FeedbackStatsData | null>(null)
@@ -188,6 +214,8 @@ export default function AdminPage() {
     const [feedbackStatusFilter, setFeedbackStatusFilter] = useState<'all' | 'new' | 'resolved'>('all')
     const [feedbackCategoryFilter, setFeedbackCategoryFilter] = useState<string>('all')
     const [feedbackLoading, setFeedbackLoading] = useState(false)
+    const [selectedFeedbackIds, setSelectedFeedbackIds] = useState<string[]>([])
+    const [feedbackSelectMode, setFeedbackSelectMode] = useState(false)
     const [selectedFeedbackMessage, setSelectedFeedbackMessage] = useState<FeedbackLog | null>(null)
     const [confirmDialog, setConfirmDialog] = useState<{
         title: string
@@ -196,8 +224,16 @@ export default function AdminPage() {
         onConfirm: () => Promise<void>
     } | null>(null)
     const [confirmSubmitting, setConfirmSubmitting] = useState(false)
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' } | null>(null)
 
     const [, startTransition] = useTransition()
+
+    const showToast = (message: string, type: 'success' | 'info' = 'success') => {
+        setToast({ message, type })
+        setTimeout(() => {
+            setToast((prev) => (prev?.message === message ? null : prev))
+        }, 3200)
+    }
 
     // 1. Check Auth Status on Load
     useEffect(() => {
@@ -423,7 +459,7 @@ export default function AdminPage() {
         setTimeout(() => setCopiedKey(null), 1800)
     }
 
-    // 7. CSV Export
+    // 7. CSV Export (Respects Privacy Mode)
     const exportCsv = () => {
         if (!logs.length) return
         const headers = ['ID', 'Date (NPT)', 'Date (ISO)', 'License Number', 'Status', 'Holder Name', 'Office', 'Category', 'IP Address', 'Country', 'City', 'Region']
@@ -431,12 +467,12 @@ export default function AdminPage() {
             l.id,
             `"${formatNepalDateTime(l.created_at, 'en', true)}"`,
             new Date(l.created_at).toISOString(),
-            `"${l.license_number}"`,
+            `"${maskLicenseNumber(l.license_number, privacyMode)}"`,
             l.status,
             `"${l.holder_name || ''}"`,
             `"${l.office || ''}"`,
             `"${l.category || ''}"`,
-            l.ip,
+            maskIpAddress(l.ip, privacyMode),
             l.country || '',
             `"${l.city || ''}"`,
             `"${l.region || ''}"`,
@@ -449,9 +485,15 @@ export default function AdminPage() {
         a.download = `nepal-license-search-logs-${new Date().toISOString().slice(0, 10)}.csv`
         a.click()
         URL.revokeObjectURL(url)
+        showToast(
+            privacyMode
+                ? 'Exported search logs CSV (Privacy Masked)'
+                : 'Exported search logs CSV (Full Data)',
+            'info'
+        )
     }
 
-    // 8. Notification CSV Export
+    // 8. Notification CSV Export (Respects Privacy Mode)
     const exportNotificationCsv = () => {
         if (!notificationLogs.length) return
         const headers = ['ID', 'Subscribed At (NPT)', 'Subscribed At (ISO)', 'License Number', 'User Email', 'Status', 'Delivered At (NPT)', 'Delivered At (ISO)', 'Holder Name', 'Issuing Office']
@@ -459,7 +501,7 @@ export default function AdminPage() {
             `"${l.id}"`,
             `"${formatNepalDateTime(l.created_at, 'en', true)}"`,
             new Date(l.created_at).toISOString(),
-            `"${l.license_number}"`,
+            `"${maskLicenseNumber(l.license_number, privacyMode)}"`,
             `"${l.email}"`,
             l.status,
             l.sent_at ? `"${formatNepalDateTime(l.sent_at, 'en', true)}"` : '',
@@ -475,9 +517,15 @@ export default function AdminPage() {
         a.download = `nepal-license-notification-logs-${new Date().toISOString().slice(0, 10)}.csv`
         a.click()
         URL.revokeObjectURL(url)
+        showToast(
+            privacyMode
+                ? 'Exported notification logs CSV (Privacy Masked)'
+                : 'Exported notification logs CSV (Full Data)',
+            'info'
+        )
     }
 
-    // 8b. Delete Single Search Log & Delete All Search Logs
+    // 8b. Search Log Deletion Handlers (Single, Selected, Older Than X Days, All)
     const handleDeleteSearchLog = (id: number, license: string) => {
         const displayLic = maskLicenseNumber(license, privacyMode)
         setConfirmDialog({
@@ -491,8 +539,61 @@ export default function AdminPage() {
                     })
                     if (res.ok) {
                         setLogs((prev) => prev.filter((item) => item.id !== id))
+                        setSelectedSearchIds((prev) => prev.filter((x) => x !== id))
                         setTotal((prev) => Math.max(0, prev - 1))
                         setRefreshKey((k) => k + 1)
+                        showToast('Search log deleted')
+                    }
+                } catch {
+                    // Error
+                }
+            },
+        })
+    }
+
+    const handleDeleteSelectedSearchLogs = () => {
+        if (!selectedSearchIds.length) return
+        const count = selectedSearchIds.length
+        setConfirmDialog({
+            title: `Delete ${count} selected search log${count > 1 ? 's' : ''}?`,
+            message: `Are you sure you want to permanently delete the ${count} selected search log${count > 1 ? 's' : ''}? This action cannot be undone.`,
+            confirmLabel: `Yes, Delete (${count})`,
+            onConfirm: async () => {
+                try {
+                    const idsParam = selectedSearchIds.join(',')
+                    const res = await fetch(`/api/admin/logs?ids=${encodeURIComponent(idsParam)}`, {
+                        method: 'DELETE',
+                    })
+                    if (res.ok) {
+                        const idSet = new Set(selectedSearchIds)
+                        setLogs((prev) => prev.filter((item) => !idSet.has(item.id)))
+                        setSelectedSearchIds([])
+                        setSearchSelectMode(false)
+                        setRefreshKey((k) => k + 1)
+                        showToast(`Deleted ${count} selected search log${count > 1 ? 's' : ''}`)
+                    }
+                } catch {
+                    // Error
+                }
+            },
+        })
+    }
+
+    const handleDeleteSearchLogsOlderThan = (days: number) => {
+        if (total === 0) return
+        setConfirmDialog({
+            title: `Delete logs older than ${days} days?`,
+            message: `Are you sure you want to permanently delete all search logs older than ${days} days? Recent logs from the last ${days} days will be kept.`,
+            confirmLabel: `Yes, Delete Older Than ${days}d`,
+            onConfirm: async () => {
+                try {
+                    const res = await fetch(`/api/admin/logs?days=${days}`, { method: 'DELETE' })
+                    if (res.ok) {
+                        setSelectedSearchIds([])
+                        setSearchSelectMode(false)
+                        setPage(1)
+                        setRefreshKey((k) => k + 1)
+                        showToast(`Deleted search logs older than ${days} days`)
                     }
                 } catch {
                     // Error
@@ -512,9 +613,12 @@ export default function AdminPage() {
                     const res = await fetch('/api/admin/logs', { method: 'DELETE' })
                     if (res.ok) {
                         setLogs([])
+                        setSelectedSearchIds([])
+                        setSearchSelectMode(false)
                         setTotal(0)
                         setPage(1)
                         setRefreshKey((k) => k + 1)
+                        showToast('All search logs deleted')
                     }
                 } catch {
                     // Error
@@ -523,7 +627,7 @@ export default function AdminPage() {
         })
     }
 
-    // 9. Delete Notification Log
+    // 9. Notification Deletion Handlers (Single, Selected, By Status, All)
     const handleDeleteNotification = (id: string, license: string) => {
         const displayLic = maskLicenseNumber(license, privacyMode)
         setConfirmDialog({
@@ -535,7 +639,9 @@ export default function AdminPage() {
                     const res = await fetch(`/api/admin/notifications?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
                     if (res.ok) {
                         setNotificationLogs((prev) => prev.filter((item) => item.id !== id))
+                        setSelectedNotifIds((prev) => prev.filter((x) => x !== id))
                         setRefreshKey((k) => k + 1)
+                        showToast('Notification entry deleted')
                     }
                 } catch {
                     // Error
@@ -544,7 +650,86 @@ export default function AdminPage() {
         })
     }
 
-    // 10. Feedback CSV Export
+    const handleDeleteSelectedNotifications = () => {
+        if (!selectedNotifIds.length) return
+        const count = selectedNotifIds.length
+        setConfirmDialog({
+            title: `Delete ${count} selected notification${count > 1 ? 's' : ''}?`,
+            message: `Are you sure you want to permanently delete the ${count} selected notification subscription${count > 1 ? 's' : ''}? This action cannot be undone.`,
+            confirmLabel: `Yes, Delete (${count})`,
+            onConfirm: async () => {
+                try {
+                    const idsParam = selectedNotifIds.join(',')
+                    const res = await fetch(`/api/admin/notifications?ids=${encodeURIComponent(idsParam)}`, {
+                        method: 'DELETE',
+                    })
+                    if (res.ok) {
+                        const idSet = new Set(selectedNotifIds)
+                        setNotificationLogs((prev) => prev.filter((item) => !idSet.has(item.id)))
+                        setSelectedNotifIds([])
+                        setNotifSelectMode(false)
+                        setRefreshKey((k) => k + 1)
+                        showToast(`Deleted ${count} selected notification${count > 1 ? 's' : ''}`)
+                    }
+                } catch {
+                    // Error
+                }
+            },
+        })
+    }
+
+    const handleDeleteNotificationsByStatus = (status: 'cancelled' | 'sent') => {
+        const label = status === 'cancelled' ? 'cancelled' : 'delivered'
+        setConfirmDialog({
+            title: `Delete all ${label} notifications?`,
+            message: `Are you sure you want to permanently delete all ${label} notification entries? Active pending subscriptions will not be affected.`,
+            confirmLabel: `Yes, Delete ${status === 'cancelled' ? 'Cancelled' : 'Delivered'}`,
+            onConfirm: async () => {
+                try {
+                    const res = await fetch(`/api/admin/notifications?status=${status}`, {
+                        method: 'DELETE',
+                    })
+                    if (res.ok) {
+                        setSelectedNotifIds([])
+                        setNotifSelectMode(false)
+                        setNotifPage(1)
+                        setRefreshKey((k) => k + 1)
+                        showToast(`Deleted all ${label} notifications`)
+                    }
+                } catch {
+                    // Error
+                }
+            },
+        })
+    }
+
+    const handleDeleteAllNotifications = () => {
+        if (!notificationLogs.length && notifTotal === 0) return
+        const totalCount = notificationStats?.total ?? notifTotal
+        setConfirmDialog({
+            title: 'Are you sure you want to delete all notifications?',
+            message: `This will permanently delete ALL ${totalCount.toLocaleString()} email notification subscriptions and logs. This action cannot be undone.`,
+            confirmLabel: `Yes, Delete All (${totalCount.toLocaleString()})`,
+            onConfirm: async () => {
+                try {
+                    const res = await fetch('/api/admin/notifications?all=true', { method: 'DELETE' })
+                    if (res.ok) {
+                        setNotificationLogs([])
+                        setSelectedNotifIds([])
+                        setNotifSelectMode(false)
+                        setNotifTotal(0)
+                        setNotifPage(1)
+                        setRefreshKey((k) => k + 1)
+                        showToast('All notification logs deleted')
+                    }
+                } catch {
+                    // Error
+                }
+            },
+        })
+    }
+
+    // 10. Feedback CSV Export (Respects Privacy Mode)
     const exportFeedbackCsv = () => {
         if (!feedbackLogs.length) return
         const headers = ['ID', 'Received At (NPT)', 'Received At (ISO)', 'Name', 'Email', 'Category', 'Subject', 'Message', 'License Number', 'Status', 'IP']
@@ -557,9 +742,9 @@ export default function AdminPage() {
             `"${(l.category || '').replace(/"/g, '""')}"`,
             `"${(l.subject || '').replace(/"/g, '""')}"`,
             `"${(l.message || '').replace(/"/g, '""')}"`,
-            `"${l.license_number || ''}"`,
+            `"${l.license_number ? maskLicenseNumber(l.license_number, privacyMode) : ''}"`,
             l.status,
-            `"${l.ip || ''}"`,
+            `"${l.ip ? maskIpAddress(l.ip, privacyMode) : ''}"`,
         ])
         const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n')
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
@@ -569,9 +754,15 @@ export default function AdminPage() {
         a.download = `nepal-license-feedback-logs-${new Date().toISOString().slice(0, 10)}.csv`
         a.click()
         URL.revokeObjectURL(url)
+        showToast(
+            privacyMode
+                ? 'Exported feedback CSV (Privacy Masked)'
+                : 'Exported feedback CSV (Full Data)',
+            'info'
+        )
     }
 
-    // 11. Toggle Feedback Status
+    // 11. Toggle & Bulk Update Feedback Status
     const handleToggleFeedbackStatus = async (id: string, currentStatus: 'new' | 'resolved') => {
         const nextStatus = currentStatus === 'new' ? 'resolved' : 'new'
         try {
@@ -588,13 +779,38 @@ export default function AdminPage() {
                     setSelectedFeedbackMessage({ ...selectedFeedbackMessage, status: nextStatus })
                 }
                 setRefreshKey((k) => k + 1)
+                showToast(`Feedback marked as ${nextStatus}`)
             }
         } catch {
             // Error
         }
     }
 
-    // 12. Delete Feedback
+    const handleBulkFeedbackStatus = async (nextStatus: 'new' | 'resolved') => {
+        if (!selectedFeedbackIds.length) return
+        const count = selectedFeedbackIds.length
+        try {
+            const res = await fetch('/api/admin/feedback', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: selectedFeedbackIds, status: nextStatus }),
+            })
+            if (res.ok) {
+                const idSet = new Set(selectedFeedbackIds)
+                setFeedbackLogs((prev) =>
+                    prev.map((item) => (idSet.has(item.id) ? { ...item, status: nextStatus } : item))
+                )
+                setSelectedFeedbackIds([])
+                setFeedbackSelectMode(false)
+                setRefreshKey((k) => k + 1)
+                showToast(`Marked ${count} feedback entr${count > 1 ? 'ies' : 'y'} as ${nextStatus}`)
+            }
+        } catch {
+            // Error
+        }
+    }
+
+    // 12. Delete Feedback Handlers (Single, Selected, Resolved, All)
     const handleDeleteFeedback = (id: string, subject: string) => {
         setConfirmDialog({
             title: 'Are you sure?',
@@ -605,10 +821,86 @@ export default function AdminPage() {
                     const res = await fetch(`/api/admin/feedback?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
                     if (res.ok) {
                         setFeedbackLogs((prev) => prev.filter((item) => item.id !== id))
+                        setSelectedFeedbackIds((prev) => prev.filter((x) => x !== id))
                         if (selectedFeedbackMessage && selectedFeedbackMessage.id === id) {
                             setSelectedFeedbackMessage(null)
                         }
                         setRefreshKey((k) => k + 1)
+                        showToast('Feedback entry deleted')
+                    }
+                } catch {
+                    // Error
+                }
+            },
+        })
+    }
+
+    const handleDeleteSelectedFeedback = () => {
+        if (!selectedFeedbackIds.length) return
+        const count = selectedFeedbackIds.length
+        setConfirmDialog({
+            title: `Delete ${count} selected feedback entr${count > 1 ? 'ies' : 'y'}?`,
+            message: `Are you sure you want to permanently delete the ${count} selected feedback entr${count > 1 ? 'ies' : 'y'}? This action cannot be undone.`,
+            confirmLabel: `Yes, Delete (${count})`,
+            onConfirm: async () => {
+                try {
+                    const idsParam = selectedFeedbackIds.join(',')
+                    const res = await fetch(`/api/admin/feedback?ids=${encodeURIComponent(idsParam)}`, {
+                        method: 'DELETE',
+                    })
+                    if (res.ok) {
+                        const idSet = new Set(selectedFeedbackIds)
+                        setFeedbackLogs((prev) => prev.filter((item) => !idSet.has(item.id)))
+                        setSelectedFeedbackIds([])
+                        setFeedbackSelectMode(false)
+                        setRefreshKey((k) => k + 1)
+                        showToast(`Deleted ${count} selected feedback entr${count > 1 ? 'ies' : 'y'}`)
+                    }
+                } catch {
+                    // Error
+                }
+            },
+        })
+    }
+
+    const handleDeleteResolvedFeedback = () => {
+        setConfirmDialog({
+            title: 'Delete all resolved feedback?',
+            message: 'Are you sure you want to permanently delete all resolved feedback inquiries? Unread/new inquiries will be kept.',
+            confirmLabel: 'Yes, Delete Resolved',
+            onConfirm: async () => {
+                try {
+                    const res = await fetch('/api/admin/feedback?status=resolved', { method: 'DELETE' })
+                    if (res.ok) {
+                        setSelectedFeedbackIds([])
+                        setFeedbackPage(1)
+                        setRefreshKey((k) => k + 1)
+                        showToast('Deleted all resolved feedback')
+                    }
+                } catch {
+                    // Error
+                }
+            },
+        })
+    }
+
+    const handleDeleteAllFeedback = () => {
+        if (!feedbackLogs.length && feedbackTotal === 0) return
+        const totalCount = feedbackStats?.total ?? feedbackTotal
+        setConfirmDialog({
+            title: 'Are you sure you want to delete all feedback?',
+            message: `This will permanently delete ALL ${totalCount.toLocaleString()} user feedback inquiries. This action cannot be undone.`,
+            confirmLabel: `Yes, Delete All (${totalCount.toLocaleString()})`,
+            onConfirm: async () => {
+                try {
+                    const res = await fetch('/api/admin/feedback?all=true', { method: 'DELETE' })
+                    if (res.ok) {
+                        setFeedbackLogs([])
+                        setSelectedFeedbackIds([])
+                        setFeedbackTotal(0)
+                        setFeedbackPage(1)
+                        setRefreshKey((k) => k + 1)
+                        showToast('All feedback inquiries deleted')
                     }
                 } catch {
                     // Error
@@ -797,7 +1089,16 @@ export default function AdminPage() {
                         {/* Privacy Mode Toggle (ON by default) */}
                         <button
                             type="button"
-                            onClick={() => setPrivacyMode(!privacyMode)}
+                            onClick={() => {
+                                const next = !privacyMode
+                                setPrivacyMode(next)
+                                showToast(
+                                    next
+                                        ? 'Privacy Mode enabled (License & IP masked)'
+                                        : 'Privacy Mode disabled (Showing full data)',
+                                    'info'
+                                )
+                            }}
                             className={`inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold shadow-xs transition active:scale-95 ${
                                 privacyMode
                                     ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
@@ -1030,6 +1331,249 @@ export default function AdminPage() {
                                     </span>
                                 </button>
                             ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Analytics & Search Insights Grid (7-Day Volume, Top Licenses & IPs, Top Offices) */}
+                {stats && (
+                    <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+                        {/* 1. 7-Day Search Volume Sparkline */}
+                        <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-sm flex flex-col justify-between">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                                        7-Day Search Volume
+                                    </h3>
+                                    <p className="text-[11px] text-[var(--text-muted)]">
+                                        Daily queries (Found vs Not Found)
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-2 text-[10px] font-semibold">
+                                    <span className="inline-flex items-center gap-1 text-[var(--success)]">
+                                        <span className="h-2 w-2 rounded-xs bg-[var(--success)]" />
+                                        Found
+                                    </span>
+                                    <span className="inline-flex items-center gap-1 text-[var(--nepal-blue)]">
+                                        <span className="h-2 w-2 rounded-xs bg-[var(--nepal-blue)]/60" />
+                                        Not Found
+                                    </span>
+                                </div>
+                            </div>
+
+                            {stats.dailyTrend && stats.dailyTrend.length > 0 ? (
+                                (() => {
+                                    const maxDay = Math.max(
+                                        1,
+                                        ...stats.dailyTrend.map((d) => d.total)
+                                    )
+                                    return (
+                                        <div className="mt-4 flex h-28 items-end justify-between gap-2 pt-4">
+                                            {stats.dailyTrend.map((day, i) => {
+                                                const totalPct = Math.max(
+                                                    day.total > 0 ? 10 : 3,
+                                                    Math.round((day.total / maxDay) * 100)
+                                                )
+                                                const foundPct =
+                                                    day.total > 0
+                                                        ? Math.round((day.found / day.total) * 100)
+                                                        : 0
+                                                return (
+                                                    <div
+                                                        key={i}
+                                                        className="group flex flex-1 flex-col items-center gap-1.5 h-full justify-end"
+                                                        title={`${day.date}: ${day.total} total (${day.found} found, ${day.notFound} not found)`}
+                                                    >
+                                                        <span className="font-mono text-[10px] font-bold text-[var(--text-muted)] group-hover:text-[var(--text-primary)]">
+                                                            {day.total}
+                                                        </span>
+                                                        <div className="relative flex w-full max-w-[28px] flex-1 items-end overflow-hidden rounded-lg bg-[var(--bg-secondary)]">
+                                                            <div
+                                                                className=" flex w-full flex-col justify-end overflow-hidden rounded-lg transition-all duration-500"
+                                                                style={{ height: `${totalPct}%` }}
+                                                            >
+                                                                <div
+                                                                    className="w-full bg-[var(--nepal-blue)]/55 transition-all"
+                                                                    style={{ height: `${100 - foundPct}%` }}
+                                                                />
+                                                                <div
+                                                                    className="w-full bg-[var(--success)] transition-all"
+                                                                    style={{ height: `${foundPct}%` }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <span className={`text-[10px] font-semibold ${day.label === 'Today' ? 'font-bold text-[var(--nepal-blue)]' : 'text-[var(--text-muted)]'}`}>
+                                                            {day.label}
+                                                        </span>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    )
+                                })()
+                            ) : (
+                                <div className="mt-4 flex h-28 items-center justify-center text-xs text-[var(--text-muted)]">
+                                    No daily trend data yet
+                                </div>
+                            )}
+                        </div>
+
+                        {/* 2. Top Repeated Licenses & Active IPs */}
+                        <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-sm">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                                        Repeated Licenses & Top IPs
+                                    </h3>
+                                    <p className="text-[11px] text-[var(--text-muted)]">
+                                        Most frequent license lookups & active IPs
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="mt-3 grid grid-cols-2 gap-3">
+                                {/* Top Licenses */}
+                                <div>
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                                        Top Licenses
+                                    </span>
+                                    <div className="mt-1.5 space-y-1.5">
+                                        {stats.topLicenses && stats.topLicenses.length > 0 ? (
+                                            stats.topLicenses.slice(0, 4).map((item, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (!privacyMode) {
+                                                            setActiveTab('searches')
+                                                            setSearchFilter(item.license_number)
+                                                            setPage(1)
+                                                        }
+                                                    }}
+                                                    className="flex w-full items-center justify-between rounded-lg border border-[var(--border-default)]/70 bg-[var(--bg-secondary)]/60 px-2 py-1 text-left text-[11px] transition hover:border-[var(--nepal-blue)]"
+                                                    title={privacyMode ? 'Disable Privacy Mode to filter by this license' : `Filter by ${item.license_number}`}
+                                                >
+                                                    <span className="flex items-center gap-1.5 truncate font-mono font-semibold text-[var(--text-primary)]">
+                                                        <span
+                                                            className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                                                                item.status === 'found' ? 'bg-[var(--success)]' : 'bg-gray-400'
+                                                            }`}
+                                                        />
+                                                        <span className="truncate">
+                                                            {maskLicenseNumber(item.license_number, privacyMode)}
+                                                        </span>
+                                                    </span>
+                                                    <span className="ml-1 shrink-0 rounded bg-[var(--surface-primary)] px-1.5 py-0.2 font-mono text-[10px] font-bold text-[var(--text-secondary)]">
+                                                        {item.count}×
+                                                    </span>
+                                                </button>
+                                            ))
+                                        ) : (
+                                            <p className="text-[11px] text-[var(--text-muted)] italic">No data</p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Top IPs */}
+                                <div>
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                                        Most Active IPs
+                                    </span>
+                                    <div className="mt-1.5 space-y-1.5">
+                                        {stats.topIps && stats.topIps.length > 0 ? (
+                                            stats.topIps.slice(0, 4).map((item, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (!privacyMode) {
+                                                            setActiveTab('searches')
+                                                            setSearchFilter(item.ip)
+                                                            setPage(1)
+                                                        }
+                                                    }}
+                                                    className="flex w-full items-center justify-between rounded-lg border border-[var(--border-default)]/70 bg-[var(--bg-secondary)]/60 px-2 py-1 text-left text-[11px] transition hover:border-[var(--nepal-blue)]"
+                                                    title={privacyMode ? 'Disable Privacy Mode to filter by this IP' : `Filter by ${item.ip} (${item.city})`}
+                                                >
+                                                    <span className="flex items-center gap-1 truncate font-mono text-[var(--text-secondary)]">
+                                                        <span>{getFlag(item.country)}</span>
+                                                        <span className="truncate">
+                                                            {maskIpAddress(item.ip, privacyMode)}
+                                                        </span>
+                                                    </span>
+                                                    <span className="ml-1 shrink-0 rounded bg-[var(--surface-primary)] px-1.5 py-0.2 font-mono text-[10px] font-bold text-[var(--text-secondary)]">
+                                                        {item.count}×
+                                                    </span>
+                                                </button>
+                                            ))
+                                        ) : (
+                                            <p className="text-[11px] text-[var(--text-muted)] italic">No data</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 3. Top Issuing Offices Breakdown */}
+                        <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-sm">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                                        Top Issuing Offices
+                                    </h3>
+                                    <p className="text-[11px] text-[var(--text-muted)]">
+                                        Most matched DOTM transport offices
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="mt-3 space-y-2">
+                                {stats.topOffices && stats.topOffices.length > 0 ? (
+                                    (() => {
+                                        const maxOfficeCount = Math.max(
+                                            1,
+                                            ...stats.topOffices.map((o) => o.count)
+                                        )
+                                        return stats.topOffices.slice(0, 4).map((item, idx) => {
+                                            const pct = Math.max(
+                                                8,
+                                                Math.round((item.count / maxOfficeCount) * 100)
+                                            )
+                                            return (
+                                                <button
+                                                    key={idx}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setActiveTab('searches')
+                                                        setSearchFilter(item.office)
+                                                        setPage(1)
+                                                    }}
+                                                    className="block w-full text-left group"
+                                                >
+                                                    <div className="flex items-center justify-between text-xs">
+                                                        <span className="truncate font-semibold text-[var(--text-primary)] group-hover:text-[var(--nepal-blue)]">
+                                                            {item.office}
+                                                        </span>
+                                                        <span className="ml-2 shrink-0 font-mono text-[11px] font-bold text-[var(--text-secondary)]">
+                                                            {item.count}
+                                                        </span>
+                                                    </div>
+                                                    <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[var(--bg-secondary)]">
+                                                        <div
+                                                            className="h-full rounded-full bg-[var(--nepal-blue)] transition-all duration-500"
+                                                            style={{ width: `${pct}%` }}
+                                                        />
+                                                    </div>
+                                                </button>
+                                            )
+                                        })
+                                    })()
+                                ) : (
+                                    <div className="flex h-24 items-center justify-center text-xs text-[var(--text-muted)]">
+                                        No printed office matches recorded yet
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}
@@ -1314,7 +1858,7 @@ export default function AdminPage() {
                                 )}
                             </div>
 
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                                 {/* Status Filter */}
                                 <div className="inline-flex rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-1 text-xs font-semibold">
                                     {(['all', 'found', 'not_found'] as const).map((st) => (
@@ -1350,6 +1894,68 @@ export default function AdminPage() {
                                     <option value={100}>100 rows</option>
                                 </select>
 
+                                {/* Toggle Multi-Select Mode Button */}
+                                <button
+                                    type="button"
+                                    disabled={logs.length === 0 || dataLoading}
+                                    onClick={() => {
+                                        if (searchSelectMode) {
+                                            setSearchSelectMode(false)
+                                            setSelectedSearchIds([])
+                                        } else {
+                                            setSearchSelectMode(true)
+                                        }
+                                    }}
+                                    className={`inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold shadow-xs transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${
+                                        searchSelectMode
+                                            ? 'border-[var(--nepal-blue)] bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)] font-bold'
+                                            : 'border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)]'
+                                    }`}
+                                    title={searchSelectMode ? 'Exit row selection mode' : 'Select multiple rows to delete'}
+                                >
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="9 11 12 14 22 4" />
+                                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                                    </svg>
+                                    <span>{searchSelectMode ? 'Cancel' : 'Select'}</span>
+                                </button>
+
+                                {/* Delete Selected Button */}
+                                {searchSelectMode && selectedSearchIds.length > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={handleDeleteSelectedSearchLogs}
+                                        disabled={dataLoading}
+                                        className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--error-border)] bg-[var(--error)] px-3 text-xs font-bold text-white shadow-xs transition hover:opacity-90 active:scale-95 disabled:opacity-50"
+                                        title="Delete selected search logs"
+                                    >
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="3 6 5 6 21 6" />
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                        </svg>
+                                        <span>Delete Selected ({selectedSearchIds.length})</span>
+                                    </button>
+                                )}
+
+                                {/* Manual Delete Older Than Selector */}
+                                <select
+                                    value=""
+                                    disabled={total === 0 || dataLoading}
+                                    onChange={(e) => {
+                                        const days = Number(e.target.value)
+                                        if (days > 0) handleDeleteSearchLogsOlderThan(days)
+                                    }}
+                                    className="h-9 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] transition hover:border-[var(--error-border)] focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                                    title="Manually delete search logs older than selected days"
+                                >
+                                    <option value="" disabled>
+                                        Prune Old...
+                                    </option>
+                                    <option value={7}>Delete &gt; 7 days old</option>
+                                    <option value={30}>Delete &gt; 30 days old</option>
+                                    <option value={90}>Delete &gt; 90 days old</option>
+                                </select>
+
                                 {/* Delete All Logs Button */}
                                 <button
                                     type="button"
@@ -1373,7 +1979,25 @@ export default function AdminPage() {
                                 <table className="w-full text-left text-xs">
                                     <thead className="border-b border-[var(--border-default)] bg-[var(--bg-secondary)]/50 text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
                                         <tr>
-                                            <th className="py-3 pl-4 pr-3">Time (NPT)</th>
+                                            {searchSelectMode && (
+                                                <th className="w-9 py-3 pl-4 pr-1">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={logs.length > 0 && selectedSearchIds.length === logs.length}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setSelectedSearchIds(logs.map((l) => l.id))
+                                                            } else {
+                                                                setSelectedSearchIds([])
+                                                            }
+                                                        }}
+                                                        className="h-3.5 w-3.5 cursor-pointer rounded border-[var(--border-default)] accent-[var(--nepal-blue)]"
+                                                        title="Select all rows on this page"
+                                                    />
+                                                </th>
+                                            )}
+                                            <th className="w-10 py-3 pl-3 pr-2 text-center">SN</th>
+                                            <th className="py-3 pl-2 pr-3">Time (NPT)</th>
                                             <th className="px-3 py-3">License Number</th>
                                             <th className="px-3 py-3">Result</th>
                                             <th className="px-3 py-3">Holder Name</th>
@@ -1385,7 +2009,7 @@ export default function AdminPage() {
                                     <tbody className="divide-y divide-[var(--border-default)]/60">
                                         {dataLoading && !logs.length ? (
                                             <tr>
-                                                <td colSpan={7} className="py-12 text-center text-xs text-[var(--text-muted)]">
+                                                <td colSpan={searchSelectMode ? 9 : 8} className="py-12 text-center text-xs text-[var(--text-muted)]">
                                                     <div className="flex flex-col items-center justify-center gap-2">
                                                         <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-[var(--nepal-blue)]/30 border-t-[var(--nepal-blue)]" />
                                                         <span>Loading search queries...</span>
@@ -1394,7 +2018,7 @@ export default function AdminPage() {
                                             </tr>
                                         ) : logs.length === 0 ? (
                                             <tr>
-                                                <td colSpan={7} className="py-12 text-center text-xs text-[var(--text-muted)]">
+                                                <td colSpan={searchSelectMode ? 9 : 8} className="py-12 text-center text-xs text-[var(--text-muted)]">
                                                     <div className="flex flex-col items-center justify-center gap-2">
                                                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-muted)]">
                                                             <circle cx="12" cy="12" r="10" />
@@ -1406,15 +2030,40 @@ export default function AdminPage() {
                                                 </td>
                                             </tr>
                                         ) : (
-                                            logs.map((log) => {
+                                            logs.map((log, idx) => {
                                                 const isFound = log.status === 'found'
+                                                const isSelected = selectedSearchIds.includes(log.id)
+                                                const sn = (page - 1) * limit + idx + 1
                                                 return (
                                                     <tr
                                                         key={log.id}
-                                                        className="group transition-colors hover:bg-[var(--bg-secondary)]/40"
+                                                        className={`group transition-colors hover:bg-[var(--bg-secondary)]/40 ${isSelected ? 'bg-[var(--nepal-blue-soft)]/30' : ''}`}
                                                     >
+                                                        {/* Checkbox (Visible only in Select mode) */}
+                                                        {searchSelectMode && (
+                                                            <td className="w-9 py-3 pl-4 pr-1">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={isSelected}
+                                                                    onChange={(e) => {
+                                                                        if (e.target.checked) {
+                                                                            setSelectedSearchIds((prev) => [...prev, log.id])
+                                                                        } else {
+                                                                            setSelectedSearchIds((prev) => prev.filter((id) => id !== log.id))
+                                                                        }
+                                                                    }}
+                                                                    className="h-3.5 w-3.5 cursor-pointer rounded border-[var(--border-default)] accent-[var(--nepal-blue)]"
+                                                                />
+                                                            </td>
+                                                        )}
+
+                                                        {/* SN */}
+                                                        <td className="w-10 whitespace-nowrap py-3 pl-3 pr-2 text-center font-mono text-[11px] font-bold text-[var(--text-muted)]">
+                                                            {sn}
+                                                        </td>
+
                                                         {/* Timestamp */}
-                                                        <td className="whitespace-nowrap py-3 pl-4 pr-3 font-mono text-[11px]">
+                                                        <td className="whitespace-nowrap py-3 pl-2 pr-3 font-mono text-[11px]">
                                                             <div className="flex flex-col gap-0.5">
                                                                 <span className="font-semibold text-[var(--text-primary)]" title={`${formatNepalDateTime(log.created_at, 'en', true)} (NPT, UTC+5:45)`}>
                                                                     {formatNepalDateTime(log.created_at)}
@@ -1717,7 +2366,7 @@ export default function AdminPage() {
                                 )}
                             </div>
 
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                                 {/* Status Filter */}
                                 <div className="inline-flex rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-1 text-xs font-semibold">
                                     {(['all', 'pending', 'sent', 'cancelled'] as const).map((st) => (
@@ -1752,6 +2401,75 @@ export default function AdminPage() {
                                     <option value={50}>50 rows</option>
                                     <option value={100}>100 rows</option>
                                 </select>
+
+                                {/* Toggle Multi-Select Mode Button */}
+                                <button
+                                    type="button"
+                                    disabled={notificationLogs.length === 0 || notifLoading}
+                                    onClick={() => {
+                                        if (notifSelectMode) {
+                                            setNotifSelectMode(false)
+                                            setSelectedNotifIds([])
+                                        } else {
+                                            setNotifSelectMode(true)
+                                        }
+                                    }}
+                                    className={`inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold shadow-xs transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${
+                                        notifSelectMode
+                                            ? 'border-[var(--nepal-blue)] bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)] font-bold'
+                                            : 'border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)]'
+                                    }`}
+                                    title={notifSelectMode ? 'Exit row selection mode' : 'Select multiple rows to delete'}
+                                >
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="9 11 12 14 22 4" />
+                                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                                    </svg>
+                                    <span>{notifSelectMode ? 'Cancel' : 'Select'}</span>
+                                </button>
+
+                                {/* Delete Selected Button */}
+                                {notifSelectMode && selectedNotifIds.length > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={handleDeleteSelectedNotifications}
+                                        disabled={notifLoading}
+                                        className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--error-border)] bg-[var(--error)] px-3 text-xs font-bold text-white shadow-xs transition hover:opacity-90 active:scale-95 disabled:opacity-50"
+                                        title="Delete selected notification logs"
+                                    >
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="3 6 5 6 21 6" />
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                        </svg>
+                                        <span>Delete Selected ({selectedNotifIds.length})</span>
+                                    </button>
+                                )}
+
+                                {/* Delete Cancelled Button */}
+                                <button
+                                    type="button"
+                                    onClick={() => handleDeleteNotificationsByStatus('cancelled')}
+                                    disabled={(notificationStats?.cancelled ?? 0) === 0 || notifLoading}
+                                    className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] transition hover:border-[var(--error-border)] hover:text-[var(--error)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                                    title="Delete all cancelled notification subscriptions"
+                                >
+                                    <span>Delete Cancelled ({notificationStats?.cancelled ?? 0})</span>
+                                </button>
+
+                                {/* Delete All Notifications Button */}
+                                <button
+                                    type="button"
+                                    onClick={handleDeleteAllNotifications}
+                                    disabled={notifTotal === 0 || notifLoading}
+                                    className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--error-border)]/80 bg-[var(--error-bg)] px-3 text-xs font-semibold text-[var(--error)] shadow-xs transition hover:bg-[var(--error-border)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                                    title="Delete all notification records"
+                                >
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="3 6 5 6 21 6" />
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                    </svg>
+                                    <span>Delete All</span>
+                                </button>
                             </div>
                         </div>
 
@@ -1761,7 +2479,25 @@ export default function AdminPage() {
                                 <table className="w-full text-left text-xs">
                                     <thead className="border-b border-[var(--border-default)] bg-[var(--bg-secondary)]/50 text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
                                         <tr>
-                                            <th className="py-3 pl-4 pr-3">Subscribed (NPT)</th>
+                                            {notifSelectMode && (
+                                                <th className="w-9 py-3 pl-4 pr-1">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={notificationLogs.length > 0 && selectedNotifIds.length === notificationLogs.length}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setSelectedNotifIds(notificationLogs.map((l) => l.id))
+                                                            } else {
+                                                                setSelectedNotifIds([])
+                                                            }
+                                                        }}
+                                                        className="h-3.5 w-3.5 cursor-pointer rounded border-[var(--border-default)] accent-[var(--nepal-blue)]"
+                                                        title="Select all rows on this page"
+                                                    />
+                                                </th>
+                                            )}
+                                            <th className="w-10 py-3 pl-3 pr-2 text-center">SN</th>
+                                            <th className="py-3 pl-2 pr-3">Subscribed (NPT)</th>
                                             <th className="px-3 py-3">License Number</th>
                                             <th className="px-3 py-3">User Email</th>
                                             <th className="px-3 py-3">Status & Delivery</th>
@@ -1772,7 +2508,7 @@ export default function AdminPage() {
                                     <tbody className="divide-y divide-[var(--border-default)]/60">
                                         {notifLoading && !notificationLogs.length ? (
                                             <tr>
-                                                <td colSpan={6} className="py-12 text-center text-xs text-[var(--text-muted)]">
+                                                <td colSpan={notifSelectMode ? 8 : 7} className="py-12 text-center text-xs text-[var(--text-muted)]">
                                                     <div className="flex flex-col items-center justify-center gap-2">
                                                         <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-[var(--nepal-blue)]/30 border-t-[var(--nepal-blue)]" />
                                                         <span>Loading email notifications...</span>
@@ -1781,7 +2517,7 @@ export default function AdminPage() {
                                             </tr>
                                         ) : notificationLogs.length === 0 ? (
                                             <tr>
-                                                <td colSpan={6} className="py-12 text-center text-xs text-[var(--text-muted)]">
+                                                <td colSpan={notifSelectMode ? 8 : 7} className="py-12 text-center text-xs text-[var(--text-muted)]">
                                                     <div className="flex flex-col items-center justify-center gap-2">
                                                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-muted)]">
                                                             <rect x="2" y="4" width="20" height="16" rx="2" />
@@ -1793,14 +2529,39 @@ export default function AdminPage() {
                                                 </td>
                                             </tr>
                                         ) : (
-                                            notificationLogs.map((log) => {
+                                            notificationLogs.map((log, idx) => {
+                                                const isSelected = selectedNotifIds.includes(log.id)
+                                                const sn = (notifPage - 1) * notifLimit + idx + 1
                                                 return (
                                                     <tr
                                                         key={log.id}
-                                                        className="group transition-colors hover:bg-[var(--bg-secondary)]/40"
+                                                        className={`group transition-colors hover:bg-[var(--bg-secondary)]/40 ${isSelected ? 'bg-[var(--nepal-blue-soft)]/30' : ''}`}
                                                     >
+                                                        {/* Checkbox (Visible only in Select mode) */}
+                                                        {notifSelectMode && (
+                                                            <td className="w-9 py-3 pl-4 pr-1">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={isSelected}
+                                                                    onChange={(e) => {
+                                                                        if (e.target.checked) {
+                                                                            setSelectedNotifIds((prev) => [...prev, log.id])
+                                                                        } else {
+                                                                            setSelectedNotifIds((prev) => prev.filter((id) => id !== log.id))
+                                                                        }
+                                                                    }}
+                                                                    className="h-3.5 w-3.5 cursor-pointer rounded border-[var(--border-default)] accent-[var(--nepal-blue)]"
+                                                                />
+                                                            </td>
+                                                        )}
+
+                                                        {/* SN */}
+                                                        <td className="w-10 whitespace-nowrap py-3 pl-3 pr-2 text-center font-mono text-[11px] font-bold text-[var(--text-muted)]">
+                                                            {sn}
+                                                        </td>
+
                                                         {/* Timestamp */}
-                                                        <td className="whitespace-nowrap py-3 pl-4 pr-3 font-mono text-[11px]">
+                                                        <td className="whitespace-nowrap py-3 pl-2 pr-3 font-mono text-[11px]">
                                                             <div className="flex flex-col gap-0.5">
                                                                 <span className="font-semibold text-[var(--text-primary)]" title={`${formatNepalDateTime(log.created_at, 'en', true)} (NPT, UTC+5:45)`}>
                                                                     {formatNepalDateTime(log.created_at)}
@@ -2142,12 +2903,97 @@ export default function AdminPage() {
                                         setFeedbackLimit(Number(e.target.value))
                                         setFeedbackPage(1)
                                     }}
-                                    className="h-10 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] transition focus:border-[var(--nepal-blue)] focus:outline-none"
+                                    className="h-9 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] transition focus:border-[var(--nepal-blue)] focus:outline-none"
                                 >
                                     <option value="25">25 / page</option>
                                     <option value="50">50 / page</option>
                                     <option value="100">100 / page</option>
                                 </select>
+
+                                {/* Toggle Multi-Select Mode Button */}
+                                <button
+                                    type="button"
+                                    disabled={feedbackLogs.length === 0 || feedbackLoading}
+                                    onClick={() => {
+                                        if (feedbackSelectMode) {
+                                            setFeedbackSelectMode(false)
+                                            setSelectedFeedbackIds([])
+                                        } else {
+                                            setFeedbackSelectMode(true)
+                                        }
+                                    }}
+                                    className={`inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold shadow-xs transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${
+                                        feedbackSelectMode
+                                            ? 'border-[var(--nepal-blue)] bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)] font-bold'
+                                            : 'border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)]'
+                                    }`}
+                                    title={feedbackSelectMode ? 'Exit row selection mode' : 'Select multiple rows to resolve or delete'}
+                                >
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="9 11 12 14 22 4" />
+                                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                                    </svg>
+                                    <span>{feedbackSelectMode ? 'Cancel' : 'Select'}</span>
+                                </button>
+
+                                {/* Bulk Resolve Selected */}
+                                {feedbackSelectMode && selectedFeedbackIds.length > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => handleBulkFeedbackStatus('resolved')}
+                                        disabled={feedbackLoading}
+                                        className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--success-border)] bg-[var(--success)] px-3 text-xs font-bold text-white shadow-xs transition hover:opacity-90 active:scale-95 disabled:opacity-50"
+                                        title="Mark selected feedback as resolved"
+                                    >
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="20 6 9 17 4 12" />
+                                        </svg>
+                                        <span>Resolve ({selectedFeedbackIds.length})</span>
+                                    </button>
+                                )}
+
+                                {/* Bulk Delete Selected */}
+                                {feedbackSelectMode && selectedFeedbackIds.length > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={handleDeleteSelectedFeedback}
+                                        disabled={feedbackLoading}
+                                        className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--error-border)] bg-[var(--error)] px-3 text-xs font-bold text-white shadow-xs transition hover:opacity-90 active:scale-95 disabled:opacity-50"
+                                        title="Delete selected feedback entries"
+                                    >
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="3 6 5 6 21 6" />
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                        </svg>
+                                        <span>Delete ({selectedFeedbackIds.length})</span>
+                                    </button>
+                                )}
+
+                                {/* Delete Resolved Feedback */}
+                                <button
+                                    type="button"
+                                    onClick={handleDeleteResolvedFeedback}
+                                    disabled={(feedbackStats?.resolvedCount ?? 0) === 0 || feedbackLoading}
+                                    className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] transition hover:border-[var(--error-border)] hover:text-[var(--error)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                                    title="Delete all resolved feedback inquiries"
+                                >
+                                    <span>Delete Resolved ({feedbackStats?.resolvedCount ?? 0})</span>
+                                </button>
+
+                                {/* Delete All Feedback */}
+                                <button
+                                    type="button"
+                                    onClick={handleDeleteAllFeedback}
+                                    disabled={feedbackTotal === 0 || feedbackLoading}
+                                    className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--error-border)]/80 bg-[var(--error-bg)] px-3 text-xs font-semibold text-[var(--error)] shadow-xs transition hover:bg-[var(--error-border)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                                    title="Delete all feedback records"
+                                >
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="3 6 5 6 21 6" />
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                    </svg>
+                                    <span>Delete All</span>
+                                </button>
                             </div>
                         </div>
 
@@ -2157,7 +3003,25 @@ export default function AdminPage() {
                                 <table className="w-full text-left text-xs">
                                     <thead className="border-b border-[var(--border-default)] bg-[var(--bg-secondary)] text-[10px] font-black uppercase tracking-wider text-[var(--text-muted)]">
                                         <tr>
-                                            <th className="py-3 pl-4 pr-3">Status</th>
+                                            {feedbackSelectMode && (
+                                                <th className="w-9 py-3 pl-4 pr-1">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={feedbackLogs.length > 0 && selectedFeedbackIds.length === feedbackLogs.length}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setSelectedFeedbackIds(feedbackLogs.map((l) => l.id))
+                                                            } else {
+                                                                setSelectedFeedbackIds([])
+                                                            }
+                                                        }}
+                                                        className="h-3.5 w-3.5 cursor-pointer rounded border-[var(--border-default)] accent-[var(--nepal-blue)]"
+                                                        title="Select all rows on this page"
+                                                    />
+                                                </th>
+                                            )}
+                                            <th className="w-10 py-3 pl-3 pr-2 text-center">SN</th>
+                                            <th className="py-3 pl-2 pr-3">Status</th>
                                             <th className="px-3 py-3">Submitter</th>
                                             <th className="px-3 py-3">Category & Subject</th>
                                             <th className="px-3 py-3">License No.</th>
@@ -2169,7 +3033,7 @@ export default function AdminPage() {
                                     <tbody className="divide-y divide-[var(--border-default)]/60">
                                         {feedbackLoading ? (
                                             <tr>
-                                                <td colSpan={7} className="py-12 text-center text-sm text-[var(--text-muted)]">
+                                                <td colSpan={feedbackSelectMode ? 9 : 8} className="py-12 text-center text-sm text-[var(--text-muted)]">
                                                     <div className="flex items-center justify-center gap-2">
                                                         <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-[var(--nepal-blue)]/30 border-t-[var(--nepal-blue)]" />
                                                         <span>Loading feedback records...</span>
@@ -2178,7 +3042,7 @@ export default function AdminPage() {
                                             </tr>
                                         ) : feedbackLogs.length === 0 ? (
                                             <tr>
-                                                <td colSpan={7} className="py-14 text-center text-sm text-[var(--text-muted)]">
+                                                <td colSpan={feedbackSelectMode ? 9 : 8} className="py-14 text-center text-sm text-[var(--text-muted)]">
                                                     <div className="flex flex-col items-center justify-center gap-2.5">
                                                         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--nepal-blue-soft)] text-2xl text-[var(--nepal-blue)]">
                                                             💬
@@ -2209,7 +3073,7 @@ export default function AdminPage() {
                                                 </td>
                                             </tr>
                                         ) : (
-                                            feedbackLogs.map((item) => {
+                                            feedbackLogs.map((item, idx) => {
                                                 const catInfo = (() => {
                                                     switch (item.category) {
                                                         case 'license_not_found':
@@ -2226,11 +3090,36 @@ export default function AdminPage() {
                                                             return { label: 'Other', cls: 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20' }
                                                     }
                                                 })()
+                                                const isSelected = selectedFeedbackIds.includes(item.id)
+                                                const sn = (feedbackPage - 1) * feedbackLimit + idx + 1
 
                                                 return (
-                                                    <tr key={item.id} className="transition hover:bg-[var(--bg-secondary)]/50">
+                                                    <tr key={item.id} className={`transition hover:bg-[var(--bg-secondary)]/50 ${isSelected ? 'bg-[var(--nepal-blue-soft)]/30' : ''}`}>
+                                                        {/* Checkbox (Visible only in Select mode) */}
+                                                        {feedbackSelectMode && (
+                                                            <td className="w-9 py-3 pl-4 pr-1">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={isSelected}
+                                                                    onChange={(e) => {
+                                                                        if (e.target.checked) {
+                                                                            setSelectedFeedbackIds((prev) => [...prev, item.id])
+                                                                        } else {
+                                                                            setSelectedFeedbackIds((prev) => prev.filter((id) => id !== item.id))
+                                                                        }
+                                                                    }}
+                                                                    className="h-3.5 w-3.5 cursor-pointer rounded border-[var(--border-default)] accent-[var(--nepal-blue)]"
+                                                                />
+                                                            </td>
+                                                        )}
+
+                                                        {/* SN */}
+                                                        <td className="w-10 whitespace-nowrap py-3 pl-3 pr-2 text-center font-mono text-[11px] font-bold text-[var(--text-muted)]">
+                                                            {sn}
+                                                        </td>
+
                                                         {/* Status */}
-                                                        <td className="whitespace-nowrap py-3 pl-4 pr-3">
+                                                        <td className="whitespace-nowrap py-3 pl-2 pr-3">
                                                             {item.status === 'new' ? (
                                                                 <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-bold text-amber-600 dark:text-amber-400">
                                                                     <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
@@ -2632,10 +3521,42 @@ export default function AdminPage() {
                                         <polyline points="3 6 5 6 21 6" />
                                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                                     </svg>
-                                    <span>{confirmSubmitting ? 'Deleting...' : confirmDialog.confirmLabel}</span>
+                                    <span>{confirmSubmitting ? 'Processing...' : confirmDialog.confirmLabel}</span>
                                 </button>
                             </div>
                         </div>
+                    </div>
+                )}
+
+                {/* Floating Toast Notification */}
+                {toast && (
+                    <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2.5 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-3 text-xs font-bold shadow-2xl animate-in slide-in-from-bottom-4 duration-200">
+                        {toast.type === 'success' ? (
+                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--success-bg)] text-[var(--success)]">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                            </span>
+                        ) : (
+                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--error-bg)] text-[var(--error)]">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
+                            </span>
+                        )}
+                        <span className="text-[var(--text-primary)]">{toast.message}</span>
+                        <button
+                            type="button"
+                            onClick={() => setToast(null)}
+                            className="ml-1 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                            aria-label="Dismiss notification"
+                        >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                                <line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                        </button>
                     </div>
                 )}
             </main>

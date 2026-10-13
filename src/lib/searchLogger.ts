@@ -80,16 +80,6 @@ export async function logSearch(entry: {
                 now,
             ],
         })
-
-        // Rolling retention: keep search_logs lean by pruning entries outside the latest 2,000 rows (~5% probability)
-        if (Math.random() < 0.05) {
-            db.execute(`
-                DELETE FROM search_logs
-                WHERE id NOT IN (
-                    SELECT id FROM search_logs ORDER BY created_at DESC LIMIT 2000
-                )
-            `).catch(() => {})
-        }
     } catch (err) {
         console.error('Failed to record search log in background:', err)
     }
@@ -176,13 +166,37 @@ export interface SearchLogsStats {
     uniqueIps: number
     foundRate: number
     topLocations: Array<{ city: string; country: string; count: number }>
+    dailyTrend: Array<{
+        date: string
+        label: string
+        total: number
+        found: number
+        notFound: number
+    }>
+    topLicenses: Array<{
+        license_number: string
+        status: string
+        count: number
+    }>
+    topOffices: Array<{
+        office: string
+        count: number
+    }>
+    topIps: Array<{
+        ip: string
+        city: string
+        country: string
+        count: number
+    }>
 }
 
 export async function getSearchStats(): Promise<SearchLogsStats> {
     await ensureSearchLogsTable()
     const db = getTurso()
 
+    const DAY_MS = 24 * 60 * 60 * 1000
     const todayTimestamp = getNepalMidnightTimestamp()
+    const sevenDaysAgoTimestamp = todayTimestamp - 6 * DAY_MS
 
     try {
         const batchResults = await db.batch(
@@ -202,6 +216,41 @@ export async function getSearchStats(): Promise<SearchLogsStats> {
                  GROUP BY city, country
                  ORDER BY count DESC
                  LIMIT 5`,
+                {
+                    sql: `SELECT 
+                            CAST((created_at - ?) / 86400000 AS INTEGER) as day_idx,
+                            status,
+                            COUNT(*) as count
+                          FROM search_logs
+                          WHERE created_at >= ?
+                          GROUP BY day_idx, status`,
+                    args: [sevenDaysAgoTimestamp, sevenDaysAgoTimestamp],
+                },
+                `SELECT 
+                    license_number,
+                    MAX(status) as status,
+                    COUNT(*) as count
+                 FROM search_logs
+                 GROUP BY license_number
+                 ORDER BY count DESC
+                 LIMIT 5`,
+                `SELECT 
+                    TRIM(office) as office,
+                    COUNT(*) as count
+                 FROM search_logs
+                 WHERE status = 'found' AND office IS NOT NULL AND TRIM(office) != ''
+                 GROUP BY TRIM(office)
+                 ORDER BY count DESC
+                 LIMIT 5`,
+                `SELECT 
+                    ip,
+                    COALESCE(NULLIF(city, ''), 'Unknown') as city,
+                    COALESCE(NULLIF(country, ''), 'NP') as country,
+                    COUNT(*) as count
+                 FROM search_logs
+                 GROUP BY ip
+                 ORDER BY count DESC
+                 LIMIT 5`,
             ],
             'read'
         )
@@ -218,6 +267,62 @@ export async function getSearchStats(): Promise<SearchLogsStats> {
             count: Number(r.count || 0),
         }))
 
+        const dailyBuckets = Array.from({ length: 7 }, (_, idx) => {
+            const dayStartMs = sevenDaysAgoTimestamp + idx * DAY_MS
+            const d = new Date(dayStartMs + 12 * 60 * 60 * 1000)
+            const dateStr = d.toLocaleDateString('en-US', {
+                timeZone: 'Asia/Kathmandu',
+                month: 'short',
+                day: 'numeric',
+            })
+            const labelStr =
+                idx === 6
+                    ? 'Today'
+                    : d.toLocaleDateString('en-US', {
+                          timeZone: 'Asia/Kathmandu',
+                          weekday: 'short',
+                      })
+            return {
+                date: dateStr,
+                label: labelStr,
+                total: 0,
+                found: 0,
+                notFound: 0,
+            }
+        })
+
+        for (const r of batchResults[5]?.rows || []) {
+            const idx = Number(r.day_idx)
+            const st = String(r.status || '')
+            const c = Number(r.count || 0)
+            if (idx >= 0 && idx < 7) {
+                dailyBuckets[idx].total += c
+                if (st === 'found') {
+                    dailyBuckets[idx].found += c
+                } else {
+                    dailyBuckets[idx].notFound += c
+                }
+            }
+        }
+
+        const topLicenses = (batchResults[6]?.rows || []).map((r) => ({
+            license_number: String(r.license_number || ''),
+            status: String(r.status || 'not_found'),
+            count: Number(r.count || 0),
+        }))
+
+        const topOffices = (batchResults[7]?.rows || []).map((r) => ({
+            office: String(r.office || 'Unknown'),
+            count: Number(r.count || 0),
+        }))
+
+        const topIps = (batchResults[8]?.rows || []).map((r) => ({
+            ip: String(r.ip || ''),
+            city: String(r.city || 'Unknown'),
+            country: String(r.country || 'NP'),
+            count: Number(r.count || 0),
+        }))
+
         return {
             total,
             today,
@@ -225,6 +330,10 @@ export async function getSearchStats(): Promise<SearchLogsStats> {
             uniqueIps,
             foundRate,
             topLocations,
+            dailyTrend: dailyBuckets,
+            topLicenses,
+            topOffices,
+            topIps,
         }
     } catch (err) {
         console.error('Failed to compute search stats:', err)
@@ -235,6 +344,10 @@ export async function getSearchStats(): Promise<SearchLogsStats> {
             uniqueIps: 0,
             foundRate: 0,
             topLocations: [],
+            dailyTrend: [],
+            topLicenses: [],
+            topOffices: [],
+            topIps: [],
         }
     }
 }

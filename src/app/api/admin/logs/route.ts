@@ -136,6 +136,7 @@ export async function DELETE(request: NextRequest) {
     try {
         const { searchParams } = request.nextUrl
         const id = searchParams.get('id')
+        const idsParam = searchParams.get('ids')
         const days = parseInt(searchParams.get('days') || '0', 10)
         const db = getTurso()
 
@@ -144,6 +145,18 @@ export async function DELETE(request: NextRequest) {
                 sql: 'DELETE FROM search_logs WHERE id = ?',
                 args: [Number(id)],
             })
+        } else if (idsParam) {
+            const ids = idsParam
+                .split(',')
+                .map((x) => Number(x.trim()))
+                .filter((n) => Number.isFinite(n) && n > 0)
+            if (ids.length > 0) {
+                const placeholders = ids.map(() => '?').join(', ')
+                await db.execute({
+                    sql: `DELETE FROM search_logs WHERE id IN (${placeholders})`,
+                    args: ids,
+                })
+            }
         } else if (days > 0) {
             const cutoff = Date.now() - days * 24 * 60 * 60 * 1000
             await db.execute({
