@@ -199,6 +199,33 @@ export default function LicenseForm({
     stopLoadingMessages()
   }
 
+  const handlePasteFromClipboard = async () => {
+    if (loading || isLockedOut) return
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.readText) {
+        const clipText = await navigator.clipboard.readText()
+        const ascii = devanagariToAsciiDigits(clipText || '')
+        const match = ascii.match(/\d{2}[-\s/]?\d{2}[-\s/]?\d{8}/)
+        const formatted = formatLicenseNumber(match ? match[0] : ascii)
+
+        if (formatted) {
+          setLicenseNumber(formatted)
+          setError(
+            formatted.length === 14 && !validateLicenseNumber(formatted)
+              ? copy.errors.invalidShort
+              : ''
+          )
+          onReset()
+          inputRef.current?.focus()
+          return
+        }
+      }
+      inputRef.current?.focus()
+    } catch {
+      inputRef.current?.focus()
+    }
+  }
+
   const isValid = validateLicenseNumber(licenseNumber)
   const progress = Math.min((licenseNumber.replace(/-/g, '').length / 12) * 100, 100)
 
@@ -244,7 +271,9 @@ export default function LicenseForm({
               maxLength={14}
               inputMode="numeric"
               aria-invalid={!!error}
-              className={`h-12 w-full rounded-xl border px-11 pr-10 font-mono text-[16px] font-semibold tracking-[0.08em] outline-none transition-all duration-200 sm:h-[52px] sm:text-[17px] ${
+              className={`h-12 w-full rounded-xl border pl-11 font-mono text-[16px] font-semibold tracking-[0.08em] outline-none transition-all duration-200 sm:h-[52px] sm:text-[17px] ${
+                licenseNumber ? 'pr-10' : 'pr-24'
+              } ${
                 error
                   ? 'border-[var(--error-border)] bg-[var(--error-bg)] text-[var(--error)] shadow-[0_0_0_3px_rgba(220,20,60,0.12)]'
                   : focused
@@ -252,6 +281,19 @@ export default function LicenseForm({
                   : 'border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-primary)]'
               } ${loading ? 'opacity-70' : ''}`}
             />
+            {!licenseNumber && !loading && (
+              <button
+                type="button"
+                disabled={isLockedOut}
+                onClick={handlePasteFromClipboard}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 inline-flex items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1 text-xs font-semibold text-[var(--text-secondary)] shadow-2xs transition hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue-soft)] hover:text-[var(--nepal-blue)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label={language === 'ne' ? 'क्लिपबोर्डबाट पेस्ट गर्नुहोस्' : 'Paste license number from clipboard'}
+                title={language === 'ne' ? 'क्लिपबोर्डबाट पेस्ट गर्नुहोस्' : 'Paste from clipboard'}
+              >
+                <span aria-hidden>📋</span>
+                <span>{language === 'ne' ? 'पेस्ट' : 'Paste'}</span>
+              </button>
+            )}
             {licenseNumber && !loading && (
               <button
                 type="button"
