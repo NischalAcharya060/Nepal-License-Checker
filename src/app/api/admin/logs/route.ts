@@ -135,10 +135,16 @@ export async function DELETE(request: NextRequest) {
 
     try {
         const { searchParams } = request.nextUrl
+        const id = searchParams.get('id')
         const days = parseInt(searchParams.get('days') || '0', 10)
         const db = getTurso()
 
-        if (days > 0) {
+        if (id) {
+            await db.execute({
+                sql: 'DELETE FROM search_logs WHERE id = ?',
+                args: [Number(id)],
+            })
+        } else if (days > 0) {
             const cutoff = Date.now() - days * 24 * 60 * 60 * 1000
             await db.execute({
                 sql: 'DELETE FROM search_logs WHERE created_at < ?',

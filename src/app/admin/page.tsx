@@ -124,6 +124,19 @@ function formatTimeAgo(timestamp: number | string | null | undefined): string {
     return `${years}y ago`
 }
 
+function maskLicenseNumber(license: string | null | undefined, isPrivate: boolean): string {
+    if (!license) return '—'
+    if (!isPrivate) return license
+    return `${license.slice(0, 2)}*******`
+}
+
+function maskIpAddress(ip: string | null | undefined, isPrivate: boolean): string {
+    if (!ip) return '—'
+    if (!isPrivate) return ip
+    const prefix = ip.includes('.') ? ip.split('.')[0] : ip.slice(0, 3)
+    return `${prefix}*******`
+}
+
 export default function AdminPage() {
     const [authLoading, setAuthLoading] = useState(true)
     const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -132,6 +145,7 @@ export default function AdminPage() {
     const [loginError, setLoginError] = useState('')
     const [loginSubmitting, setLoginSubmitting] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
+    const [privacyMode, setPrivacyMode] = useState(true)
 
     // View Tabs: 'searches' | 'notifications' | 'feedback'
     const [activeTab, setActiveTab] = useState<'searches' | 'notifications' | 'feedback'>('searches')
@@ -175,6 +189,13 @@ export default function AdminPage() {
     const [feedbackCategoryFilter, setFeedbackCategoryFilter] = useState<string>('all')
     const [feedbackLoading, setFeedbackLoading] = useState(false)
     const [selectedFeedbackMessage, setSelectedFeedbackMessage] = useState<FeedbackLog | null>(null)
+    const [confirmDialog, setConfirmDialog] = useState<{
+        title: string
+        message: string
+        confirmLabel: string
+        onConfirm: () => Promise<void>
+    } | null>(null)
+    const [confirmSubmitting, setConfirmSubmitting] = useState(false)
 
     const [, startTransition] = useTransition()
 
@@ -456,20 +477,71 @@ export default function AdminPage() {
         URL.revokeObjectURL(url)
     }
 
+    // 8b. Delete Single Search Log & Delete All Search Logs
+    const handleDeleteSearchLog = (id: number, license: string) => {
+        const displayLic = maskLicenseNumber(license, privacyMode)
+        setConfirmDialog({
+            title: 'Are you sure?',
+            message: `Are you sure you want to delete the search log for license ${displayLic}? This action cannot be undone.`,
+            confirmLabel: 'Yes, Delete Log',
+            onConfirm: async () => {
+                try {
+                    const res = await fetch(`/api/admin/logs?id=${encodeURIComponent(String(id))}`, {
+                        method: 'DELETE',
+                    })
+                    if (res.ok) {
+                        setLogs((prev) => prev.filter((item) => item.id !== id))
+                        setTotal((prev) => Math.max(0, prev - 1))
+                        setRefreshKey((k) => k + 1)
+                    }
+                } catch {
+                    // Error
+                }
+            },
+        })
+    }
+
+    const handleDeleteAllSearchLogs = () => {
+        if (!logs.length && total === 0) return
+        setConfirmDialog({
+            title: 'Are you sure you want to delete all logs?',
+            message: `This will permanently delete ALL ${total.toLocaleString()} search logs. This action cannot be undone.`,
+            confirmLabel: `Yes, Delete All (${total.toLocaleString()})`,
+            onConfirm: async () => {
+                try {
+                    const res = await fetch('/api/admin/logs', { method: 'DELETE' })
+                    if (res.ok) {
+                        setLogs([])
+                        setTotal(0)
+                        setPage(1)
+                        setRefreshKey((k) => k + 1)
+                    }
+                } catch {
+                    // Error
+                }
+            },
+        })
+    }
+
     // 9. Delete Notification Log
-    const handleDeleteNotification = async (id: string, license: string) => {
-        if (!confirm(`Are you sure you want to delete notification entry for license ${license}?`)) {
-            return
-        }
-        try {
-            const res = await fetch(`/api/admin/notifications?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
-            if (res.ok) {
-                setNotificationLogs((prev) => prev.filter((item) => item.id !== id))
-                setRefreshKey((k) => k + 1)
-            }
-        } catch {
-            // Error
-        }
+    const handleDeleteNotification = (id: string, license: string) => {
+        const displayLic = maskLicenseNumber(license, privacyMode)
+        setConfirmDialog({
+            title: 'Are you sure?',
+            message: `Are you sure you want to delete the notification entry for license ${displayLic}? This action cannot be undone.`,
+            confirmLabel: 'Yes, Delete Entry',
+            onConfirm: async () => {
+                try {
+                    const res = await fetch(`/api/admin/notifications?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
+                    if (res.ok) {
+                        setNotificationLogs((prev) => prev.filter((item) => item.id !== id))
+                        setRefreshKey((k) => k + 1)
+                    }
+                } catch {
+                    // Error
+                }
+            },
+        })
     }
 
     // 10. Feedback CSV Export
@@ -523,22 +595,26 @@ export default function AdminPage() {
     }
 
     // 12. Delete Feedback
-    const handleDeleteFeedback = async (id: string, subject: string) => {
-        if (!confirm(`Are you sure you want to delete feedback entry: "${subject}"?`)) {
-            return
-        }
-        try {
-            const res = await fetch(`/api/admin/feedback?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
-            if (res.ok) {
-                setFeedbackLogs((prev) => prev.filter((item) => item.id !== id))
-                if (selectedFeedbackMessage && selectedFeedbackMessage.id === id) {
-                    setSelectedFeedbackMessage(null)
+    const handleDeleteFeedback = (id: string, subject: string) => {
+        setConfirmDialog({
+            title: 'Are you sure?',
+            message: `Are you sure you want to delete feedback entry: "${subject}"? This action cannot be undone.`,
+            confirmLabel: 'Yes, Delete Feedback',
+            onConfirm: async () => {
+                try {
+                    const res = await fetch(`/api/admin/feedback?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
+                    if (res.ok) {
+                        setFeedbackLogs((prev) => prev.filter((item) => item.id !== id))
+                        if (selectedFeedbackMessage && selectedFeedbackMessage.id === id) {
+                            setSelectedFeedbackMessage(null)
+                        }
+                        setRefreshKey((k) => k + 1)
+                    }
+                } catch {
+                    // Error
                 }
-                setRefreshKey((k) => k + 1)
-            }
-        } catch {
-            // Error
-        }
+            },
+        })
     }
 
     // ----------------------------------------------------
@@ -718,6 +794,35 @@ export default function AdminPage() {
                     </div>
 
                     <div className="flex items-center gap-2 sm:gap-3">
+                        {/* Privacy Mode Toggle (ON by default) */}
+                        <button
+                            type="button"
+                            onClick={() => setPrivacyMode(!privacyMode)}
+                            className={`inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold shadow-xs transition active:scale-95 ${
+                                privacyMode
+                                    ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                                    : 'border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400'
+                            }`}
+                            title={
+                                privacyMode
+                                    ? 'Privacy Mode is ON (License & IP masked). Click to disable and view full information.'
+                                    : 'Privacy Mode is OFF (Showing full License & IP). Click to enable masking.'
+                            }
+                        >
+                            {privacyMode ? (
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                                    <line x1="1" y1="1" x2="23" y2="23" />
+                                </svg>
+                            ) : (
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                    <circle cx="12" cy="12" r="3" />
+                                </svg>
+                            )}
+                            <span>Privacy: {privacyMode ? 'ON' : 'OFF'}</span>
+                        </button>
+
                         {/* Auto-refresh toggle */}
                         <button
                             type="button"
@@ -1244,6 +1349,21 @@ export default function AdminPage() {
                                     <option value={50}>50 rows</option>
                                     <option value={100}>100 rows</option>
                                 </select>
+
+                                {/* Delete All Logs Button */}
+                                <button
+                                    type="button"
+                                    onClick={handleDeleteAllSearchLogs}
+                                    disabled={total === 0 || dataLoading}
+                                    className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--error-border)]/80 bg-[var(--error-bg)] px-3 text-xs font-semibold text-[var(--error)] shadow-xs transition hover:bg-[var(--error-border)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                                    title="Delete all search logs"
+                                >
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="3 6 5 6 21 6" />
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                    </svg>
+                                    <span>Delete All</span>
+                                </button>
                             </div>
                         </div>
 
@@ -1258,13 +1378,14 @@ export default function AdminPage() {
                                             <th className="px-3 py-3">Result</th>
                                             <th className="px-3 py-3">Holder Name</th>
                                             <th className="px-3 py-3">IP Address</th>
-                                            <th className="py-3 pl-3 pr-4">Location (Origin)</th>
+                                            <th className="px-3 py-3">Location (Origin)</th>
+                                            <th className="py-3 pl-3 pr-4 text-right">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-[var(--border-default)]/60">
                                         {dataLoading && !logs.length ? (
                                             <tr>
-                                                <td colSpan={6} className="py-12 text-center text-xs text-[var(--text-muted)]">
+                                                <td colSpan={7} className="py-12 text-center text-xs text-[var(--text-muted)]">
                                                     <div className="flex flex-col items-center justify-center gap-2">
                                                         <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-[var(--nepal-blue)]/30 border-t-[var(--nepal-blue)]" />
                                                         <span>Loading search queries...</span>
@@ -1273,7 +1394,7 @@ export default function AdminPage() {
                                             </tr>
                                         ) : logs.length === 0 ? (
                                             <tr>
-                                                <td colSpan={6} className="py-12 text-center text-xs text-[var(--text-muted)]">
+                                                <td colSpan={7} className="py-12 text-center text-xs text-[var(--text-muted)]">
                                                     <div className="flex flex-col items-center justify-center gap-2">
                                                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-muted)]">
                                                             <circle cx="12" cy="12" r="10" />
@@ -1307,22 +1428,24 @@ export default function AdminPage() {
                                                         {/* License Number */}
                                                         <td className="whitespace-nowrap px-3 py-3">
                                                             <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-[var(--text-primary)]">
-                                                                <span>{log.license_number}</span>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => copyToClipboard(log.license_number, `lic-${log.id}`)}
-                                                                    className="text-[var(--text-muted)] opacity-0 transition group-hover:opacity-100 hover:text-[var(--nepal-blue)]"
-                                                                    title="Copy license number"
-                                                                >
-                                                                    {copiedKey === `lic-${log.id}` ? (
-                                                                        <span className="text-[10px] font-bold text-[var(--success)]">✓</span>
-                                                                    ) : (
-                                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                                                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                                                                        </svg>
-                                                                    )}
-                                                                </button>
+                                                                <span>{maskLicenseNumber(log.license_number, privacyMode)}</span>
+                                                                {!privacyMode && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => copyToClipboard(log.license_number, `lic-${log.id}`)}
+                                                                        className="text-[var(--text-muted)] opacity-0 transition group-hover:opacity-100 hover:text-[var(--nepal-blue)]"
+                                                                        title="Copy license number"
+                                                                    >
+                                                                        {copiedKey === `lic-${log.id}` ? (
+                                                                            <span className="text-[10px] font-bold text-[var(--success)]">✓</span>
+                                                                        ) : (
+                                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                                                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                                                            </svg>
+                                                                        )}
+                                                                    </button>
+                                                                )}
                                                             </div>
                                                         </td>
 
@@ -1362,27 +1485,29 @@ export default function AdminPage() {
                                                         {/* IP Address */}
                                                         <td className="whitespace-nowrap px-3 py-3 font-mono text-xs">
                                                             <div className="flex items-center gap-1.5 text-[var(--text-secondary)]">
-                                                                <span>{log.ip}</span>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => copyToClipboard(log.ip, `ip-${log.id}`)}
-                                                                    className="text-[var(--text-muted)] opacity-0 transition group-hover:opacity-100 hover:text-[var(--nepal-blue)]"
-                                                                    title="Copy IP"
-                                                                >
-                                                                    {copiedKey === `ip-${log.id}` ? (
-                                                                        <span className="text-[10px] font-bold text-[var(--success)]">✓</span>
-                                                                    ) : (
-                                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                                                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                                                                        </svg>
-                                                                    )}
-                                                                </button>
+                                                                <span>{maskIpAddress(log.ip, privacyMode)}</span>
+                                                                {!privacyMode && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => copyToClipboard(log.ip, `ip-${log.id}`)}
+                                                                        className="text-[var(--text-muted)] opacity-0 transition group-hover:opacity-100 hover:text-[var(--nepal-blue)]"
+                                                                        title="Copy IP"
+                                                                    >
+                                                                        {copiedKey === `ip-${log.id}` ? (
+                                                                            <span className="text-[10px] font-bold text-[var(--success)]">✓</span>
+                                                                        ) : (
+                                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                                                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                                                            </svg>
+                                                                        )}
+                                                                    </button>
+                                                                )}
                                                             </div>
                                                         </td>
 
                                                         {/* Location / Origin */}
-                                                        <td className="whitespace-nowrap py-3 pl-3 pr-4 text-xs">
+                                                        <td className="whitespace-nowrap px-3 py-3 text-xs">
                                                             <div className="flex items-center gap-1.5">
                                                                 <span className="text-base" title={log.country || 'Unknown'}>
                                                                     {getFlag(log.country)}
@@ -1398,6 +1523,21 @@ export default function AdminPage() {
                                                                     )}
                                                                 </div>
                                                             </div>
+                                                        </td>
+
+                                                        {/* Actions */}
+                                                        <td className="whitespace-nowrap py-3 pl-3 pr-4 text-right">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleDeleteSearchLog(log.id, log.license_number)}
+                                                                className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--border-default)] text-[var(--text-muted)] transition hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)]"
+                                                                title="Delete search log"
+                                                            >
+                                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                                    <polyline points="3 6 5 6 21 6" />
+                                                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                                                </svg>
+                                                            </button>
                                                         </td>
                                                     </tr>
                                                 )
@@ -1674,22 +1814,24 @@ export default function AdminPage() {
                                                         {/* License Number */}
                                                         <td className="whitespace-nowrap px-3 py-3">
                                                             <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-[var(--text-primary)]">
-                                                                <span>{log.license_number}</span>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => copyToClipboard(log.license_number, `notif-lic-${log.id}`)}
-                                                                    className="text-[var(--text-muted)] opacity-0 transition group-hover:opacity-100 hover:text-[var(--nepal-blue)]"
-                                                                    title="Copy license number"
-                                                                >
-                                                                    {copiedKey === `notif-lic-${log.id}` ? (
-                                                                        <span className="text-[10px] font-bold text-[var(--success)]">✓</span>
-                                                                    ) : (
-                                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                                                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                                                                        </svg>
-                                                                    )}
-                                                                </button>
+                                                                <span>{maskLicenseNumber(log.license_number, privacyMode)}</span>
+                                                                {!privacyMode && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => copyToClipboard(log.license_number, `notif-lic-${log.id}`)}
+                                                                        className="text-[var(--text-muted)] opacity-0 transition group-hover:opacity-100 hover:text-[var(--nepal-blue)]"
+                                                                        title="Copy license number"
+                                                                    >
+                                                                        {copiedKey === `notif-lic-${log.id}` ? (
+                                                                            <span className="text-[10px] font-bold text-[var(--success)]">✓</span>
+                                                                        ) : (
+                                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                                                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                                                            </svg>
+                                                                        )}
+                                                                    </button>
+                                                                )}
                                                             </div>
                                                         </td>
 
@@ -2119,7 +2261,7 @@ export default function AdminPage() {
                                                                 </a>
                                                                 {item.ip && (
                                                                     <span className="text-[10px] text-[var(--text-muted)]/80">
-                                                                        IP: {item.ip}
+                                                                        IP: {maskIpAddress(item.ip, privacyMode)}
                                                                     </span>
                                                                 )}
                                                             </div>
@@ -2142,21 +2284,23 @@ export default function AdminPage() {
                                                             {item.license_number ? (
                                                                 <div className="flex items-center gap-1.5">
                                                                     <span className="rounded-md border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2 py-1 font-mono text-xs font-bold text-[var(--text-primary)]">
-                                                                        {item.license_number}
+                                                                        {maskLicenseNumber(item.license_number, privacyMode)}
                                                                     </span>
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => copyToClipboard(item.license_number!, `fb-lic-${item.id}`)}
-                                                                        className="rounded p-1 text-[var(--text-muted)] hover:text-[var(--nepal-blue)]"
-                                                                        title="Copy license number"
-                                                                    >
-                                                                        {copiedKey === `fb-lic-${item.id}` ? '✓' : (
-                                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                                                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                                                                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                                                                            </svg>
-                                                                        )}
-                                                                    </button>
+                                                                    {!privacyMode && (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => copyToClipboard(item.license_number!, `fb-lic-${item.id}`)}
+                                                                            className="rounded p-1 text-[var(--text-muted)] hover:text-[var(--nepal-blue)]"
+                                                                            title="Copy license number"
+                                                                        >
+                                                                            {copiedKey === `fb-lic-${item.id}` ? '✓' : (
+                                                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                                                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                                                                </svg>
+                                                                            )}
+                                                                        </button>
+                                                                    )}
                                                                 </div>
                                                             ) : (
                                                                 <span className="text-[11px] text-[var(--text-muted)] italic">—</span>
@@ -2351,13 +2495,18 @@ export default function AdminPage() {
                                 <div>
                                     <span className="text-[10px] font-bold uppercase text-[var(--text-muted)]">License Number</span>
                                     <p className="font-mono font-semibold text-[var(--text-primary)]">
-                                        {selectedFeedbackMessage.license_number || 'Not provided'}
+                                        {selectedFeedbackMessage.license_number
+                                            ? maskLicenseNumber(selectedFeedbackMessage.license_number, privacyMode)
+                                            : 'Not provided'}
                                     </p>
                                 </div>
                                 <div>
                                     <span className="text-[10px] font-bold uppercase text-[var(--text-muted)]">IP & Category</span>
                                     <p className="text-[var(--text-secondary)]">
-                                        {selectedFeedbackMessage.category} · {selectedFeedbackMessage.ip || 'Unknown IP'}
+                                        {selectedFeedbackMessage.category} ·{' '}
+                                        {selectedFeedbackMessage.ip
+                                            ? maskIpAddress(selectedFeedbackMessage.ip, privacyMode)
+                                            : 'Unknown IP'}
                                     </p>
                                 </div>
                             </div>
@@ -2421,6 +2570,70 @@ export default function AdminPage() {
                                         Close
                                     </button>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Delete Confirmation Modal */}
+                {confirmDialog && (
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in duration-150"
+                        onClick={() => {
+                            if (!confirmSubmitting) setConfirmDialog(null)
+                        }}
+                    >
+                        <div
+                            className="relative w-full max-w-md rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 shadow-2xl animate-in zoom-in-95 duration-150"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-start gap-3.5">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[var(--error-border)] bg-[var(--error-bg)] text-[var(--error)]">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                                        <line x1="12" y1="9" x2="12" y2="13" />
+                                        <line x1="12" y1="17" x2="12.01" y2="17" />
+                                    </svg>
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <h3 className="text-base font-black text-[var(--text-primary)]">
+                                        {confirmDialog.title}
+                                    </h3>
+                                    <p className="mt-1.5 text-xs leading-relaxed text-[var(--text-secondary)]">
+                                        {confirmDialog.message}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 flex items-center justify-end gap-2.5 border-t border-[var(--border-default)] pt-4">
+                                <button
+                                    type="button"
+                                    disabled={confirmSubmitting}
+                                    onClick={() => setConfirmDialog(null)}
+                                    className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-2 text-xs font-bold text-[var(--text-secondary)] transition hover:border-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={confirmSubmitting}
+                                    onClick={async () => {
+                                        setConfirmSubmitting(true)
+                                        try {
+                                            await confirmDialog.onConfirm()
+                                        } finally {
+                                            setConfirmSubmitting(false)
+                                            setConfirmDialog(null)
+                                        }
+                                    }}
+                                    className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--error)] px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:opacity-90 disabled:opacity-50"
+                                >
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="3 6 5 6 21 6" />
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                    </svg>
+                                    <span>{confirmSubmitting ? 'Deleting...' : confirmDialog.confirmLabel}</span>
+                                </button>
                             </div>
                         </div>
                     </div>
