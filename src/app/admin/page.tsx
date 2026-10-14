@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useTransition } from 'react'
+import { useState, useEffect, useTransition, useRef, useCallback } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { formatNepalDateTime, formatTimeUntil } from '@/lib/cronHelper'
@@ -116,6 +116,12 @@ interface FeedbackStatsData {
     todayCount: number
 }
 
+// Inactivity Auto-Logout Configuration: 5 minutes idle timeout with 60-second warning countdown
+const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000 // 5 minutes total inactivity
+const INACTIVITY_WARNING_MS = 60 * 1000 // 60 seconds warning countdown before logout
+const INACTIVITY_TRIGGER_MS = INACTIVITY_TIMEOUT_MS - INACTIVITY_WARNING_MS // 4 minutes
+const ACTIVITY_STORAGE_KEY = 'nlc_admin_last_activity'
+
 function getFlag(countryCode?: string | null): string {
     if (!countryCode || countryCode.length !== 2) return '🌐'
     const code = countryCode.toUpperCase()
@@ -226,6 +232,15 @@ export default function AdminPage() {
     const [confirmSubmitting, setConfirmSubmitting] = useState(false)
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' } | null>(null)
 
+    // Inactivity Auto-Logout State
+    const [inactivityWarningOpen, setInactivityWarningOpen] = useState(false)
+    const [inactivitySecondsLeft, setInactivitySecondsLeft] = useState(60)
+    const [inactivityNotice, setInactivityNotice] = useState<string | null>(null)
+    const lastActivityRef = useRef<number>(Date.now())
+    const lastStorageWriteRef = useRef<number>(0)
+    const warningOpenRef = useRef(false)
+    warningOpenRef.current = inactivityWarningOpen
+
     const [, startTransition] = useTransition()
 
     const showToast = (message: string, type: 'success' | 'info' = 'success') => {
@@ -235,22 +250,60 @@ export default function AdminPage() {
         }, 3200)
     }
 
-    // 1. Check Auth Status on Load
+    // 1. Check Auth Status on Load (with prior inactivity verification)
     useEffect(() => {
         let isMounted = true
-        fetch('/api/admin/auth', { cache: 'no-store' })
-            .then((res) => res.json())
-            .then((data) => {
+
+        const verifySessionOnMount = async () => {
+            try {
+                // If previous session in storage has exceeded the 5-minute inactivity limit, force logout
+                if (typeof window !== 'undefined') {
+                    const storedActivity = localStorage.getItem(ACTIVITY_STORAGE_KEY)
+                    if (storedActivity) {
+                        const lastActive = Number(storedActivity)
+                        if (!isNaN(lastActive) && Date.now() - lastActive >= INACTIVITY_TIMEOUT_MS) {
+                            try {
+                                await fetch('/api/admin/auth', { method: 'DELETE' })
+                            } catch {
+                                // ignore
+                            }
+                            localStorage.removeItem(ACTIVITY_STORAGE_KEY)
+                            if (!isMounted) return
+                            setIsConfigured(true)
+                            setIsAuthenticated(false)
+                            setInactivityNotice('You were automatically logged out due to 5 minutes of inactivity.')
+                            setAuthLoading(false)
+                            return
+                        }
+                    }
+                }
+
+                const res = await fetch('/api/admin/auth', { cache: 'no-store' })
+                const data = await res.json()
                 if (!isMounted) return
                 setIsConfigured(data?.configured ?? true)
-                setIsAuthenticated(Boolean(data?.authenticated))
+                const isAuth = Boolean(data?.authenticated)
+                setIsAuthenticated(isAuth)
+                if (isAuth) {
+                    const now = Date.now()
+                    lastActivityRef.current = now
+                    if (typeof window !== 'undefined') {
+                        try {
+                            localStorage.setItem(ACTIVITY_STORAGE_KEY, String(now))
+                        } catch {
+                            // ignore
+                        }
+                    }
+                }
                 setAuthLoading(false)
-            })
-            .catch(() => {
+            } catch {
                 if (!isMounted) return
                 setIsAuthenticated(false)
                 setAuthLoading(false)
-            })
+            }
+        }
+
+        verifySessionOnMount()
 
         return () => {
             isMounted = false
@@ -426,6 +479,17 @@ export default function AdminPage() {
             if (res.ok && data.status === 'success') {
                 setIsAuthenticated(true)
                 setPasswordInput('')
+                setInactivityNotice(null)
+                setInactivityWarningOpen(false)
+                const now = Date.now()
+                lastActivityRef.current = now
+                if (typeof window !== 'undefined') {
+                    try {
+                        localStorage.setItem(ACTIVITY_STORAGE_KEY, String(now))
+                    } catch {
+                        // ignore
+                    }
+                }
             } else {
                 setLoginError(data.error || 'Incorrect password')
             }
@@ -437,11 +501,22 @@ export default function AdminPage() {
     }
 
     // 5. Handle Logout
-    const handleLogout = async () => {
+    const handleLogout = useCallback(async (reason?: 'inactivity') => {
         try {
             await fetch('/api/admin/auth', { method: 'DELETE' })
         } finally {
+            if (typeof window !== 'undefined') {
+                try {
+                    localStorage.removeItem(ACTIVITY_STORAGE_KEY)
+                } catch {
+                    // ignore
+                }
+            }
+            setInactivityWarningOpen(false)
             setIsAuthenticated(false)
+            if (reason === 'inactivity') {
+                setInactivityNotice('You were automatically logged out due to 5 minutes of inactivity.')
+            }
             setLogs([])
             setStats(null)
             setScraperData(null)
@@ -450,7 +525,135 @@ export default function AdminPage() {
             setFeedbackLogs([])
             setFeedbackStats(null)
         }
-    }
+    }, [])
+
+    // 5b. Record Activity & Reset Inactivity Timer
+    const recordActivity = useCallback((forceStorageUpdate = false) => {
+        const now = Date.now()
+        lastActivityRef.current = now
+        if (forceStorageUpdate || now - lastStorageWriteRef.current > 3000) {
+            lastStorageWriteRef.current = now
+            if (typeof window !== 'undefined') {
+                try {
+                    localStorage.setItem(ACTIVITY_STORAGE_KEY, String(now))
+                } catch {
+                    // ignore
+                }
+            }
+        }
+    }, [])
+
+    const stayLoggedIn = useCallback(() => {
+        recordActivity(true)
+        setInactivityWarningOpen(false)
+        setInactivitySecondsLeft(60)
+        showToast('Session kept active', 'info')
+    }, [recordActivity])
+
+    // Multi-tab activity synchronization
+    useEffect(() => {
+        if (!isAuthenticated) return
+
+        const handleStorage = (e: StorageEvent) => {
+            if (e.key === ACTIVITY_STORAGE_KEY && e.newValue) {
+                const remoteTime = Number(e.newValue)
+                if (!isNaN(remoteTime) && remoteTime > lastActivityRef.current) {
+                    lastActivityRef.current = remoteTime
+                    setInactivityWarningOpen(false)
+                    setInactivitySecondsLeft(60)
+                }
+            }
+        }
+
+        window.addEventListener('storage', handleStorage)
+        return () => window.removeEventListener('storage', handleStorage)
+    }, [isAuthenticated])
+
+    // Inactivity idle monitor: 5 minutes idle timeout with 60-second warning countdown
+    useEffect(() => {
+        if (!isAuthenticated) return
+
+        const initialNow = Date.now()
+        lastActivityRef.current = initialNow
+        if (typeof window !== 'undefined') {
+            try {
+                localStorage.setItem(ACTIVITY_STORAGE_KEY, String(initialNow))
+            } catch {
+                // ignore
+            }
+        }
+
+        const checkInactivity = () => {
+            let lastActivity = lastActivityRef.current
+            if (typeof window !== 'undefined') {
+                try {
+                    const stored = localStorage.getItem(ACTIVITY_STORAGE_KEY)
+                    if (stored) {
+                        const storedNum = Number(stored)
+                        if (!isNaN(storedNum) && storedNum > lastActivity) {
+                            lastActivity = storedNum
+                            lastActivityRef.current = storedNum
+                        }
+                    }
+                } catch {
+                    // ignore
+                }
+            }
+
+            const now = Date.now()
+            const elapsed = now - lastActivity
+
+            if (elapsed >= INACTIVITY_TIMEOUT_MS) {
+                handleLogout('inactivity')
+                return
+            }
+
+            if (elapsed >= INACTIVITY_TRIGGER_MS) {
+                const remainingSecs = Math.max(1, Math.ceil((INACTIVITY_TIMEOUT_MS - elapsed) / 1000))
+                setInactivitySecondsLeft(remainingSecs)
+                setInactivityWarningOpen(true)
+            } else {
+                setInactivityWarningOpen(false)
+            }
+        }
+
+        const interval = setInterval(checkInactivity, 1000)
+
+        const onUserActivity = () => {
+            // Passively record activity only when the warning modal is not asking for confirmation
+            if (!warningOpenRef.current) {
+                recordActivity(false)
+            }
+        }
+
+        const onVisibilityOrFocus = () => {
+            checkInactivity()
+        }
+
+        const events: Array<keyof WindowEventMap> = [
+            'mousemove',
+            'mousedown',
+            'keydown',
+            'touchstart',
+            'scroll',
+        ]
+
+        events.forEach((evt) => {
+            window.addEventListener(evt, onUserActivity, { passive: true })
+        })
+
+        window.addEventListener('visibilitychange', onVisibilityOrFocus)
+        window.addEventListener('focus', onVisibilityOrFocus)
+
+        return () => {
+            clearInterval(interval)
+            events.forEach((evt) => {
+                window.removeEventListener(evt, onUserActivity)
+            })
+            window.removeEventListener('visibilitychange', onVisibilityOrFocus)
+            window.removeEventListener('focus', onVisibilityOrFocus)
+        }
+    }, [isAuthenticated, handleLogout, recordActivity])
 
     // 6. Copy Helper
     const copyToClipboard = (text: string, key: string) => {
@@ -958,6 +1161,31 @@ export default function AdminPage() {
 
                     {/* Login Card */}
                     <div className="rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 shadow-xl shadow-black/[0.04] sm:p-7">
+                        {inactivityNotice && (
+                            <div className="mb-4 flex items-start gap-2.5 rounded-2xl border border-[var(--warning-border)] bg-[var(--warning-bg)] p-3.5 text-xs text-[var(--warning-text)]">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line x1="12" y1="8" x2="12" y2="12" />
+                                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                                </svg>
+                                <div className="min-w-0 flex-1">
+                                    <strong className="block font-bold">Session Timed Out</strong>
+                                    <p className="mt-0.5 leading-relaxed">{inactivityNotice}</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setInactivityNotice(null)}
+                                    className="text-[var(--text-muted)] transition hover:text-[var(--text-primary)]"
+                                    aria-label="Dismiss notice"
+                                >
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="18" y1="6" x2="6" y2="18" />
+                                        <line x1="6" y1="6" x2="18" y2="18" />
+                                    </svg>
+                                </button>
+                            </div>
+                        )}
+
                         {!isConfigured ? (
                             <div className="rounded-xl border border-[var(--warning-border)] bg-[var(--warning-bg)] p-3 text-xs text-[var(--warning-text)]">
                                 <strong>Admin password is not set.</strong>
@@ -982,6 +1210,7 @@ export default function AdminPage() {
                                             onChange={(e) => {
                                                 setPasswordInput(e.target.value)
                                                 if (loginError) setLoginError('')
+                                                if (inactivityNotice) setInactivityNotice(null)
                                             }}
                                             placeholder="Enter password..."
                                             autoFocus
@@ -1202,9 +1431,9 @@ export default function AdminPage() {
                         {/* Sign Out */}
                         <button
                             type="button"
-                            onClick={handleLogout}
+                            onClick={() => handleLogout()}
                             className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--error-border)]/80 bg-[var(--error-bg)] px-3 text-xs font-semibold text-[var(--error)] shadow-xs transition hover:bg-[var(--error-border)] active:scale-95"
-                            title="Sign out from admin console"
+                            title="Sign out from admin console (auto logs out after 5m of inactivity)"
                         >
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -3528,6 +3757,78 @@ export default function AdminPage() {
                     </div>
                 )}
 
+                {/* Inactivity Auto-Logout Warning Modal */}
+                {inactivityWarningOpen && (
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs animate-in fade-in duration-200"
+                        role="alertdialog"
+                        aria-labelledby="inactivity-warning-title"
+                        aria-describedby="inactivity-warning-desc"
+                    >
+                        <div
+                            className="relative w-full max-w-md rounded-3xl border border-[var(--warning-border)] bg-[var(--surface-primary)] p-6 shadow-2xl animate-in zoom-in-95 duration-200"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-start gap-3.5">
+                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--warning-border)] bg-[var(--warning-bg)] text-[var(--warning-text)] shadow-xs">
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="animate-pulse">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <polyline points="12 6 12 12 16 14" />
+                                    </svg>
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-2">
+                                        <h3 id="inactivity-warning-title" className="text-base font-black text-[var(--text-primary)]">
+                                            Inactivity Warning
+                                        </h3>
+                                        <span className="inline-flex items-center rounded-full border border-[var(--warning-border)] bg-[var(--warning-bg)] px-2 py-0.5 text-[10px] font-bold text-[var(--warning-text)]">
+                                            Auto Logout
+                                        </span>
+                                    </div>
+                                    <p id="inactivity-warning-desc" className="mt-1.5 text-xs leading-relaxed text-[var(--text-secondary)]">
+                                        You have been inactive for 4 minutes. For security, your session will automatically log out in:
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Prominent Countdown Timer */}
+                            <div className="my-5 flex flex-col items-center justify-center rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)] py-4 text-center">
+                                <div className="flex items-baseline gap-1 text-3xl font-black tabular-nums tracking-tight text-[var(--nepal-red)]">
+                                    <span>{inactivitySecondsLeft}</span>
+                                    <span className="text-xs font-semibold uppercase text-[var(--text-muted)]">seconds</span>
+                                </div>
+                                <div className="mt-2.5 h-1.5 w-48 overflow-hidden rounded-full bg-[var(--border-default)]">
+                                    <div
+                                        className="h-full bg-gradient-to-r from-[var(--warning-text)] to-[var(--nepal-red)] transition-all duration-1000 ease-linear"
+                                        style={{ width: `${(inactivitySecondsLeft / 60) * 100}%` }}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-end gap-2.5 border-t border-[var(--border-default)] pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => handleLogout('inactivity')}
+                                    className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-2.5 text-xs font-bold text-[var(--text-secondary)] transition hover:border-[var(--text-muted)] hover:text-[var(--text-primary)] active:scale-95"
+                                >
+                                    Log Out Now
+                                </button>
+                                <button
+                                    type="button"
+                                    autoFocus
+                                    onClick={stayLoggedIn}
+                                    className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--nepal-blue)] px-5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-[var(--nepal-blue-mid)] active:scale-95"
+                                >
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                    <span>Stay Logged In</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Floating Toast Notification */}
                 {toast && (
                     <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2.5 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-3 text-xs font-bold shadow-2xl animate-in slide-in-from-bottom-4 duration-200">
@@ -3535,6 +3836,14 @@ export default function AdminPage() {
                             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--success-bg)] text-[var(--success)]">
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
                                     <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                            </span>
+                        ) : toast.type === 'info' ? (
+                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)]">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line x1="12" y1="16" x2="12" y2="12" />
+                                    <line x1="12" y1="8" x2="12.01" y2="8" />
                                 </svg>
                             </span>
                         ) : (
