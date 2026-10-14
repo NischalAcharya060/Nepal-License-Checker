@@ -1532,10 +1532,10 @@ export default function AdminPage() {
         <div className="min-h-screen bg-[var(--bg-primary)] pb-16 text-[var(--text-primary)]">
             {/* Top Navigation Bar */}
             <header className="sticky top-0 z-30 border-b border-[var(--border-default)] bg-[var(--surface-primary)]/90 backdrop-blur-md">
-                <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
-                    <div className="flex items-center gap-3">
-                        <Link href="/" className="flex items-center gap-2.5">
-                            <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-1">
+                <div className="mx-auto flex max-w-7xl items-center justify-between px-3 py-2.5 sm:px-6 sm:py-3">
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                        <Link href="/" className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                            <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-1">
                                 <Image
                                     src="/License-Checker-Nepal-logo.png"
                                     alt="Nepal License Checker"
@@ -1544,19 +1544,20 @@ export default function AdminPage() {
                                     className="object-contain"
                                 />
                             </div>
-                            <div>
-                                <h1 className="text-sm font-black tracking-tight sm:text-base">
+                            <div className="min-w-0">
+                                <h1 className="text-xs sm:text-base font-black tracking-tight truncate text-[var(--text-primary)]">
                                     Admin Console
                                 </h1>
-                                <span className="flex items-center gap-1 text-[11px] font-medium text-[var(--text-muted)]">
-                                    <span className="h-1.5 w-1.5 rounded-full bg-[var(--success)] animate-pulse" />
-                                    <span>Turso Edge DB Connected</span>
+                                <span className="flex items-center gap-1 text-[10px] sm:text-[11px] font-medium text-[var(--text-muted)] truncate">
+                                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--success)] animate-pulse" />
+                                    <span className="hidden sm:inline">Turso Edge DB Connected</span>
+                                    <span className="sm:hidden">Connected</span>
                                 </span>
                             </div>
                         </Link>
                     </div>
 
-                    <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="flex items-center gap-1 sm:gap-2 shrink-0">
                         {/* Privacy Mode Toggle (ON by default) */}
                         <button
                             type="button"
@@ -1570,7 +1571,7 @@ export default function AdminPage() {
                                     'info'
                                 )
                             }}
-                            className={`inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold shadow-xs transition active:scale-95 ${
+                            className={`inline-flex h-8 sm:h-9 items-center gap-1 sm:gap-1.5 rounded-xl border px-2 sm:px-3 text-xs font-semibold shadow-xs transition active:scale-95 ${
                                 privacyMode
                                     ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
                                     : 'border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400'
@@ -1580,6 +1581,7 @@ export default function AdminPage() {
                                     ? 'Privacy Mode is ON (License & IP masked). Click to disable and view full information.'
                                     : 'Privacy Mode is OFF (Showing full License & IP). Click to enable masking.'
                             }
+                            aria-label="Toggle Privacy Mode"
                         >
                             {privacyMode ? (
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -1592,14 +1594,15 @@ export default function AdminPage() {
                                     <circle cx="12" cy="12" r="3" />
                                 </svg>
                             )}
-                            <span>Privacy: {privacyMode ? 'ON' : 'OFF'}</span>
+                            <span className="hidden sm:inline">Privacy:</span>
+                            <span className="text-[11px] sm:text-xs font-bold">{privacyMode ? 'ON' : 'OFF'}</span>
                         </button>
 
                         {/* Auto-refresh toggle */}
                         <button
                             type="button"
                             onClick={() => setAutoRefresh(!autoRefresh)}
-                            className={`hidden items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition sm:inline-flex ${
+                            className={`hidden lg:inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition ${
                                 autoRefresh
                                     ? 'border-[var(--nepal-blue)]/30 bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)]'
                                     : 'border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-muted)]'
@@ -1615,8 +1618,9 @@ export default function AdminPage() {
                             type="button"
                             onClick={handleManualRefresh}
                             disabled={dataLoading}
-                            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 text-xs font-semibold text-[var(--text-secondary)] shadow-xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] active:scale-95"
+                            className="inline-flex h-8 sm:h-9 items-center justify-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-2 sm:px-3 text-xs font-semibold text-[var(--text-secondary)] shadow-xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] active:scale-95"
                             title="Refresh logs now"
+                            aria-label="Refresh logs"
                         >
                             <svg
                                 width="14"
@@ -1633,7 +1637,7 @@ export default function AdminPage() {
                                 <polyline points="1 20 1 14 7 14" />
                                 <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
                             </svg>
-                            <span className="hidden sm:inline">Refresh</span>
+                            <span className="hidden md:inline">Refresh</span>
                         </button>
 
                         {/* Export CSV */}
@@ -1653,7 +1657,7 @@ export default function AdminPage() {
                                     ? !notificationLogs.length
                                     : !feedbackLogs.length
                             }
-                            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 text-xs font-semibold text-[var(--text-secondary)] shadow-xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:opacity-50"
+                            className="inline-flex h-8 sm:h-9 items-center justify-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-2 sm:px-3 text-xs font-semibold text-[var(--text-secondary)] shadow-xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:opacity-50"
                             title={
                                 activeTab === 'searches'
                                     ? 'Export search queries to CSV'
@@ -1661,13 +1665,14 @@ export default function AdminPage() {
                                     ? 'Export notification logs to CSV'
                                     : 'Export feedback inquiries to CSV'
                             }
+                            aria-label="Export to CSV"
                         >
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                                 <polyline points="7 10 12 15 17 10" />
                                 <line x1="12" y1="15" x2="12" y2="3" />
                             </svg>
-                            <span className="hidden sm:inline">Export</span>
+                            <span className="hidden md:inline">Export</span>
                         </button>
 
                         {/* Passkeys & Security */}
@@ -1677,16 +1682,17 @@ export default function AdminPage() {
                                 setPasskeyModalOpen(true)
                                 fetchPasskeys()
                             }}
-                            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 text-xs font-semibold text-[var(--text-secondary)] shadow-xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] active:scale-95"
+                            className="inline-flex h-8 sm:h-9 items-center justify-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-2 sm:px-3 text-xs font-semibold text-[var(--text-secondary)] shadow-xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] active:scale-95"
                             title="Manage Passkeys (Windows Hello, Touch ID, Face ID, YubiKey)"
+                            aria-label="Passkeys"
                         >
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                 <circle cx="12" cy="12" r="3" />
                                 <path d="M19.07 4.93a10 10 0 0 0-14.14 0M4.93 19.07a10 10 0 0 0 14.14 0" />
                             </svg>
-                            <span className="hidden sm:inline">Passkeys</span>
+                            <span className="hidden lg:inline">Passkeys</span>
                             {passkeyCount > 0 && (
-                                <span className="rounded-md bg-[var(--nepal-blue-soft)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--nepal-blue)]">
+                                <span className="rounded-md bg-[var(--nepal-blue-soft)] px-1.5 py-0.2 text-[10px] font-bold text-[var(--nepal-blue)]">
                                     {passkeyCount}
                                 </span>
                             )}
@@ -1696,8 +1702,9 @@ export default function AdminPage() {
                         <button
                             type="button"
                             onClick={() => handleLogout()}
-                            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--error-border)]/80 bg-[var(--error-bg)] px-3 text-xs font-semibold text-[var(--error)] shadow-xs transition hover:bg-[var(--error-border)] active:scale-95"
-                            title="Sign out from admin console (auto logs out after 5m of inactivity)"
+                            className="inline-flex h-8 sm:h-9 items-center justify-center gap-1.5 rounded-xl border border-[var(--error-border)]/80 bg-[var(--error-bg)] px-2 sm:px-3 text-xs font-semibold text-[var(--error)] shadow-xs transition hover:bg-[var(--error-border)] active:scale-95"
+                            title="Sign out from admin console"
+                            aria-label="Sign out"
                         >
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -1710,32 +1717,32 @@ export default function AdminPage() {
                 </div>
             </header>
 
-            <main className="mx-auto max-w-7xl px-4 pt-6 sm:px-6">
+            <main className="mx-auto max-w-7xl px-3 sm:px-6 pt-4 sm:pt-6">
                 {/* KPI Metrics Cards */}
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-4">
                     {/* Total Searches */}
-                    <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-sm">
+                    <div className="rounded-xl sm:rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 sm:p-4 shadow-sm">
                         <div className="flex items-center justify-between text-[var(--text-muted)]">
-                            <span className="text-xs font-bold uppercase tracking-wider">Total Searches</span>
-                            <span className="rounded-lg bg-[var(--nepal-blue-soft)] p-1.5 text-[var(--nepal-blue)]">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider">Total Searches</span>
+                            <span className="rounded-lg bg-[var(--nepal-blue-soft)] p-1 sm:p-1.5 text-[var(--nepal-blue)]">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                     <circle cx="11" cy="11" r="8" />
                                     <line x1="21" y1="21" x2="16.65" y2="16.65" />
                                 </svg>
                             </span>
                         </div>
-                        <p className="mt-2 text-2xl font-black tracking-tight text-[var(--text-primary)]">
+                        <p className="mt-1.5 sm:mt-2 text-xl sm:text-2xl font-black tracking-tight text-[var(--text-primary)]">
                             {stats ? stats.total.toLocaleString() : '—'}
                         </p>
-                        <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">All-time recorded queries</p>
+                        <p className="mt-0.5 text-[10px] sm:text-[11px] text-[var(--text-muted)]">All-time recorded queries</p>
                     </div>
 
                     {/* Today's Searches */}
-                    <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-sm">
+                    <div className="rounded-xl sm:rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 sm:p-4 shadow-sm">
                         <div className="flex items-center justify-between text-[var(--text-muted)]">
-                            <span className="text-xs font-bold uppercase tracking-wider">Today</span>
-                            <span className="rounded-lg bg-[var(--info-bg)] p-1.5 text-[var(--info-text)]">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider">Today</span>
+                            <span className="rounded-lg bg-[var(--info-bg)] p-1 sm:p-1.5 text-[var(--info-text)]">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                                     <line x1="16" y1="2" x2="16" y2="6" />
                                     <line x1="8" y1="2" x2="8" y2="6" />
@@ -1743,28 +1750,28 @@ export default function AdminPage() {
                                 </svg>
                             </span>
                         </div>
-                        <p className="mt-2 text-2xl font-black tracking-tight text-[var(--text-primary)]">
+                        <p className="mt-1.5 sm:mt-2 text-xl sm:text-2xl font-black tracking-tight text-[var(--text-primary)]">
                             {stats ? stats.today.toLocaleString() : '—'}
                         </p>
-                        <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">Since midnight local</p>
+                        <p className="mt-0.5 text-[10px] sm:text-[11px] text-[var(--text-muted)]">Since midnight local</p>
                     </div>
 
                     {/* Found Success Rate */}
-                    <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-sm">
+                    <div className="rounded-xl sm:rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 sm:p-4 shadow-sm">
                         <div className="flex items-center justify-between text-[var(--text-muted)]">
-                            <span className="text-xs font-bold uppercase tracking-wider">Found Rate</span>
-                            <span className="rounded-lg bg-[var(--success-bg)] p-1.5 text-[var(--success)]">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider">Found Rate</span>
+                            <span className="rounded-lg bg-[var(--success-bg)] p-1 sm:p-1.5 text-[var(--success)]">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                                     <polyline points="22 4 12 14.01 9 11.01" />
                                 </svg>
                             </span>
                         </div>
-                        <div className="mt-2 flex items-baseline gap-2">
-                            <p className="text-2xl font-black tracking-tight text-[var(--success)]">
+                        <div className="mt-1.5 sm:mt-2 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+                            <p className="text-xl sm:text-2xl font-black tracking-tight text-[var(--success)]">
                                 {stats ? `${stats.foundRate}%` : '—'}
                             </p>
-                            <span className="text-xs text-[var(--text-muted)]">
+                            <span className="text-[10px] sm:text-xs text-[var(--text-muted)]">
                                 ({stats ? stats.found : 0} printed)
                             </span>
                         </div>
@@ -1777,11 +1784,11 @@ export default function AdminPage() {
                     </div>
 
                     {/* Unique Visitors / IPs */}
-                    <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-sm">
+                    <div className="rounded-xl sm:rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 sm:p-4 shadow-sm">
                         <div className="flex items-center justify-between text-[var(--text-muted)]">
-                            <span className="text-xs font-bold uppercase tracking-wider">Unique IPs</span>
-                            <span className="rounded-lg bg-purple-500/10 p-1.5 text-purple-600 dark:text-purple-400">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider">Unique IPs</span>
+                            <span className="rounded-lg bg-purple-500/10 p-1 sm:p-1.5 text-purple-600 dark:text-purple-400">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                                     <circle cx="9" cy="7" r="4" />
                                     <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
@@ -1789,17 +1796,17 @@ export default function AdminPage() {
                                 </svg>
                             </span>
                         </div>
-                        <p className="mt-2 text-2xl font-black tracking-tight text-[var(--text-primary)]">
+                        <p className="mt-1.5 sm:mt-2 text-xl sm:text-2xl font-black tracking-tight text-[var(--text-primary)]">
                             {stats ? stats.uniqueIps.toLocaleString() : '—'}
                         </p>
-                        <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">Unique searcher addresses</p>
+                        <p className="mt-0.5 text-[10px] sm:text-[11px] text-[var(--text-muted)]">Unique searcher addresses</p>
                     </div>
                 </div>
 
                 {/* Top Locations Bar */}
                 {stats && stats.topLocations.length > 0 && (
-                    <div className="mt-4 flex flex-wrap items-center gap-2 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 shadow-xs">
-                        <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                    <div className="mt-3.5 sm:mt-4 flex flex-wrap items-center gap-1.5 sm:gap-2 rounded-xl sm:rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-2.5 sm:p-3 shadow-xs">
+                        <span className="flex items-center gap-1.5 text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]">
                                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                                 <circle cx="12" cy="10" r="3" />
@@ -1830,10 +1837,10 @@ export default function AdminPage() {
 
                 {/* Analytics & Search Insights Grid (7-Day Volume, Top Licenses & IPs, Top Offices) */}
                 {stats && (
-                    <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+                    <div className="mt-3.5 sm:mt-4 grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-3">
                         {/* 1. 7-Day Search Volume Sparkline */}
-                        <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-sm flex flex-col justify-between">
-                            <div className="flex items-center justify-between">
+                        <div className="rounded-xl sm:rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3.5 sm:p-4 shadow-sm flex flex-col justify-between">
+                            <div className="flex items-center justify-between gap-2">
                                 <div>
                                     <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
                                         7-Day Search Volume
@@ -1842,7 +1849,7 @@ export default function AdminPage() {
                                         Daily queries (Found vs Not Found)
                                     </p>
                                 </div>
-                                <div className="flex items-center gap-2 text-[10px] font-semibold">
+                                <div className="flex items-center gap-2 text-[10px] font-semibold shrink-0">
                                     <span className="inline-flex items-center gap-1 text-[var(--success)]">
                                         <span className="h-2 w-2 rounded-xs bg-[var(--success)]" />
                                         Found
@@ -1861,7 +1868,7 @@ export default function AdminPage() {
                                         ...stats.dailyTrend.map((d) => d.total)
                                     )
                                     return (
-                                        <div className="mt-4 flex h-28 items-end justify-between gap-2 pt-4">
+                                        <div className="mt-4 flex h-28 items-end justify-between gap-1 sm:gap-2 pt-4">
                                             {stats.dailyTrend.map((day, i) => {
                                                 const totalPct = Math.max(
                                                     day.total > 0 ? 10 : 3,
@@ -1874,15 +1881,15 @@ export default function AdminPage() {
                                                 return (
                                                     <div
                                                         key={i}
-                                                        className="group flex flex-1 flex-col items-center gap-1.5 h-full justify-end"
+                                                        className="group flex flex-1 flex-col items-center gap-1.5 h-full justify-end min-w-0"
                                                         title={`${day.date}: ${day.total} total (${day.found} found, ${day.notFound} not found)`}
                                                     >
-                                                        <span className="font-mono text-[10px] font-bold text-[var(--text-muted)] group-hover:text-[var(--text-primary)]">
+                                                        <span className="font-mono text-[9px] sm:text-[10px] font-bold text-[var(--text-muted)] group-hover:text-[var(--text-primary)]">
                                                             {day.total}
                                                         </span>
                                                         <div className="relative flex w-full max-w-[28px] flex-1 items-end overflow-hidden rounded-lg bg-[var(--bg-secondary)]">
                                                             <div
-                                                                className=" flex w-full flex-col justify-end overflow-hidden rounded-lg transition-all duration-500"
+                                                                className="flex w-full flex-col justify-end overflow-hidden rounded-lg transition-all duration-500"
                                                                 style={{ height: `${totalPct}%` }}
                                                             >
                                                                 <div
@@ -1895,7 +1902,7 @@ export default function AdminPage() {
                                                                 />
                                                             </div>
                                                         </div>
-                                                        <span className={`text-[10px] font-semibold ${day.label === 'Today' ? 'font-bold text-[var(--nepal-blue)]' : 'text-[var(--text-muted)]'}`}>
+                                                        <span className={`text-[9px] sm:text-[10px] font-semibold truncate ${day.label === 'Today' ? 'font-bold text-[var(--nepal-blue)]' : 'text-[var(--text-muted)]'}`}>
                                                             {day.label}
                                                         </span>
                                                     </div>
@@ -1912,7 +1919,7 @@ export default function AdminPage() {
                         </div>
 
                         {/* 2. Top Repeated Licenses & Active IPs */}
-                        <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-sm">
+                        <div className="rounded-xl sm:rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3.5 sm:p-4 shadow-sm">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
@@ -1924,7 +1931,7 @@ export default function AdminPage() {
                                 </div>
                             </div>
 
-                            <div className="mt-3 grid grid-cols-2 gap-3">
+                            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
                                 {/* Top Licenses */}
                                 <div>
                                     <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
@@ -2008,7 +2015,7 @@ export default function AdminPage() {
                         </div>
 
                         {/* 3. Top Issuing Offices Breakdown */}
-                        <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-sm">
+                        <div className="rounded-xl sm:rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3.5 sm:p-4 shadow-sm">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
@@ -2072,10 +2079,10 @@ export default function AdminPage() {
                 )}
 
                 {/* DOTM Automation & Scraper Status Monitor */}
-                <div className="mt-5 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 shadow-sm">
+                <div className="mt-4 sm:mt-5 rounded-xl sm:rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3.5 sm:p-5 shadow-sm">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-[var(--border-default)]/60 pb-3.5">
-                        <div className="flex items-center gap-2.5">
-                            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)]">
+                        <div className="flex items-start sm:items-center gap-2.5 min-w-0">
+                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)]">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
                                     <path d="M3 3v5h5" />
@@ -2083,8 +2090,8 @@ export default function AdminPage() {
                                     <path d="M16 21h5v-5" />
                                 </svg>
                             </span>
-                            <div>
-                                <div className="flex items-center gap-2">
+                            <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                                     <h2 className="text-sm font-bold text-[var(--text-primary)] sm:text-base">
                                         DOTM Scraper & Cron Monitor
                                     </h2>
@@ -2092,7 +2099,7 @@ export default function AdminPage() {
                                         dotm-scraper-cron.yml
                                     </span>
                                 </div>
-                                <p className="text-xs text-[var(--text-muted)]">
+                                <p className="mt-0.5 text-xs text-[var(--text-muted)] leading-relaxed">
                                     Automated PDF indexer mirroring Department of Transport Management print records
                                 </p>
                             </div>
@@ -2103,7 +2110,7 @@ export default function AdminPage() {
                                 href="https://github.com/NischalAcharya060/Nepal-License-Checker/actions/workflows/dotm-scraper-cron.yml"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)]"
+                                className="inline-flex w-full sm:w-auto justify-center items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)]"
                             >
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
@@ -2114,9 +2121,9 @@ export default function AdminPage() {
                     </div>
 
                     {/* 3 Metric Summary Boxes */}
-                    <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+                    <div className="mt-3.5 sm:mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-4">
                         {/* Next Scheduled Run */}
-                        <div className="rounded-xl border border-[var(--border-default)]/70 bg-[var(--bg-secondary)]/50 p-3.5">
+                        <div className="rounded-xl border border-[var(--border-default)]/70 bg-[var(--bg-secondary)]/50 p-3 sm:p-3.5">
                             <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
                                 <span className="font-semibold uppercase tracking-wider">Next Scheduled Run</span>
                                 <span className="inline-flex items-center gap-1 rounded-full bg-[var(--nepal-blue)]/10 px-2 py-0.5 text-[10px] font-bold text-[var(--nepal-blue)]">
@@ -2143,7 +2150,7 @@ export default function AdminPage() {
                         </div>
 
                         {/* Last Run Status & Trigger */}
-                        <div className="rounded-xl border border-[var(--border-default)]/70 bg-[var(--bg-secondary)]/50 p-3.5">
+                        <div className="rounded-xl border border-[var(--border-default)]/70 bg-[var(--bg-secondary)]/50 p-3 sm:p-3.5">
                             <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
                                 <span className="font-semibold uppercase tracking-wider">Last Run Status</span>
                                 <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
@@ -2183,7 +2190,7 @@ export default function AdminPage() {
                         </div>
 
                         {/* Database Records & Sync */}
-                        <div className="rounded-xl border border-[var(--border-default)]/70 bg-[var(--bg-secondary)]/50 p-3.5">
+                        <div className="rounded-xl border border-[var(--border-default)]/70 bg-[var(--bg-secondary)]/50 p-3 sm:p-3.5">
                             <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
                                 <span className="font-semibold uppercase tracking-wider">Indexed Database</span>
                                 <span className="inline-flex items-center gap-1 rounded-full bg-[var(--success-bg)] px-2 py-0.5 text-[10px] font-bold text-[var(--success)]">
@@ -2203,23 +2210,24 @@ export default function AdminPage() {
                 </div>
 
                 {/* View Mode Tab Switcher */}
-                <div className="mt-6 flex flex-col gap-3 border-b border-[var(--border-default)] pb-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="inline-flex flex-wrap rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-1 shadow-xs">
+                <div className="mt-5 sm:mt-6 flex flex-col gap-3 border-b border-[var(--border-default)] pb-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex w-full sm:w-auto overflow-x-auto no-scrollbar rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-1 shadow-xs">
                         <button
                             type="button"
                             onClick={() => setActiveTab('searches')}
-                            className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-bold transition sm:px-4 ${
+                            className={`inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 sm:gap-2 rounded-lg px-2.5 sm:px-4 py-2 text-xs font-bold transition whitespace-nowrap ${
                                 activeTab === 'searches'
                                     ? 'bg-[var(--nepal-blue)] text-white shadow-xs'
                                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                             }`}
                         >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
                                 <circle cx="11" cy="11" r="8" />
                                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
                             </svg>
-                            <span>Search Queries</span>
-                            <span className={`rounded-full px-2 py-0.5 font-mono text-[10px] ${
+                            <span className="hidden sm:inline">Search Queries</span>
+                            <span className="sm:hidden">Searches</span>
+                            <span className={`rounded-full px-1.5 sm:px-2 py-0.5 font-mono text-[10px] ${
                                 activeTab === 'searches' ? 'bg-white/20 text-white' : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'
                             }`}>
                                 {total.toLocaleString()}
@@ -2229,18 +2237,19 @@ export default function AdminPage() {
                         <button
                             type="button"
                             onClick={() => setActiveTab('notifications')}
-                            className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-bold transition sm:px-4 ${
+                            className={`inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 sm:gap-2 rounded-lg px-2.5 sm:px-4 py-2 text-xs font-bold transition whitespace-nowrap ${
                                 activeTab === 'notifications'
                                     ? 'bg-[var(--nepal-blue)] text-white shadow-xs'
                                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                             }`}
                         >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
                                 <rect x="2" y="4" width="20" height="16" rx="2" />
                                 <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
                             </svg>
-                            <span>Email Notifications</span>
-                            <span className={`rounded-full px-2 py-0.5 font-mono text-[10px] ${
+                            <span className="hidden sm:inline">Email Notifications</span>
+                            <span className="sm:hidden">Notifications</span>
+                            <span className={`rounded-full px-1.5 sm:px-2 py-0.5 font-mono text-[10px] ${
                                 activeTab === 'notifications' ? 'bg-white/20 text-white' : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'
                             }`}>
                                 {notifTotal.toLocaleString()}
@@ -2250,17 +2259,18 @@ export default function AdminPage() {
                         <button
                             type="button"
                             onClick={() => setActiveTab('feedback')}
-                            className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-bold transition sm:px-4 ${
+                            className={`inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 sm:gap-2 rounded-lg px-2.5 sm:px-4 py-2 text-xs font-bold transition whitespace-nowrap ${
                                 activeTab === 'feedback'
                                     ? 'bg-[var(--nepal-blue)] text-white shadow-xs'
                                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                             }`}
                         >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
                                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                             </svg>
-                            <span>Feedback & Support</span>
-                            <span className={`rounded-full px-2 py-0.5 font-mono text-[10px] ${
+                            <span className="hidden sm:inline">Feedback & Support</span>
+                            <span className="sm:hidden">Feedback</span>
+                            <span className={`rounded-full px-1.5 sm:px-2 py-0.5 font-mono text-[10px] ${
                                 activeTab === 'feedback' ? 'bg-white/20 text-white' : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'
                             }`}>
                                 {feedbackTotal.toLocaleString()}
@@ -2307,7 +2317,7 @@ export default function AdminPage() {
                 {activeTab === 'searches' ? (
                     <>
                         {/* Search & Filter Toolbar */}
-                        <div className="mt-5 flex flex-col gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4 shadow-sm">
+                        <div className="mt-4 sm:mt-5 flex flex-col gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4 shadow-sm">
                             {/* Search Input */}
                             <div className="relative flex-1">
                                 <svg
@@ -2332,7 +2342,7 @@ export default function AdminPage() {
                                         startTransition(() => setPage(1))
                                     }}
                                     placeholder="Filter by license, IP, holder name, city..."
-                                    className="h-10 w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] pl-9 pr-9 text-xs text-[var(--text-primary)] transition focus:border-[var(--nepal-blue)] focus:bg-[var(--surface-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--nepal-blue)]/20 sm:text-sm"
+                                    className="h-9 sm:h-10 w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] pl-9 pr-9 text-xs text-[var(--text-primary)] transition focus:border-[var(--nepal-blue)] focus:bg-[var(--surface-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--nepal-blue)]/20 sm:text-sm"
                                 />
                                 {searchFilter && (
                                     <button
@@ -2362,7 +2372,7 @@ export default function AdminPage() {
                                                 setStatusFilter(st)
                                                 setPage(1)
                                             }}
-                                            className={`rounded-lg px-2.5 py-1 capitalize transition ${
+                                            className={`rounded-lg px-2 py-1 text-[11px] sm:px-2.5 sm:text-xs capitalize transition ${
                                                 statusFilter === st
                                                     ? 'bg-[var(--surface-primary)] text-[var(--nepal-blue)] shadow-xs font-bold'
                                                     : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
@@ -2380,7 +2390,7 @@ export default function AdminPage() {
                                         setLimit(Number(e.target.value))
                                         setPage(1)
                                     }}
-                                    className="h-9 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] focus:outline-none"
+                                    className="h-8.5 sm:h-9 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2 sm:px-2.5 text-[11px] sm:text-xs font-semibold text-[var(--text-secondary)] focus:outline-none"
                                 >
                                     <option value={25}>25 rows</option>
                                     <option value={50}>50 rows</option>
@@ -2399,7 +2409,7 @@ export default function AdminPage() {
                                             setSearchSelectMode(true)
                                         }
                                     }}
-                                    className={`inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold shadow-xs transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${
+                                    className={`inline-flex h-8.5 sm:h-9 items-center gap-1.5 rounded-xl border px-2.5 sm:px-3 text-[11px] sm:text-xs font-semibold shadow-xs transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${
                                         searchSelectMode
                                             ? 'border-[var(--nepal-blue)] bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)] font-bold'
                                             : 'border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)]'
@@ -2419,7 +2429,7 @@ export default function AdminPage() {
                                         type="button"
                                         onClick={handleDeleteSelectedSearchLogs}
                                         disabled={dataLoading}
-                                        className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--error-border)] bg-[var(--error)] px-3 text-xs font-bold text-white shadow-xs transition hover:opacity-90 active:scale-95 disabled:opacity-50"
+                                        className="inline-flex h-8.5 sm:h-9 items-center gap-1.5 rounded-xl border border-[var(--error-border)] bg-[var(--error)] px-2.5 sm:px-3 text-[11px] sm:text-xs font-bold text-white shadow-xs transition hover:opacity-90 active:scale-95 disabled:opacity-50"
                                         title="Delete selected search logs"
                                     >
                                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -2438,7 +2448,7 @@ export default function AdminPage() {
                                         const days = Number(e.target.value)
                                         if (days > 0) handleDeleteSearchLogsOlderThan(days)
                                     }}
-                                    className="h-9 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] transition hover:border-[var(--error-border)] focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="h-8.5 sm:h-9 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2 sm:px-2.5 text-[11px] sm:text-xs font-semibold text-[var(--text-secondary)] transition hover:border-[var(--error-border)] focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                                     title="Manually delete search logs older than selected days"
                                 >
                                     <option value="" disabled>
@@ -2454,7 +2464,7 @@ export default function AdminPage() {
                                     type="button"
                                     onClick={handleDeleteAllSearchLogs}
                                     disabled={total === 0 || dataLoading}
-                                    className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--error-border)]/80 bg-[var(--error-bg)] px-3 text-xs font-semibold text-[var(--error)] shadow-xs transition hover:bg-[var(--error-border)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="inline-flex h-8.5 sm:h-9 items-center gap-1.5 rounded-xl border border-[var(--error-border)]/80 bg-[var(--error-bg)] px-2.5 sm:px-3 text-[11px] sm:text-xs font-semibold text-[var(--error)] shadow-xs transition hover:bg-[var(--error-border)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
                                     title="Delete all search logs"
                                 >
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -2466,9 +2476,196 @@ export default function AdminPage() {
                             </div>
                         </div>
 
-                        {/* Search Logs Table */}
+                        {/* Search Logs Container (Mobile Cards + Desktop Table) */}
                         <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-sm">
-                            <div className="overflow-x-auto">
+                            {/* Mobile Card List (Visible on < md) */}
+                            <div className="block md:hidden">
+                                {dataLoading && !logs.length ? (
+                                    <div className="py-12 text-center text-xs text-[var(--text-muted)]">
+                                        <div className="flex flex-col items-center justify-center gap-2">
+                                            <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-[var(--nepal-blue)]/30 border-t-[var(--nepal-blue)]" />
+                                            <span>Loading search queries...</span>
+                                        </div>
+                                    </div>
+                                ) : logs.length === 0 ? (
+                                    <div className="py-12 px-4 text-center text-xs text-[var(--text-muted)]">
+                                        <div className="flex flex-col items-center justify-center gap-2">
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-muted)]">
+                                                <circle cx="12" cy="12" r="10" />
+                                                <line x1="8" y1="12" x2="16" y2="12" />
+                                            </svg>
+                                            <span className="font-semibold text-[var(--text-secondary)]">No search records found.</span>
+                                            <p className="text-[11px]">When users query licenses on the site, their searches will appear here in real-time.</p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        {/* Mobile Select-All Header if in select mode */}
+                                        {searchSelectMode && (
+                                            <div className="flex items-center justify-between border-b border-[var(--border-default)] bg-[var(--bg-secondary)]/70 px-3.5 py-2.5 text-xs">
+                                                <label className="flex items-center gap-2 font-semibold text-[var(--text-secondary)] cursor-pointer">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={logs.length > 0 && selectedSearchIds.length === logs.length}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setSelectedSearchIds(logs.map((l) => l.id))
+                                                            } else {
+                                                                setSelectedSearchIds([])
+                                                            }
+                                                        }}
+                                                        className="h-4 w-4 cursor-pointer rounded border-[var(--border-default)] accent-[var(--nepal-blue)]"
+                                                    />
+                                                    <span>Select All on this page ({logs.length})</span>
+                                                </label>
+                                                <span className="text-[11px] text-[var(--text-muted)] font-mono">
+                                                    {selectedSearchIds.length} selected
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        <div className="divide-y divide-[var(--border-default)]/60">
+                                            {logs.map((log, idx) => {
+                                                const isFound = log.status === 'found'
+                                                const isSelected = selectedSearchIds.includes(log.id)
+                                                const sn = (page - 1) * limit + idx + 1
+                                                return (
+                                                    <div
+                                                        key={log.id}
+                                                        className={`p-3.5 transition-colors ${isSelected ? 'bg-[var(--nepal-blue-soft)]/25' : 'hover:bg-[var(--bg-secondary)]/30'}`}
+                                                    >
+                                                        {/* Top Row: Select/SN + Result badge + Time ago */}
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <div className="flex items-center gap-2 min-w-0">
+                                                                {searchSelectMode && (
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={isSelected}
+                                                                        onChange={(e) => {
+                                                                            if (e.target.checked) {
+                                                                                setSelectedSearchIds((prev) => [...prev, log.id])
+                                                                            } else {
+                                                                                setSelectedSearchIds((prev) => prev.filter((id) => id !== log.id))
+                                                                            }
+                                                                        }}
+                                                                        className="h-4 w-4 cursor-pointer rounded border-[var(--border-default)] accent-[var(--nepal-blue)]"
+                                                                    />
+                                                                )}
+                                                                <span className="rounded-md bg-[var(--bg-secondary)] px-1.5 py-0.5 font-mono text-[10px] font-bold text-[var(--text-muted)]">
+                                                                    #{sn}
+                                                                </span>
+                                                                {isFound ? (
+                                                                    <span className="inline-flex items-center gap-1 rounded-full border border-[var(--success-border)] bg-[var(--success-bg)] px-2 py-0.5 text-[10px] font-bold text-[var(--success)]">
+                                                                        <span>✓</span>
+                                                                        <span>Found</span>
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="inline-flex items-center gap-1 rounded-full border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2 py-0.5 text-[10px] font-semibold text-[var(--text-muted)]">
+                                                                        <span>✕</span>
+                                                                        <span>Not Found</span>
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div className="text-right shrink-0">
+                                                                <span
+                                                                    className="text-[11px] font-medium text-[var(--text-muted)]"
+                                                                    title={`${formatNepalDateTime(log.created_at, 'en', true)} (NPT, UTC+5:45)`}
+                                                                >
+                                                                    {formatTimeAgo(log.created_at)}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Middle Row: License Number & Holder */}
+                                                        <div className="mt-2.5 flex items-start justify-between gap-2">
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="flex items-center gap-1.5 font-mono text-sm font-bold text-[var(--text-primary)]">
+                                                                    <span className="tracking-tight">{maskLicenseNumber(log.license_number, privacyMode)}</span>
+                                                                    {!privacyMode && (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => copyToClipboard(log.license_number, `lic-${log.id}`)}
+                                                                            className="rounded p-1 text-[var(--text-muted)] hover:text-[var(--nepal-blue)]"
+                                                                            title="Copy license number"
+                                                                        >
+                                                                            {copiedKey === `lic-${log.id}` ? (
+                                                                                <span className="text-[10px] font-bold text-[var(--success)]">✓</span>
+                                                                            ) : (
+                                                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                                                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                                                                </svg>
+                                                                            )}
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                                {log.holder_name ? (
+                                                                    <div className="mt-0.5">
+                                                                        <span className="text-xs font-semibold text-[var(--text-primary)]">{log.holder_name}</span>
+                                                                        {log.office && (
+                                                                            <span className="text-[10px] text-[var(--text-muted)] ml-1.5">({log.office})</span>
+                                                                        )}
+                                                                    </div>
+                                                                ) : (
+                                                                    <span className="text-[11px] text-[var(--text-muted)] italic">No holder record</span>
+                                                                )}
+                                                            </div>
+
+                                                            {/* Actions (Delete single) */}
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleDeleteSearchLog(log.id, log.license_number)}
+                                                                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[var(--border-default)] text-[var(--text-muted)] transition hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95"
+                                                                title="Delete search log"
+                                                            >
+                                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                                    <polyline points="3 6 5 6 21 6" />
+                                                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                                                </svg>
+                                                            </button>
+                                                        </div>
+
+                                                        {/* Bottom Meta Row: Location & IP */}
+                                                        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-[var(--border-default)]/40 pt-2 text-[11px] text-[var(--text-secondary)]">
+                                                            <div className="flex items-center gap-1.5 min-w-0">
+                                                                <span className="text-sm shrink-0" title={log.country || 'Unknown'}>
+                                                                    {getFlag(log.country)}
+                                                                </span>
+                                                                <span className="truncate font-medium">
+                                                                    {log.city || 'Unknown City'}{log.region ? `, ${log.region}` : ''}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5 font-mono text-[10px] text-[var(--text-muted)] shrink-0">
+                                                                <span>{maskIpAddress(log.ip, privacyMode)}</span>
+                                                                {!privacyMode && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => copyToClipboard(log.ip, `ip-${log.id}`)}
+                                                                        className="hover:text-[var(--nepal-blue)]"
+                                                                        title="Copy IP"
+                                                                    >
+                                                                        {copiedKey === `ip-${log.id}` ? (
+                                                                            <span className="font-bold text-[var(--success)]">✓</span>
+                                                                        ) : (
+                                                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                                                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                                                            </svg>
+                                                                        )}
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Desktop Spreadsheet Table (Hidden on < md, visible on md+) */}
+                            <div className="hidden md:block overflow-x-auto">
                                 <table className="w-full text-left text-xs">
                                     <thead className="border-b border-[var(--border-default)] bg-[var(--bg-secondary)]/50 text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
                                         <tr>
@@ -2690,8 +2887,8 @@ export default function AdminPage() {
                             </div>
 
                             {/* Pagination Bar */}
-                            <div className="flex flex-col items-center justify-between gap-3 border-t border-[var(--border-default)] px-4 py-3 sm:flex-row">
-                                <div className="text-xs text-[var(--text-muted)]">
+                            <div className="flex flex-col items-center justify-between gap-3 border-t border-[var(--border-default)] px-3.5 py-3 sm:flex-row sm:px-4">
+                                <div className="text-xs text-[var(--text-muted)] text-center sm:text-left">
                                     Showing <span className="font-bold text-[var(--text-primary)]">{logs.length ? (page - 1) * limit + 1 : 0}</span> to{' '}
                                     <span className="font-bold text-[var(--text-primary)]">{Math.min(page * limit, total)}</span> of{' '}
                                     <span className="font-bold text-[var(--text-primary)]">{total.toLocaleString()}</span> queries
@@ -2707,7 +2904,7 @@ export default function AdminPage() {
                                         type="button"
                                         disabled={page <= 1 || dataLoading}
                                         onClick={() => setPage(page - 1)}
-                                        className="inline-flex h-8 items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] shadow-xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-40"
+                                        className="inline-flex h-8 sm:h-8.5 items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] shadow-xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-40"
                                     >
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                             <polyline points="15 18 9 12 15 6" />
@@ -2721,7 +2918,7 @@ export default function AdminPage() {
                                         type="button"
                                         disabled={page >= totalPages || dataLoading}
                                         onClick={() => setPage(page + 1)}
-                                        className="inline-flex h-8 items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] shadow-xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-40"
+                                        className="inline-flex h-8 sm:h-8.5 items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] shadow-xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-40"
                                     >
                                         <span>Next</span>
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -2735,40 +2932,40 @@ export default function AdminPage() {
                 ) : activeTab === 'notifications' ? (
                     <>
                         {/* Email Notification KPI Metrics */}
-                        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+                        <div className="mt-4 sm:mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-4">
                             {/* Total Subscribers */}
-                            <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-sm">
+                            <div className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 sm:p-4 sm:rounded-2xl shadow-sm">
                                 <div className="flex items-center justify-between text-[var(--text-muted)]">
-                                    <span className="text-xs font-bold uppercase tracking-wider">Subscribers</span>
+                                    <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Subscribers</span>
                                     <span className="rounded-lg bg-[var(--nepal-blue-soft)] p-1.5 text-[var(--nepal-blue)]">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                             <rect x="2" y="4" width="20" height="16" rx="2" />
                                             <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
                                         </svg>
                                     </span>
                                 </div>
-                                <p className="mt-2 text-2xl font-black tracking-tight text-[var(--text-primary)]">
+                                <p className="mt-1.5 sm:mt-2 text-xl sm:text-2xl font-black tracking-tight text-[var(--text-primary)]">
                                     {notificationStats ? notificationStats.total.toLocaleString() : notifTotal.toLocaleString()}
                                 </p>
-                                <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">Registered for print alerts</p>
+                                <p className="mt-0.5 text-[10px] sm:text-[11px] text-[var(--text-muted)]">Registered for print alerts</p>
                             </div>
 
                             {/* Successfully Delivered */}
-                            <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-sm">
+                            <div className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 sm:p-4 sm:rounded-2xl shadow-sm">
                                 <div className="flex items-center justify-between text-[var(--text-muted)]">
-                                    <span className="text-xs font-bold uppercase tracking-wider">Delivered</span>
+                                    <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Delivered</span>
                                     <span className="rounded-lg bg-[var(--success-bg)] p-1.5 text-[var(--success)]">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                                             <polyline points="22 4 12 14.01 9 11.01" />
                                         </svg>
                                     </span>
                                 </div>
-                                <div className="mt-2 flex items-baseline gap-2">
-                                    <p className="text-2xl font-black tracking-tight text-[var(--success)]">
+                                <div className="mt-1.5 sm:mt-2 flex flex-wrap items-baseline gap-1.5 sm:gap-2">
+                                    <p className="text-xl sm:text-2xl font-black tracking-tight text-[var(--success)]">
                                         {notificationStats ? notificationStats.sent.toLocaleString() : '0'}
                                     </p>
-                                    <span className="text-xs text-[var(--text-muted)]">
+                                    <span className="text-[10px] sm:text-xs text-[var(--text-muted)]">
                                         ({notificationStats ? `${notificationStats.deliveryRate}%` : '0%'} sent)
                                     </span>
                                 </div>
@@ -2781,42 +2978,42 @@ export default function AdminPage() {
                             </div>
 
                             {/* Pending in Queue */}
-                            <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-sm">
+                            <div className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 sm:p-4 sm:rounded-2xl shadow-sm">
                                 <div className="flex items-center justify-between text-[var(--text-muted)]">
-                                    <span className="text-xs font-bold uppercase tracking-wider">In Queue</span>
+                                    <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">In Queue</span>
                                     <span className="rounded-lg bg-amber-500/10 p-1.5 text-amber-600 dark:text-amber-400">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                             <circle cx="12" cy="12" r="10" />
                                             <polyline points="12 6 12 12 16 14" />
                                         </svg>
                                     </span>
                                 </div>
-                                <p className="mt-2 text-2xl font-black tracking-tight text-amber-600 dark:text-amber-400">
+                                <p className="mt-1.5 sm:mt-2 text-xl sm:text-2xl font-black tracking-tight text-amber-600 dark:text-amber-400">
                                     {notificationStats ? notificationStats.pending.toLocaleString() : '0'}
                                 </p>
-                                <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">Awaiting DOTM publication</p>
+                                <p className="mt-0.5 text-[10px] sm:text-[11px] text-[var(--text-muted)]">Awaiting DOTM publication</p>
                             </div>
 
                             {/* Cancelled / Unsubscribed */}
-                            <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-sm">
+                            <div className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 sm:p-4 sm:rounded-2xl shadow-sm">
                                 <div className="flex items-center justify-between text-[var(--text-muted)]">
-                                    <span className="text-xs font-bold uppercase tracking-wider">Cancelled</span>
+                                    <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Cancelled</span>
                                     <span className="rounded-lg bg-gray-500/10 p-1.5 text-gray-500">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                             <line x1="18" y1="6" x2="6" y2="18" />
                                             <line x1="6" y1="6" x2="18" y2="18" />
                                         </svg>
                                     </span>
                                 </div>
-                                <p className="mt-2 text-2xl font-black tracking-tight text-[var(--text-primary)]">
+                                <p className="mt-1.5 sm:mt-2 text-xl sm:text-2xl font-black tracking-tight text-[var(--text-primary)]">
                                     {notificationStats ? notificationStats.cancelled.toLocaleString() : '0'}
                                 </p>
-                                <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">Unsubscribed by user</p>
+                                <p className="mt-0.5 text-[10px] sm:text-[11px] text-[var(--text-muted)]">Unsubscribed by user</p>
                             </div>
                         </div>
 
                         {/* Notification Search & Filter Toolbar */}
-                        <div className="mt-5 flex flex-col gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4 shadow-sm">
+                        <div className="mt-4 sm:mt-5 flex flex-col gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4 shadow-sm">
                             <div className="relative flex-1">
                                 <svg
                                     width="16"
@@ -2840,7 +3037,7 @@ export default function AdminPage() {
                                         startTransition(() => setNotifPage(1))
                                     }}
                                     placeholder="Filter by email, license number, or holder name..."
-                                    className="h-10 w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] pl-9 pr-9 text-xs text-[var(--text-primary)] transition focus:border-[var(--nepal-blue)] focus:bg-[var(--surface-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--nepal-blue)]/20 sm:text-sm"
+                                    className="h-9 sm:h-10 w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] pl-9 pr-9 text-xs text-[var(--text-primary)] transition focus:border-[var(--nepal-blue)] focus:bg-[var(--surface-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--nepal-blue)]/20 sm:text-sm"
                                 />
                                 {notifSearchFilter && (
                                     <button
@@ -2870,7 +3067,7 @@ export default function AdminPage() {
                                                 setNotifStatusFilter(st)
                                                 setNotifPage(1)
                                             }}
-                                            className={`rounded-lg px-2.5 py-1 capitalize transition ${
+                                            className={`rounded-lg px-2 py-1 text-[11px] sm:px-2.5 sm:text-xs capitalize transition ${
                                                 notifStatusFilter === st
                                                     ? 'bg-[var(--surface-primary)] text-[var(--nepal-blue)] shadow-xs font-bold'
                                                     : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
@@ -2888,7 +3085,7 @@ export default function AdminPage() {
                                         setNotifLimit(Number(e.target.value))
                                         setNotifPage(1)
                                     }}
-                                    className="h-9 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] focus:outline-none"
+                                    className="h-8.5 sm:h-9 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2 sm:px-2.5 text-[11px] sm:text-xs font-semibold text-[var(--text-secondary)] focus:outline-none"
                                 >
                                     <option value={25}>25 rows</option>
                                     <option value={50}>50 rows</option>
@@ -2907,7 +3104,7 @@ export default function AdminPage() {
                                             setNotifSelectMode(true)
                                         }
                                     }}
-                                    className={`inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold shadow-xs transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${
+                                    className={`inline-flex h-8.5 sm:h-9 items-center gap-1.5 rounded-xl border px-2.5 sm:px-3 text-[11px] sm:text-xs font-semibold shadow-xs transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${
                                         notifSelectMode
                                             ? 'border-[var(--nepal-blue)] bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)] font-bold'
                                             : 'border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)]'
@@ -2927,7 +3124,7 @@ export default function AdminPage() {
                                         type="button"
                                         onClick={handleDeleteSelectedNotifications}
                                         disabled={notifLoading}
-                                        className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--error-border)] bg-[var(--error)] px-3 text-xs font-bold text-white shadow-xs transition hover:opacity-90 active:scale-95 disabled:opacity-50"
+                                        className="inline-flex h-8.5 sm:h-9 items-center gap-1.5 rounded-xl border border-[var(--error-border)] bg-[var(--error)] px-2.5 sm:px-3 text-[11px] sm:text-xs font-bold text-white shadow-xs transition hover:opacity-90 active:scale-95 disabled:opacity-50"
                                         title="Delete selected notification logs"
                                     >
                                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -2943,7 +3140,7 @@ export default function AdminPage() {
                                     type="button"
                                     onClick={() => handleDeleteNotificationsByStatus('cancelled')}
                                     disabled={(notificationStats?.cancelled ?? 0) === 0 || notifLoading}
-                                    className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] transition hover:border-[var(--error-border)] hover:text-[var(--error)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="inline-flex h-8.5 sm:h-9 items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2.5 text-[11px] sm:text-xs font-semibold text-[var(--text-secondary)] transition hover:border-[var(--error-border)] hover:text-[var(--error)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
                                     title="Delete all cancelled notification subscriptions"
                                 >
                                     <span>Delete Cancelled ({notificationStats?.cancelled ?? 0})</span>
@@ -2954,7 +3151,7 @@ export default function AdminPage() {
                                     type="button"
                                     onClick={handleDeleteAllNotifications}
                                     disabled={notifTotal === 0 || notifLoading}
-                                    className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--error-border)]/80 bg-[var(--error-bg)] px-3 text-xs font-semibold text-[var(--error)] shadow-xs transition hover:bg-[var(--error-border)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="inline-flex h-8.5 sm:h-9 items-center gap-1.5 rounded-xl border border-[var(--error-border)]/80 bg-[var(--error-bg)] px-2.5 sm:px-3 text-[11px] sm:text-xs font-semibold text-[var(--error)] shadow-xs transition hover:bg-[var(--error-border)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
                                     title="Delete all notification records"
                                 >
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -2966,9 +3163,207 @@ export default function AdminPage() {
                             </div>
                         </div>
 
-                        {/* Notifications Logs Table */}
+                        {/* Notifications Logs Container (Mobile Cards + Desktop Table) */}
                         <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-sm">
-                            <div className="overflow-x-auto">
+                            {/* Mobile Card List (Visible on < md) */}
+                            <div className="block md:hidden">
+                                {notifLoading && !notificationLogs.length ? (
+                                    <div className="py-12 text-center text-xs text-[var(--text-muted)]">
+                                        <div className="flex flex-col items-center justify-center gap-2">
+                                            <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-[var(--nepal-blue)]/30 border-t-[var(--nepal-blue)]" />
+                                            <span>Loading email notifications...</span>
+                                        </div>
+                                    </div>
+                                ) : notificationLogs.length === 0 ? (
+                                    <div className="py-12 px-4 text-center text-xs text-[var(--text-muted)]">
+                                        <div className="flex flex-col items-center justify-center gap-2">
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-muted)]">
+                                                <rect x="2" y="4" width="20" height="16" rx="2" />
+                                                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                                            </svg>
+                                            <span className="font-semibold text-[var(--text-secondary)]">No notification subscriptions found.</span>
+                                            <p className="text-[11px]">When users subscribe for license print alerts, their requests and delivery logs will appear here.</p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        {/* Mobile Select-All Header if in select mode */}
+                                        {notifSelectMode && (
+                                            <div className="flex items-center justify-between border-b border-[var(--border-default)] bg-[var(--bg-secondary)]/70 px-3.5 py-2.5 text-xs">
+                                                <label className="flex items-center gap-2 font-semibold text-[var(--text-secondary)] cursor-pointer">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={notificationLogs.length > 0 && selectedNotifIds.length === notificationLogs.length}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setSelectedNotifIds(notificationLogs.map((l) => l.id))
+                                                            } else {
+                                                                setSelectedNotifIds([])
+                                                            }
+                                                        }}
+                                                        className="h-4 w-4 cursor-pointer rounded border-[var(--border-default)] accent-[var(--nepal-blue)]"
+                                                    />
+                                                    <span>Select All on this page ({notificationLogs.length})</span>
+                                                </label>
+                                                <span className="text-[11px] text-[var(--text-muted)] font-mono">
+                                                    {selectedNotifIds.length} selected
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        <div className="divide-y divide-[var(--border-default)]/60">
+                                            {notificationLogs.map((log, idx) => {
+                                                const isSelected = selectedNotifIds.includes(log.id)
+                                                const sn = (notifPage - 1) * notifLimit + idx + 1
+                                                return (
+                                                    <div
+                                                        key={log.id}
+                                                        className={`p-3.5 transition-colors ${isSelected ? 'bg-[var(--nepal-blue-soft)]/25' : 'hover:bg-[var(--bg-secondary)]/30'}`}
+                                                    >
+                                                        {/* Top Row: Select/SN + Status Badge + Time ago */}
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <div className="flex items-center gap-2 min-w-0">
+                                                                {notifSelectMode && (
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={isSelected}
+                                                                        onChange={(e) => {
+                                                                            if (e.target.checked) {
+                                                                                setSelectedNotifIds((prev) => [...prev, log.id])
+                                                                            } else {
+                                                                                setSelectedNotifIds((prev) => prev.filter((id) => id !== log.id))
+                                                                            }
+                                                                        }}
+                                                                        className="h-4 w-4 cursor-pointer rounded border-[var(--border-default)] accent-[var(--nepal-blue)]"
+                                                                    />
+                                                                )}
+                                                                <span className="rounded-md bg-[var(--bg-secondary)] px-1.5 py-0.5 font-mono text-[10px] font-bold text-[var(--text-muted)]">
+                                                                    #{sn}
+                                                                </span>
+                                                                {log.status === 'sent' ? (
+                                                                    <span className="inline-flex items-center gap-1 rounded-full border border-[var(--success-border)] bg-[var(--success-bg)] px-2 py-0.5 text-[10px] font-bold text-[var(--success)]">
+                                                                        <span>✓</span>
+                                                                        <span>Delivered</span>
+                                                                    </span>
+                                                                ) : log.status === 'cancelled' ? (
+                                                                    <span className="inline-flex items-center gap-1 rounded-full border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2 py-0.5 text-[10px] font-semibold text-[var(--text-muted)]">
+                                                                        <span>✕</span>
+                                                                        <span>Cancelled</span>
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                                                                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                                                        <span>In Queue</span>
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <span
+                                                                className="text-[11px] font-medium text-[var(--text-muted)] shrink-0"
+                                                                title={`${formatNepalDateTime(log.created_at, 'en', true)} (NPT, UTC+5:45)`}
+                                                            >
+                                                                {formatTimeAgo(log.created_at)}
+                                                            </span>
+                                                        </div>
+
+                                                        {/* Middle Row: License & Actions */}
+                                                        <div className="mt-2.5 flex items-start justify-between gap-2">
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="flex items-center gap-1.5 font-mono text-sm font-bold text-[var(--text-primary)]">
+                                                                    <span className="tracking-tight">{maskLicenseNumber(log.license_number, privacyMode)}</span>
+                                                                    {!privacyMode && (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => copyToClipboard(log.license_number, `notif-lic-${log.id}`)}
+                                                                            className="rounded p-1 text-[var(--text-muted)] hover:text-[var(--nepal-blue)]"
+                                                                            title="Copy license number"
+                                                                        >
+                                                                            {copiedKey === `notif-lic-${log.id}` ? (
+                                                                                <span className="text-[10px] font-bold text-[var(--success)]">✓</span>
+                                                                            ) : (
+                                                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                                                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                                                                </svg>
+                                                                            )}
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+
+                                                                {/* Email Address */}
+                                                                <div className="mt-1 flex items-center gap-1.5 font-mono text-xs text-[var(--text-primary)]">
+                                                                    <a
+                                                                        href={`mailto:${log.email}`}
+                                                                        className="truncate text-[var(--nepal-blue)] hover:underline"
+                                                                    >
+                                                                        {log.email}
+                                                                    </a>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => copyToClipboard(log.email, `notif-mail-${log.id}`)}
+                                                                        className="text-[var(--text-muted)] hover:text-[var(--nepal-blue)] shrink-0"
+                                                                        title="Copy email address"
+                                                                    >
+                                                                        {copiedKey === `notif-mail-${log.id}` ? (
+                                                                            <span className="text-[10px] font-bold text-[var(--success)]">✓</span>
+                                                                        ) : (
+                                                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                                                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                                                            </svg>
+                                                                        )}
+                                                                    </button>
+                                                                </div>
+
+                                                                {/* DOTM Match */}
+                                                                <div className="mt-1 text-xs text-[var(--text-secondary)]">
+                                                                    {log.holder_name ? (
+                                                                        <span>
+                                                                            <strong className="text-[var(--text-primary)]">{log.holder_name}</strong>
+                                                                            {log.office ? ` • ${log.office}` : ''}
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="text-[11px] text-[var(--text-muted)] italic">
+                                                                            Not in records yet
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Delete Single Action */}
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleDeleteNotification(log.id, log.license_number)}
+                                                                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[var(--border-default)] text-[var(--text-muted)] transition hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95"
+                                                                title="Delete notification record"
+                                                            >
+                                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                                    <polyline points="3 6 5 6 21 6" />
+                                                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                                                </svg>
+                                                            </button>
+                                                        </div>
+
+                                                        {/* Status Details Sub-row */}
+                                                        {(log.sent_at || log.cancelled_at) && (
+                                                            <div className="mt-2 border-t border-[var(--border-default)]/40 pt-1.5 text-[10px] text-[var(--text-muted)]">
+                                                                {log.status === 'sent' && log.sent_at && (
+                                                                    <span>Sent on: {formatNepalDateTime(log.sent_at)} ({formatTimeAgo(log.sent_at)})</span>
+                                                                )}
+                                                                {log.status === 'cancelled' && log.cancelled_at && (
+                                                                    <span>Cancelled on: {formatNepalDateTime(log.cancelled_at)} ({formatTimeAgo(log.cancelled_at)})</span>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Desktop Table View (Hidden on < md, visible on md+) */}
+                            <div className="hidden md:block overflow-x-auto">
                                 <table className="w-full text-left text-xs">
                                     <thead className="border-b border-[var(--border-default)] bg-[var(--bg-secondary)]/50 text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
                                         <tr>
@@ -3098,6 +3493,7 @@ export default function AdminPage() {
                                                                     onClick={() => copyToClipboard(log.email, `notif-mail-${log.id}`)}
                                                                     className="text-[var(--text-muted)] opacity-0 transition group-hover:opacity-100 hover:text-[var(--nepal-blue)]"
                                                                     title="Copy email address"
+                                                                    aria-label="Copy email address"
                                                                 >
                                                                     {copiedKey === `notif-mail-${log.id}` ? (
                                                                         <span className="text-[10px] font-bold text-[var(--success)]">✓</span>
@@ -3193,8 +3589,8 @@ export default function AdminPage() {
                             </div>
 
                             {/* Notification Pagination Bar */}
-                            <div className="flex flex-col items-center justify-between gap-3 border-t border-[var(--border-default)] px-4 py-3 sm:flex-row">
-                                <div className="text-xs text-[var(--text-muted)]">
+                            <div className="flex flex-col items-center justify-between gap-3 border-t border-[var(--border-default)] px-3.5 py-3 sm:flex-row sm:px-4">
+                                <div className="text-xs text-[var(--text-muted)] text-center sm:text-left">
                                     Showing <span className="font-bold text-[var(--text-primary)]">{notificationLogs.length ? (notifPage - 1) * notifLimit + 1 : 0}</span> to{' '}
                                     <span className="font-bold text-[var(--text-primary)]">{Math.min(notifPage * notifLimit, notifTotal)}</span> of{' '}
                                     <span className="font-bold text-[var(--text-primary)]">{notifTotal.toLocaleString()}</span> subscriptions
@@ -3205,7 +3601,7 @@ export default function AdminPage() {
                                         type="button"
                                         disabled={notifPage <= 1 || notifLoading}
                                         onClick={() => setNotifPage(notifPage - 1)}
-                                        className="inline-flex h-8 items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] shadow-xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-40"
+                                        className="inline-flex h-8 sm:h-8.5 items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] shadow-xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-40"
                                     >
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                             <polyline points="15 18 9 12 15 6" />
@@ -3219,7 +3615,7 @@ export default function AdminPage() {
                                         type="button"
                                         disabled={notifPage >= notifTotalPages || notifLoading}
                                         onClick={() => setNotifPage(notifPage + 1)}
-                                        className="inline-flex h-8 items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] shadow-xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-40"
+                                        className="inline-flex h-8 sm:h-8.5 items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] shadow-xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-40"
                                     >
                                         <span>Next</span>
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -3233,64 +3629,64 @@ export default function AdminPage() {
                 ) : (
                     <>
                         {/* User Feedback & Support KPI Metrics */}
-                        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+                        <div className="mt-4 sm:mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-4">
                             {/* Total Inquiries */}
-                            <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-sm">
+                            <div className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 sm:p-4 sm:rounded-2xl shadow-sm">
                                 <div className="flex items-center justify-between text-[var(--text-muted)]">
-                                    <span className="text-xs font-bold uppercase tracking-wider">Total Inquiries</span>
+                                    <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Total Inquiries</span>
                                     <span className="rounded-lg bg-[var(--nepal-blue-soft)] p-1.5 text-[var(--nepal-blue)]">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                                         </svg>
                                     </span>
                                 </div>
-                                <p className="mt-2 text-2xl font-black tracking-tight text-[var(--text-primary)]">
+                                <p className="mt-1.5 sm:mt-2 text-xl sm:text-2xl font-black tracking-tight text-[var(--text-primary)]">
                                     {(feedbackStats?.total ?? feedbackTotal ?? 0).toLocaleString()}
                                 </p>
-                                <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">User messages submitted</p>
+                                <p className="mt-0.5 text-[10px] sm:text-[11px] text-[var(--text-muted)]">User messages submitted</p>
                             </div>
 
                             {/* New / Action Required */}
-                            <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-sm">
+                            <div className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 sm:p-4 sm:rounded-2xl shadow-sm">
                                 <div className="flex items-center justify-between text-[var(--text-muted)]">
-                                    <span className="text-xs font-bold uppercase tracking-wider">New / Unread</span>
+                                    <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">New / Unread</span>
                                     <span className="rounded-lg bg-amber-500/10 p-1.5 text-amber-600 dark:text-amber-400">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                             <circle cx="12" cy="12" r="10" />
                                             <line x1="12" y1="8" x2="12" y2="12" />
                                             <line x1="12" y1="16" x2="12.01" y2="16" />
                                         </svg>
                                     </span>
                                 </div>
-                                <p className="mt-2 text-2xl font-black tracking-tight text-amber-600 dark:text-amber-400">
+                                <p className="mt-1.5 sm:mt-2 text-xl sm:text-2xl font-black tracking-tight text-amber-600 dark:text-amber-400">
                                     {(feedbackStats?.newCount ?? 0).toLocaleString()}
                                 </p>
-                                <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">Awaiting administrator review</p>
+                                <p className="mt-0.5 text-[10px] sm:text-[11px] text-[var(--text-muted)]">Awaiting admin review</p>
                             </div>
 
                             {/* Resolved */}
-                            <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-sm">
+                            <div className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 sm:p-4 sm:rounded-2xl shadow-sm">
                                 <div className="flex items-center justify-between text-[var(--text-muted)]">
-                                    <span className="text-xs font-bold uppercase tracking-wider">Resolved</span>
+                                    <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Resolved</span>
                                     <span className="rounded-lg bg-[var(--success-bg)] p-1.5 text-[var(--success)]">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                                             <polyline points="22 4 12 14.01 9 11.01" />
                                         </svg>
                                     </span>
                                 </div>
-                                <p className="mt-2 text-2xl font-black tracking-tight text-[var(--success)]">
+                                <p className="mt-1.5 sm:mt-2 text-xl sm:text-2xl font-black tracking-tight text-[var(--success)]">
                                     {(feedbackStats?.resolvedCount ?? 0).toLocaleString()}
                                 </p>
-                                <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">Handled or answered inquiries</p>
+                                <p className="mt-0.5 text-[10px] sm:text-[11px] text-[var(--text-muted)]">Handled inquiries</p>
                             </div>
 
                             {/* Today's Inquiries */}
-                            <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-sm">
+                            <div className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 sm:p-4 sm:rounded-2xl shadow-sm">
                                 <div className="flex items-center justify-between text-[var(--text-muted)]">
-                                    <span className="text-xs font-bold uppercase tracking-wider">Today</span>
+                                    <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Today</span>
                                     <span className="rounded-lg bg-[var(--info-bg)] p-1.5 text-[var(--info-text)]">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                             <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                                             <line x1="16" y1="2" x2="16" y2="6" />
                                             <line x1="8" y1="2" x2="8" y2="6" />
@@ -3298,15 +3694,15 @@ export default function AdminPage() {
                                         </svg>
                                     </span>
                                 </div>
-                                <p className="mt-2 text-2xl font-black tracking-tight text-[var(--text-primary)]">
+                                <p className="mt-1.5 sm:mt-2 text-xl sm:text-2xl font-black tracking-tight text-[var(--text-primary)]">
                                     {(feedbackStats?.todayCount ?? 0).toLocaleString()}
                                 </p>
-                                <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">Submitted today</p>
+                                <p className="mt-0.5 text-[10px] sm:text-[11px] text-[var(--text-muted)]">Submitted today</p>
                             </div>
                         </div>
 
                         {/* Feedback Search & Filter Toolbar */}
-                        <div className="mt-5 flex flex-col gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4 shadow-sm">
+                        <div className="mt-4 sm:mt-5 flex flex-col gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4 shadow-sm">
                             <div className="relative flex-1">
                                 <svg
                                     width="16"
@@ -3330,7 +3726,7 @@ export default function AdminPage() {
                                         startTransition(() => setFeedbackPage(1))
                                     }}
                                     placeholder="Filter by name, email, license number, subject, or message..."
-                                    className="h-10 w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] pl-9 pr-9 text-xs text-[var(--text-primary)] transition focus:border-[var(--nepal-blue)] focus:bg-[var(--surface-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--nepal-blue)]/20 sm:text-sm"
+                                    className="h-9 sm:h-10 w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] pl-9 pr-9 text-xs text-[var(--text-primary)] transition focus:border-[var(--nepal-blue)] focus:bg-[var(--surface-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--nepal-blue)]/20 sm:text-sm"
                                 />
                                 {feedbackSearchFilter && (
                                     <button
@@ -3357,7 +3753,7 @@ export default function AdminPage() {
                                         setFeedbackCategoryFilter(e.target.value)
                                         setFeedbackPage(1)
                                     }}
-                                    className="h-10 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3 text-xs font-semibold text-[var(--text-primary)] transition focus:border-[var(--nepal-blue)] focus:outline-none"
+                                    className="h-8.5 sm:h-9 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2 sm:px-2.5 text-[11px] sm:text-xs font-semibold text-[var(--text-primary)] transition focus:border-[var(--nepal-blue)] focus:outline-none"
                                 >
                                     <option value="all">All Categories</option>
                                     <option value="license_not_found">License Not Found</option>
@@ -3378,9 +3774,9 @@ export default function AdminPage() {
                                                 setFeedbackStatusFilter(st)
                                                 setFeedbackPage(1)
                                             }}
-                                            className={`rounded-lg px-2.5 py-1 capitalize transition ${
+                                            className={`rounded-lg px-2 py-1 text-[11px] sm:px-2.5 sm:text-xs capitalize transition ${
                                                 feedbackStatusFilter === st
-                                                    ? 'bg-[var(--surface-primary)] text-[var(--nepal-blue)] shadow-xs'
+                                                    ? 'bg-[var(--surface-primary)] text-[var(--nepal-blue)] shadow-xs font-bold'
                                                     : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
                                             }`}
                                         >
@@ -3396,11 +3792,11 @@ export default function AdminPage() {
                                         setFeedbackLimit(Number(e.target.value))
                                         setFeedbackPage(1)
                                     }}
-                                    className="h-9 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] transition focus:border-[var(--nepal-blue)] focus:outline-none"
+                                    className="h-8.5 sm:h-9 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2 sm:px-2.5 text-[11px] sm:text-xs font-semibold text-[var(--text-secondary)] transition focus:border-[var(--nepal-blue)] focus:outline-none"
                                 >
-                                    <option value="25">25 / page</option>
-                                    <option value="50">50 / page</option>
-                                    <option value="100">100 / page</option>
+                                    <option value="25">25 rows</option>
+                                    <option value="50">50 rows</option>
+                                    <option value="100">100 rows</option>
                                 </select>
 
                                 {/* Toggle Multi-Select Mode Button */}
@@ -3415,7 +3811,7 @@ export default function AdminPage() {
                                             setFeedbackSelectMode(true)
                                         }
                                     }}
-                                    className={`inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold shadow-xs transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${
+                                    className={`inline-flex h-8.5 sm:h-9 items-center gap-1.5 rounded-xl border px-2.5 sm:px-3 text-[11px] sm:text-xs font-semibold shadow-xs transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${
                                         feedbackSelectMode
                                             ? 'border-[var(--nepal-blue)] bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)] font-bold'
                                             : 'border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)]'
@@ -3435,7 +3831,7 @@ export default function AdminPage() {
                                         type="button"
                                         onClick={() => handleBulkFeedbackStatus('resolved')}
                                         disabled={feedbackLoading}
-                                        className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--success-border)] bg-[var(--success)] px-3 text-xs font-bold text-white shadow-xs transition hover:opacity-90 active:scale-95 disabled:opacity-50"
+                                        className="inline-flex h-8.5 sm:h-9 items-center gap-1.5 rounded-xl border border-[var(--success-border)] bg-[var(--success)] px-2.5 sm:px-3 text-[11px] sm:text-xs font-bold text-white shadow-xs transition hover:opacity-90 active:scale-95 disabled:opacity-50"
                                         title="Mark selected feedback as resolved"
                                     >
                                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -3451,7 +3847,7 @@ export default function AdminPage() {
                                         type="button"
                                         onClick={handleDeleteSelectedFeedback}
                                         disabled={feedbackLoading}
-                                        className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--error-border)] bg-[var(--error)] px-3 text-xs font-bold text-white shadow-xs transition hover:opacity-90 active:scale-95 disabled:opacity-50"
+                                        className="inline-flex h-8.5 sm:h-9 items-center gap-1.5 rounded-xl border border-[var(--error-border)] bg-[var(--error)] px-2.5 sm:px-3 text-[11px] sm:text-xs font-bold text-white shadow-xs transition hover:opacity-90 active:scale-95 disabled:opacity-50"
                                         title="Delete selected feedback entries"
                                     >
                                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -3467,7 +3863,7 @@ export default function AdminPage() {
                                     type="button"
                                     onClick={handleDeleteResolvedFeedback}
                                     disabled={(feedbackStats?.resolvedCount ?? 0) === 0 || feedbackLoading}
-                                    className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] transition hover:border-[var(--error-border)] hover:text-[var(--error)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="inline-flex h-8.5 sm:h-9 items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2.5 text-[11px] sm:text-xs font-semibold text-[var(--text-secondary)] transition hover:border-[var(--error-border)] hover:text-[var(--error)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
                                     title="Delete all resolved feedback inquiries"
                                 >
                                     <span>Delete Resolved ({feedbackStats?.resolvedCount ?? 0})</span>
@@ -3478,7 +3874,7 @@ export default function AdminPage() {
                                     type="button"
                                     onClick={handleDeleteAllFeedback}
                                     disabled={feedbackTotal === 0 || feedbackLoading}
-                                    className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--error-border)]/80 bg-[var(--error-bg)] px-3 text-xs font-semibold text-[var(--error)] shadow-xs transition hover:bg-[var(--error-border)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="inline-flex h-8.5 sm:h-9 items-center gap-1.5 rounded-xl border border-[var(--error-border)]/80 bg-[var(--error-bg)] px-2.5 sm:px-3 text-[11px] sm:text-xs font-semibold text-[var(--error)] shadow-xs transition hover:bg-[var(--error-border)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
                                     title="Delete all feedback records"
                                 >
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -3490,9 +3886,218 @@ export default function AdminPage() {
                             </div>
                         </div>
 
-                        {/* Feedback Table */}
+                        {/* Feedback Container (Mobile Cards + Desktop Table) */}
                         <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-sm">
-                            <div className="overflow-x-auto">
+                            {/* Mobile Card List (Visible on < md) */}
+                            <div className="block md:hidden">
+                                {feedbackLoading ? (
+                                    <div className="py-12 text-center text-xs text-[var(--text-muted)]">
+                                        <div className="flex items-center justify-center gap-2">
+                                            <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-[var(--nepal-blue)]/30 border-t-[var(--nepal-blue)]" />
+                                            <span>Loading feedback records...</span>
+                                        </div>
+                                    </div>
+                                ) : feedbackLogs.length === 0 ? (
+                                    <div className="py-12 px-4 text-center text-xs text-[var(--text-muted)]">
+                                        <div className="flex flex-col items-center justify-center gap-2.5">
+                                            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--nepal-blue-soft)] text-xl text-[var(--nepal-blue)]">
+                                                💬
+                                            </div>
+                                            <span className="text-sm font-bold text-[var(--text-primary)]">
+                                                There is no data in feedback form
+                                            </span>
+                                            <p className="max-w-md text-[11px] text-[var(--text-muted)]">
+                                                {feedbackSearchFilter || feedbackStatusFilter !== 'all' || feedbackCategoryFilter !== 'all'
+                                                    ? 'No inquiries match your current search or filter criteria.'
+                                                    : 'User submitted inquiries and suggestions will appear here once visitors submit feedback through the website.'}
+                                            </p>
+                                            {(feedbackSearchFilter || feedbackStatusFilter !== 'all' || feedbackCategoryFilter !== 'all') && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setFeedbackSearchFilter('')
+                                                        setFeedbackStatusFilter('all')
+                                                        setFeedbackCategoryFilter('all')
+                                                        setFeedbackPage(1)
+                                                    }}
+                                                    className="mt-1 inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3 py-1.5 text-xs font-semibold text-[var(--nepal-blue)] transition hover:border-[var(--nepal-blue)] hover:bg-[var(--surface-primary)]"
+                                                >
+                                                    Clear filters
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        {/* Mobile Select-All Header if in select mode */}
+                                        {feedbackSelectMode && (
+                                            <div className="flex items-center justify-between border-b border-[var(--border-default)] bg-[var(--bg-secondary)]/70 px-3.5 py-2.5 text-xs">
+                                                <label className="flex items-center gap-2 font-semibold text-[var(--text-secondary)] cursor-pointer">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={feedbackLogs.length > 0 && selectedFeedbackIds.length === feedbackLogs.length}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setSelectedFeedbackIds(feedbackLogs.map((l) => l.id))
+                                                            } else {
+                                                                setSelectedFeedbackIds([])
+                                                            }
+                                                        }}
+                                                        className="h-4 w-4 cursor-pointer rounded border-[var(--border-default)] accent-[var(--nepal-blue)]"
+                                                    />
+                                                    <span>Select All on this page ({feedbackLogs.length})</span>
+                                                </label>
+                                                <span className="text-[11px] text-[var(--text-muted)] font-mono">
+                                                    {selectedFeedbackIds.length} selected
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        <div className="divide-y divide-[var(--border-default)]/60">
+                                            {feedbackLogs.map((item, idx) => {
+                                                const catInfo = (() => {
+                                                    switch (item.category) {
+                                                        case 'license_not_found':
+                                                            return { label: 'License Not Found', cls: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20' }
+                                                        case 'notification_issue':
+                                                            return { label: 'Email Alerts', cls: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20' }
+                                                        case 'incorrect_data':
+                                                            return { label: 'Incorrect Data', cls: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' }
+                                                        case 'dotm_collection':
+                                                            return { label: 'DoTM Collection', cls: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20' }
+                                                        case 'suggestion':
+                                                            return { label: 'Suggestion', cls: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' }
+                                                        default:
+                                                            return { label: 'Other', cls: 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20' }
+                                                    }
+                                                })()
+                                                const isSelected = selectedFeedbackIds.includes(item.id)
+                                                const sn = (feedbackPage - 1) * feedbackLimit + idx + 1
+
+                                                return (
+                                                    <div
+                                                        key={item.id}
+                                                        className={`p-3.5 transition-colors ${isSelected ? 'bg-[var(--nepal-blue-soft)]/25' : 'hover:bg-[var(--bg-secondary)]/30'}`}
+                                                    >
+                                                        {/* Top Row: Select/SN + Status + Category + Time */}
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                                                                {feedbackSelectMode && (
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={isSelected}
+                                                                        onChange={(e) => {
+                                                                            if (e.target.checked) {
+                                                                                setSelectedFeedbackIds((prev) => [...prev, item.id])
+                                                                            } else {
+                                                                                setSelectedFeedbackIds((prev) => prev.filter((id) => id !== item.id))
+                                                                            }
+                                                                        }}
+                                                                        className="h-4 w-4 cursor-pointer rounded border-[var(--border-default)] accent-[var(--nepal-blue)]"
+                                                                    />
+                                                                )}
+                                                                <span className="rounded-md bg-[var(--bg-secondary)] px-1.5 py-0.5 font-mono text-[10px] font-bold text-[var(--text-muted)]">
+                                                                    #{sn}
+                                                                </span>
+                                                                {item.status === 'new' ? (
+                                                                    <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                                                                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                                                        <span>New</span>
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="inline-flex items-center gap-1 rounded-full border border-[var(--success)]/30 bg-[var(--success-bg)] px-2 py-0.5 text-[10px] font-bold text-[var(--success)]">
+                                                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                                            <polyline points="20 6 9 17 4 12" />
+                                                                        </svg>
+                                                                        <span>Resolved</span>
+                                                                    </span>
+                                                                )}
+                                                                <span className={`inline-flex items-center rounded-md border px-1.5 py-0.2 text-[9px] font-bold ${catInfo.cls}`}>
+                                                                    {catInfo.label}
+                                                                </span>
+                                                            </div>
+                                                            <span
+                                                                className="text-[11px] font-medium text-[var(--text-muted)] shrink-0"
+                                                                title={`${formatNepalDateTime(item.created_at, 'en', true)} (NPT, UTC+5:45)`}
+                                                            >
+                                                                {formatTimeAgo(item.created_at)}
+                                                            </span>
+                                                        </div>
+
+                                                        {/* Subject */}
+                                                        <h4 className="mt-2 text-sm font-bold text-[var(--text-primary)]">
+                                                            {item.subject}
+                                                        </h4>
+
+                                                        {/* Submitter & License Row */}
+                                                        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                                                            <span className="font-semibold text-[var(--text-primary)]">{item.name}</span>
+                                                            <a
+                                                                href={`mailto:${item.email}?subject=${encodeURIComponent(`Re: [Support] ${item.subject}`)}`}
+                                                                className="font-mono text-[11px] text-[var(--nepal-blue)] hover:underline"
+                                                            >
+                                                                {item.email}
+                                                            </a>
+                                                            {item.license_number && (
+                                                                <span className="font-mono text-[10px] font-bold text-[var(--text-secondary)] bg-[var(--bg-secondary)] px-1.5 py-0.5 rounded border border-[var(--border-default)]">
+                                                                    Lic: {maskLicenseNumber(item.license_number, privacyMode)}
+                                                                </span>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Message preview snippet */}
+                                                        <p className="mt-1.5 line-clamp-2 text-xs text-[var(--text-secondary)] leading-relaxed">
+                                                            {item.message}
+                                                        </p>
+
+                                                        {/* Card Footer: View Full Message + Action Buttons */}
+                                                        <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-[var(--border-default)]/40 pt-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setSelectedFeedbackMessage(item)}
+                                                                className="text-xs font-bold text-[var(--nepal-blue)] hover:underline"
+                                                            >
+                                                                View Full Message →
+                                                            </button>
+
+                                                            <div className="flex items-center gap-1.5">
+                                                                {/* Status toggle button */}
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleToggleFeedbackStatus(item.id, item.status)}
+                                                                    className={`inline-flex h-7.5 items-center gap-1 rounded-lg border px-2 text-[11px] font-bold transition ${
+                                                                        item.status === 'new'
+                                                                            ? 'border-[var(--success)]/40 bg-[var(--success-bg)] text-[var(--success)]'
+                                                                            : 'border-amber-500/30 bg-amber-500/10 text-amber-600'
+                                                                    }`}
+                                                                >
+                                                                    {item.status === 'new' ? 'Mark Resolved' : 'Re-open'}
+                                                                </button>
+
+                                                                {/* Delete single button */}
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleDeleteFeedback(item.id, item.subject)}
+                                                                    className="inline-flex h-7.5 w-7.5 items-center justify-center rounded-lg border border-[var(--border-default)] text-[var(--text-muted)] transition hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95"
+                                                                    title="Delete feedback entry"
+                                                                >
+                                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                                        <polyline points="3 6 5 6 21 6" />
+                                                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                                                    </svg>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Desktop Spreadsheet Table (Hidden on < md, visible on md+) */}
+                            <div className="hidden md:block overflow-x-auto">
                                 <table className="w-full text-left text-xs">
                                     <thead className="border-b border-[var(--border-default)] bg-[var(--bg-secondary)] text-[10px] font-black uppercase tracking-wider text-[var(--text-muted)]">
                                         <tr>
@@ -3776,8 +4381,8 @@ export default function AdminPage() {
                             </div>
 
                             {/* Feedback Pagination Bar */}
-                            <div className="flex flex-col items-center justify-between gap-3 border-t border-[var(--border-default)] px-4 py-3 sm:flex-row">
-                                <div className="text-xs text-[var(--text-muted)]">
+                            <div className="flex flex-col items-center justify-between gap-3 border-t border-[var(--border-default)] px-3.5 py-3 sm:flex-row sm:px-4">
+                                <div className="text-xs text-[var(--text-muted)] text-center sm:text-left">
                                     Showing <span className="font-bold text-[var(--text-primary)]">{feedbackLogs.length ? (feedbackPage - 1) * feedbackLimit + 1 : 0}</span> to{' '}
                                     <span className="font-bold text-[var(--text-primary)]">{Math.min(feedbackPage * feedbackLimit, feedbackTotal)}</span> of{' '}
                                     <span className="font-bold text-[var(--text-primary)]">{feedbackTotal.toLocaleString()}</span> inquiries
@@ -3788,7 +4393,7 @@ export default function AdminPage() {
                                         type="button"
                                         disabled={feedbackPage <= 1 || feedbackLoading}
                                         onClick={() => setFeedbackPage(feedbackPage - 1)}
-                                        className="inline-flex h-8 items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] shadow-xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-40"
+                                        className="inline-flex h-8 sm:h-8.5 items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] shadow-xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-40"
                                     >
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                             <polyline points="15 18 9 12 15 6" />
@@ -3802,7 +4407,7 @@ export default function AdminPage() {
                                         type="button"
                                         disabled={feedbackPage >= feedbackTotalPages || feedbackLoading}
                                         onClick={() => setFeedbackPage(feedbackPage + 1)}
-                                        className="inline-flex h-8 items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] shadow-xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-40"
+                                        className="inline-flex h-8 sm:h-8.5 items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] shadow-xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-40"
                                     >
                                         <span>Next</span>
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -3818,17 +4423,17 @@ export default function AdminPage() {
                 {/* Detail Message Modal */}
                 {selectedFeedbackMessage && (
                     <div
-                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in duration-150"
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-4 backdrop-blur-xs animate-in fade-in duration-150"
                         onClick={() => setSelectedFeedbackMessage(null)}
                     >
                         <div
-                            className="relative w-full max-w-xl rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 shadow-2xl animate-in zoom-in-95 duration-150"
+                            className="relative w-full max-w-xl rounded-2xl sm:rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-6 shadow-2xl animate-in zoom-in-95 duration-150 max-h-[92vh] overflow-y-auto"
                             onClick={(e) => e.stopPropagation()}
                         >
                             {/* Modal Header */}
-                            <div className="flex items-start justify-between gap-3 border-b border-[var(--border-default)] pb-4">
+                            <div className="flex items-start justify-between gap-3 border-b border-[var(--border-default)] pb-3 sm:pb-4">
                                 <div>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                                         <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-bold ${
                                             selectedFeedbackMessage.status === 'new'
                                                 ? 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400'
@@ -3836,11 +4441,11 @@ export default function AdminPage() {
                                         }`}>
                                             {selectedFeedbackMessage.status === 'new' ? '● New Inquiry' : '✓ Resolved'}
                                         </span>
-                                        <span className="text-xs text-[var(--text-muted)] font-mono" title={`${formatNepalDateTime(selectedFeedbackMessage.created_at, 'en', true)} (NPT, UTC+5:45)`}>
+                                        <span className="text-[11px] sm:text-xs text-[var(--text-muted)] font-mono" title={`${formatNepalDateTime(selectedFeedbackMessage.created_at, 'en', true)} (NPT, UTC+5:45)`}>
                                             {formatNepalDateTime(selectedFeedbackMessage.created_at, 'en', true)} (NPT) • {formatTimeAgo(selectedFeedbackMessage.created_at)}
                                         </span>
                                     </div>
-                                    <h3 className="mt-1.5 text-base font-black text-[var(--text-primary)]">
+                                    <h3 className="mt-1.5 text-sm sm:text-base font-black text-[var(--text-primary)]">
                                         {selectedFeedbackMessage.subject}
                                     </h3>
                                 </div>
@@ -3848,7 +4453,8 @@ export default function AdminPage() {
                                 <button
                                     type="button"
                                     onClick={() => setSelectedFeedbackMessage(null)}
-                                    className="rounded-full border border-[var(--border-default)] p-1.5 text-[var(--text-muted)] hover:border-[var(--nepal-blue)] hover:text-[var(--text-primary)]"
+                                    className="rounded-full border border-[var(--border-default)] p-1.5 text-[var(--text-muted)] hover:border-[var(--nepal-blue)] hover:text-[var(--text-primary)] shrink-0"
+                                    aria-label="Close modal"
                                 >
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                         <line x1="18" y1="6" x2="6" y2="18" />
@@ -3858,7 +4464,7 @@ export default function AdminPage() {
                             </div>
 
                             {/* Submitter & License Info */}
-                            <div className="mt-4 grid grid-cols-2 gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-3 text-xs">
+                            <div className="mt-3.5 sm:mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 rounded-xl sm:rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-3 text-xs">
                                 <div>
                                     <span className="text-[10px] font-bold uppercase text-[var(--text-muted)]">Submitter Name</span>
                                     <p className="font-bold text-[var(--text-primary)]">{selectedFeedbackMessage.name}</p>
@@ -3868,7 +4474,7 @@ export default function AdminPage() {
                                     <p>
                                         <a
                                             href={`mailto:${selectedFeedbackMessage.email}?subject=${encodeURIComponent(`Re: [Support] ${selectedFeedbackMessage.subject}`)}`}
-                                            className="font-mono font-semibold text-[var(--nepal-blue)] hover:underline"
+                                            className="font-mono font-semibold text-[var(--nepal-blue)] hover:underline break-all"
                                         >
                                             {selectedFeedbackMessage.email}
                                         </a>
@@ -3894,21 +4500,21 @@ export default function AdminPage() {
                             </div>
 
                             {/* Message Body */}
-                            <div className="mt-4">
+                            <div className="mt-3.5 sm:mt-4">
                                 <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
                                     User Message:
                                 </span>
-                                <div className="mt-1.5 max-h-60 overflow-y-auto whitespace-pre-wrap rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-4 font-sans text-xs leading-relaxed text-[var(--text-primary)] select-text">
+                                <div className="mt-1.5 max-h-52 sm:max-h-60 overflow-y-auto whitespace-pre-wrap rounded-xl sm:rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-3 sm:p-4 font-sans text-xs leading-relaxed text-[var(--text-primary)] select-text">
                                     {selectedFeedbackMessage.message}
                                 </div>
                             </div>
 
                             {/* Modal Footer */}
-                            <div className="mt-5 flex items-center justify-between border-t border-[var(--border-default)] pt-4">
+                            <div className="mt-4 sm:mt-5 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 border-t border-[var(--border-default)] pt-3.5 sm:pt-4">
                                 <button
                                     type="button"
                                     onClick={() => handleToggleFeedbackStatus(selectedFeedbackMessage.id, selectedFeedbackMessage.status)}
-                                    className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition ${
+                                    className={`inline-flex items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition ${
                                         selectedFeedbackMessage.status === 'new'
                                             ? 'bg-[var(--success)] text-white hover:bg-emerald-600'
                                             : 'border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-primary)] hover:border-amber-500 hover:text-amber-600'
@@ -3932,10 +4538,10 @@ export default function AdminPage() {
                                     )}
                                 </button>
 
-                                <div className="flex items-center gap-2">
+                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                                     <a
                                         href={`mailto:${selectedFeedbackMessage.email}?subject=${encodeURIComponent(`Re: [Support] ${selectedFeedbackMessage.subject}`)}`}
-                                        className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--nepal-blue)] px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-[var(--nepal-blue-mid)]"
+                                        className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--nepal-blue)] px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-[var(--nepal-blue-mid)]"
                                     >
                                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                             <rect x="2" y="4" width="20" height="16" rx="2" />
@@ -3947,7 +4553,7 @@ export default function AdminPage() {
                                     <button
                                         type="button"
                                         onClick={() => setSelectedFeedbackMessage(null)}
-                                        className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                                        className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-center"
                                     >
                                         Close
                                     </button>
@@ -3960,28 +4566,28 @@ export default function AdminPage() {
                 {/* Passkeys & Biometric Security Modal */}
                 {passkeyModalOpen && (
                     <div
-                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs animate-in fade-in duration-200"
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3 sm:p-4 backdrop-blur-xs animate-in fade-in duration-200"
                         onClick={() => setPasskeyModalOpen(false)}
                     >
                         <div
-                            className="relative w-full max-w-lg rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto"
+                            className="relative w-full max-w-lg rounded-2xl sm:rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-6 shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto"
                             onClick={(e) => e.stopPropagation()}
                         >
                             {/* Modal Header */}
-                            <div className="flex items-start justify-between gap-3 border-b border-[var(--border-default)] pb-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--nepal-blue)]/30 bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)]">
-                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <div className="flex items-start justify-between gap-3 border-b border-[var(--border-default)] pb-3 sm:pb-4">
+                                <div className="flex items-center gap-2.5 sm:gap-3">
+                                    <div className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl border border-[var(--nepal-blue)]/30 bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)]">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                             <circle cx="12" cy="12" r="3" />
                                             <path d="M19.07 4.93a10 10 0 0 0-14.14 0M4.93 19.07a10 10 0 0 0 14.14 0" />
                                             <path d="M15.54 8.46a5 5 0 0 0-7.08 0M8.46 15.54a5 5 0 0 0 7.08 0" />
                                         </svg>
                                     </div>
                                     <div>
-                                        <h3 className="text-base font-black text-[var(--text-primary)]">
+                                        <h3 className="text-sm sm:text-base font-black text-[var(--text-primary)]">
                                             Passkeys & Biometric Access
                                         </h3>
-                                        <p className="mt-0.5 text-xs text-[var(--text-secondary)]">
+                                        <p className="mt-0.5 text-[11px] sm:text-xs text-[var(--text-secondary)]">
                                             Sign in with 1-click using Windows Hello, Touch ID, Face ID, or YubiKey.
                                         </p>
                                     </div>
@@ -3990,7 +4596,7 @@ export default function AdminPage() {
                                 <button
                                     type="button"
                                     onClick={() => setPasskeyModalOpen(false)}
-                                    className="rounded-full border border-[var(--border-default)] p-1.5 text-[var(--text-muted)] hover:border-[var(--nepal-blue)] hover:text-[var(--text-primary)]"
+                                    className="rounded-full border border-[var(--border-default)] p-1.5 text-[var(--text-muted)] hover:border-[var(--nepal-blue)] hover:text-[var(--text-primary)] shrink-0"
                                     aria-label="Close"
                                 >
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -4001,7 +4607,7 @@ export default function AdminPage() {
                             </div>
 
                             {/* Section 1: Register New Passkey */}
-                            <div className="mt-5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-4">
+                            <div className="mt-4 sm:mt-5 rounded-xl sm:rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-3 sm:p-4">
                                 <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-primary)]">
                                     Register This Device
                                 </h4>
@@ -4009,22 +4615,22 @@ export default function AdminPage() {
                                     Add your current device or security key to sign in without entering your password.
                                 </p>
 
-                                <form onSubmit={handleRegisterPasskey} className="mt-3.5 flex flex-col gap-2.5 sm:flex-row">
+                                <form onSubmit={handleRegisterPasskey} className="mt-3 sm:mt-3.5 flex flex-col gap-2 sm:flex-row">
                                     <input
                                         type="text"
                                         value={newPasskeyName}
                                         onChange={(e) => setNewPasskeyName(e.target.value)}
                                         placeholder="Device name (e.g. My Laptop, iPhone, YubiKey)"
                                         maxLength={50}
-                                        className="h-10 flex-1 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 text-xs text-[var(--text-primary)] transition focus:border-[var(--nepal-blue)] focus:outline-none"
+                                        className="h-9 sm:h-10 flex-1 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 text-xs text-[var(--text-primary)] transition focus:border-[var(--nepal-blue)] focus:outline-none"
                                     />
                                     <button
                                         type="submit"
                                         disabled={registeringPasskey}
-                                        className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-[var(--nepal-blue)] px-4 text-xs font-bold text-white shadow-xs transition hover:bg-[var(--nepal-blue-mid)] active:scale-95 disabled:opacity-50"
+                                        className="inline-flex h-9 sm:h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-[var(--nepal-blue)] px-4 text-xs font-bold text-white shadow-xs transition hover:bg-[var(--nepal-blue-mid)] active:scale-95 disabled:opacity-50"
                                     >
                                         {registeringPasskey ? (
-                                            <>
+                                             <>
                                                 <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                                                 <span>Touch Sensor / Key...</span>
                                             </>
@@ -4042,8 +4648,8 @@ export default function AdminPage() {
                             </div>
 
                             {/* Section 2: Enrolled Passkeys List */}
-                            <div className="mt-5">
-                                <div className="flex items-center justify-between mb-3">
+                            <div className="mt-4 sm:mt-5">
+                                <div className="flex items-center justify-between mb-2.5 sm:mb-3">
                                     <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
                                         Enrolled Passkeys ({passkeys.length})
                                     </h4>
@@ -4057,7 +4663,7 @@ export default function AdminPage() {
                                 </div>
 
                                 {passkeys.length === 0 ? (
-                                    <div className="rounded-2xl border border-dashed border-[var(--border-default)] p-6 text-center text-xs text-[var(--text-muted)]">
+                                    <div className="rounded-xl sm:rounded-2xl border border-dashed border-[var(--border-default)] p-5 sm:p-6 text-center text-xs text-[var(--text-muted)]">
                                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-2 text-[var(--text-muted)] opacity-60">
                                             <circle cx="12" cy="12" r="3" />
                                             <path d="M19.07 4.93a10 10 0 0 0-14.14 0M4.93 19.07a10 10 0 0 0 14.14 0" />
@@ -4070,7 +4676,7 @@ export default function AdminPage() {
                                         {passkeys.map((pk) => (
                                             <div
                                                 key={pk.id}
-                                                className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3.5 transition hover:border-[var(--nepal-blue)]/40"
+                                                className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 rounded-xl sm:rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 sm:p-3.5 transition hover:border-[var(--nepal-blue)]/40"
                                             >
                                                 <div className="flex items-center gap-3 min-w-0 flex-1">
                                                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--bg-secondary)] text-[var(--text-primary)]">
@@ -4081,7 +4687,7 @@ export default function AdminPage() {
                                                         </svg>
                                                     </div>
                                                     <div className="min-w-0 flex-1">
-                                                        <div className="flex items-center gap-2">
+                                                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                                                             <span className="font-bold text-xs text-[var(--text-primary)] truncate">
                                                                 {pk.device_name}
                                                             </span>
@@ -4095,7 +4701,7 @@ export default function AdminPage() {
                                                                 </span>
                                                             )}
                                                         </div>
-                                                        <div className="mt-0.5 flex items-center gap-2 text-[10px] text-[var(--text-muted)] font-mono">
+                                                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-[var(--text-muted)] font-mono">
                                                             <span>Added {formatTimeAgo(pk.created_at)}</span>
                                                             <span>•</span>
                                                             <span>{pk.last_used_at ? `Used ${formatTimeAgo(pk.last_used_at)}` : 'Never used'}</span>
@@ -4106,8 +4712,9 @@ export default function AdminPage() {
                                                 <button
                                                     type="button"
                                                     onClick={() => handleDeletePasskey(pk)}
-                                                    className="rounded-xl border border-[var(--border-default)] p-2 text-[var(--text-muted)] transition hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95"
+                                                    className="self-end sm:self-auto rounded-xl border border-[var(--border-default)] p-2 text-[var(--text-muted)] transition hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95"
                                                     title="Remove passkey"
+                                                    aria-label={`Remove passkey ${pk.device_name}`}
                                                 >
                                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                                         <polyline points="3 6 5 6 21 6" />
@@ -4121,7 +4728,7 @@ export default function AdminPage() {
                             </div>
 
                             {/* Section 3: Security Callout */}
-                            <div className="mt-5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/60 p-3 text-[11px] text-[var(--text-secondary)]">
+                            <div className="mt-4 sm:mt-5 rounded-xl sm:rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/60 p-3 text-[10px] sm:text-[11px] text-[var(--text-secondary)]">
                                 <strong>🔐 Zero-Password Security:</strong> Passkeys use public-key cryptography (FIDO2 / WebAuthn). Your private keys remain safely stored in your device&apos;s secure enclave or keychain. The master password remains available as a reliable backup anytime.
                             </div>
                         </div>
@@ -4131,17 +4738,17 @@ export default function AdminPage() {
                 {/* Delete Confirmation Modal */}
                 {confirmDialog && (
                     <div
-                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in duration-150"
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-4 backdrop-blur-xs animate-in fade-in duration-150"
                         onClick={() => {
                             if (!confirmSubmitting) setConfirmDialog(null)
                         }}
                     >
                         <div
-                            className="relative w-full max-w-md rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 shadow-2xl animate-in zoom-in-95 duration-150"
+                            className="relative w-full max-w-md rounded-2xl sm:rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-6 shadow-2xl animate-in zoom-in-95 duration-150"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <div className="flex items-start gap-3.5">
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[var(--error-border)] bg-[var(--error-bg)] text-[var(--error)]">
+                            <div className="flex items-start gap-3 sm:gap-3.5">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl border border-[var(--error-border)] bg-[var(--error-bg)] text-[var(--error)]">
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                         <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
                                         <line x1="12" y1="9" x2="12" y2="13" />
@@ -4149,21 +4756,21 @@ export default function AdminPage() {
                                     </svg>
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                    <h3 className="text-base font-black text-[var(--text-primary)]">
+                                    <h3 className="text-sm sm:text-base font-black text-[var(--text-primary)]">
                                         {confirmDialog.title}
                                     </h3>
-                                    <p className="mt-1.5 text-xs leading-relaxed text-[var(--text-secondary)]">
+                                    <p className="mt-1 sm:mt-1.5 text-xs leading-relaxed text-[var(--text-secondary)]">
                                         {confirmDialog.message}
                                     </p>
                                 </div>
                             </div>
 
-                            <div className="mt-6 flex items-center justify-end gap-2.5 border-t border-[var(--border-default)] pt-4">
+                            <div className="mt-5 sm:mt-6 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-2.5 border-t border-[var(--border-default)] pt-3.5 sm:pt-4">
                                 <button
                                     type="button"
                                     disabled={confirmSubmitting}
                                     onClick={() => setConfirmDialog(null)}
-                                    className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-2 text-xs font-bold text-[var(--text-secondary)] transition hover:border-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-50"
+                                    className="w-full sm:w-auto rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-2.5 text-xs font-bold text-[var(--text-secondary)] transition hover:border-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-50 text-center"
                                 >
                                     Cancel
                                 </button>
@@ -4179,7 +4786,7 @@ export default function AdminPage() {
                                             setConfirmDialog(null)
                                         }
                                     }}
-                                    className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--error)] px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:opacity-90 disabled:opacity-50"
+                                    className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--error)] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:opacity-90 disabled:opacity-50"
                                 >
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                         <polyline points="3 6 5 6 21 6" />
@@ -4195,44 +4802,44 @@ export default function AdminPage() {
                 {/* Inactivity Auto-Logout Warning Modal */}
                 {inactivityWarningOpen && (
                     <div
-                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs animate-in fade-in duration-200"
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3 sm:p-4 backdrop-blur-xs animate-in fade-in duration-200"
                         role="alertdialog"
                         aria-labelledby="inactivity-warning-title"
                         aria-describedby="inactivity-warning-desc"
                     >
                         <div
-                            className="relative w-full max-w-md rounded-3xl border border-[var(--warning-border)] bg-[var(--surface-primary)] p-6 shadow-2xl animate-in zoom-in-95 duration-200"
+                            className="relative w-full max-w-md rounded-2xl sm:rounded-3xl border border-[var(--warning-border)] bg-[var(--surface-primary)] p-4 sm:p-6 shadow-2xl animate-in zoom-in-95 duration-200"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <div className="flex items-start gap-3.5">
-                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--warning-border)] bg-[var(--warning-bg)] text-[var(--warning-text)] shadow-xs">
-                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="animate-pulse">
+                            <div className="flex items-start gap-3 sm:gap-3.5">
+                                <div className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl border border-[var(--warning-border)] bg-[var(--warning-bg)] text-[var(--warning-text)] shadow-xs">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="animate-pulse">
                                         <circle cx="12" cy="12" r="10" />
                                         <polyline points="12 6 12 12 16 14" />
                                     </svg>
                                 </div>
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-center gap-2">
-                                        <h3 id="inactivity-warning-title" className="text-base font-black text-[var(--text-primary)]">
+                                        <h3 id="inactivity-warning-title" className="text-sm sm:text-base font-black text-[var(--text-primary)]">
                                             Inactivity Warning
                                         </h3>
-                                        <span className="inline-flex items-center rounded-full border border-[var(--warning-border)] bg-[var(--warning-bg)] px-2 py-0.5 text-[10px] font-bold text-[var(--warning-text)]">
+                                        <span className="inline-flex items-center rounded-full border border-[var(--warning-border)] bg-[var(--warning-bg)] px-2 py-0.5 text-[9px] sm:text-[10px] font-bold text-[var(--warning-text)]">
                                             Auto Logout
                                         </span>
                                     </div>
-                                    <p id="inactivity-warning-desc" className="mt-1.5 text-xs leading-relaxed text-[var(--text-secondary)]">
+                                    <p id="inactivity-warning-desc" className="mt-1 sm:mt-1.5 text-xs leading-relaxed text-[var(--text-secondary)]">
                                         You have been inactive for 4 minutes. For security, your session will automatically log out in:
                                     </p>
                                 </div>
                             </div>
 
                             {/* Prominent Countdown Timer */}
-                            <div className="my-5 flex flex-col items-center justify-center rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)] py-4 text-center">
-                                <div className="flex items-baseline gap-1 text-3xl font-black tabular-nums tracking-tight text-[var(--nepal-red)]">
+                            <div className="my-4 sm:my-5 flex flex-col items-center justify-center rounded-xl sm:rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)] py-3 sm:py-4 text-center">
+                                <div className="flex items-baseline gap-1 text-2xl sm:text-3xl font-black tabular-nums tracking-tight text-[var(--nepal-red)]">
                                     <span>{inactivitySecondsLeft}</span>
-                                    <span className="text-xs font-semibold uppercase text-[var(--text-muted)]">seconds</span>
+                                    <span className="text-[11px] sm:text-xs font-semibold uppercase text-[var(--text-muted)]">seconds</span>
                                 </div>
-                                <div className="mt-2.5 h-1.5 w-48 overflow-hidden rounded-full bg-[var(--border-default)]">
+                                <div className="mt-2.5 h-1.5 w-40 sm:w-48 overflow-hidden rounded-full bg-[var(--border-default)]">
                                     <div
                                         className="h-full bg-gradient-to-r from-[var(--warning-text)] to-[var(--nepal-red)] transition-all duration-1000 ease-linear"
                                         style={{ width: `${(inactivitySecondsLeft / 60) * 100}%` }}
@@ -4240,11 +4847,11 @@ export default function AdminPage() {
                                 </div>
                             </div>
 
-                            <div className="flex items-center justify-end gap-2.5 border-t border-[var(--border-default)] pt-4">
+                            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-2.5 border-t border-[var(--border-default)] pt-3.5 sm:pt-4">
                                 <button
                                     type="button"
                                     onClick={() => handleLogout('inactivity')}
-                                    className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-2.5 text-xs font-bold text-[var(--text-secondary)] transition hover:border-[var(--text-muted)] hover:text-[var(--text-primary)] active:scale-95"
+                                    className="w-full sm:w-auto rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-2.5 text-xs font-bold text-[var(--text-secondary)] transition hover:border-[var(--text-muted)] hover:text-[var(--text-primary)] active:scale-95 text-center"
                                 >
                                     Log Out Now
                                 </button>
@@ -4252,7 +4859,7 @@ export default function AdminPage() {
                                     type="button"
                                     autoFocus
                                     onClick={stayLoggedIn}
-                                    className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--nepal-blue)] px-5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-[var(--nepal-blue-mid)] active:scale-95"
+                                    className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--nepal-blue)] px-5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-[var(--nepal-blue-mid)] active:scale-95 text-center"
                                 >
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                                         <polyline points="20 6 9 17 4 12" />
@@ -4266,34 +4873,34 @@ export default function AdminPage() {
 
                 {/* Floating Toast Notification */}
                 {toast && (
-                    <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2.5 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-3 text-xs font-bold shadow-2xl animate-in slide-in-from-bottom-4 duration-200">
+                    <div className="fixed bottom-3 left-3 right-3 sm:bottom-5 sm:right-5 sm:left-auto z-50 flex items-center gap-2.5 rounded-xl sm:rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3.5 py-2.5 sm:px-4 sm:py-3 text-xs font-bold shadow-2xl sm:max-w-md animate-in slide-in-from-bottom-4 duration-200">
                         {toast.type === 'success' ? (
-                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--success-bg)] text-[var(--success)]">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                            <span className="flex h-5 w-5 sm:h-6 sm:w-6 shrink-0 items-center justify-center rounded-full bg-[var(--success-bg)] text-[var(--success)]">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
                                     <polyline points="20 6 9 17 4 12" />
                                 </svg>
                             </span>
                         ) : toast.type === 'info' ? (
-                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)]">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                            <span className="flex h-5 w-5 sm:h-6 sm:w-6 shrink-0 items-center justify-center rounded-full bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)]">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
                                     <circle cx="12" cy="12" r="10" />
                                     <line x1="12" y1="16" x2="12" y2="12" />
                                     <line x1="12" y1="8" x2="12.01" y2="8" />
                                 </svg>
                             </span>
                         ) : (
-                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--error-bg)] text-[var(--error)]">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                            <span className="flex h-5 w-5 sm:h-6 sm:w-6 shrink-0 items-center justify-center rounded-full bg-[var(--error-bg)] text-[var(--error)]">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
                                     <line x1="18" y1="6" x2="6" y2="18" />
                                     <line x1="6" y1="6" x2="18" y2="18" />
                                 </svg>
                             </span>
                         )}
-                        <span className="text-[var(--text-primary)]">{toast.message}</span>
+                        <span className="text-[var(--text-primary)] flex-1 min-w-0 break-words">{toast.message}</span>
                         <button
                             type="button"
                             onClick={() => setToast(null)}
-                            className="ml-1 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                            className="ml-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] shrink-0 p-1"
                             aria-label="Dismiss notification"
                         >
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
