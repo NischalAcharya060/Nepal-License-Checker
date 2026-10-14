@@ -1,9 +1,14 @@
 'use client'
 
-import { useState, useEffect, useTransition, useRef, useCallback } from 'react'
+import { useState, useEffect, useTransition, useRef, useCallback, useSyncExternalStore } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { formatNepalDateTime, formatTimeUntil } from '@/lib/cronHelper'
+import {
+    startAuthentication,
+    startRegistration,
+    browserSupportsWebAuthn,
+} from '@simplewebauthn/browser'
 
 interface AdminScraperData {
     totalRecords: number
@@ -114,6 +119,16 @@ interface FeedbackStatsData {
     newCount: number
     resolvedCount: number
     todayCount: number
+}
+
+interface AdminPasskey {
+    id: string
+    device_name: string
+    device_type: string | null
+    backed_up: boolean
+    transports: string[]
+    created_at: number
+    last_used_at: number | null
 }
 
 // Inactivity Auto-Logout Configuration: 5 minutes idle timeout with 60-second warning countdown
@@ -236,10 +251,26 @@ export default function AdminPage() {
     const [inactivityWarningOpen, setInactivityWarningOpen] = useState(false)
     const [inactivitySecondsLeft, setInactivitySecondsLeft] = useState(60)
     const [inactivityNotice, setInactivityNotice] = useState<string | null>(null)
-    const lastActivityRef = useRef<number>(Date.now())
+    const lastActivityRef = useRef<number>(0)
     const lastStorageWriteRef = useRef<number>(0)
     const warningOpenRef = useRef(false)
-    warningOpenRef.current = inactivityWarningOpen
+
+    useEffect(() => {
+        warningOpenRef.current = inactivityWarningOpen
+    }, [inactivityWarningOpen])
+
+    // Passkey / WebAuthn State
+    const passkeysSupported = useSyncExternalStore(
+        () => () => {},
+        () => browserSupportsWebAuthn(),
+        () => false
+    )
+    const [passkeys, setPasskeys] = useState<AdminPasskey[]>([])
+    const [passkeyCount, setPasskeyCount] = useState<number>(0)
+    const [passkeyLoading, setPasskeyLoading] = useState(false)
+    const [passkeyModalOpen, setPasskeyModalOpen] = useState(false)
+    const [newPasskeyName, setNewPasskeyName] = useState('')
+    const [registeringPasskey, setRegisteringPasskey] = useState(false)
 
     const [, startTransition] = useTransition()
 
@@ -498,6 +529,167 @@ export default function AdminPage() {
         } finally {
             setLoginSubmitting(false)
         }
+    }
+
+    // 4b. Fetch Enrolled Passkeys
+    const fetchPasskeys = useCallback(async () => {
+        try {
+            const res = await fetch('/api/admin/passkey', { cache: 'no-store' })
+            const data = await res.json()
+            if (data.status === 'success') {
+                setPasskeyCount(data.count || 0)
+                if (Array.isArray(data.passkeys)) {
+                    setPasskeys(data.passkeys)
+                }
+            }
+        } catch {
+            // ignore
+        }
+    }, [])
+
+    // Fetch passkeys count and list on mount and auth change
+    useEffect(() => {
+        let isCancelled = false
+
+        fetch('/api/admin/passkey', { cache: 'no-store' })
+            .then((res) => res.json())
+            .then((data) => {
+                if (isCancelled) return
+                if (data.status === 'success') {
+                    setPasskeyCount(data.count || 0)
+                    if (Array.isArray(data.passkeys)) {
+                        setPasskeys(data.passkeys)
+                    }
+                }
+            })
+            .catch(() => {
+                // ignore
+            })
+
+        return () => {
+            isCancelled = true
+        }
+    }, [isAuthenticated])
+
+    // 4c. Passkey Sign-In
+    const handlePasskeyLogin = async () => {
+        setPasskeyLoading(true)
+        setLoginError('')
+
+        try {
+            const optRes = await fetch('/api/admin/passkey/login-options', { cache: 'no-store' })
+            const optData = await optRes.json()
+
+            if (!optRes.ok || optData.status !== 'success' || !optData.options) {
+                throw new Error(optData.error || 'Failed to initialize passkey sign-in')
+            }
+
+            const authResp = await startAuthentication({ optionsJSON: optData.options })
+
+            const verifyRes = await fetch('/api/admin/passkey/login-verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ response: authResp }),
+            })
+
+            const verifyData = await verifyRes.json()
+
+            if (verifyRes.ok && verifyData.status === 'success') {
+                setIsAuthenticated(true)
+                setPasswordInput('')
+                setInactivityNotice(null)
+                setInactivityWarningOpen(false)
+                const now = Date.now()
+                lastActivityRef.current = now
+                if (typeof window !== 'undefined') {
+                    try {
+                        localStorage.setItem(ACTIVITY_STORAGE_KEY, String(now))
+                    } catch {
+                        // ignore
+                    }
+                }
+                showToast('Welcome back! Signed in with Passkey', 'info')
+                fetchPasskeys()
+            } else {
+                throw new Error(verifyData.error || 'Passkey verification failed')
+            }
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Passkey login failed'
+            if (!message.toLowerCase().includes('abort') && !message.toLowerCase().includes('cancel') && !message.toLowerCase().includes('not allowed')) {
+                setLoginError(message)
+            }
+        } finally {
+            setPasskeyLoading(false)
+        }
+    }
+
+    // 4d. Register New Passkey (Biometrics / Security Key)
+    const handleRegisterPasskey = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (registeringPasskey) return
+        setRegisteringPasskey(true)
+
+        try {
+            const optRes = await fetch('/api/admin/passkey/register-options', { cache: 'no-store' })
+            const optData = await optRes.json()
+
+            if (!optRes.ok || optData.status !== 'success' || !optData.options) {
+                throw new Error(optData.error || 'Failed to initialize registration')
+            }
+
+            const regResp = await startRegistration({ optionsJSON: optData.options })
+
+            const verifyRes = await fetch('/api/admin/passkey/register-verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    response: regResp,
+                    deviceName: newPasskeyName.trim() || 'Biometric Passkey',
+                }),
+            })
+
+            const verifyData = await verifyRes.json()
+
+            if (verifyRes.ok && verifyData.status === 'success') {
+                setNewPasskeyName('')
+                showToast('Passkey registered successfully!', 'success')
+                await fetchPasskeys()
+            } else {
+                throw new Error(verifyData.error || 'Failed to save passkey')
+            }
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Registration failed'
+            if (!message.toLowerCase().includes('abort') && !message.toLowerCase().includes('cancel') && !message.toLowerCase().includes('not allowed')) {
+                showToast(message, 'info')
+            }
+        } finally {
+            setRegisteringPasskey(false)
+        }
+    }
+
+    // 4e. Delete Passkey
+    const handleDeletePasskey = (passkey: AdminPasskey) => {
+        setConfirmDialog({
+            title: `Delete passkey "${passkey.device_name}"?`,
+            message: 'You will no longer be able to sign in using this specific device or security key. (Master password will still work).',
+            confirmLabel: 'Yes, Delete Passkey',
+            onConfirm: async () => {
+                try {
+                    const res = await fetch(`/api/admin/passkey?id=${encodeURIComponent(passkey.id)}`, {
+                        method: 'DELETE',
+                    })
+                    if (res.ok) {
+                        showToast('Passkey removed')
+                        await fetchPasskeys()
+                    } else {
+                        const json = await res.json()
+                        showToast(json.error || 'Failed to delete passkey', 'info')
+                    }
+                } catch {
+                    showToast('Failed to delete passkey', 'info')
+                }
+            },
+        })
     }
 
     // 5. Handle Logout
@@ -1194,76 +1386,126 @@ export default function AdminPage() {
                                 </p>
                             </div>
                         ) : (
-                            <form onSubmit={handleLogin} className="space-y-4">
-                                <div>
-                                    <label
-                                        htmlFor="admin-password"
-                                        className="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]"
-                                    >
-                                        Administrator Password
-                                    </label>
-                                    <div className="relative mt-1.5">
-                                        <input
-                                            id="admin-password"
-                                            type={showPassword ? 'text' : 'password'}
-                                            value={passwordInput}
-                                            onChange={(e) => {
-                                                setPasswordInput(e.target.value)
-                                                if (loginError) setLoginError('')
-                                                if (inactivityNotice) setInactivityNotice(null)
-                                            }}
-                                            placeholder="Enter password..."
-                                            autoFocus
-                                            autoComplete="current-password"
-                                            className="h-11 w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3.5 pr-10 text-sm text-[var(--text-primary)] transition focus:border-[var(--nepal-blue)] focus:bg-[var(--surface-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--nepal-blue)]/20"
-                                        />
+                            <div>
+                                {/* Passkey Sign-In Option */}
+                                {passkeysSupported && passkeyCount > 0 && (
+                                    <div className="mb-4">
                                         <button
                                             type="button"
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] transition hover:text-[var(--text-primary)]"
-                                            aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                            disabled={passkeyLoading || loginSubmitting}
+                                            onClick={handlePasskeyLogin}
+                                            className="flex h-11 w-full items-center justify-center gap-2.5 rounded-xl border border-[var(--nepal-blue)]/40 bg-[var(--nepal-blue-soft)] font-bold text-[var(--nepal-blue)] shadow-xs transition hover:bg-[var(--nepal-blue)] hover:text-white active:scale-95 disabled:opacity-50"
                                         >
-                                            {showPassword ? (
-                                                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                                                    <line x1="1" y1="1" x2="23" y2="23" />
-                                                </svg>
+                                            {passkeyLoading ? (
+                                                <>
+                                                    <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                                    <span>Verifying Passkey...</span>
+                                                </>
                                             ) : (
-                                                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                                                    <circle cx="12" cy="12" r="3" />
-                                                </svg>
+                                                <>
+                                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <circle cx="12" cy="12" r="3" />
+                                                        <path d="M19.07 4.93a10 10 0 0 0-14.14 0M4.93 19.07a10 10 0 0 0 14.14 0" />
+                                                        <path d="M15.54 8.46a5 5 0 0 0-7.08 0M8.46 15.54a5 5 0 0 0 7.08 0" />
+                                                    </svg>
+                                                    <span>Sign In with Passkey / Biometrics</span>
+                                                </>
                                             )}
                                         </button>
-                                    </div>
-                                </div>
 
-                                {loginError && (
-                                    <div className="flex items-center gap-2 rounded-xl border border-[var(--error-border)] bg-[var(--error-bg)] p-2.5 text-xs font-semibold text-[var(--error)] animate-shake">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                                            <circle cx="12" cy="12" r="10" />
-                                            <line x1="12" y1="8" x2="12" y2="12" />
-                                            <line x1="12" y1="16" x2="12.01" y2="16" />
-                                        </svg>
-                                        <span>{loginError}</span>
+                                        <div className="relative my-4 flex items-center justify-center">
+                                            <div className="absolute inset-0 flex items-center">
+                                                <div className="w-full border-t border-[var(--border-default)]" />
+                                            </div>
+                                            <span className="relative bg-[var(--surface-primary)] px-2.5 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                                                Or sign in with password
+                                            </span>
+                                        </div>
                                     </div>
                                 )}
 
-                                <button
-                                    type="submit"
-                                    disabled={loginSubmitting || !passwordInput.trim()}
-                                    className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--nepal-blue)] font-bold text-white shadow-sm transition hover:bg-[var(--nepal-blue-mid)] disabled:cursor-not-allowed disabled:bg-[var(--text-muted)]"
-                                >
-                                    {loginSubmitting ? (
-                                        <>
-                                            <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                                            <span>Authenticating...</span>
-                                        </>
-                                    ) : (
-                                        <span>Sign In to Dashboard</span>
+                                <form onSubmit={handleLogin} className="space-y-4">
+                                    <div>
+                                        <label
+                                            htmlFor="admin-password"
+                                            className="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]"
+                                        >
+                                            Administrator Password
+                                        </label>
+                                        <div className="relative mt-1.5">
+                                            <input
+                                                id="admin-password"
+                                                type={showPassword ? 'text' : 'password'}
+                                                value={passwordInput}
+                                                onChange={(e) => {
+                                                    setPasswordInput(e.target.value)
+                                                    if (loginError) setLoginError('')
+                                                    if (inactivityNotice) setInactivityNotice(null)
+                                                }}
+                                                placeholder="Enter password..."
+                                                autoFocus
+                                                autoComplete="current-password"
+                                                className="h-11 w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3.5 pr-10 text-sm text-[var(--text-primary)] transition focus:border-[var(--nepal-blue)] focus:bg-[var(--surface-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--nepal-blue)]/20"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] transition hover:text-[var(--text-primary)]"
+                                                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                            >
+                                                {showPassword ? (
+                                                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                                                        <line x1="1" y1="1" x2="23" y2="23" />
+                                                    </svg>
+                                                ) : (
+                                                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                                        <circle cx="12" cy="12" r="3" />
+                                                    </svg>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {loginError && (
+                                        <div className="flex items-center gap-2 rounded-xl border border-[var(--error-border)] bg-[var(--error-bg)] p-2.5 text-xs font-semibold text-[var(--error)] animate-shake">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                                                <circle cx="12" cy="12" r="10" />
+                                                <line x1="12" y1="8" x2="12" y2="12" />
+                                                <line x1="12" y1="16" x2="12.01" y2="16" />
+                                            </svg>
+                                            <span>{loginError}</span>
+                                        </div>
                                     )}
-                                </button>
-                            </form>
+
+                                    <button
+                                        type="submit"
+                                        disabled={loginSubmitting || !passwordInput.trim()}
+                                        className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--nepal-blue)] font-bold text-white shadow-sm transition hover:bg-[var(--nepal-blue-mid)] disabled:cursor-not-allowed disabled:bg-[var(--text-muted)]"
+                                    >
+                                        {loginSubmitting ? (
+                                            <>
+                                                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                                                <span>Authenticating...</span>
+                                            </>
+                                        ) : (
+                                            <span>Sign In to Dashboard</span>
+                                        )}
+                                    </button>
+                                </form>
+
+                                {passkeysSupported && passkeyCount === 0 && (
+                                    <div className="mt-3.5 flex items-center gap-2 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3 py-2 text-[11px] text-[var(--text-muted)]">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-[var(--nepal-blue)]">
+                                            <circle cx="12" cy="12" r="10" />
+                                            <line x1="12" y1="16" x2="12" y2="12" />
+                                            <line x1="12" y1="8" x2="12.01" y2="8" />
+                                        </svg>
+                                        <span>Tip: Once signed in, you can enroll Windows Hello, Touch ID, or a Security Key for 1-click login.</span>
+                                    </div>
+                                )}
+                            </div>
                         )}
 
                         <div className="mt-4 border-t border-[var(--border-default)]/60 pt-4 text-center">
@@ -1426,6 +1668,28 @@ export default function AdminPage() {
                                 <line x1="12" y1="15" x2="12" y2="3" />
                             </svg>
                             <span className="hidden sm:inline">Export</span>
+                        </button>
+
+                        {/* Passkeys & Security */}
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setPasskeyModalOpen(true)
+                                fetchPasskeys()
+                            }}
+                            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 text-xs font-semibold text-[var(--text-secondary)] shadow-xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] active:scale-95"
+                            title="Manage Passkeys (Windows Hello, Touch ID, Face ID, YubiKey)"
+                        >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="12" cy="12" r="3" />
+                                <path d="M19.07 4.93a10 10 0 0 0-14.14 0M4.93 19.07a10 10 0 0 0 14.14 0" />
+                            </svg>
+                            <span className="hidden sm:inline">Passkeys</span>
+                            {passkeyCount > 0 && (
+                                <span className="rounded-md bg-[var(--nepal-blue-soft)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--nepal-blue)]">
+                                    {passkeyCount}
+                                </span>
+                            )}
                         </button>
 
                         {/* Sign Out */}
@@ -3688,6 +3952,177 @@ export default function AdminPage() {
                                         Close
                                     </button>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Passkeys & Biometric Security Modal */}
+                {passkeyModalOpen && (
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs animate-in fade-in duration-200"
+                        onClick={() => setPasskeyModalOpen(false)}
+                    >
+                        <div
+                            className="relative w-full max-w-lg rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Modal Header */}
+                            <div className="flex items-start justify-between gap-3 border-b border-[var(--border-default)] pb-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--nepal-blue)]/30 bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)]">
+                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                            <circle cx="12" cy="12" r="3" />
+                                            <path d="M19.07 4.93a10 10 0 0 0-14.14 0M4.93 19.07a10 10 0 0 0 14.14 0" />
+                                            <path d="M15.54 8.46a5 5 0 0 0-7.08 0M8.46 15.54a5 5 0 0 0 7.08 0" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-base font-black text-[var(--text-primary)]">
+                                            Passkeys & Biometric Access
+                                        </h3>
+                                        <p className="mt-0.5 text-xs text-[var(--text-secondary)]">
+                                            Sign in with 1-click using Windows Hello, Touch ID, Face ID, or YubiKey.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setPasskeyModalOpen(false)}
+                                    className="rounded-full border border-[var(--border-default)] p-1.5 text-[var(--text-muted)] hover:border-[var(--nepal-blue)] hover:text-[var(--text-primary)]"
+                                    aria-label="Close"
+                                >
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="18" y1="6" x2="6" y2="18" />
+                                        <line x1="6" y1="6" x2="18" y2="18" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            {/* Section 1: Register New Passkey */}
+                            <div className="mt-5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-4">
+                                <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-primary)]">
+                                    Register This Device
+                                </h4>
+                                <p className="mt-1 text-xs text-[var(--text-secondary)]">
+                                    Add your current device or security key to sign in without entering your password.
+                                </p>
+
+                                <form onSubmit={handleRegisterPasskey} className="mt-3.5 flex flex-col gap-2.5 sm:flex-row">
+                                    <input
+                                        type="text"
+                                        value={newPasskeyName}
+                                        onChange={(e) => setNewPasskeyName(e.target.value)}
+                                        placeholder="Device name (e.g. My Laptop, iPhone, YubiKey)"
+                                        maxLength={50}
+                                        className="h-10 flex-1 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 text-xs text-[var(--text-primary)] transition focus:border-[var(--nepal-blue)] focus:outline-none"
+                                    />
+                                    <button
+                                        type="submit"
+                                        disabled={registeringPasskey}
+                                        className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-[var(--nepal-blue)] px-4 text-xs font-bold text-white shadow-xs transition hover:bg-[var(--nepal-blue-mid)] active:scale-95 disabled:opacity-50"
+                                    >
+                                        {registeringPasskey ? (
+                                            <>
+                                                <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                                                <span>Touch Sensor / Key...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                    <circle cx="12" cy="12" r="3" />
+                                                    <path d="M19.07 4.93a10 10 0 0 0-14.14 0M4.93 19.07a10 10 0 0 0 14.14 0" />
+                                                </svg>
+                                                <span>Register Passkey</span>
+                                            </>
+                                        )}
+                                    </button>
+                                </form>
+                            </div>
+
+                            {/* Section 2: Enrolled Passkeys List */}
+                            <div className="mt-5">
+                                <div className="flex items-center justify-between mb-3">
+                                    <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                                        Enrolled Passkeys ({passkeys.length})
+                                    </h4>
+                                    <button
+                                        type="button"
+                                        onClick={fetchPasskeys}
+                                        className="text-[11px] font-semibold text-[var(--nepal-blue)] hover:underline"
+                                    >
+                                        Refresh list
+                                    </button>
+                                </div>
+
+                                {passkeys.length === 0 ? (
+                                    <div className="rounded-2xl border border-dashed border-[var(--border-default)] p-6 text-center text-xs text-[var(--text-muted)]">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-2 text-[var(--text-muted)] opacity-60">
+                                            <circle cx="12" cy="12" r="3" />
+                                            <path d="M19.07 4.93a10 10 0 0 0-14.14 0M4.93 19.07a10 10 0 0 0 14.14 0" />
+                                        </svg>
+                                        <p className="font-semibold text-[var(--text-secondary)]">No passkeys enrolled yet</p>
+                                        <p className="mt-1">Register your current device above to get started.</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2.5">
+                                        {passkeys.map((pk) => (
+                                            <div
+                                                key={pk.id}
+                                                className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3.5 transition hover:border-[var(--nepal-blue)]/40"
+                                            >
+                                                <div className="flex items-center gap-3 min-w-0 flex-1">
+                                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--bg-secondary)] text-[var(--text-primary)]">
+                                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                            <rect x="2" y="3" width="20" height="14" rx="2" />
+                                                            <line x1="8" y1="21" x2="16" y2="21" />
+                                                            <line x1="12" y1="17" x2="12" y2="21" />
+                                                        </svg>
+                                                    </div>
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-bold text-xs text-[var(--text-primary)] truncate">
+                                                                {pk.device_name}
+                                                            </span>
+                                                            {pk.backed_up ? (
+                                                                <span className="rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-1.5 py-0.2 text-[9px] font-bold">
+                                                                    Cloud Synced
+                                                                </span>
+                                                            ) : (
+                                                                <span className="rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 px-1.5 py-0.2 text-[9px] font-bold">
+                                                                    Device Bound
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="mt-0.5 flex items-center gap-2 text-[10px] text-[var(--text-muted)] font-mono">
+                                                            <span>Added {formatTimeAgo(pk.created_at)}</span>
+                                                            <span>•</span>
+                                                            <span>{pk.last_used_at ? `Used ${formatTimeAgo(pk.last_used_at)}` : 'Never used'}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDeletePasskey(pk)}
+                                                    className="rounded-xl border border-[var(--border-default)] p-2 text-[var(--text-muted)] transition hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95"
+                                                    title="Remove passkey"
+                                                >
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <polyline points="3 6 5 6 21 6" />
+                                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Section 3: Security Callout */}
+                            <div className="mt-5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/60 p-3 text-[11px] text-[var(--text-secondary)]">
+                                <strong>🔐 Zero-Password Security:</strong> Passkeys use public-key cryptography (FIDO2 / WebAuthn). Your private keys remain safely stored in your device&apos;s secure enclave or keychain. The master password remains available as a reliable backup anytime.
                             </div>
                         </div>
                     </div>

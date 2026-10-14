@@ -28,7 +28,7 @@ export async function proxy(request: NextRequest) {
     }
 
     // Always allow public maintenance pages and auth endpoints
-    if (PUBLIC_PATHS.has(pathname)) {
+    if (PUBLIC_PATHS.has(pathname) || pathname.startsWith('/api/admin/')) {
         return NextResponse.next()
     }
 
