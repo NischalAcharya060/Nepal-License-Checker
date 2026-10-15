@@ -684,3 +684,26 @@ export function getTransportOfficeByLicense(_licenseNumber?: string): TransportO
 export function getAllTransportOffices(): TransportOffice[] {
   return Object.values(TRANSPORT_OFFICES).sort((a, b) => Number(a.code) - Number(b.code))
 }
+
+/**
+ * Aggregates raw office statistics (e.g. from database site_stats office_totals or
+ * latest_batch_breakdown) into a dictionary keyed by office code ('01', '02', etc.).
+ */
+export function aggregateOfficeStats(
+  officeTotals?: Record<string, number> | null
+): Record<string, number> {
+  const result: Record<string, number> = {}
+  if (!officeTotals || typeof officeTotals !== 'object') return result
+
+  for (const [rawOffice, count] of Object.entries(officeTotals)) {
+    const num = Number(count) || 0
+    if (num <= 0) continue
+    const matched = getTransportOfficeByOfficeName(rawOffice)
+    if (matched) {
+      result[matched.code] = (result[matched.code] || 0) + num
+    }
+  }
+
+  return result
+}
+

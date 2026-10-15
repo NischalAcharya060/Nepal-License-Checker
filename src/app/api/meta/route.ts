@@ -13,11 +13,19 @@ export interface ScraperLastRunData {
   scraped: number
   saved: number
   failed: number
+  officeBreakdown?: Record<string, number>
   newPdfsCount?: number
   skippedPdfsCount?: number
   totalPdfsCount?: number
   durationSeconds: number
   circuitBreakerTripped?: boolean
+}
+
+export interface LatestBatchData {
+  timestamp: number
+  iso: string
+  total: number
+  offices: Record<string, number>
 }
 
 export interface ScraperMeta {
@@ -34,6 +42,8 @@ export interface AppMetadata {
   totalRecords: number
   totalViews: number
   nextScheduledRun: string
+  officeTotals?: Record<string, number>
+  latestBatch?: LatestBatchData | null
   scraper: ScraperMeta
 }
 
@@ -67,10 +77,12 @@ export async function GET() {
     let scraperLastRunRaw: string | null = null
     let nextScraperRunMs: number | null = null
     let scraperSchedule = DEFAULT_CRON_SCHEDULE
+    let officeTotals: Record<string, number> = {}
+    let latestBatchRaw: string | null = null
 
     try {
       const statsRes = await db.execute(
-        "SELECT key, value, updated_at FROM site_stats WHERE key IN ('total_records', 'page_views', 'scraper_last_run', 'next_scraper_run', 'scraper_schedule')"
+        "SELECT key, value, updated_at FROM site_stats WHERE key IN ('total_records', 'page_views', 'scraper_last_run', 'next_scraper_run', 'scraper_schedule', 'office_totals', 'latest_batch_breakdown')"
       )
 
       for (const row of statsRes.rows) {
@@ -89,6 +101,14 @@ export async function GET() {
           if (row.value && String(row.value).trim()) {
             scraperSchedule = String(row.value).trim()
           }
+        } else if (key === 'office_totals') {
+          try {
+            officeTotals = JSON.parse(String(row.value))
+          } catch {
+            // Ignore
+          }
+        } else if (key === 'latest_batch_breakdown') {
+          latestBatchRaw = String(row.value)
         }
       }
 
@@ -125,6 +145,7 @@ export async function GET() {
           scraped: Number(parsed.scraped) || 0,
           saved: Number(parsed.saved) || 0,
           failed: Number(parsed.failed) || 0,
+          officeBreakdown: parsed.officeBreakdown || undefined,
           newPdfsCount: parsed.newPdfsCount,
           skippedPdfsCount: parsed.skippedPdfsCount,
           totalPdfsCount: parsed.totalPdfsCount,
@@ -135,6 +156,29 @@ export async function GET() {
         // Ignore JSON parse errors
       }
     }
+
+    let latestBatch: LatestBatchData | null = null
+    if (latestBatchRaw) {
+      try {
+        const parsedBatch = JSON.parse(latestBatchRaw)
+        latestBatch = {
+          timestamp: Number(parsedBatch.timestamp) || now,
+          iso: new Date(Number(parsedBatch.timestamp) || now).toISOString(),
+          total: Number(parsedBatch.total) || 0,
+          offices: parsedBatch.offices || {},
+        }
+      } catch {
+        // Ignore
+      }
+    } else if (scraperLastRun && scraperLastRun.saved > 0 && scraperLastRun.officeBreakdown) {
+      latestBatch = {
+        timestamp: scraperLastRun.timestamp || now,
+        iso: new Date(scraperLastRun.timestamp || now).toISOString(),
+        total: scraperLastRun.saved,
+        offices: scraperLastRun.officeBreakdown,
+      }
+    }
+
 
     // Determine upcoming scheduled run
     let nextRunDate: Date | null = null
@@ -155,6 +199,8 @@ export async function GET() {
       totalRecords,
       totalViews,
       nextScheduledRun: nextRunIso,
+      officeTotals,
+      latestBatch,
       scraper: {
         lastRun: scraperLastRun,
         nextRun: {

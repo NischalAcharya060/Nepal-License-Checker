@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import type { Language } from '@/lib/i18n'
 
 interface EducationalSectionProps {
@@ -129,6 +130,15 @@ export default function EducationalSection({
                   {language === 'ne' ? 'ढाँचा हेर्नुहोस्' : 'View Sample'}
                 </button>
               )}
+              {tile.key === 'recent' && (
+                <Link
+                  href="/updates"
+                  className="rounded-full bg-[var(--nepal-blue-soft)] px-2 py-0.5 text-[10px] font-bold text-[var(--nepal-blue)] transition hover:bg-[var(--nepal-blue)] hover:text-white inline-flex items-center gap-0.5"
+                >
+                  <span>{language === 'ne' ? 'लग' : 'Logs'}</span>
+                  <span>→</span>
+                </Link>
+              )}
             </div>
 
             <p className="text-xs leading-5 text-[var(--text-secondary)]">{tile.text}</p>
@@ -140,6 +150,21 @@ export default function EducationalSection({
                   {tile.meta}
                 </div>
                 {tile.metaSub && <div className="mt-1 text-[10px] text-[var(--text-secondary)]">{tile.metaSub}</div>}
+              </div>
+            )}
+
+            {tile.key === 'recent' && (
+              <div className="mt-3">
+                <Link
+                  href="/updates"
+                  className="inline-flex w-full items-center justify-between rounded-lg border border-[var(--nepal-blue)]/30 bg-[var(--nepal-blue-soft)]/60 px-3 py-2 text-xs font-bold text-[var(--nepal-blue)] transition hover:bg-[var(--nepal-blue)] hover:text-white shadow-2xs group"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <span>📊</span>
+                    <span>{language === 'ne' ? 'अपडेट तथा सिङ्क लग हेर्नुहोस्' : 'View Sync Logs & Office Data'}</span>
+                  </span>
+                  <span className="transition-transform group-hover:translate-x-0.5">→</span>
+                </Link>
               </div>
             )}
           </div>

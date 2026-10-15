@@ -522,7 +522,7 @@ class DOTMScraper {
     constructor() {
         this.BASE = 'https://dotm.gov.np';
         this.CATEGORY = `${this.BASE}/category/details-of-printed-licenses/`;
-        this.stats = { scraped: 0, saved: 0, updated: 0, failed: 0, skipped: 0, circuitBreakerTripped: false };
+        this.stats = { scraped: 0, saved: 0, updated: 0, failed: 0, skipped: 0, circuitBreakerTripped: false, officeBreakdown: {} };
     }
 
     async getPageHTML(url) {
@@ -955,6 +955,10 @@ class DOTMScraper {
             this.stats.scraped += result.licenses.length;
 
             if (result.licenses.length > 0) {
+                for (const lic of result.licenses) {
+                    const off = (lic.office || 'Other').trim();
+                    this.stats.officeBreakdown[off] = (this.stats.officeBreakdown[off] || 0) + 1;
+                }
                 await this.saveBatch(result.licenses);
             }
 
@@ -982,6 +986,21 @@ class DOTMScraper {
                 args: [total, Date.now()],
             });
             console.log(`Updated site_stats total_records: ${total}`);
+
+            // Also cache office totals so the public API and UI load instantly
+            const officeRes = await getDb().execute(
+                'SELECT office, COUNT(*) AS count FROM licenses GROUP BY office ORDER BY count DESC'
+            );
+            const officeTotals = {};
+            for (const r of officeRes.rows) {
+                if (r.office) officeTotals[String(r.office)] = Number(r.count || 0);
+            }
+            await getDb().execute({
+                sql: `INSERT INTO site_stats (key, value, updated_at)
+                      VALUES ('office_totals', ?, ?)
+                      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+                args: [JSON.stringify(officeTotals), Date.now()],
+            });
         } catch (e) {
             console.warn(`Could not update total_records stat: ${e.message}`);
         }
@@ -1035,6 +1054,7 @@ class DOTMScraper {
                 scraped: this.stats.scraped,
                 saved: this.stats.saved,
                 failed: this.stats.failed,
+                officeBreakdown: this.stats.officeBreakdown || {},
                 newPdfsCount,
                 skippedPdfsCount,
                 totalPdfsCount,
@@ -1049,6 +1069,23 @@ class DOTMScraper {
                       ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
                 args: [JSON.stringify(runSummary), now],
             });
+
+            // 2. If new licenses were added, also record/update latest_batch_breakdown
+            if (this.stats.saved > 0 && Object.keys(this.stats.officeBreakdown || {}).length > 0) {
+                await db.execute({
+                    sql: `INSERT INTO site_stats (key, value, updated_at)
+                          VALUES ('latest_batch_breakdown', ?, ?)
+                          ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+                    args: [
+                        JSON.stringify({
+                            timestamp: now,
+                            total: this.stats.saved,
+                            offices: this.stats.officeBreakdown,
+                        }),
+                        now,
+                    ],
+                });
+            }
 
             // 2. Calculate and record next scheduled run
             const cronSchedule = process.env.SCRAPER_CRON_SCHEDULE || DEFAULT_CRON_SCHEDULE;
