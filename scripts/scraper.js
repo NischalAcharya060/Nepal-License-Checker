@@ -66,6 +66,16 @@ async function ensureSchema() {
     `);
     await db.execute(`CREATE INDEX IF NOT EXISTS processed_pdfs_processed_at_idx ON processed_pdfs(processed_at)`);
 
+    // Track discovered office content pages to enable rapid early-exit on subsequent runs
+    await db.execute(`
+        CREATE TABLE IF NOT EXISTS processed_content_pages (
+            url           TEXT PRIMARY KEY,
+            pdf_urls      TEXT NOT NULL DEFAULT '[]',
+            discovered_at INTEGER NOT NULL
+        )
+    `);
+    await db.execute(`CREATE INDEX IF NOT EXISTS processed_content_pages_discovered_at_idx ON processed_content_pages(discovered_at)`);
+
     // Ensure email notifications schema
     await ensureNotificationsTable(db);
 }
@@ -422,6 +432,91 @@ function parseLicenses(text) {
     return results;
 }
 
+// ── Non-license document detection ──────────────────────────────────────────
+const NON_LICENSE_KEYWORDS = [
+    'tender',
+    'sealed_quotation',
+    'sealed-quotation',
+    'quotation',
+    'furniture',
+    'firewall',
+    'route-nirdharan',
+    'route%20nirdharan',
+    'route_nirdharan',
+    'route nirdharan',
+    'fare-rate',
+    'fare_rate',
+    'fares',
+    'bhada',
+    'bhadadar',
+    'carrying-capacity',
+    'weight-carrying',
+    'reserved-seats',
+    'purchase-agreement',
+    'digital-sop',
+    'digital_sop',
+    'digital sop',
+    'annual-progress',
+    'annual_progress',
+    'satarkata',
+    'magazine',
+    'journal',
+    'bolpatra',
+    'prastab',
+    'intranet',
+    'internet-and-intranet',
+    'construction-of-repair',
+    'construction_of_repair',
+];
+
+function isNonLicenseDocument(url) {
+    if (!url) return false;
+    let decoded = '';
+    try {
+        decoded = decodeURIComponent(url).toLowerCase();
+    } catch {
+        decoded = (url || '').toLowerCase();
+    }
+
+    // Always preserve if explicitly marked as driver license (unless IT firewall)
+    const isLicenseNamed = /driving[-_ ]?licen[sc]e|smart[-_ ]?card|regular[-_ ]?print|urgent[-_ ]?driving|printed[-_ ]?license|license[-_ ]?print|चालक[-_ ]?अनुमतिपत्र|लाइसेन्स/i.test(decoded);
+    if (isLicenseNamed && !decoded.includes('firewall')) {
+        return false;
+    }
+
+    // Check non-license indicators
+    for (const kw of NON_LICENSE_KEYWORDS) {
+        if (decoded.includes(kw)) return true;
+    }
+
+    // Nepali non-license keywords (fares, tenders, proposals, progress reports, seat reservations, weight capacity)
+    if (/भाडादर|भाडा|बोलपत्र|प्रस्ताव|वार्षिक प्रगति|सतर्कता|सर्तकता|भारवहन|आरक्षित सीट/i.test(decoded)) {
+        return true;
+    }
+
+    return false;
+}
+
+function parseCliArgs() {
+    const args = process.argv.slice(2);
+    const options = {};
+    for (let i = 0; i < args.length; i++) {
+        const arg = args[i];
+        if (arg === '--force') {
+            options.force = true;
+        } else if (arg.startsWith('--office=')) {
+            options.office = arg.split('=')[1].trim();
+        } else if (arg === '--office' && i + 1 < args.length) {
+            options.office = args[++i].trim();
+        } else if (arg.startsWith('--url=')) {
+            options.url = arg.split('=')[1].trim();
+        } else if (arg === '--url' && i + 1 < args.length) {
+            options.url = args[++i].trim();
+        }
+    }
+    return options;
+}
+
 // ── Scraper class ─────────────────────────────────────────────────────────────
 class DOTMScraper {
     constructor() {
@@ -483,11 +578,68 @@ class DOTMScraper {
         return [...links];
     }
 
-    async getOfficePDFs() {
-        console.log('Fetching DOTM category pages (walking all pagination pages 1, 2, 3...)...');
+    async getProcessedContentPages() {
+        const db = getDb();
+        try {
+            const res = await db.execute('SELECT url, pdf_urls FROM processed_content_pages');
+            const map = new Map();
+            for (const row of res.rows) {
+                let pdfs = [];
+                try {
+                    pdfs = JSON.parse(row.pdf_urls || '[]');
+                } catch {
+                    pdfs = [];
+                }
+                map.set(row.url, Array.isArray(pdfs) ? pdfs : []);
+            }
+            return map;
+        } catch {
+            return new Map();
+        }
+    }
+
+    async markContentPageProcessed(contentUrl, pdfUrls = []) {
+        const db = getDb();
+        try {
+            await db.execute({
+                sql: `INSERT INTO processed_content_pages (url, pdf_urls, discovered_at)
+                      VALUES (?, ?, ?)
+                      ON CONFLICT(url) DO UPDATE SET
+                        pdf_urls      = excluded.pdf_urls,
+                        discovered_at = excluded.discovered_at`,
+                args: [contentUrl, JSON.stringify(pdfUrls || []), Date.now()],
+            });
+        } catch (err) {
+            console.warn(`  Failed to record processed content page ${contentUrl}: ${err.message}`);
+        }
+    }
+
+    async getOfficePDFs(options = {}) {
+        const force = Boolean(options.force);
+        const targetOffice = (options.office || '').toLowerCase().trim();
+        const targetUrl = (options.url || '').trim();
+
+        // 1. Direct targeted URL mode (--url https://...)
+        if (targetUrl) {
+            console.log(`🎯 Targeted URL mode: ${targetUrl}`);
+            if (/\.pdf$/i.test(targetUrl.split('?')[0])) {
+                return [targetUrl];
+            }
+            // If targeted URL is an office content page, resolve its PDF(s)
+            const html = await this.getPageHTML(targetUrl);
+            const pdfs = this.extractPDFUrls(html, targetUrl);
+            console.log(`  Found ${pdfs.length} PDF(s) in targeted URL: ${targetUrl}`);
+            return pdfs;
+        }
+
+        console.log('Fetching DOTM category pages (walking pagination)...');
 
         let pdfUrls = [];
         const contentLinks = new Set();
+        const processedContentPages = (force || targetOffice) ? new Map() : await this.getProcessedContentPages();
+        if (processedContentPages.size > 0) {
+            console.log(`📑 Found ${processedContentPages.size} previously indexed office pages in cache.`);
+        }
 
         // Walk paginated category pages until page returns 404 or empty response
         const MAX_PAGES = 30;
@@ -511,32 +663,88 @@ class DOTMScraper {
             const pagePdfs = this.extractPDFUrls(html, url);
             pdfUrls = pdfUrls.concat(pagePdfs);
 
+            const pageContentLinks = this.extractContentLinks(html);
             const before = contentLinks.size;
-            for (const link of this.extractContentLinks(html)) contentLinks.add(link);
-            const added = contentLinks.size - before;
+            let newLinksOnPage = 0;
 
-            console.log(`  page ${page}: +${added} new sub-pages (${pagePdfs.length} direct PDFs, total ${contentLinks.size} sub-pages)`);
+            for (const link of pageContentLinks) {
+                if (targetOffice && !link.toLowerCase().includes(targetOffice)) {
+                    continue;
+                }
+                contentLinks.add(link);
+                if (!processedContentPages.has(link)) {
+                    newLinksOnPage++;
+                }
+            }
+
+            const added = contentLinks.size - before;
+            console.log(`  page ${page}: +${added} sub-pages (${pagePdfs.length} direct PDFs, ${newLinksOnPage} new to cache)`);
+
+            // Early-exit check:
+            // If running normal incremental scrape and all content links on this pagination page
+            // are already known in processedContentPages, older pagination pages only contain even older posts.
+            if (!force && !targetOffice && pageContentLinks.length > 0 && newLinksOnPage === 0) {
+                console.log(`  💡 Page ${page} contains only previously cached office posts. Stopping pagination early.`);
+                break;
+            }
+
             await sleep(400);
         }
 
-        console.log(`Found ${contentLinks.size} office pages, ${pdfUrls.length} direct PDFs from listings`);
+        console.log(`Found ${contentLinks.size} candidate office page(s), ${pdfUrls.length} direct PDFs from listings`);
 
-        // Visit each office sub-page to find their PDFs
+        // Separate cached vs uncached office sub-pages
+        const pagesToFetch = [];
         for (const link of contentLinks) {
-            try {
-                const subHtml = await this.getPageHTML(link);
-                if (!subHtml) continue;
-                const subPDFs = this.extractPDFUrls(subHtml, link);
-                if (subPDFs.length) console.log(`  ${link} → ${subPDFs.length} pdf(s)`);
-                pdfUrls = pdfUrls.concat(subPDFs);
-                await sleep(1500);
-            } catch (err) {
-                console.warn(`  Sub-page error: ${err.message}`);
+            if (!force && !targetOffice && processedContentPages.has(link)) {
+                const cached = processedContentPages.get(link) || [];
+                pdfUrls = pdfUrls.concat(cached);
+            } else {
+                pagesToFetch.push(link);
             }
         }
 
+        const cachedPagesCount = contentLinks.size - pagesToFetch.length;
+        if (cachedPagesCount > 0) {
+            console.log(`⚡ Skipped fetching HTML for ${cachedPagesCount} already-cached office sub-page(s).`);
+        }
+
+        // Fetch new / uncached sub-pages using controlled concurrency pool
+        if (pagesToFetch.length > 0) {
+            console.log(`Visiting ${pagesToFetch.length} new/un-cached office sub-page(s) (concurrency: 3)...`);
+            const CONCURRENCY = 3;
+            let activeIdx = 0;
+            const workers = Array.from({ length: Math.min(CONCURRENCY, pagesToFetch.length) }, async () => {
+                while (activeIdx < pagesToFetch.length) {
+                    const link = pagesToFetch[activeIdx++];
+                    try {
+                        if (isNonLicenseDocument(link)) {
+                            console.log(`  ⏭️  Skipping non-license office page (tender/circular slug): ${link}`);
+                            await this.markContentPageProcessed(link, []);
+                            continue;
+                        }
+
+                        const subHtml = await this.getPageHTML(link);
+                        if (!subHtml) continue;
+                        const subPDFs = this.extractPDFUrls(subHtml, link);
+                        if (subPDFs.length) console.log(`  ${link} → ${subPDFs.length} pdf(s)`);
+                        pdfUrls = pdfUrls.concat(subPDFs);
+                        await this.markContentPageProcessed(link, subPDFs);
+                        await sleep(400);
+                    } catch (err) {
+                        console.warn(`  Sub-page error for ${link}: ${err.message}`);
+                    }
+                }
+            });
+            await Promise.all(workers);
+        }
+
         // Deduplicate
-        const unique = [...new Set(pdfUrls)];
+        let unique = [...new Set(pdfUrls)];
+        if (targetOffice) {
+            unique = unique.filter(u => u.toLowerCase().includes(targetOffice));
+            console.log(`🎯 Target office filter [${targetOffice}]: ${unique.length} matching PDF(s)`);
+        }
         console.log(`Total unique PDFs to process: ${unique.length}`);
         return unique;
     }
@@ -649,15 +857,24 @@ class DOTMScraper {
     }
 
     async scrapeAll(options = {}) {
+        const cliOpts = parseCliArgs();
         const force = Boolean(
             options.force ||
+            cliOpts.force ||
             process.argv.includes('--force') ||
             process.env.FORCE_SCRAPE === '1' ||
             process.env.FORCE_SCRAPE === 'true'
         );
+        const targetOffice = (options.office || cliOpts.office || process.env.TARGET_OFFICE || '').toLowerCase().trim();
+        const targetUrl = (options.url || cliOpts.url || process.env.TARGET_URL || '').trim();
+        const isTargeted = Boolean(targetOffice || targetUrl);
 
         console.log('\n═══ DOTM License Scraper ═══\n');
-        if (force) {
+        if (targetUrl) {
+            console.log(`🎯 Targeted URL mode: processing only ${targetUrl}\n`);
+        } else if (targetOffice) {
+            console.log(`🎯 Targeted office mode: processing only office [${targetOffice}]\n`);
+        } else if (force) {
             console.log('⚡ Force mode enabled: will re-extract all PDFs regardless of previous history.\n');
         } else {
             console.log('💡 Incremental mode: previously extracted PDFs will be skipped automatically.\n');
@@ -666,7 +883,7 @@ class DOTMScraper {
         const startTime = Date.now();
         await ensureSchema();
 
-        const pdfUrls = await this.getOfficePDFs();
+        const pdfUrls = await this.getOfficePDFs({ force, office: targetOffice, url: targetUrl });
         if (!pdfUrls.length) {
             console.log('No PDFs found. Exiting.');
             const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
@@ -680,8 +897,8 @@ class DOTMScraper {
             return false;
         }
 
-        const processedMap = force ? new Map() : await this.getProcessedPDFs();
-        if (!force && processedMap.size > 0) {
+        const processedMap = (force || isTargeted) ? new Map() : await this.getProcessedPDFs();
+        if (!force && !isTargeted && processedMap.size > 0) {
             console.log(`📋 Found ${processedMap.size} previously extracted PDFs in database history.`);
         }
 
@@ -698,8 +915,17 @@ class DOTMScraper {
             const pdfUrl = pdfUrls[i];
             console.log(`\n[${i + 1}/${pdfUrls.length}] ${pdfUrl}`);
 
-            // Skip if already extracted in a previous workflow run
-            if (!force && processedMap.has(pdfUrl)) {
+            // Pre-filtering non-license documents before downloading
+            if (isNonLicenseDocument(pdfUrl)) {
+                console.log(`  ℹ️  Skipping: identified as non-license document (tender/fare notice/circular)`);
+                await this.markPDFProcessed(pdfUrl, 0);
+                this.stats.skipped++;
+                skippedPdfsCount++;
+                continue;
+            }
+
+            // Skip if already extracted in a previous workflow run (targeted runs force re-processing)
+            if (!force && !isTargeted && processedMap.has(pdfUrl)) {
                 const prev = processedMap.get(pdfUrl);
                 const dateStr = prev.processed_at ? new Date(prev.processed_at).toISOString().split('T')[0] : 'previously';
                 console.log(`  ⏭️  Skipping: already extracted on ${dateStr} (${prev.extracted_count} licenses previously indexed)`);
@@ -776,6 +1002,7 @@ class DOTMScraper {
         if (!this.stats.circuitBreakerTripped) {
             try {
                 console.log('Checking for pending user email notifications...');
+                const db = getDb();
                 const notifStats = await processPendingNotifications(db);
                 if (notifStats.sentCount > 0) {
                     console.log(`✉️ Processed pending notifications: sent ${notifStats.sentCount} emails.`);
@@ -857,7 +1084,7 @@ function sleep(ms) {
 // ── Main ──────────────────────────────────────────────────────────────────────
 if (require.main === module) {
     const scraper = new DOTMScraper();
-    scraper.scrapeAll()
+    scraper.scrapeAll(parseCliArgs())
         .then(ok => process.exit(ok ? 0 : 1))
         .catch(err => { console.error(err); process.exit(1); });
 }
