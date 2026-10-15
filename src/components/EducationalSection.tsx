@@ -130,15 +130,6 @@ export default function EducationalSection({
                   {language === 'ne' ? 'ढाँचा हेर्नुहोस्' : 'View Sample'}
                 </button>
               )}
-              {tile.key === 'recent' && (
-                <Link
-                  href="/updates"
-                  className="rounded-full bg-[var(--nepal-blue-soft)] px-2 py-0.5 text-[10px] font-bold text-[var(--nepal-blue)] transition hover:bg-[var(--nepal-blue)] hover:text-white inline-flex items-center gap-0.5"
-                >
-                  <span>{language === 'ne' ? 'लग' : 'Logs'}</span>
-                  <span>→</span>
-                </Link>
-              )}
             </div>
 
             <p className="text-xs leading-5 text-[var(--text-secondary)]">{tile.text}</p>

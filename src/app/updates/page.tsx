@@ -157,15 +157,11 @@ export default function UpdatesPage() {
     return list
   }, [offices, selectedProvince, onlyUpdated, search, sortBy, officeCounts, batchCounts, language])
 
-  const totalOfficesWithRecords = useMemo(() => {
-    return Object.values(officeCounts).filter((v) => v > 0).length
-  }, [officeCounts])
-
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
       {/* Top Header Navigation */}
       <header className="sticky top-0 z-40 border-b border-[var(--border-default)]/70 bg-[var(--bg-primary)]/85 backdrop-blur-md">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-2.5 transition hover:opacity-90">
             <Image
               src="/License-Checker-Nepal-logo.png"
@@ -179,18 +175,18 @@ export default function UpdatesPage() {
                 Nepal License Checker
               </span>
               <span className="block text-[10.5px] font-semibold text-[var(--text-muted)]">
-                {language === 'ne' ? 'छपाइ विवरण तथा सिङ्क लग' : 'Sync Logs & Office Statistics'}
+                {language === 'ne' ? 'छपाइ तथ्याङ्क तथा सिङ्क स्थिति' : 'Live Sync Metrics & Directory'}
               </span>
             </div>
           </Link>
 
           <div className="flex items-center gap-2 sm:gap-3">
             {/* Language Switcher */}
-            <div className="flex items-center rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] p-0.5 text-xs font-bold">
+            <div className="flex items-center rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-0.5 text-xs font-bold shadow-2xs">
               <button
                 type="button"
                 onClick={() => handleLanguageToggle('en')}
-                className={`rounded-md px-2.5 py-1 transition ${
+                className={`rounded-lg px-2.5 py-1 transition ${
                   language === 'en'
                     ? 'bg-[var(--nepal-blue)] text-white shadow-2xs'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
@@ -201,7 +197,7 @@ export default function UpdatesPage() {
               <button
                 type="button"
                 onClick={() => handleLanguageToggle('ne')}
-                className={`rounded-md px-2.5 py-1 transition ${
+                className={`rounded-lg px-2.5 py-1 transition ${
                   language === 'ne'
                     ? 'bg-[var(--nepal-blue)] text-white shadow-2xs'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
@@ -214,10 +210,10 @@ export default function UpdatesPage() {
             {/* Back to Home Button */}
             <Link
               href="/"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-xs font-bold text-[var(--nepal-blue)] transition hover:bg-[var(--nepal-blue-soft)] shadow-2xs"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3.5 py-1.5 text-xs font-bold text-[var(--nepal-blue)] transition hover:bg-[var(--nepal-blue-soft)] shadow-2xs"
             >
               <span>←</span>
-              <span className="hidden sm:inline">{language === 'ne' ? 'लाइसेन्स खोजी' : 'Search License'}</span>
+              <span className="hidden sm:inline">{language === 'ne' ? 'लाइसेन्स खोजी पृष्ठ' : 'License Search'}</span>
               <span className="sm:hidden">{language === 'ne' ? 'फर्कनुहोस्' : 'Back'}</span>
             </Link>
           </div>
@@ -225,38 +221,56 @@ export default function UpdatesPage() {
       </header>
 
       {/* Main Content Area */}
-      <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 sm:py-10">
+      <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8 sm:py-12">
         {/* Page Hero Header */}
-        <div className="mb-8 text-center sm:mb-10 animate-rise-in">
-          <div className="mb-3.5 inline-flex items-center gap-2 rounded-full bg-[var(--nepal-blue)] px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.09em] text-white shadow-sm sm:text-[11px]">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <polyline points="23 4 23 10 17 10" />
-              <polyline points="1 20 1 14 7 14" />
-              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-            </svg>
-            {language === 'ne' ? 'यातायात व्यवस्था विभाग - प्रत्यक्ष तथ्याङ्क लग' : 'DOTM Live Database & Sync Logs'}
+        <div className="mb-8 text-center sm:mb-12 animate-rise-in">
+          {/* Nepal Flag GIF */}
+          <div className="mb-3 flex justify-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/Nepal-flag.gif"
+              alt=""
+              aria-hidden
+              width={42}
+              height={58}
+              className="h-12 w-auto object-contain drop-shadow-xs"
+            />
           </div>
 
-          <h1 className="text-2xl font-black tracking-tight text-[var(--text-primary)] sm:text-4xl">
-            {language === 'ne' ? 'लाइसेन्स छपाइ विवरण तथा सिङ्क स्थिति' : 'License Print Updates & Sync Logs'}
+          {/* Accent Ribbon */}
+          <div className="mb-4 flex items-center justify-center gap-2" aria-hidden>
+            <div className="h-1.5 w-10 rounded-l-full bg-[var(--nepal-red)]" />
+            <div className="h-2 w-2 rounded-full border-2 border-[var(--border-default)] bg-[var(--surface-primary)]" />
+            <div className="h-1.5 w-10 rounded-r-full bg-[var(--nepal-blue)]" />
+          </div>
+
+          <div className="mb-3.5 inline-flex items-center gap-2 rounded-full bg-[var(--nepal-blue)] px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.09em] text-white shadow-sm sm:text-[11px]">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
+            {language === 'ne' ? 'यातायात व्यवस्था विभाग · आधिकारिक छपाइ अभिलेख' : 'DOTM NEPAL · OFFICIAL PRINTED REGISTRY'}
+          </div>
+
+          <h1 className="text-2xl font-black tracking-tight text-[var(--text-primary)] sm:text-4xl lg:text-5xl">
+            {language === 'ne' ? 'लाइसेन्स छपाइ तथ्याङ्क तथा कार्यालयगत विवरण' : 'License Print Statistics & Office Volumes'}
           </h1>
-          <p className="mx-auto mt-2.5 max-w-2xl text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed">
+          <p className="mx-auto mt-3 max-w-2xl text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed">
             {language === 'ne'
-              ? 'यातायात व्यवस्था विभाग (DOTM) द्वारा प्रकाशित स्मार्ट कार्ड सवारी चालक अनुमतिपत्रहरूको कार्यालयगत विवरण, अभिलेख संख्या, र दैनिक अद्यावधिक स्थिति।'
-              : 'Official live breakdown of printed smart card driving licenses indexed across all 35 transport offices in Nepal, with automated synchronization logs from dotm.gov.np.'}
+              ? 'यातायात व्यवस्था विभाग (DOTM) बाट सार्वजनिक गरिएका १.१८ मिलियनभन्दा बढी स्मार्ट कार्ड सवारी चालक अनुमतिपत्रहरूको कार्यालयगत विवरण र प्रत्यक्ष सिङ्क स्थिति।'
+              : 'Live office-by-office breakdown of 1.18M+ printed smart card driving licenses indexed across all 35 transport offices in Nepal.'}
           </p>
 
-          <div className="mt-3 flex items-center justify-center gap-2">
+          <div className="mt-4 flex items-center justify-center gap-2.5">
             <button
               type="button"
               onClick={handleManualRefresh}
               disabled={isRefreshing}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1 text-xs font-semibold text-[var(--text-secondary)] transition hover:text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)]"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3.5 py-1.5 text-xs font-semibold text-[var(--text-secondary)] transition hover:text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)] shadow-2xs"
               title="Refresh live metrics"
             >
               <svg
-                width="12"
-                height="12"
+                width="13"
+                height="13"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -267,107 +281,77 @@ export default function UpdatesPage() {
               </svg>
               <span>{isRefreshing ? (language === 'ne' ? 'लोड हुँदैछ...' : 'Refreshing...') : (language === 'ne' ? 'ताजा गर्नुहोस्' : 'Refresh Metrics')}</span>
             </button>
+
+            <span className="text-[11px] text-[var(--text-muted)] font-mono">
+              {meta?.lastUpdated ? (
+                language === 'ne'
+                  ? `पछिल्लो सिङ्क: ${formatNepalDateTime(meta.lastUpdated, 'ne')}`
+                  : `Last synced: ${formatNepalDateTime(meta.lastUpdated, 'en')}`
+              ) : null}
+            </span>
           </div>
         </div>
 
-        {/* 4 Summary Stat Cards */}
-        <div className="mb-8 grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4 animate-rise-in">
-          {/* 1. Total Records */}
-          <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 shadow-xs">
+        {/* 2 Clean Executive Metric Cards */}
+        <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 animate-rise-in">
+          {/* Card 1: Total Records */}
+          <div className="relative overflow-hidden rounded-2xl border border-[var(--border-default)] bg-gradient-to-br from-[var(--surface-primary)] to-[var(--nepal-blue-soft)]/20 p-5 sm:p-6 shadow-xs">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                {language === 'ne' ? 'कुल दर्ता अभिलेख' : 'Total Printed Records'}
+                {language === 'ne' ? 'कुल दर्ता लाइसेन्स अभिलेख' : 'Total Printed Records Indexed'}
               </span>
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)] text-sm font-bold">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--nepal-blue)] text-white text-base font-bold shadow-xs">
                 📋
               </span>
             </div>
-            <div className="mt-3 font-mono text-2xl sm:text-3xl font-extrabold text-[var(--text-primary)]">
+            <div className="mt-4 font-mono text-3xl sm:text-4xl font-black tracking-tight text-[var(--text-primary)]">
               {isLoading ? '...' : totalRecords.toLocaleString(dateLocale)}
             </div>
-            <p className="mt-1 text-[11px] text-[var(--text-secondary)]">
-              {language === 'ne' ? 'DOTM बाट संकलित कुल स्मार्ट कार्डहरू' : 'Directly indexed from official DOTM portal'}
-            </p>
+            <div className="mt-2 flex items-center gap-2 text-xs text-[var(--text-secondary)]">
+              <span className="inline-flex h-2 w-2 rounded-full bg-[var(--success)] animate-glow-pulse" />
+              <span>{language === 'ne' ? 'DOTM को सम्पूर्ण सार्वजनिक सूची शतप्रतिशत समावेश' : 'Mirroring 100% of published DOTM printed card notices'}</span>
+            </div>
           </div>
 
-          {/* 2. Offices Covered */}
-          <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 shadow-xs">
+          {/* Card 2: Next Scheduled Sync */}
+          <div className="relative overflow-hidden rounded-2xl border border-[var(--border-default)] bg-gradient-to-br from-[var(--surface-primary)] to-[var(--success)]/10 p-5 sm:p-6 shadow-xs">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                {language === 'ne' ? 'कार्यालयहरूको संख्या' : 'Transport Offices'}
+                {language === 'ne' ? 'अर्को तालिकाबद्ध सिङ्क' : 'Next Automated Synchronization'}
               </span>
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)] text-sm font-bold">
-                🏢
-              </span>
-            </div>
-            <div className="mt-3 font-mono text-2xl sm:text-3xl font-extrabold text-[var(--text-primary)]">
-              {isLoading ? '...' : `${totalOfficesWithRecords} / 39`}
-            </div>
-            <p className="mt-1 text-[11px] text-[var(--text-secondary)]">
-              {language === 'ne' ? 'सबै ७ प्रदेशका यातायात कार्यालयहरू' : 'Offices with indexed license lists'}
-            </p>
-          </div>
-
-          {/* 3. Scraper Health */}
-          <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 shadow-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                {language === 'ne' ? 'स्क्र्यापर सिङ्क स्थिति' : 'Sync Engine Health'}
-              </span>
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--success)]/15 text-[var(--success)] text-sm font-bold">
-                🛡️
-              </span>
-            </div>
-            <div className="mt-3 flex items-center gap-2">
-              <span className="inline-flex h-2.5 w-2.5 rounded-full bg-[var(--success)] animate-glow-pulse" />
-              <span className="text-lg sm:text-xl font-extrabold text-[var(--success)]">
-                {language === 'ne' ? 'सक्रिय तथा नियमित' : 'Healthy & Active'}
-              </span>
-            </div>
-            <p className="mt-1 text-[11px] text-[var(--text-secondary)]">
-              {meta?.scraper?.lastRun?.totalPdfsCount
-                ? `${meta.scraper.lastRun.totalPdfsCount} PDFs monitored (${meta.scraper.lastRun.durationSeconds || 80}s last run)`
-                : (language === 'ne' ? '६२ आधिकारिक पीडीएफहरू निगरानीमा' : '62 PDFs monitored on dotm.gov.np')}
-            </p>
-          </div>
-
-          {/* 4. Next Sync */}
-          <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 shadow-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                {language === 'ne' ? 'अर्को तालिकाबद्ध सिङ्क' : 'Next Scheduled Sync'}
-              </span>
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)] text-sm font-bold">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--success)] text-white text-base font-bold shadow-xs">
                 ⏱️
               </span>
             </div>
-            <div className="mt-3 font-mono text-lg sm:text-xl font-extrabold text-[var(--nepal-blue)]">
+            <div className="mt-4 font-mono text-2xl sm:text-3xl font-black tracking-tight text-[var(--nepal-blue)]">
               {meta?.nextScheduledRun
                 ? formatTimeUntil(meta.nextScheduledRun, language)
                 : (language === 'ne' ? 'आज राति ९:०० बजे' : 'Tonight at 9:00 PM')}
             </div>
-            <p className="mt-1 text-[11px] text-[var(--text-secondary)]">
-              {meta?.nextScheduledRun
-                ? `${formatNepalDateTime(meta.nextScheduledRun, language)} (NPT)`
-                : 'Runs daily at 9:00 PM NPT (15:15 UTC)'}
-            </p>
+            <div className="mt-2 flex items-center gap-2 text-xs text-[var(--text-secondary)]">
+              <span className="font-semibold text-[var(--text-primary)]">
+                {meta?.nextScheduledRun
+                  ? `${formatNepalDateTime(meta.nextScheduledRun, language)} (NPT)`
+                  : 'Daily off-peak run at 9:00 PM NPT (15:15 UTC)'}
+              </span>
+            </div>
           </div>
         </div>
 
         {/* Latest Batch Highlights Card (If newly added licenses exist) */}
         {hasRecentBatch && latestBatch && (
-          <div className="mb-8 overflow-hidden rounded-2xl border border-[var(--success)]/30 bg-gradient-to-r from-[var(--success)]/10 via-[var(--surface-primary)] to-[var(--nepal-blue-soft)]/20 p-5 shadow-sm">
+          <div className="mb-8 overflow-hidden rounded-2xl border border-[var(--success)]/30 bg-gradient-to-r from-[var(--success)]/10 via-[var(--surface-primary)] to-[var(--nepal-blue-soft)]/20 p-5 shadow-xs">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-start gap-3">
+              <div className="flex items-start gap-3.5">
                 <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[var(--success)] text-white text-lg font-bold shadow-xs">
                   ✨
                 </span>
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h2 className="text-base font-extrabold text-[var(--text-primary)]">
                       {language === 'ne' ? 'पछिल्लो सिङ्कमा थपिएका नयाँ लाइसेन्सहरू' : 'Latest Scraper Batch Additions'}
                     </h2>
-                    <span className="rounded-full bg-[var(--success)]/20 px-2 py-0.5 text-[10.5px] font-bold text-[var(--success)]">
+                    <span className="rounded-full bg-[var(--success)]/20 px-2 py-0.5 text-[11px] font-bold text-[var(--success)]">
                       +{latestBatch.total.toLocaleString(dateLocale)} {language === 'ne' ? 'नयाँ' : 'new'}
                     </span>
                   </div>
@@ -402,22 +386,27 @@ export default function UpdatesPage() {
         <section className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-sm overflow-hidden">
           {/* Section Controls Bar */}
           <div className="border-b border-[var(--border-default)] bg-[var(--bg-secondary)]/50 p-4 sm:p-5">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3.5">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <h2 className="text-base sm:text-lg font-black tracking-tight text-[var(--text-primary)]">
-                  {language === 'ne' ? 'यातायात कार्यालयगत छपाइ अभिलेख' : 'Office-by-Office License Breakdown'}
-                </h2>
-                <p className="text-xs text-[var(--text-secondary)]">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base sm:text-lg font-black tracking-tight text-[var(--text-primary)]">
+                    {language === 'ne' ? 'यातायात कार्यालयगत छपाइ अभिलेख' : 'Office-by-Office License Breakdown'}
+                  </h2>
+                  <span className="rounded-full bg-[var(--nepal-blue-soft)] px-2.5 py-0.5 text-xs font-bold text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/20">
+                    {filteredOffices.length}
+                  </span>
+                </div>
+                <p className="mt-0.5 text-xs text-[var(--text-secondary)]">
                   {language === 'ne'
-                    ? `कुल ${filteredOffices.length} कार्यालयहरूको विवरण प्रदर्शित`
-                    : `Showing ${filteredOffices.length} transport offices`}
+                    ? 'सबै कार्यालयहरूको नाम, प्रदेश, छापिएको लाइसेन्स संख्या, र सिङ्क स्थिति'
+                    : 'Showing verified offices, indexed license counts, and sync status'}
                 </p>
               </div>
 
               {/* Filters & Search */}
               <div className="flex flex-wrap items-center gap-2.5">
                 {/* Search */}
-                <div className="relative min-w-[200px] flex-1 sm:flex-initial">
+                <div className="relative min-w-[210px] flex-1 sm:flex-initial">
                   <svg
                     width="14"
                     height="14"
@@ -434,8 +423,8 @@ export default function UpdatesPage() {
                     type="text"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder={language === 'ne' ? 'कार्यालय वा जिल्ला खोज्नुहोस्...' : 'Search office or location...'}
-                    className="h-9 w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] pl-8 pr-7 text-xs outline-none transition focus:border-[var(--nepal-blue)] focus:ring-2 focus:ring-[var(--nepal-blue)]/20"
+                    placeholder={language === 'ne' ? 'कार्यालय वा जिल्ला खोज्नुहोस्...' : 'Search office or district...'}
+                    className="h-9 w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] pl-8 pr-7 text-xs outline-none transition focus:border-[var(--nepal-blue)] focus:ring-2 focus:ring-[var(--nepal-blue)]/20 shadow-2xs"
                   />
                   {search && (
                     <button
@@ -452,7 +441,7 @@ export default function UpdatesPage() {
                 <select
                   value={selectedProvince}
                   onChange={(e) => setSelectedProvince(e.target.value)}
-                  className="h-9 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 text-xs font-semibold text-[var(--text-primary)] outline-none focus:border-[var(--nepal-blue)]"
+                  className="h-9 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 text-xs font-semibold text-[var(--text-primary)] outline-none focus:border-[var(--nepal-blue)] shadow-2xs"
                 >
                   <option value="all">{language === 'ne' ? 'सबै प्रदेशहरू' : 'All Provinces'}</option>
                   {provinces.map((p) => (
@@ -466,7 +455,7 @@ export default function UpdatesPage() {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as 'records' | 'recent' | 'code' | 'name')}
-                  className="h-9 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 text-xs font-semibold text-[var(--text-primary)] outline-none focus:border-[var(--nepal-blue)]"
+                  className="h-9 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 text-xs font-semibold text-[var(--text-primary)] outline-none focus:border-[var(--nepal-blue)] shadow-2xs"
                 >
                   <option value="records">{language === 'ne' ? 'धेरै लाइसेन्स संख्या' : 'Most Licenses'}</option>
                   <option value="recent">{language === 'ne' ? 'पछिल्लो अपडेट' : 'Recently Updated'}</option>
@@ -494,11 +483,11 @@ export default function UpdatesPage() {
                 return (
                   <div
                     key={office.code}
-                    className="p-4 sm:px-6 transition hover:bg-[var(--bg-secondary)]/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                    className="p-4 sm:px-6 transition hover:bg-[var(--bg-secondary)]/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                   >
                     {/* Left: Code, Name, Location */}
-                    <div className="flex items-start gap-3 min-w-0 flex-1">
-                      <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[var(--nepal-blue-soft)] font-mono text-sm font-bold text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/20 shadow-2xs">
+                    <div className="flex items-start gap-3.5 min-w-0 flex-1">
+                      <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--nepal-blue-soft)] to-transparent font-mono text-sm font-black text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/25 shadow-2xs">
                         {office.code}
                       </span>
                       <div className="min-w-0 flex-1">
@@ -516,9 +505,9 @@ export default function UpdatesPage() {
                         </div>
 
                         {/* Contacts & Website */}
-                        <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px]">
+                        <div className="mt-1.5 flex flex-wrap items-center gap-3 text-[11px]">
                           {office.phone && (
-                            <span className="font-mono text-[var(--text-secondary)]">
+                            <span className="font-mono text-[var(--text-secondary)] inline-flex items-center gap-1">
                               📞 {office.phone}
                             </span>
                           )}
@@ -538,25 +527,25 @@ export default function UpdatesPage() {
                     </div>
 
                     {/* Right: Printed Count & Progress */}
-                    <div className="flex flex-col sm:items-end justify-center min-w-[180px] pt-1 sm:pt-0">
+                    <div className="flex flex-col sm:items-end justify-center min-w-[200px] pt-1 sm:pt-0">
                       <div className="flex items-baseline gap-1.5">
-                        <span className="font-mono text-lg sm:text-xl font-extrabold text-[var(--text-primary)]">
+                        <span className="font-mono text-xl sm:text-2xl font-black text-[var(--text-primary)]">
                           {count > 0 ? count.toLocaleString(dateLocale) : (language === 'ne' ? '०' : '0')}
                         </span>
-                        <span className="text-xs text-[var(--text-muted)]">
-                          {language === 'ne' ? 'लाइसेन्स' : 'licenses'}
+                        <span className="text-xs font-semibold text-[var(--text-muted)]">
+                          {language === 'ne' ? 'लाइसेन्स छापिएका' : 'licenses printed'}
                         </span>
                       </div>
 
                       {/* Percentage share bar */}
-                      <div className="mt-1.5 flex items-center gap-2 w-full sm:w-44">
+                      <div className="mt-1.5 flex items-center gap-2 w-full sm:w-48">
                         <div className="h-1.5 flex-1 rounded-full bg-[var(--border-default)] overflow-hidden">
                           <div
                             className="h-full rounded-full bg-[var(--nepal-blue)] transition-all duration-500"
                             style={{ width: `${Math.min(100, Math.max(count > 0 ? 3 : 0, Number(percent) * 3))}%` }}
                           />
                         </div>
-                        <span className="text-[10px] font-mono font-semibold text-[var(--text-muted)]">
+                        <span className="text-[10.5px] font-mono font-bold text-[var(--text-muted)]">
                           {percent}%
                         </span>
                       </div>
@@ -564,17 +553,22 @@ export default function UpdatesPage() {
                       {/* Batch status badge */}
                       <div className="mt-1.5">
                         {batchCount > 0 ? (
-                          <span className="inline-flex items-center gap-1 font-mono text-[11px] font-bold text-[var(--success)] bg-[var(--success)]/10 px-2 py-0.5 rounded border border-[var(--success)]/25 animate-glow-pulse shadow-2xs">
+                          <span className="inline-flex items-center gap-1 font-mono text-[11px] font-bold text-[var(--success)] bg-[var(--success)]/10 px-2 py-0.5 rounded-md border border-[var(--success)]/25 animate-glow-pulse shadow-2xs">
                             <span>✨</span>
                             <span>
                               +{batchCount.toLocaleString(dateLocale)} {language === 'ne' ? 'नयाँ थपियो' : 'new in batch'}
                             </span>
                           </span>
                         ) : (
-                          <span className="text-[10.5px] font-medium text-[var(--text-muted)]">
-                            {count > 0
-                              ? (language === 'ne' ? '✓ अद्यावधिक' : '✓ Up to date')
-                              : (language === 'ne' ? 'डाटा संकलन हुँदै' : 'Awaiting published PDF')}
+                          <span className="inline-flex items-center gap-1 text-[10.5px] font-medium text-[var(--text-muted)]">
+                            {count > 0 ? (
+                              <>
+                                <span className="text-[var(--success)] font-bold">✓</span>
+                                <span>{language === 'ne' ? 'अद्यावधिक' : 'Up to date'}</span>
+                              </>
+                            ) : (
+                              <span>{language === 'ne' ? 'डाटा संकलन हुँदै' : 'Awaiting published PDF'}</span>
+                            )}
                           </span>
                         )}
                       </div>
@@ -586,56 +580,14 @@ export default function UpdatesPage() {
           </div>
         </section>
 
-        {/* Sync Engine Details & Information Accordion Box */}
-        <section className="mt-8 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 p-5 sm:p-6 text-xs text-[var(--text-secondary)] leading-relaxed">
-          <div className="flex items-center gap-2 text-sm font-bold text-[var(--text-primary)] mb-2">
-            <span>⚙️</span>
-            <span>{language === 'ne' ? 'स्वचालित सिङ्क इन्जिन तथा डाटा सुरक्षा प्रणाली' : 'Automated Sync Engine & Technical Architecture'}</span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
-            <div className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3.5">
-              <div className="font-bold text-[var(--text-primary)] mb-1">
-                📅 {language === 'ne' ? 'दैनिक तालिकाबद्ध सिङ्क' : 'Daily Automated Cron'}
-              </div>
-              <p className="text-[11px]">
-                {language === 'ne'
-                  ? 'प्रत्येक दिन नेपाली समय राति ९:०० बजे (15:15 UTC) यातायात व्यवस्था विभागको आधिकारिक सर्भर कम व्यस्त हुने समयमा स्वचालित रूपमा चल्छ।'
-                  : 'Runs every day off-peak at 9:00 PM NPT (15:15 UTC) via secure GitHub Actions to respect DOTM government server bandwidth.'}
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3.5">
-              <div className="font-bold text-[var(--text-primary)] mb-1">
-                🔒 {language === 'ne' ? 'डुप्लिकेट सुरक्षा तथा क्यासिङ' : 'Smart Hash Duplicate Guard'}
-              </div>
-              <p className="text-[11px]">
-                {language === 'ne'
-                  ? 'पहिले नै प्रशोधन भइसकेका ६२ वटा पीडीएफहरू क्यासबाट स्वतः छुट्याइन्छ। नयाँ प्रकाशित लाइसेन्सहरू मात्र पार्स गरी डाटाबेसमा सुरक्षित गरिन्छ।'
-                  : 'Previously processed PDFs are securely cached by URL and content hash. Only newly released print notices are fetched and parsed.'}
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3.5">
-              <div className="font-bold text-[var(--text-primary)] mb-1">
-                ⚡ {language === 'ne' ? 'उच्च गतिको एज डाटाबेस' : 'Sub-millisecond Edge Lookups'}
-              </div>
-              <p className="text-[11px]">
-                {language === 'ne'
-                  ? '११ लाखभन्दा बढी अभिलेखहरू एज सर्भरमा इन्डेक्स गरिएकाले तपाईंले आफ्नो लाइसेन्स नम्बर हाल्नासाथ केही मिलिसेकेन्डमै नतिजा प्राप्त हुन्छ।'
-                  : 'All 1.18M+ license records are indexed on distributed edge SQLite / libSQL tables for instantaneous search response.'}
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* Bottom Navigation CTA */}
-        <div className="mt-8 text-center">
+        {/* Bottom CTA to Check License */}
+        <div className="mt-10 text-center">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 rounded-xl bg-[var(--nepal-blue)] px-6 py-3 text-xs sm:text-sm font-bold text-white shadow-sm transition hover:bg-[var(--nepal-blue-dark)]"
+            className="inline-flex items-center gap-2 rounded-2xl bg-[var(--nepal-blue)] px-7 py-3.5 text-xs sm:text-sm font-extrabold text-white shadow-md transition hover:bg-[var(--nepal-blue-dark)] hover:shadow-lg active:scale-98"
           >
             <span>🔍</span>
-            <span>{language === 'ne' ? 'आफ्नो लाइसेन्स छपाइ स्थिति जाँच्नुहोस्' : 'Check Your License Print Status Now'}</span>
+            <span>{language === 'ne' ? 'आफ्नो सवारी चालक अनुमतिपत्र छपाइ स्थिति जाँच्नुहोस्' : 'Check Your Smart Card License Status Now'}</span>
             <span>→</span>
           </Link>
         </div>
