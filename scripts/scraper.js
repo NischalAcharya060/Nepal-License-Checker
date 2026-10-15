@@ -83,7 +83,7 @@ async function ensureSchema() {
 // ── HTTP helpers ─────────────────────────────────────────────────────────────
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
-function fetchUrl(url, binary = false, retries = 3) {
+function fetchUrl(url, binary = false, retries = 4) {
     return new Promise((resolve, reject) => {
         const attempt = (n) => {
             const parsed = new URL(url);
@@ -92,7 +92,7 @@ function fetchUrl(url, binary = false, retries = 3) {
                 hostname: parsed.hostname,
                 path: parsed.pathname + parsed.search,
                 method: 'GET',
-                timeout: binary ? 60000 : 20000,
+                timeout: binary ? 60000 : 25000,
                 headers: {
                     'User-Agent': USER_AGENT,
                     'Accept': binary ? 'application/pdf,*/*' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -114,7 +114,7 @@ function fetchUrl(url, binary = false, retries = 3) {
                 if (res.statusCode < 200 || res.statusCode >= 400) {
                     res.resume();
                     if ((res.statusCode === 403 || res.statusCode >= 500) && n < retries) {
-                        const wait = 2000 * n;
+                        const wait = (res.statusCode === 403 ? 3000 : 2000) * n;
                         console.warn(`  HTTP ${res.statusCode} for ${url} — retry ${n}/${retries} in ${wait}ms`);
                         return setTimeout(() => attempt(n + 1), wait);
                     }
@@ -711,8 +711,8 @@ class DOTMScraper {
 
         // Fetch new / uncached sub-pages using controlled concurrency pool
         if (pagesToFetch.length > 0) {
-            console.log(`Visiting ${pagesToFetch.length} new/un-cached office sub-page(s) (concurrency: 3)...`);
-            const CONCURRENCY = 3;
+            console.log(`Visiting ${pagesToFetch.length} new/un-cached office sub-page(s) (concurrency: 2)...`);
+            const CONCURRENCY = 2;
             let activeIdx = 0;
             const workers = Array.from({ length: Math.min(CONCURRENCY, pagesToFetch.length) }, async () => {
                 while (activeIdx < pagesToFetch.length) {
@@ -730,7 +730,7 @@ class DOTMScraper {
                         if (subPDFs.length) console.log(`  ${link} → ${subPDFs.length} pdf(s)`);
                         pdfUrls = pdfUrls.concat(subPDFs);
                         await this.markContentPageProcessed(link, subPDFs);
-                        await sleep(400);
+                        await sleep(650);
                     } catch (err) {
                         console.warn(`  Sub-page error for ${link}: ${err.message}`);
                     }
