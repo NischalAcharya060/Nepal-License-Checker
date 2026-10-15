@@ -15,13 +15,6 @@ export const metadata: Metadata = {
     'Watch a 19-second tutorial on how to check your Nepal smart card driving licence print status online (सवारी चालक अनुमति पत्र चेक) using the DOTM printed list on Nepal License Checker.',
   alternates: {
     canonical: '/tutorial',
-    languages: {
-      'en': '/tutorial',
-      'en-NP': '/tutorial',
-      'ne': '/tutorial?lang=ne',
-      'ne-NP': '/tutorial?lang=ne',
-      'x-default': '/tutorial',
-    },
   },
   openGraph: {
     title: 'Video Tutorial: How to Check Nepal Licence Print Status',

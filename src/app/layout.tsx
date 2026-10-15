@@ -780,13 +780,6 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: '/',
-    languages: {
-      'en': '/',
-      'en-NP': '/',
-      'ne': '/?lang=ne',
-      'ne-NP': '/?lang=ne',
-      'x-default': '/',
-    },
   },
 
   robots: {
