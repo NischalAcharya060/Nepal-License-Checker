@@ -95,7 +95,7 @@ npm run cron:scrape        # fetch and upsert the latest DOTM PDFs into Turso
 
 ### GitHub Actions cron
 
-`.github/workflows/dotm-scraper-cron.yml` runs the scraper automatically on a schedule (`0 2 15 2,5,8,11 *`) and can also be triggered manually from the **Actions** tab.
+`.github/workflows/dotm-scraper-cron.yml` runs the scraper automatically on a schedule (`15 15 1,15 * *` — 09:00 PM NPT / 3:15 PM UTC on the 1st and 15th of every month) and can also be triggered manually from the **Actions** tab.
 
 Set the following in the repo (as secrets or variables, optionally under the `Production` environment):
 

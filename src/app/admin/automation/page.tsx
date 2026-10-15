@@ -1,7 +1,12 @@
 'use client'
 
 import { AdminScraperData } from '../types'
-import { formatNepalDateTime, formatTimeUntil } from '@/lib/cronHelper'
+import {
+    DEFAULT_CRON_SCHEDULE,
+    formatCronTimeNPT,
+    formatNepalDateTime,
+    formatTimeUntil,
+} from '@/lib/cronHelper'
 import { formatTimeAgo } from '../helpers'
 
 export interface AdminAutomationProps {
@@ -81,9 +86,11 @@ export default function AdminAutomation(props: any) {
                     <p className="mt-1 text-[11px] text-[var(--text-muted)] flex items-center gap-1">
                         <span>Cron:</span>
                         <code className="rounded bg-[var(--surface-primary)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--text-secondary)]">
-                            {scraperData?.schedule || '0 2 1,15 * *'}
+                            {scraperData?.schedule || DEFAULT_CRON_SCHEDULE}
                         </code>
-                        <span className="text-[10px] text-[var(--text-muted)]">(07:45 NPT)</span>
+                        <span className="text-[10px] text-[var(--text-muted)]">
+                            ({formatCronTimeNPT(scraperData?.schedule || DEFAULT_CRON_SCHEDULE)})
+                        </span>
                     </p>
                 </div>
 

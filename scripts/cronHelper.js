@@ -1,5 +1,5 @@
 // scripts/cronHelper.js
-const DEFAULT_CRON_SCHEDULE = '0 2 1,15 * *';
+const DEFAULT_CRON_SCHEDULE = '15 15 1,15 * *';
 
 function parseCronField(field, minVal, maxVal) {
     if (!field || field === '*') return null;
@@ -127,10 +127,28 @@ function formatTimeUntil(targetDateInput, language = 'en') {
     return language === 'ne' ? `${diffMins.toLocaleString('ne-NP')} मिनेट बाँकी` : `in ${diffMins}m`;
 }
 
+function formatCronTimeNPT(cronExpr = DEFAULT_CRON_SCHEDULE) {
+    const parts = cronExpr.trim().split(/\s+/);
+    if (parts.length < 2) return '';
+    const min = parseInt(parts[0], 10);
+    const hour = parseInt(parts[1], 10);
+    if (isNaN(min) || isNaN(hour)) return '';
+    const d = new Date();
+    d.setUTCHours(hour, min, 0, 0);
+    return d.toLocaleTimeString('en-US', {
+        timeZone: 'Asia/Kathmandu',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+    }) + ' NPT';
+}
+
 module.exports = {
     DEFAULT_CRON_SCHEDULE,
     getNextCronRun,
     formatNepalDateTime,
     getNepalMidnightTimestamp,
     formatTimeUntil,
+    formatCronTimeNPT,
 };
+
