@@ -106,62 +106,81 @@ export default function HowToSection({ language, lastUpdatedAt }: HowToSectionPr
         </p>
       </div>
 
-      {/* Video tutorial — thumbnail links to the /tutorial watch page */}
-      <div className="px-5 py-4 sm:px-6 sm:py-5">
-        <Link
-          href="/tutorial"
-          className="group relative block aspect-video w-full overflow-hidden rounded-xl border border-[var(--border-default)] bg-black shadow-sm transition-shadow hover:shadow-md"
-          aria-label={
-            language === 'ne'
-              ? 'भिडियो ट्युटोरियल हेर्नुहोस्'
-              : 'Watch the video tutorial'
-          }
-        >
-          <Image
-            src="/tutorial-poster.jpg"
-            alt={
-              language === 'ne'
-                ? 'सवारी चालक अनुमतिपत्र छापिएको कि छैन जाँच्ने भिडियो ट्युटोरियल'
-                : 'Video tutorial: how to check if your Nepal driving licence is printed'
-            }
-            fill
-            sizes="(max-width: 768px) 100vw, 720px"
-            className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-          />
-          <span className="absolute inset-0 flex items-center justify-center" aria-hidden>
-            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-black/55 backdrop-blur-sm transition-all duration-200 group-hover:scale-110 group-hover:bg-[var(--nepal-blue)]/85">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="white" aria-hidden>
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            </span>
-          </span>
-          <span className="absolute bottom-2 right-2 rounded-md bg-black/70 px-1.5 py-0.5 text-[10px] font-bold text-white">
-            0:19
-          </span>
-          <span className="absolute bottom-2 left-2 rounded-md bg-black/70 px-2 py-0.5 text-[11px] font-bold text-white">
-            {language === 'ne' ? 'भिडियो ट्युटोरियल हेर्नुहोस्' : 'Watch video tutorial'}
-          </span>
-        </Link>
-      </div>
+      {/* Main Content Area: Responsive 2-column on desktop */}
+      <div className="p-5 sm:p-6 lg:p-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+          {/* Left Column: Video Tutorial Card */}
+          <div className="lg:col-span-5 space-y-3">
+            <Link
+              href="/tutorial"
+              className="group relative block aspect-video w-full overflow-hidden rounded-xl border border-[var(--border-default)] bg-black shadow-sm transition-shadow hover:shadow-md"
+              aria-label={
+                language === 'ne'
+                  ? 'भिडियो ट्युटोरियल हेर्नुहोस्'
+                  : 'Watch the video tutorial'
+              }
+            >
+              <Image
+                src="/tutorial-poster.jpg"
+                alt={
+                  language === 'ne'
+                    ? 'सवारी चालक अनुमतिपत्र छापिएको कि छैन जाँच्ने भिडियो ट्युटोरियल'
+                    : 'Video tutorial: how to check if your Nepal driving licence is printed'
+                }
+                fill
+                sizes="(max-width: 1024px) 100vw, 500px"
+                className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+              />
+              <span className="absolute inset-0 flex items-center justify-center" aria-hidden>
+                <span className="flex h-14 w-14 items-center justify-center rounded-full bg-black/55 backdrop-blur-sm transition-all duration-200 group-hover:scale-110 group-hover:bg-[var(--nepal-blue)]/85">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="white" aria-hidden>
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </span>
+              </span>
+              <span className="absolute bottom-2 right-2 rounded-md bg-black/70 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                0:19
+              </span>
+              <span className="absolute bottom-2 left-2 rounded-md bg-black/70 px-2 py-0.5 text-[11px] font-bold text-white">
+                {language === 'ne' ? 'भिडियो ट्युटोरियल हेर्नुहोस्' : 'Watch video tutorial'}
+              </span>
+            </Link>
 
-      <ol className="divide-y divide-[var(--border-default)]/70">
-        {steps.map((s, idx) => (
-          <li key={idx} className="flex gap-4 px-5 py-4 sm:px-6 sm:py-5">
-            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[var(--nepal-blue)] text-sm font-bold text-white shadow-sm sm:h-9 sm:w-9">
-              {idx + 1}
+            <div className="rounded-xl border border-[var(--border-default)]/70 bg-[var(--bg-secondary)]/60 p-3.5 text-xs text-[var(--text-secondary)]">
+              <span className="font-bold text-[var(--text-primary)]">
+                💡 {language === 'ne' ? 'छिटो सुझाव:' : 'Quick Tip:'}
+              </span>{' '}
+              <span>
+                {language === 'ne'
+                  ? 'तपाईंको लाइसेन्स नम्बर पुरानो स्मार्ट कार्ड वा राजस्व रसिदको माथिल्लो भागमा हुन्छ।'
+                  : 'Your license number is printed on your payment slip or old smart card.'}
+              </span>
             </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-sm font-bold text-[var(--text-primary)] sm:text-[15px]">{s.title}</div>
-              <p className="mt-1 text-sm leading-6 text-[var(--text-secondary)]">{s.body}</p>
-              {s.hint && (
-                <code className="mt-2 inline-block rounded-md border border-[var(--nepal-blue)]/25 bg-[var(--nepal-blue-soft)] px-2 py-0.5 font-mono text-[12px] text-[var(--nepal-blue)]">
-                  {s.hint}
-                </code>
-              )}
-            </div>
-          </li>
-        ))}
-      </ol>
+          </div>
+
+          {/* Right Column: Step-by-Step Instructions */}
+          <div className="lg:col-span-7">
+            <ol className="space-y-3">
+              {steps.map((s, idx) => (
+                <li key={idx} className="flex gap-3.5 rounded-xl border border-[var(--border-default)]/70 bg-[var(--surface-primary)] p-3.5 sm:p-4 shadow-2xs">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[var(--nepal-blue)] text-xs font-black text-white shadow-xs">
+                    {idx + 1}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-bold text-[var(--text-primary)]">{s.title}</div>
+                    <p className="mt-1 text-xs sm:text-sm leading-relaxed text-[var(--text-secondary)]">{s.body}</p>
+                    {s.hint && (
+                      <code className="mt-2 inline-block rounded-md border border-[var(--nepal-blue)]/25 bg-[var(--nepal-blue-soft)] px-2 py-0.5 font-mono text-[11px] text-[var(--nepal-blue)]">
+                        {s.hint}
+                      </code>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </div>
+      </div>
 
       <div className="border-t border-[var(--border-default)] bg-[var(--bg-secondary)] px-5 py-3 text-[11px] leading-5 text-[var(--text-muted)] sm:px-6">
         {language === 'ne'

@@ -134,7 +134,7 @@ export default function TutorialPage() {
         aria-hidden
       />
 
-      <div className="relative mx-auto w-full max-w-3xl animate-rise-in">
+      <div className="relative mx-auto w-full max-w-5xl animate-rise-in">
         {/* Breadcrumb */}
         <nav aria-label="Breadcrumb" className="mb-3 flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
           <Link href="/" className="font-semibold transition hover:text-[var(--nepal-blue)]">

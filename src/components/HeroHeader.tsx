@@ -83,7 +83,7 @@ export default function HeroHeader({
 
       {/* Trust & Authority Stats Bar */}
       <div
-        className="mx-auto mb-6 flex max-w-3xl flex-wrap items-center justify-center gap-x-5 gap-y-2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)]/80 px-4 py-2.5 text-[11px] font-medium text-[var(--text-secondary)] shadow-sm animate-rise-in print:hidden"
+        className="mx-auto mb-6 flex max-w-4xl flex-wrap items-center justify-center gap-x-6 gap-y-2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)]/80 px-4 py-2.5 text-[11px] font-medium text-[var(--text-secondary)] shadow-sm animate-rise-in print:hidden"
         style={{ animationDelay: '0.16s' }}
       >
         <span className="inline-flex items-center gap-1.5">

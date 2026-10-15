@@ -86,7 +86,7 @@ export default function Footer({
 
   return (
     <footer className="w-full border-t border-[var(--border-default)]/80 bg-[var(--bg-primary)]/60 backdrop-blur-xs pt-10 pb-12 print:hidden text-xs text-[var(--text-secondary)]">
-      <div className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-7xl lg:max-w-[1440px] px-4 sm:px-6 lg:px-8">
         {/* Top Landscape Header: Brand Info + Operational Status + Action Buttons */}
         <div className="pb-8 border-b border-[var(--border-default)]/70 space-y-5">
           {/* Top Row: Brand Identity & Live Status */}

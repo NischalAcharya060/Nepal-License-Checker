@@ -379,8 +379,6 @@ export default function Home() {
         setLanguage={setLanguage}
         theme={theme}
         setTheme={setTheme}
-        viewCount={viewCount}
-        dateLocale={dateLocale}
         lightLabel={copy.home.lightLabel}
         darkLabel={copy.home.darkLabel}
         onOpenOffices={() => setIsOfficesModalOpen(true)}
@@ -390,61 +388,64 @@ export default function Home() {
         onOpenNpm={() => setIsNpmModalOpen(true)}
       />
 
-      <div className="relative z-10 mx-auto w-full max-w-4xl px-4 pb-14 pt-6 sm:px-6 sm:pt-10 print:p-0 print:m-0 print:max-w-none">
-        {/* Modular Hero Header */}
-        <HeroHeader
-          language={language}
-          badge={copy.home.badge}
-          title={copy.home.title}
-          titleAccent={copy.home.titleAccent}
-          description={copy.home.description}
-          viewsLabel={copy.home.viewsLabel}
-          nextSyncLabel={copy.home.nextSyncLabel}
-          nextScraperRun={nextScraperRun}
-          indexedRecords={indexedRecords}
-          viewCount={viewCount}
-          lastUpdatedAt={lastUpdatedAt}
-          dateLocale={dateLocale}
-        />
-
-        {/* License Query Form */}
-        <div className="print:hidden">
-          <LicenseForm
-            onSubmit={checkLicense}
-            onReset={reset}
-            loading={searchState === 'loading'}
-            copy={copy.form}
+      <div className="relative z-10 mx-auto w-full max-w-7xl lg:max-w-[1440px] px-4 pb-16 pt-6 sm:px-6 lg:px-8 sm:pt-10 print:p-0 print:m-0 print:max-w-none">
+        {/* Top Hero & Search Section - Fills the initial viewport cleanly so subsequent sections start below the fold */}
+        <div className="flex min-h-[calc(100vh-5rem)] flex-col justify-center pb-8 pt-2 sm:pb-12">
+          {/* Modular Hero Header */}
+          <HeroHeader
             language={language}
-            externalNumber={externalNumber}
-            lockoutUntil={lockoutUntil}
+            badge={copy.home.badge}
+            title={copy.home.title}
+            titleAccent={copy.home.titleAccent}
+            description={copy.home.description}
+            viewsLabel={copy.home.viewsLabel}
+            nextSyncLabel={copy.home.nextSyncLabel}
+            nextScraperRun={nextScraperRun}
+            indexedRecords={indexedRecords}
+            viewCount={viewCount}
+            lastUpdatedAt={lastUpdatedAt}
+            dateLocale={dateLocale}
           />
-        </div>
 
-        {/* Result Card */}
-        {(searchState === 'found' || searchState === 'not_found' || searchState === 'error') && (
-          <div className="mt-5 animate-slide-up print:m-0 print:p-0">
-            <LicenseResult
-              state={searchState}
-              result={result}
-              licenseNumber={lastSearched}
-              onCheckAnother={reset}
-              copy={copy.result}
-              dateLocale={dateLocale}
+          {/* License Query Form */}
+          <div className="mx-auto w-full max-w-3xl lg:max-w-4xl print:hidden">
+            <LicenseForm
+              onSubmit={checkLicense}
+              onReset={reset}
+              loading={searchState === 'loading'}
+              copy={copy.form}
               language={language}
-              nextScraperRun={nextScraperRun}
-              notificationsCopy={copy.notifications}
-              onFoundExisting={(foundData) => {
-                setResult(foundData)
-                setSearchState('found')
-              }}
-              onOpenFeedback={() => setIsFeedbackModalOpen(true)}
+              externalNumber={externalNumber}
+              lockoutUntil={lockoutUntil}
             />
           </div>
-        )}
+
+          {/* Result Card */}
+          {(searchState === 'found' || searchState === 'not_found' || searchState === 'error') && (
+            <div className="mx-auto w-full max-w-3xl lg:max-w-4xl mt-5 animate-slide-up print:m-0 print:p-0">
+              <LicenseResult
+                state={searchState}
+                result={result}
+                licenseNumber={lastSearched}
+                onCheckAnother={reset}
+                copy={copy.result}
+                dateLocale={dateLocale}
+                language={language}
+                nextScraperRun={nextScraperRun}
+                notificationsCopy={copy.notifications}
+                onFoundExisting={(foundData) => {
+                  setResult(foundData)
+                  setSearchState('found')
+                }}
+                onOpenFeedback={() => setIsFeedbackModalOpen(true)}
+              />
+            </div>
+          )}
+        </div>
 
         {/* Educational Content & Help Sections */}
         {searchState === 'idle' && (
-          <>
+          <div className="pt-6 sm:pt-10">
             <EducationalSection
               language={language}
               tilesCopy={copy.home.tiles}
@@ -461,7 +462,7 @@ export default function Home() {
             <HowToSection language={language} lastUpdatedAt={lastUpdatedAt} />
 
             <FaqSection language={language} lastUpdatedAt={lastUpdatedAt} />
-          </>
+          </div>
         )}
       </div>
 

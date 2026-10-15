@@ -149,28 +149,30 @@ export default function FaqSection({ language, lastUpdatedAt }: FaqSectionProps)
         </p>
       </div>
 
-      <div className="divide-y divide-[var(--border-default)]/70">
-        {faqs.map((f, idx) => (
-          <details
-            key={idx}
-            className="group px-5 py-3.5 transition hover:bg-[var(--bg-secondary)]/60 sm:px-6"
-          >
-            <summary className="flex cursor-pointer list-none items-start justify-between gap-3 text-sm font-semibold text-[var(--text-primary)] sm:text-[15px]">
-              <span className="min-w-0 flex-1">{f.q}</span>
-              <span
-                className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-secondary)] transition group-open:rotate-180 group-open:border-[var(--nepal-blue)] group-open:bg-[var(--nepal-blue)] group-open:text-white"
-                aria-hidden
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
-              </span>
-            </summary>
-            <p className="mt-2 pr-9 text-sm leading-6 text-[var(--text-secondary)]">
-              {f.a}
-            </p>
-          </details>
-        ))}
+      <div className="p-4 sm:p-6 lg:p-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 sm:gap-4 items-start">
+          {faqs.map((f, idx) => (
+            <details
+              key={idx}
+              className="group rounded-xl border border-[var(--border-default)]/70 bg-[var(--surface-primary)] p-4 sm:p-5 transition hover:border-[var(--nepal-blue)]/50 hover:bg-[var(--bg-secondary)]/30 shadow-2xs"
+            >
+              <summary className="flex cursor-pointer list-none items-start justify-between gap-3 text-sm font-bold text-[var(--text-primary)]">
+                <span className="min-w-0 flex-1">{f.q}</span>
+                <span
+                  className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] transition group-open:rotate-180 group-open:border-[var(--nepal-blue)] group-open:bg-[var(--nepal-blue)] group-open:text-white"
+                  aria-hidden
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </span>
+              </summary>
+              <p className="mt-3 text-xs sm:text-sm leading-relaxed text-[var(--text-secondary)] pt-2 border-t border-[var(--border-default)]/40">
+                {f.a}
+              </p>
+            </details>
+          ))}
+        </div>
       </div>
     </section>
   )

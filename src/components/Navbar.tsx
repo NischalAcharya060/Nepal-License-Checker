@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import InstallAppButton from '@/components/InstallAppButton'
 import type { Language } from '@/lib/i18n'
 
@@ -12,8 +13,8 @@ interface NavbarProps {
   setLanguage: (lang: Language) => void
   theme: ThemeMode
   setTheme: (theme: ThemeMode) => void
-  viewCount: number | null
-  dateLocale: string
+  viewCount?: number | null
+  dateLocale?: string
   lightLabel: string
   darkLabel: string
   onOpenOffices: () => void
@@ -28,8 +29,6 @@ export default function Navbar({
   setLanguage,
   theme,
   setTheme,
-  viewCount,
-  dateLocale,
   lightLabel,
   darkLabel,
   onOpenOffices,
@@ -40,46 +39,51 @@ export default function Navbar({
 }: NavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
+  const handleBrandClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) {
+      return
+    }
+    e.preventDefault()
+    if (typeof window !== 'undefined') {
+      if (window.location.pathname === '/' && !window.location.search) {
+        window.location.reload()
+      } else {
+        window.location.href = '/'
+      }
+    }
+  }
+
   return (
     <nav className="sticky top-0 z-40 border-b border-[var(--border-default)]/70 bg-[var(--bg-primary)]/80 backdrop-blur-md print:hidden">
-      <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-2 px-3 py-2 sm:gap-3 sm:px-6 sm:py-2.5">
+      <div className="mx-auto flex w-full max-w-7xl lg:max-w-[1440px] items-center justify-between gap-3 px-4 py-2 sm:px-6 lg:px-8 sm:py-2.5">
         {/* Logo & Portal Branding */}
-        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+        <Link
+          href="/"
+          onClick={handleBrandClick}
+          className="flex items-center gap-2.5 sm:gap-3 shrink-0 cursor-pointer group"
+          title={language === 'ne' ? 'पृष्ठ पुनः ताजा गर्नुहोस्' : 'Refresh page'}
+        >
           <Image
             src="/License-Checker-Nepal-logo.png"
             alt="Nepal License Checker Logo"
             width={56}
             height={56}
-            className="h-9 w-9 sm:h-12 sm:w-12 rounded-xl shadow-xs object-contain transition-transform hover:scale-105 shrink-0"
+            className="h-9 w-9 sm:h-12 sm:w-12 rounded-xl shadow-xs object-contain transition-transform group-hover:scale-105 shrink-0"
             priority
           />
-          <div className="flex flex-col min-w-0">
-            <span className="truncate text-xs font-extrabold tracking-tight text-[var(--text-primary)] sm:text-base leading-tight">
+          <div className="flex flex-col">
+            <span className="text-xs font-extrabold tracking-tight text-[var(--text-primary)] sm:text-base leading-tight whitespace-nowrap">
               {language === 'ne' ? 'नेपाल लाइसेन्स जाँच' : 'Nepal License Checker'}
             </span>
-            <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-semibold text-[var(--text-secondary)]">
+            <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-semibold text-[var(--text-secondary)] whitespace-nowrap">
               <span className="inline-flex h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-[var(--success)] animate-glow-pulse shrink-0" aria-hidden />
-              <span className="truncate">DOTM · dotm.gov.np</span>
+              <span>DOTM · dotm.gov.np</span>
             </div>
           </div>
-        </div>
+        </Link>
 
         {/* Quick Actions & Navigation */}
         <div className="flex items-center justify-end gap-1.5 sm:gap-2 shrink-0">
-          {/* Live Viewer Counter (Desktop/Tablet) */}
-          {viewCount !== null && (
-            <span
-              className="hidden items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1 text-[11px] font-semibold text-[var(--text-secondary)] md:inline-flex shadow-2xs"
-              title={language === 'ne' ? `कुल अवलोकन: ${viewCount.toLocaleString(dateLocale)}` : `Total views: ${viewCount.toLocaleString(dateLocale)}`}
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-              <span>{viewCount.toLocaleString(dateLocale)}</span>
-            </span>
-          )}
-
           {/* Offices Directory button (Desktop) */}
           <button
             type="button"
@@ -356,7 +360,7 @@ export default function Navbar({
               </button>
             )}
 
-            {/* GitHub Link & Views in mobile menu */}
+            {/* GitHub Link in mobile menu */}
             <div className="mt-1 flex items-center justify-between pt-2 border-t border-[var(--border-default)]/60 text-[11px]">
               <a
                 href="https://github.com/NischalAcharya060/Nepal-License-Checker"
@@ -369,16 +373,6 @@ export default function Navbar({
                 </svg>
                 <span>GitHub Repository</span>
               </a>
-
-              {viewCount !== null && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--text-muted)]">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                  <span>{viewCount.toLocaleString(dateLocale)} views</span>
-                </span>
-              )}
             </div>
           </div>
         </div>
