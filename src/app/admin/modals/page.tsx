@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { FeedbackLog, AdminPasskey, ConfirmDialogState, ToastState } from '../types'
 import { formatNepalDateTime } from '@/lib/cronHelper'
 import { formatTimeAgo, maskLicenseNumber, maskIpAddress } from '../helpers'
@@ -29,6 +30,127 @@ export interface AdminModalsProps {
     setToast?: (toast: ToastState | null) => void
 }
 
+interface ConfirmDeleteModalProps {
+    dialog: ConfirmDialogState
+    onClose: () => void
+    isSubmitting: boolean
+}
+
+function ConfirmDeleteModal({ dialog, onClose, isSubmitting }: ConfirmDeleteModalProps) {
+    const [phraseInput, setPhraseInput] = useState('')
+
+    const isPhraseMatched =
+        !dialog.requiredPhrase ||
+        phraseInput.trim().toLowerCase() === dialog.requiredPhrase.trim().toLowerCase()
+
+    const handleExecute = async () => {
+        if (isSubmitting || !isPhraseMatched) return
+        try {
+            await dialog.onConfirm()
+        } finally {
+            onClose()
+        }
+    }
+
+    return (
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-4 backdrop-blur-xs animate-in fade-in duration-150"
+            onClick={() => {
+                if (!isSubmitting) onClose()
+            }}
+        >
+            <div
+                className="relative w-full max-w-md rounded-2xl sm:rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-6 shadow-2xl animate-in zoom-in-95 duration-150"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="flex items-start gap-3 sm:gap-3.5">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl border border-[var(--error-border)] bg-[var(--error-bg)] text-[var(--error)]">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                            <line x1="12" y1="9" x2="12" y2="13" />
+                            <line x1="12" y1="17" x2="12.01" y2="17" />
+                        </svg>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        <h3 className="text-sm sm:text-base font-black text-[var(--text-primary)]">
+                            {dialog.title}
+                        </h3>
+                        <p className="mt-1 sm:mt-1.5 text-xs leading-relaxed text-[var(--text-secondary)]">
+                            {dialog.message}
+                        </p>
+                    </div>
+                </div>
+
+                {dialog.requiredPhrase && (
+                    <div className="mt-4 rounded-xl border border-[var(--error-border)]/60 bg-[var(--error-bg)]/30 p-3 sm:p-3.5">
+                        <label htmlFor="confirm-phrase-input" className="block text-xs font-semibold text-[var(--text-secondary)]">
+                            To confirm deletion, please type{' '}
+                            <span className="font-mono font-bold text-[var(--error)] bg-[var(--surface-primary)] px-1.5 py-0.5 rounded border border-[var(--error-border)] select-all">
+                                {dialog.requiredPhrase}
+                            </span>{' '}
+                            below:
+                        </label>
+                        <div className="relative mt-2">
+                            <input
+                                id="confirm-phrase-input"
+                                type="text"
+                                autoFocus
+                                value={phraseInput}
+                                onChange={(e) => setPhraseInput(e.target.value)}
+                                onKeyDown={async (e) => {
+                                    if (e.key === 'Enter' && isPhraseMatched && !isSubmitting) {
+                                        e.preventDefault()
+                                        await handleExecute()
+                                    }
+                                }}
+                                placeholder={`Type "${dialog.requiredPhrase}"`}
+                                autoComplete="off"
+                                spellCheck={false}
+                                className={`h-10 w-full rounded-xl border bg-[var(--surface-primary)] px-3 pr-24 text-xs font-mono font-bold text-[var(--text-primary)] outline-none transition placeholder:text-[var(--text-muted)] focus:ring-2 ${
+                                    isPhraseMatched && phraseInput
+                                        ? 'border-[var(--success-border)] focus:border-[var(--success)] focus:ring-[var(--success)]/20'
+                                        : 'border-[var(--border-default)] focus:border-[var(--error)] focus:ring-[var(--error)]/20'
+                                }`}
+                            />
+                            {isPhraseMatched && phraseInput && (
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-bold text-[var(--success)] flex items-center gap-1 select-none pointer-events-none">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                    <span>Matched</span>
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                <div className="mt-5 sm:mt-6 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-2.5 border-t border-[var(--border-default)] pt-3.5 sm:pt-4">
+                    <button
+                        type="button"
+                        disabled={isSubmitting}
+                        onClick={onClose}
+                        className="w-full sm:w-auto rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-2.5 text-xs font-bold text-[var(--text-secondary)] transition hover:border-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-50 text-center"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        disabled={isSubmitting || !isPhraseMatched}
+                        onClick={handleExecute}
+                        className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--error)] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        </svg>
+                        <span>{isSubmitting ? 'Processing...' : dialog.confirmLabel}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    )
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function AdminModals(props: any) {
     const {
@@ -55,6 +177,7 @@ export default function AdminModals(props: any) {
         toast = null,
         setToast = () => {},
     }: AdminModalsProps = props || {}
+
     return (
         <>
             {/* Detail Message Modal */}
@@ -374,64 +497,12 @@ export default function AdminModals(props: any) {
 
             {/* Delete Confirmation Modal */}
             {confirmDialog && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-4 backdrop-blur-xs animate-in fade-in duration-150"
-                    onClick={() => {
-                        if (!confirmSubmitting) setConfirmDialog(null)
-                    }}
-                >
-                    <div
-                        className="relative w-full max-w-md rounded-2xl sm:rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-6 shadow-2xl animate-in zoom-in-95 duration-150"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="flex items-start gap-3 sm:gap-3.5">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl border border-[var(--error-border)] bg-[var(--error-bg)] text-[var(--error)]">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                                    <line x1="12" y1="9" x2="12" y2="13" />
-                                    <line x1="12" y1="17" x2="12.01" y2="17" />
-                                </svg>
-                            </div>
-                            <div className="min-w-0 flex-1">
-                                <h3 className="text-sm sm:text-base font-black text-[var(--text-primary)]">
-                                    {confirmDialog.title}
-                                </h3>
-                                <p className="mt-1 sm:mt-1.5 text-xs leading-relaxed text-[var(--text-secondary)]">
-                                    {confirmDialog.message}
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="mt-5 sm:mt-6 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-2.5 border-t border-[var(--border-default)] pt-3.5 sm:pt-4">
-                            <button
-                                type="button"
-                                disabled={confirmSubmitting}
-                                onClick={() => setConfirmDialog(null)}
-                                className="w-full sm:w-auto rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-2.5 text-xs font-bold text-[var(--text-secondary)] transition hover:border-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-50 text-center"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="button"
-                                disabled={confirmSubmitting}
-                                onClick={async () => {
-                                    try {
-                                        await confirmDialog.onConfirm()
-                                    } finally {
-                                        setConfirmDialog(null)
-                                    }
-                                }}
-                                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--error)] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:opacity-90 disabled:opacity-50"
-                            >
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                    <polyline points="3 6 5 6 21 6" />
-                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                </svg>
-                                <span>{confirmSubmitting ? 'Processing...' : confirmDialog.confirmLabel}</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <ConfirmDeleteModal
+                    key={confirmDialog.title + confirmDialog.confirmLabel}
+                    dialog={confirmDialog}
+                    onClose={() => setConfirmDialog(null)}
+                    isSubmitting={confirmSubmitting}
+                />
             )}
 
             {/* Inactivity Auto-Logout Warning Modal */}

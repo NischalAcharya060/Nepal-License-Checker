@@ -856,6 +856,7 @@ export default function AdminPage() {
             title: 'Are you sure you want to delete all logs?',
             message: `This will permanently delete ALL ${total.toLocaleString()} search logs. This action cannot be undone.`,
             confirmLabel: `Yes, Delete All (${total.toLocaleString()})`,
+            requiredPhrase: 'delete all',
             onConfirm: async () => {
                 try {
                     const res = await fetch('/api/admin/logs', { method: 'DELETE' })
@@ -958,6 +959,7 @@ export default function AdminPage() {
             title: 'Are you sure you want to delete all notifications?',
             message: `This will permanently delete ALL ${totalCount.toLocaleString()} email notification subscriptions and logs. This action cannot be undone.`,
             confirmLabel: `Yes, Delete All (${totalCount.toLocaleString()})`,
+            requiredPhrase: 'delete all',
             onConfirm: async () => {
                 try {
                     const res = await fetch('/api/admin/notifications?all=true', { method: 'DELETE' })
@@ -1139,6 +1141,7 @@ export default function AdminPage() {
             title: 'Are you sure you want to delete all feedback?',
             message: `This will permanently delete ALL ${totalCount.toLocaleString()} user feedback inquiries. This action cannot be undone.`,
             confirmLabel: `Yes, Delete All (${totalCount.toLocaleString()})`,
+            requiredPhrase: 'delete all',
             onConfirm: async () => {
                 try {
                     const res = await fetch('/api/admin/feedback?all=true', { method: 'DELETE' })

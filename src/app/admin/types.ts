@@ -124,6 +124,7 @@ export interface ConfirmDialogState {
     message: string
     confirmLabel: string
     onConfirm: () => Promise<void>
+    requiredPhrase?: string
 }
 
 export interface ToastState {
