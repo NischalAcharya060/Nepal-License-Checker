@@ -76,6 +76,22 @@ async function ensureSchema() {
     `);
     await db.execute(`CREATE INDEX IF NOT EXISTS processed_content_pages_discovered_at_idx ON processed_content_pages(discovered_at)`);
 
+    // Ensure sync_history schema
+    await db.execute(`
+        CREATE TABLE IF NOT EXISTS sync_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp INTEGER NOT NULL,
+            date_str TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'success',
+            saved_count INTEGER NOT NULL DEFAULT 0,
+            new_pdfs_count INTEGER NOT NULL DEFAULT 0,
+            office_breakdown TEXT NOT NULL DEFAULT '{}',
+            duration_seconds REAL DEFAULT 0,
+            trigger TEXT DEFAULT 'scheduled'
+        )
+    `);
+    await db.execute(`CREATE INDEX IF NOT EXISTS sync_history_date_idx ON sync_history(date_str)`);
+
     // Ensure email notifications schema
     await ensureNotificationsTable(db);
 }
@@ -1085,6 +1101,98 @@ class DOTMScraper {
                         now,
                     ],
                 });
+            }
+
+            // 3. Record or update entry in sync_history
+            try {
+                const dateStr = new Intl.DateTimeFormat('en-CA', {
+                    timeZone: 'Asia/Kathmandu',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                }).format(new Date(now));
+
+                const existingRow = await db.execute({
+                    sql: 'SELECT id, saved_count, office_breakdown FROM sync_history WHERE date_str = ? ORDER BY id DESC LIMIT 1',
+                    args: [dateStr],
+                });
+
+                if (existingRow.rows.length > 0) {
+                    const row = existingRow.rows[0];
+                    let mergedBreakdown = {};
+                    try {
+                        mergedBreakdown = JSON.parse(String(row.office_breakdown || '{}'));
+                    } catch {}
+                    for (const [off, cnt] of Object.entries(this.stats.officeBreakdown || {})) {
+                        mergedBreakdown[off] = (mergedBreakdown[off] || 0) + Number(cnt || 0);
+                    }
+
+                    const newTotalSaved = Number(row.saved_count || 0) + this.stats.saved;
+                    await db.execute({
+                        sql: `UPDATE sync_history
+                              SET timestamp = ?, status = ?, saved_count = ?, new_pdfs_count = new_pdfs_count + ?,
+                                  office_breakdown = ?, duration_seconds = ?, trigger = ?
+                              WHERE id = ?`,
+                        args: [
+                            now,
+                            status,
+                            newTotalSaved,
+                            newPdfsCount,
+                            JSON.stringify(mergedBreakdown),
+                            parseFloat(elapsed) || 0,
+                            trigger,
+                            row.id,
+                        ],
+                    });
+                } else {
+                    await db.execute({
+                        sql: `INSERT INTO sync_history
+                              (timestamp, date_str, status, saved_count, new_pdfs_count, office_breakdown, duration_seconds, trigger)
+                              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                        args: [
+                            now,
+                            dateStr,
+                            status,
+                            this.stats.saved,
+                            newPdfsCount,
+                            JSON.stringify(this.stats.officeBreakdown || {}),
+                            parseFloat(elapsed) || 0,
+                            trigger,
+                        ],
+                    });
+                }
+
+                // Cache top 30 history entries in site_stats for instant sub-millisecond public API loading
+                const historyRes = await db.execute(
+                    'SELECT * FROM sync_history ORDER BY timestamp DESC LIMIT 30'
+                );
+                const historyList = historyRes.rows.map((r) => {
+                    let offices = {};
+                    try {
+                        offices = JSON.parse(String(r.office_breakdown || '{}'));
+                    } catch {}
+                    return {
+                        id: Number(r.id),
+                        timestamp: Number(r.timestamp),
+                        iso: new Date(Number(r.timestamp)).toISOString(),
+                        dateStr: String(r.date_str),
+                        status: String(r.status),
+                        saved: Number(r.saved_count || 0),
+                        newPdfsCount: Number(r.new_pdfs_count || 0),
+                        durationSeconds: Number(r.duration_seconds || 0),
+                        trigger: String(r.trigger || 'scheduled'),
+                        officeBreakdown: offices,
+                    };
+                });
+
+                await db.execute({
+                    sql: `INSERT INTO site_stats (key, value, updated_at)
+                          VALUES ('sync_history', ?, ?)
+                          ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+                    args: [JSON.stringify(historyList), now],
+                });
+            } catch (histErr) {
+                console.warn(`Could not update sync_history: ${histErr.message}`);
             }
 
             // 2. Calculate and record next scheduled run

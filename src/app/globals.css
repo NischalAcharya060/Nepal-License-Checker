@@ -8,6 +8,7 @@
   :root {
     --nepal-red: #DC143C;
     --nepal-blue: #003893;
+    --nepal-blue-dark: #002666;
     --nepal-blue-mid: #1a4da8;
     --nepal-blue-light: #e0e8f6;
     --nepal-blue-soft: #e6effb;
@@ -47,6 +48,7 @@
   html.dark,
   [data-theme="dark"] {
     --nepal-blue: #4f8cf6;
+    --nepal-blue-dark: #2a6bd8;
     --nepal-blue-mid: #3b6ecf;
     --nepal-blue-light: #1f355f;
     --nepal-blue-soft: #12203b;

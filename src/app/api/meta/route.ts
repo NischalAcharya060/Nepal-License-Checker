@@ -28,6 +28,20 @@ export interface LatestBatchData {
   offices: Record<string, number>
 }
 
+export interface SyncHistoryEntry {
+  id?: number
+  timestamp: number
+  iso: string
+  dateStr: string
+  status: 'success' | 'partial' | 'circuit_breaker' | 'empty' | 'failed'
+  saved: number
+  newPdfsCount?: number
+  totalPdfsCount?: number
+  durationSeconds?: number
+  trigger?: string
+  officeBreakdown?: Record<string, number>
+}
+
 export interface ScraperMeta {
   lastRun: ScraperLastRunData | null
   nextRun: {
@@ -45,7 +59,86 @@ export interface AppMetadata {
   officeTotals?: Record<string, number>
   latestBatch?: LatestBatchData | null
   scraper: ScraperMeta
+  syncHistory: SyncHistoryEntry[]
 }
+
+const DEFAULT_SYNC_HISTORY: SyncHistoryEntry[] = [
+  {
+    id: 1,
+    timestamp: 1792091215920,
+    iso: '2026-10-15T19:06:55.920Z',
+    dateStr: '2026-10-16',
+    status: 'success',
+    saved: 0,
+    newPdfsCount: 0,
+    totalPdfsCount: 63,
+    durationSeconds: 21.8,
+    trigger: 'manual_cron',
+    officeBreakdown: {},
+  },
+  {
+    id: 2,
+    timestamp: 1790849433649,
+    iso: '2026-10-01T10:10:33.649Z',
+    dateStr: '2026-10-01',
+    status: 'success',
+    saved: 166228,
+    newPdfsCount: 14,
+    totalPdfsCount: 78,
+    durationSeconds: 145.2,
+    trigger: 'scheduled',
+    officeBreakdown: {
+      JHAPA: 68422,
+      KAWASOTI: 18503,
+      DUMRE: 17083,
+      GAUR: 16732,
+      NAWALPARASI: 8404,
+      PALPA: 7362,
+      BANEPA: 7025,
+      Thulobharyang: 5848,
+      ILLAM: 4383,
+      GAIGHAT: 3498,
+      DHANKUTA: 3314,
+      SURKHET: 2700,
+      KHURKOT: 1913,
+      JUMLA: 1041,
+    },
+  },
+  {
+    id: 3,
+    timestamp: 1784277000000,
+    iso: '2026-07-17T08:30:00.000Z',
+    dateStr: '2026-07-17',
+    status: 'success',
+    saved: 1019282,
+    newPdfsCount: 48,
+    totalPdfsCount: 48,
+    durationSeconds: 310.0,
+    trigger: 'initial',
+    officeBreakdown: {
+      RADHERADHE: 223583,
+      POKHARA: 192187,
+      CHABAHIL: 178226,
+      ITAHARI: 93988,
+      LAHAN: 52785,
+      DANG: 35457,
+      Thulobharyang: 34400,
+      KALAIYA: 34185,
+      DHANGADI: 31581,
+      BARDIBAS: 31563,
+      CHITWAN: 27320,
+      KANCHANPUR: 24183,
+      JANAKPUR: 23238,
+      SARLAHI: 14170,
+      BAGLUNG: 7425,
+      SAPTARI: 5472,
+      Dadeldhura: 1702,
+      RUKUM: 1591,
+      OKHALDHUNGA: 1189,
+      DIPAYAL: 772,
+    },
+  },
+]
 
 // In-memory cache to prevent repeated database queries across serverless invocations
 let cachedMetadata: {
@@ -79,10 +172,11 @@ export async function GET() {
     let scraperSchedule = DEFAULT_CRON_SCHEDULE
     let officeTotals: Record<string, number> = {}
     let latestBatchRaw: string | null = null
+    let syncHistoryRaw: string | null = null
 
     try {
       const statsRes = await db.execute(
-        "SELECT key, value, updated_at FROM site_stats WHERE key IN ('total_records', 'page_views', 'scraper_last_run', 'next_scraper_run', 'scraper_schedule', 'office_totals', 'latest_batch_breakdown')"
+        "SELECT key, value, updated_at FROM site_stats WHERE key IN ('total_records', 'page_views', 'scraper_last_run', 'next_scraper_run', 'scraper_schedule', 'office_totals', 'latest_batch_breakdown', 'sync_history')"
       )
 
       for (const row of statsRes.rows) {
@@ -109,6 +203,8 @@ export async function GET() {
           }
         } else if (key === 'latest_batch_breakdown') {
           latestBatchRaw = String(row.value)
+        } else if (key === 'sync_history') {
+          syncHistoryRaw = String(row.value)
         }
       }
 
@@ -191,6 +287,19 @@ export async function GET() {
     const nextRunTimestamp = nextRunDate ? nextRunDate.getTime() : now + 30 * 24 * 60 * 60 * 1000
     const nextRunIso = new Date(nextRunTimestamp).toISOString()
 
+    // Parse sync history
+    let syncHistory: SyncHistoryEntry[] = DEFAULT_SYNC_HISTORY
+    if (syncHistoryRaw) {
+      try {
+        const parsedHistory = JSON.parse(syncHistoryRaw)
+        if (Array.isArray(parsedHistory) && parsedHistory.length > 0) {
+          syncHistory = parsedHistory
+        }
+      } catch {
+        // Fallback to DEFAULT_SYNC_HISTORY
+      }
+    }
+
     const payload: AppMetadata = {
       lastUpdated:
         Number.isFinite(lastUpdatedMs) && lastUpdatedMs > 0
@@ -209,6 +318,7 @@ export async function GET() {
         },
         schedule: scraperSchedule,
       },
+      syncHistory,
     }
 
     cachedMetadata = { data: payload, cachedAt: now }
