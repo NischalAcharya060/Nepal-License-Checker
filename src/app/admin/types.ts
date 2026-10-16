@@ -109,6 +109,31 @@ export interface FeedbackStatsData {
     todayCount: number
 }
 
+export interface TestimonialLog {
+    id: string
+    name: string
+    role?: string | null
+    rating: number
+    message: string
+    email?: string | null
+    license_number?: string | null
+    status: 'pending' | 'approved' | 'rejected'
+    is_featured: boolean
+    admin_notes?: string | null
+    ip?: string | null
+    created_at: number
+    updated_at: number
+}
+
+export interface TestimonialStatsData {
+    total: number
+    pendingCount: number
+    approvedCount: number
+    rejectedCount: number
+    averageRating: number
+    todayCount: number
+}
+
 export interface AdminPasskey {
     id: string
     device_name: string

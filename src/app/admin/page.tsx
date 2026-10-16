@@ -16,6 +16,8 @@ import {
     NotificationStatsData,
     FeedbackLog,
     FeedbackStatsData,
+    TestimonialLog,
+    TestimonialStatsData,
     AdminPasskey,
     ConfirmDialogState,
     ToastState,
@@ -35,6 +37,7 @@ import AdminAutomation from './automation/page'
 import AdminSearches from './searches/page'
 import AdminNotifications from './notifications/page'
 import AdminFeedback from './feedback/page'
+import AdminTestimonials from './testimonials/page'
 import AdminLogin from './login/page'
 import AdminModals from './modals/page'
 
@@ -48,8 +51,8 @@ export default function AdminPage() {
     const [showPassword, setShowPassword] = useState(false)
     const [privacyMode, setPrivacyMode] = useState(true)
 
-    // View Tabs: 'searches' | 'notifications' | 'feedback'
-    const [activeTab, setActiveTab] = useState<'searches' | 'notifications' | 'feedback'>('searches')
+    // View Tabs: 'searches' | 'notifications' | 'feedback' | 'testimonials'
+    const [activeTab, setActiveTab] = useState<'searches' | 'notifications' | 'feedback' | 'testimonials'>('searches')
 
     // Dashboard State - Searches
     const [logs, setLogs] = useState<SearchLog[]>([])
@@ -96,6 +99,20 @@ export default function AdminPage() {
     const [selectedFeedbackIds, setSelectedFeedbackIds] = useState<string[]>([])
     const [feedbackSelectMode, setFeedbackSelectMode] = useState(false)
     const [selectedFeedbackMessage, setSelectedFeedbackMessage] = useState<FeedbackLog | null>(null)
+
+    // Dashboard State - Testimonials Moderation
+    const [testimonialStats, setTestimonialStats] = useState<TestimonialStatsData | null>(null)
+    const [testimonialLogs, setTestimonialLogs] = useState<TestimonialLog[]>([])
+    const [testimonialTotal, setTestimonialTotal] = useState(0)
+    const [testimonialPage, setTestimonialPage] = useState(1)
+    const [testimonialLimit, setTestimonialLimit] = useState(50)
+    const [testimonialTotalPages, setTestimonialTotalPages] = useState(1)
+    const [testimonialSearchFilter, setTestimonialSearchFilter] = useState('')
+    const [testimonialStatusFilter, setTestimonialStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all')
+    const [testimonialLoading, setTestimonialLoading] = useState(false)
+    const [selectedTestimonialIds, setSelectedTestimonialIds] = useState<string[]>([])
+    const [testimonialSelectMode, setTestimonialSelectMode] = useState(false)
+
     const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null)
     const [confirmSubmitting] = useState(false)
     const [toast, setToast] = useState<ToastState | null>(null)
@@ -325,6 +342,47 @@ export default function AdminPage() {
         }
     }, [isAuthenticated, feedbackPage, feedbackLimit, feedbackSearchFilter, feedbackStatusFilter, feedbackCategoryFilter, refreshKey])
 
+    // 2d. Fetch Testimonials & Moderation Stats
+    useEffect(() => {
+        if (!isAuthenticated) return
+        let cancelled = false
+
+        const params = new URLSearchParams({
+            page: String(testimonialPage),
+            limit: String(testimonialLimit),
+            search: testimonialSearchFilter,
+            status: testimonialStatusFilter,
+        })
+
+        fetch(`/api/admin/testimonials?${params.toString()}`, { cache: 'no-store' })
+            .then((res) => {
+                if (res.status === 401) {
+                    if (!cancelled) setIsAuthenticated(false)
+                    return null
+                }
+                return res.json()
+            })
+            .then((json) => {
+                if (cancelled || !json) return
+                if (json.status === 'success' && json.data) {
+                    setTestimonialLogs(json.data.testimonials || [])
+                    setTestimonialTotal(json.data.total || 0)
+                    setTestimonialTotalPages(json.data.totalPages || 1)
+                    if (json.data.stats) {
+                        setTestimonialStats(json.data.stats)
+                    }
+                }
+                setTestimonialLoading(false)
+            })
+            .catch(() => {
+                if (!cancelled) setTestimonialLoading(false)
+            })
+
+        return () => {
+            cancelled = true
+        }
+    }, [isAuthenticated, testimonialPage, testimonialLimit, testimonialSearchFilter, testimonialStatusFilter, refreshKey])
+
     // 3. Auto-refresh polling every 12 seconds (pauses when browser tab is hidden/inactive)
     useEffect(() => {
         if (!isAuthenticated || !autoRefresh) return
@@ -341,6 +399,7 @@ export default function AdminPage() {
         setDataLoading(true)
         setNotifLoading(true)
         setFeedbackLoading(true)
+        setTestimonialLoading(true)
         setRefreshKey((k) => k + 1)
     }
 
@@ -1012,6 +1071,39 @@ export default function AdminPage() {
         )
     }
 
+    // 10b. Testimonials CSV Export
+    const exportTestimonialsCsv = () => {
+        if (!testimonialLogs.length) return
+        const headers = ['ID', 'Submitted At (NPT)', 'Submitted At (ISO)', 'Name', 'Location', 'Rating', 'Message', 'Email', 'Status', 'Featured', 'IP']
+        const rows = testimonialLogs.map((l) => [
+            `"${l.id}"`,
+            `"${formatNepalDateTime(l.created_at, 'en', true)}"`,
+            new Date(l.created_at).toISOString(),
+            `"${(l.name || '').replace(/"/g, '""')}"`,
+            `"${(l.role || '').replace(/"/g, '""')}"`,
+            l.rating,
+            `"${(l.message || '').replace(/"/g, '""')}"`,
+            `"${(l.email || '').replace(/"/g, '""')}"`,
+            l.status,
+            l.is_featured ? 'Yes' : 'No',
+            `"${l.ip ? maskIpAddress(l.ip, privacyMode) : ''}"`,
+        ])
+        const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n')
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `nepal-license-testimonials-${new Date().toISOString().slice(0, 10)}.csv`
+        a.click()
+        URL.revokeObjectURL(url)
+        showToast(
+            privacyMode
+                ? 'Exported testimonials CSV (Privacy Masked)'
+                : 'Exported testimonials CSV (Full Data)',
+            'info'
+        )
+    }
+
     // 11. Toggle & Bulk Update Feedback Status
     const handleToggleFeedbackStatus = async (id: string, currentStatus: 'new' | 'resolved') => {
         const nextStatus = currentStatus === 'new' ? 'resolved' : 'new'
@@ -1160,6 +1252,180 @@ export default function AdminPage() {
         })
     }
 
+    // 13. Testimonials Moderation Handlers
+    const handleUpdateTestimonialStatus = async (
+        id: string,
+        status: 'pending' | 'approved' | 'rejected',
+        options?: { is_featured?: boolean; adminNotes?: string }
+    ) => {
+        try {
+            const res = await fetch('/api/admin/testimonials', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, status, is_featured: options?.is_featured, adminNotes: options?.adminNotes }),
+            })
+            if (res.ok) {
+                setTestimonialLogs((prev) =>
+                    prev.map((item) =>
+                        item.id === id
+                            ? {
+                                  ...item,
+                                  status,
+                                  is_featured: typeof options?.is_featured === 'boolean' ? options.is_featured : item.is_featured,
+                              }
+                            : item
+                    )
+                )
+                setRefreshKey((k) => k + 1)
+                showToast(`Testimonial marked as ${status}`)
+            } else {
+                showToast('Failed to update testimonial status', 'error')
+            }
+        } catch {
+            showToast('Network error while updating testimonial', 'error')
+        }
+    }
+
+    const handleBulkTestimonialStatus = async (status: 'pending' | 'approved' | 'rejected') => {
+        if (!selectedTestimonialIds.length) return
+        const count = selectedTestimonialIds.length
+        try {
+            const res = await fetch('/api/admin/testimonials', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: selectedTestimonialIds, status }),
+            })
+            if (res.ok) {
+                const idSet = new Set(selectedTestimonialIds)
+                setTestimonialLogs((prev) =>
+                    prev.map((item) => (idSet.has(item.id) ? { ...item, status } : item))
+                )
+                setSelectedTestimonialIds([])
+                setRefreshKey((k) => k + 1)
+                showToast(`${count} testimonials marked as ${status}`)
+            } else {
+                showToast('Failed to bulk update testimonials', 'error')
+            }
+        } catch {
+            showToast('Network error while bulk updating', 'error')
+        }
+    }
+
+    const handleToggleFeatured = async (id: string, currentFeatured: boolean) => {
+        const next = !currentFeatured
+        try {
+            const res = await fetch('/api/admin/testimonials', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, is_featured: next }),
+            })
+            if (res.ok) {
+                setTestimonialLogs((prev) =>
+                    prev.map((item) => (item.id === id ? { ...item, is_featured: next } : item))
+                )
+                showToast(next ? 'Testimonial marked as Featured ⭐' : 'Featured status removed')
+            }
+        } catch {
+            showToast('Failed to toggle featured status', 'error')
+        }
+    }
+
+    const handleDeleteTestimonial = (id: string, name: string) => {
+        setConfirmDialog({
+            title: 'Delete testimonial?',
+            message: `Are you sure you want to delete feedback from "${name}"? This action cannot be undone.`,
+            confirmLabel: 'Yes, Delete',
+            onConfirm: async () => {
+                try {
+                    const res = await fetch(`/api/admin/testimonials?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
+                    if (res.ok) {
+                        setTestimonialLogs((prev) => prev.filter((item) => item.id !== id))
+                        setSelectedTestimonialIds((prev) => prev.filter((x) => x !== id))
+                        setRefreshKey((k) => k + 1)
+                        showToast('Testimonial deleted')
+                    }
+                } catch {
+                    showToast('Failed to delete testimonial', 'error')
+                }
+            },
+        })
+    }
+
+    const handleDeleteSelectedTestimonials = () => {
+        if (!selectedTestimonialIds.length) return
+        const count = selectedTestimonialIds.length
+        setConfirmDialog({
+            title: `Delete ${count} selected testimonials?`,
+            message: `Are you sure you want to permanently delete ${count} selected testimonials? This action cannot be undone.`,
+            confirmLabel: `Yes, Delete (${count})`,
+            onConfirm: async () => {
+                try {
+                    const idsParam = selectedTestimonialIds.join(',')
+                    const res = await fetch(`/api/admin/testimonials?ids=${encodeURIComponent(idsParam)}`, {
+                        method: 'DELETE',
+                    })
+                    if (res.ok) {
+                        const idSet = new Set(selectedTestimonialIds)
+                        setTestimonialLogs((prev) => prev.filter((item) => !idSet.has(item.id)))
+                        setSelectedTestimonialIds([])
+                        setTestimonialSelectMode(false)
+                        setRefreshKey((k) => k + 1)
+                        showToast(`Deleted ${count} testimonials`)
+                    }
+                } catch {
+                    showToast('Failed to delete selected testimonials', 'error')
+                }
+            },
+        })
+    }
+
+    const handleDeleteRejectedTestimonials = () => {
+        setConfirmDialog({
+            title: 'Delete all rejected testimonials?',
+            message: 'Are you sure you want to permanently delete all rejected testimonials? Approved and pending ones will remain safe.',
+            confirmLabel: 'Yes, Delete Rejected',
+            onConfirm: async () => {
+                try {
+                    const res = await fetch('/api/admin/testimonials?status=rejected', { method: 'DELETE' })
+                    if (res.ok) {
+                        setSelectedTestimonialIds([])
+                        setTestimonialPage(1)
+                        setRefreshKey((k) => k + 1)
+                        showToast('Deleted all rejected testimonials')
+                    }
+                } catch {
+                    showToast('Failed to delete rejected testimonials', 'error')
+                }
+            },
+        })
+    }
+
+    const handleDeleteAllTestimonials = () => {
+        if (!testimonialLogs.length && testimonialTotal === 0) return
+        const totalCount = testimonialStats?.total ?? testimonialTotal
+        setConfirmDialog({
+            title: 'Are you sure you want to delete all testimonials?',
+            message: `This will permanently delete ALL ${totalCount.toLocaleString()} testimonials. This action cannot be undone.`,
+            confirmLabel: `Yes, Delete All (${totalCount.toLocaleString()})`,
+            requiredPhrase: 'delete all',
+            onConfirm: async () => {
+                try {
+                    const res = await fetch('/api/admin/testimonials?all=true', { method: 'DELETE' })
+                    if (res.ok) {
+                        setTestimonialLogs([])
+                        setSelectedTestimonialIds([])
+                        setTestimonialTotal(0)
+                        setTestimonialPage(1)
+                        setRefreshKey((k) => k + 1)
+                        showToast('All testimonials deleted')
+                    }
+                } catch {
+                    showToast('Failed to delete testimonials', 'error')
+                }
+            },
+        })
+    }
+
     // ----------------------------------------------------
     // Loading Screen
     // ----------------------------------------------------
@@ -1216,9 +1482,11 @@ export default function AdminPage() {
                 exportCsv={exportCsv}
                 exportNotificationCsv={exportNotificationCsv}
                 exportFeedbackCsv={exportFeedbackCsv}
+                exportTestimonialsCsv={exportTestimonialsCsv}
                 hasLogs={logs.length > 0}
                 hasNotificationLogs={notificationLogs.length > 0}
                 hasFeedbackLogs={feedbackLogs.length > 0}
+                hasTestimonialLogs={testimonialLogs.length > 0}
                 setPasskeyModalOpen={setPasskeyModalOpen}
                 fetchPasskeys={fetchPasskeys}
                 passkeyCount={passkeyCount}
@@ -1311,6 +1579,32 @@ export default function AdminPage() {
                                 </span>
                             )}
                         </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('testimonials')}
+                            className={`inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 sm:gap-2 rounded-lg px-2.5 sm:px-4 py-2 text-xs font-bold transition whitespace-nowrap ${
+                                activeTab === 'testimonials'
+                                    ? 'bg-[var(--nepal-blue)] text-white shadow-xs'
+                                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                            }`}
+                        >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                                <path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                            </svg>
+                            <span className="hidden sm:inline">Testimonials</span>
+                            <span className="sm:hidden">Testimonials</span>
+                            <span className={`rounded-full px-1.5 sm:px-2 py-0.5 font-mono text-[10px] ${
+                                activeTab === 'testimonials' ? 'bg-white/20 text-white' : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'
+                            }`}>
+                                {testimonialTotal.toLocaleString()}
+                            </span>
+                            {testimonialStats && testimonialStats.pendingCount > 0 && (
+                                <span className="inline-flex items-center justify-center rounded-full bg-amber-500 px-1.5 py-0.2 text-[10px] font-bold text-white animate-pulse" title={`${testimonialStats.pendingCount} testimonials waiting for approval`}>
+                                    {testimonialStats.pendingCount} pending
+                                </span>
+                            )}
+                        </button>
                     </div>
 
                     {activeTab === 'notifications' && notificationStats && (
@@ -1339,6 +1633,26 @@ export default function AdminPage() {
                                 <span className="h-1.5 w-1.5 rounded-full bg-[var(--success)]" />
                                 <span className="font-medium text-[var(--text-secondary)]">Resolved:</span>
                                 <strong className="font-bold text-[var(--text-primary)]">{feedbackStats.resolvedCount}</strong>
+                            </span>
+                        </div>
+                    )}
+
+                    {activeTab === 'testimonials' && testimonialStats && (
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-muted)]">
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-amber-600 dark:text-amber-400">
+                                <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                <span className="font-medium">Pending Review:</span>
+                                <strong className="font-bold">{testimonialStats.pendingCount}</strong>
+                            </span>
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-emerald-600 dark:text-emerald-400">
+                                <span className="h-1.5 w-1.5 rounded-full bg-[var(--success)]" />
+                                <span className="font-medium">Live on Site:</span>
+                                <strong className="font-bold">{testimonialStats.approvedCount}</strong>
+                            </span>
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1">
+                                <span className="text-amber-500">⭐</span>
+                                <span className="font-medium text-[var(--text-secondary)]">Avg Rating:</span>
+                                <strong className="font-bold text-[var(--text-primary)]">{testimonialStats.averageRating} / 5</strong>
                             </span>
                         </div>
                     )}
@@ -1401,7 +1715,7 @@ export default function AdminPage() {
                         handleDeleteAllNotifications={handleDeleteAllNotifications}
                         startTransition={startTransition}
                     />
-                ) : (
+                ) : activeTab === 'feedback' ? (
                     <AdminFeedback
                         feedbackLogs={feedbackLogs}
                         feedbackStats={feedbackStats}
@@ -1432,6 +1746,38 @@ export default function AdminPage() {
                         handleDeleteSelectedFeedback={handleDeleteSelectedFeedback}
                         handleDeleteResolvedFeedback={handleDeleteResolvedFeedback}
                         handleDeleteAllFeedback={handleDeleteAllFeedback}
+                        startTransition={startTransition}
+                    />
+                ) : (
+                    <AdminTestimonials
+                        testimonialLogs={testimonialLogs}
+                        testimonialStats={testimonialStats}
+                        testimonialTotal={testimonialTotal}
+                        testimonialPage={testimonialPage}
+                        testimonialLimit={testimonialLimit}
+                        testimonialTotalPages={testimonialTotalPages}
+                        testimonialSearchFilter={testimonialSearchFilter}
+                        testimonialStatusFilter={testimonialStatusFilter}
+                        testimonialLoading={testimonialLoading}
+                        privacyMode={privacyMode}
+                        testimonialSelectMode={testimonialSelectMode}
+                        selectedTestimonialIds={selectedTestimonialIds}
+                        copiedKey={copiedKey}
+                        setTestimonialPage={setTestimonialPage}
+                        setTestimonialLimit={setTestimonialLimit}
+                        setTestimonialSearchFilter={setTestimonialSearchFilter}
+                        setTestimonialStatusFilter={setTestimonialStatusFilter}
+                        setTestimonialSelectMode={setTestimonialSelectMode}
+                        setSelectedTestimonialIds={setSelectedTestimonialIds}
+                        copyToClipboard={copyToClipboard}
+                        handleUpdateTestimonialStatus={handleUpdateTestimonialStatus}
+                        handleBulkTestimonialStatus={handleBulkTestimonialStatus}
+                        handleToggleFeatured={handleToggleFeatured}
+                        handleDeleteTestimonial={handleDeleteTestimonial}
+                        handleDeleteSelectedTestimonials={handleDeleteSelectedTestimonials}
+                        handleDeleteRejectedTestimonials={handleDeleteRejectedTestimonials}
+                        handleDeleteAllTestimonials={handleDeleteAllTestimonials}
+                        exportTestimonialsCsv={exportTestimonialsCsv}
                         startTransition={startTransition}
                     />
                 )}

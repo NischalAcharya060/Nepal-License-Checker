@@ -9,6 +9,8 @@ import LicenseResult from '@/components/LicenseResult'
 import EducationalSection from '@/components/EducationalSection'
 import HowToSection from '@/components/HowToSection'
 import FaqSection from '@/components/FaqSection'
+import TestimonialSection from '@/components/TestimonialSection'
+import TestimonialModal from '@/components/TestimonialModal'
 import Footer from '@/components/Footer'
 import SampleModal from '@/components/SampleModal'
 import OfficesModal from '@/components/OfficesModal'
@@ -82,6 +84,8 @@ export default function Home() {
   const [isOfficesModalOpen, setIsOfficesModalOpen] = useState(() => readViewParam() === 'offices')
   const [isSmsModalOpen, setIsSmsModalOpen] = useState(() => readViewParam() === 'sms')
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(() => readViewParam() === 'feedback')
+  const [isTestimonialModalOpen, setIsTestimonialModalOpen] = useState(() => readViewParam() === 'testimonial')
+  const [testimonialRefreshKey, setTestimonialRefreshKey] = useState(0)
   const [isNpmModalOpen, setIsNpmModalOpen] = useState(() => readViewParam() === 'npm')
   const [language, setLanguage] = useState<Language>(() => {
     if (typeof window === 'undefined') return 'en'
@@ -461,6 +465,12 @@ export default function Home() {
 
             <HowToSection language={language} lastUpdatedAt={lastUpdatedAt} />
 
+            <TestimonialSection
+              language={language}
+              onOpenTestimonialModal={() => setIsTestimonialModalOpen(true)}
+              refreshTrigger={testimonialRefreshKey}
+            />
+
             <FaqSection language={language} lastUpdatedAt={lastUpdatedAt} />
           </div>
         )}
@@ -517,6 +527,14 @@ export default function Home() {
         onClose={() => setIsFeedbackModalOpen(false)}
         language={language}
         initialLicenseNumber={lastSearched || externalNumber || ''}
+      />
+
+      {/* Testimonials Submission Modal */}
+      <TestimonialModal
+        isOpen={isTestimonialModalOpen}
+        onClose={() => setIsTestimonialModalOpen(false)}
+        language={language}
+        onSubmitted={() => setTestimonialRefreshKey((k) => k + 1)}
       />
 
       {/* Developer NPM Package SDK Modal */}

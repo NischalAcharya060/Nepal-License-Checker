@@ -117,6 +117,20 @@ export default function Navbar({
             </button>
           )}
 
+          {/* Testimonials / Reviews shortcut (Desktop) */}
+          <button
+            type="button"
+            onClick={() => {
+              const el = document.getElementById('testimonials')
+              if (el) el.scrollIntoView({ behavior: 'smooth' })
+            }}
+            className="hidden items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-[11px] font-semibold text-[var(--text-secondary)] transition hover:border-amber-500 hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-400 md:inline-flex cursor-pointer"
+            title={language === 'ne' ? 'नागरिक समीक्षा तथा अनुभवहरू' : 'Citizen Reviews & Testimonials'}
+          >
+            <span>⭐</span>
+            <span>{language === 'ne' ? 'समीक्षाहरू' : 'Reviews'}</span>
+          </button>
+
           {/* NPM / GitHub Package button (Desktop) */}
           {onOpenNpm && (
             <button
@@ -332,6 +346,32 @@ export default function Navbar({
                 </svg>
               </button>
             )}
+
+            {/* Testimonials / Reviews (Mobile) */}
+            <button
+              type="button"
+              onClick={() => {
+                setIsMobileMenuOpen(false)
+                const el = document.getElementById('testimonials')
+                if (el) el.scrollIntoView({ behavior: 'smooth' })
+              }}
+              className="flex items-center justify-between rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3.5 py-2.5 text-left transition hover:border-amber-500 hover:bg-amber-500/10 active:scale-[0.99] cursor-pointer"
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-base text-amber-500">⭐</span>
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-[var(--text-primary)]">
+                    {language === 'ne' ? 'नागरिक समीक्षा (Testimonials)' : 'Reviews & Testimonials'}
+                  </span>
+                  <span className="text-[10px] text-[var(--text-secondary)]">
+                    {language === 'ne' ? 'अन्य चालकहरूको अनुभव र मूल्याङ्कन हेर्नुहोस्' : 'See what drivers across Nepal are saying'}
+                  </span>
+                </div>
+              </div>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-muted)]">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
 
             {/* NPM Package (Mobile) */}
             {onOpenNpm && (

@@ -432,6 +432,16 @@ export default function Footer({
               <li>
                 <button
                   type="button"
+                  onClick={() => handleScrollToSection('testimonials')}
+                  className="group flex items-center gap-2 text-left font-medium text-[var(--text-secondary)] hover:text-amber-500 transition cursor-pointer w-full"
+                >
+                  <span className="text-amber-500 text-xs shrink-0">⭐</span>
+                  <span>{isNe ? 'नागरिक समीक्षा तथा टेस्टिमोनियल' : 'Citizen Reviews & Testimonials'}</span>
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
                   onClick={scrollToSearch}
                   className="group flex items-center gap-2 text-left font-medium text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] transition cursor-pointer w-full"
                 >

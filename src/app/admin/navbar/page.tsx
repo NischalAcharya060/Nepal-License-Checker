@@ -10,13 +10,15 @@ export interface AdminNavbarProps {
     setAutoRefresh?: (val: boolean) => void
     dataLoading?: boolean
     handleManualRefresh?: () => void
-    activeTab?: 'searches' | 'notifications' | 'feedback'
+    activeTab?: 'searches' | 'notifications' | 'feedback' | 'testimonials'
     exportCsv?: () => void
     exportNotificationCsv?: () => void
     exportFeedbackCsv?: () => void
+    exportTestimonialsCsv?: () => void
     hasLogs?: boolean
     hasNotificationLogs?: boolean
     hasFeedbackLogs?: boolean
+    hasTestimonialLogs?: boolean
     setPasskeyModalOpen?: (val: boolean) => void
     fetchPasskeys?: () => void
     passkeyCount?: number
@@ -37,9 +39,11 @@ export default function AdminNavbar(props: any) {
         exportCsv = () => {},
         exportNotificationCsv = () => {},
         exportFeedbackCsv = () => {},
+        exportTestimonialsCsv = () => {},
         hasLogs = false,
         hasNotificationLogs = false,
         hasFeedbackLogs = false,
+        hasTestimonialLogs = false,
         setPasskeyModalOpen = () => {},
         fetchPasskeys = () => {},
         passkeyCount = 0,
@@ -164,14 +168,18 @@ export default function AdminNavbar(props: any) {
                                 ? exportCsv
                                 : activeTab === 'notifications'
                                 ? exportNotificationCsv
-                                : exportFeedbackCsv
+                                : activeTab === 'feedback'
+                                ? exportFeedbackCsv
+                                : exportTestimonialsCsv
                         }
                         disabled={
                             activeTab === 'searches'
                                 ? !hasLogs
                                 : activeTab === 'notifications'
                                 ? !hasNotificationLogs
-                                : !hasFeedbackLogs
+                                : activeTab === 'feedback'
+                                ? !hasFeedbackLogs
+                                : !hasTestimonialLogs
                         }
                         className="inline-flex h-8 sm:h-9 items-center justify-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-2 sm:px-3 text-xs font-semibold text-[var(--text-secondary)] shadow-xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:opacity-50"
                         title={
@@ -179,7 +187,9 @@ export default function AdminNavbar(props: any) {
                                 ? 'Export search queries to CSV'
                                 : activeTab === 'notifications'
                                 ? 'Export notification logs to CSV'
-                                : 'Export feedback inquiries to CSV'
+                                : activeTab === 'feedback'
+                                ? 'Export feedback inquiries to CSV'
+                                : 'Export testimonials to CSV'
                         }
                         aria-label="Export to CSV"
                     >
