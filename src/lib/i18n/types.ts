@@ -43,6 +43,10 @@ export interface LicenseFormCopy {
   recentSearchesLabel: string
   clearRecentLabel: string
   pasteHint: string
+  pastedToast: string
+  clipboardEmptyToast: string
+  invalidPasteToast: string
+  clipboardDeniedToast: string
   loadingMessages: string[]
   errors: {
     required: string

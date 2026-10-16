@@ -57,6 +57,10 @@ export const en: UICopy = {
     recentSearchesLabel: 'Recent Searches',
     clearRecentLabel: 'Clear History',
     pasteHint: 'Nepali (०-९) & English numbers supported',
+    pastedToast: 'License number pasted',
+    clipboardEmptyToast: 'Clipboard is empty',
+    invalidPasteToast: 'No valid license number found in clipboard',
+    clipboardDeniedToast: 'Could not access clipboard. Please paste manually.',
     loadingMessages: [
       'Connecting to DOTM secure database...',
       'Matching 100K+ indexed print records...',

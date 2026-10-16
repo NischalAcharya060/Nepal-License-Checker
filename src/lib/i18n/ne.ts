@@ -57,6 +57,10 @@ export const ne: UICopy = {
     recentSearchesLabel: 'पछिल्लो खोजहरू',
     clearRecentLabel: 'इतिहास हटाउनुहोस्',
     pasteHint: 'नेपाली (०-९) र अंग्रेजी (0-9) दुवै अंक समर्थित',
+    pastedToast: 'लाइसेन्स नम्बर पेस्ट गरियो',
+    clipboardEmptyToast: 'क्लिपबोर्ड खाली छ',
+    invalidPasteToast: 'क्लिपबोर्डमा कुनै मान्य लाइसेन्स नम्बर भेटिएन',
+    clipboardDeniedToast: 'क्लिपबोर्ड पढ्न अनुमति मिलेन। कृपया हातैले टाइप गर्नुहोस्।',
     loadingMessages: [
       'विभागको सुरक्षित सर्भरसँग जोडिँदैछ...',
       '१ लाख+ छपाइ अभिलेखहरूमा खोजी गरिँदैछ...',

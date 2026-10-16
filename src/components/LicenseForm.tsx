@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef, useEffect } from 'react'
+import toast from 'react-hot-toast'
 import { validateLicenseNumber, formatLicenseNumber } from '@/utils/validation'
 import { devanagariToAsciiDigits } from '@/utils/sanitize'
 import type { LicenseFormCopy } from '@/lib/i18n'
@@ -204,6 +205,13 @@ export default function LicenseForm({
     try {
       if (typeof navigator !== 'undefined' && navigator.clipboard?.readText) {
         const clipText = await navigator.clipboard.readText()
+        if (!clipText || !clipText.trim()) {
+          toast.error(
+            copy.clipboardEmptyToast || (language === 'ne' ? 'क्लिपबोर्ड खाली छ' : 'Clipboard is empty'),
+            { id: 'paste-license' }
+          )
+          return
+        }
         const ascii = devanagariToAsciiDigits(clipText || '')
         const match = ascii.match(/\d{2}[-\s/]?\d{2}[-\s/]?\d{8}/)
         const formatted = formatLicenseNumber(match ? match[0] : ascii)
@@ -217,13 +225,81 @@ export default function LicenseForm({
           )
           onReset()
           inputRef.current?.focus()
+          toast.success(
+            `${copy.pastedToast || (language === 'ne' ? 'लाइसेन्स नम्बर पेस्ट गरियो' : 'License number pasted')}: ${formatted}`,
+            { id: 'paste-license', icon: '📋' }
+          )
           return
+        } else {
+          toast.error(
+            copy.invalidPasteToast || (language === 'ne' ? 'क्लिपबोर्डमा कुनै मान्य लाइसेन्स नम्बर भेटिएन' : 'No valid license number found in clipboard'),
+            { id: 'paste-license' }
+          )
         }
+      } else {
+        toast.error(
+          language === 'ne' ? 'क्लिपबोर्ड पहुँच समर्थित छैन' : 'Clipboard access not supported',
+          { id: 'paste-license' }
+        )
       }
       inputRef.current?.focus()
     } catch {
+      toast.error(
+        copy.clipboardDeniedToast || (language === 'ne' ? 'क्लिपबोर्ड पढ्न अनुमति मिलेन। कृपया सिधै पेस्ट गर्नुहोस्।' : 'Could not access clipboard. Please paste manually.'),
+        { id: 'paste-license' }
+      )
       inputRef.current?.focus()
     }
+  }
+
+  const handleInputPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const text = e.clipboardData?.getData('text') || ''
+    if (!text.trim()) return
+
+    const ascii = devanagariToAsciiDigits(text)
+    const match = ascii.match(/\d{2}[-\s/]?\d{2}[-\s/]?\d{8}/)
+
+    const currentVal = inputRef.current?.value || ''
+    const selectionStart = inputRef.current?.selectionStart ?? 0
+    const selectionEnd = inputRef.current?.selectionEnd ?? currentVal.length
+    const isReplacingAll = selectionStart === 0 && selectionEnd >= currentVal.length
+
+    if (match || !currentVal || isReplacingAll) {
+      e.preventDefault()
+      const targetText = match ? match[0] : ascii
+      const formatted = formatLicenseNumber(targetText)
+
+      if (formatted) {
+        setLicenseNumber(formatted)
+        setError(
+          formatted.length === 14 && !validateLicenseNumber(formatted)
+            ? copy.errors.invalidShort
+            : ''
+        )
+        onReset()
+        toast.success(
+          `${copy.pastedToast || (language === 'ne' ? 'लाइसेन्स नम्बर पेस्ट गरियो' : 'License number pasted')}: ${formatted}`,
+          { id: 'paste-license', icon: '📋' }
+        )
+      } else {
+        toast.error(
+          copy.invalidPasteToast || (language === 'ne' ? 'कुनै मान्य लाइसेन्स नम्बर भेटिएन' : 'No valid license number found in clipboard'),
+          { id: 'paste-license' }
+        )
+      }
+      return
+    }
+
+    setTimeout(() => {
+      const rawDigits = devanagariToAsciiDigits(inputRef.current?.value || '')
+      const formatted = formatLicenseNumber(rawDigits)
+      if (formatted) {
+        toast.success(
+          `${copy.pastedToast || (language === 'ne' ? 'लाइसेन्स नम्बर पेस्ट गरियो' : 'License number pasted')}: ${formatted}`,
+          { id: 'paste-license', icon: '📋' }
+        )
+      }
+    }, 50)
   }
 
   const isValid = validateLicenseNumber(licenseNumber)
@@ -261,6 +337,7 @@ export default function LicenseForm({
               type="text"
               value={licenseNumber}
               onChange={handleInputChange}
+              onPaste={handleInputPaste}
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
               placeholder={copy.placeholder}
