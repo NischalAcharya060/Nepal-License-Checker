@@ -5,18 +5,20 @@ import { RateLimiter } from '@/lib/rateLimit'
 import { sanitizeInput } from '@/utils/sanitize'
 import { extractGeo } from '@/lib/geo'
 import { logSearch } from '@/lib/searchLogger'
-import { validateDeveloperApiKey, recordApiKeyUsage } from '@/lib/developerAuth'
+import { validateDeveloperApiKey, recordApiKeyUsage, recordDeveloperUsageMetric } from '@/lib/developerAuth'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
 // Standard anonymous IP rate limiter: 15 req/min, with a 5-minute (300,000ms) lockout penalty
-const ipRateLimiter = new RateLimiter(15, 60000, 300000)
+export const ipRateLimiter = new RateLimiter(15, 60000, 300000)
 
 // Authenticated developer rate limiter: standard sliding window per API key (default 60 req/min, 0 lockout)
-const devRateLimiter = new RateLimiter(60, 60000, 0)
+export const devRateLimiter = new RateLimiter(60, 60000, 0)
 
 export async function GET(request: NextRequest) {
+    const startTime = performance.now()
+    let devKeyInfo: { developerId: string; keyId: string } | null = null
     try {
         const geo = extractGeo(request)
         const ip = geo.ip
@@ -43,6 +45,7 @@ export async function GET(request: NextRequest) {
             }
 
             isDeveloper = true
+            devKeyInfo = { developerId: devKey.developerId, keyId: devKey.keyId }
             rateStatus = devRateLimiter.checkLimit(devKey.keyId, devKey.rateLimit)
             recordApiKeyUsage(devKey.keyId)
 
@@ -62,7 +65,19 @@ export async function GET(request: NextRequest) {
             }
         }
 
+        const logDevMetric = (statusCode: number) => {
+            if (devKeyInfo) {
+                recordDeveloperUsageMetric({
+                    developerId: devKeyInfo.developerId,
+                    keyId: devKeyInfo.keyId,
+                    statusCode,
+                    latencyMs: Math.round(performance.now() - startTime),
+                })
+            }
+        }
+
         if (!rateStatus.allowed) {
+            logDevMetric(429)
             const minutes = Math.ceil(rateStatus.retryAfter / 60)
             const waitMsg = minutes > 1 ? `${minutes} minutes` : `${rateStatus.retryAfter} seconds`
             return NextResponse.json(
@@ -86,6 +101,7 @@ export async function GET(request: NextRequest) {
         let licenseNumber = searchParams.get('number')
 
         if (!licenseNumber) {
+            logDevMetric(400)
             return NextResponse.json(
                 { error: 'License number is required' },
                 {
@@ -99,6 +115,7 @@ export async function GET(request: NextRequest) {
 
         const licenseRegex = /^\d{2}-\d{2}-\d{8}$/
         if (!licenseRegex.test(licenseNumber)) {
+            logDevMetric(400)
             return NextResponse.json(
                 { error: 'Invalid license number format. Expected XX-XX-XXXXXXXX (e.g. 01-01-12345678)' },
                 {
@@ -117,6 +134,7 @@ export async function GET(request: NextRequest) {
         })
 
         if (result.rows.length) {
+            logDevMetric(200)
             const row = result.rows[0] as unknown as LicenseRow
 
             // Record search log asynchronously in background
@@ -158,6 +176,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Not found in database — card is not printed yet
+        logDevMetric(200)
         // Record search log asynchronously in background
         logSearch({
             license_number: licenseNumber,
@@ -185,6 +204,14 @@ export async function GET(request: NextRequest) {
             }
         )
     } catch (error) {
+        if (devKeyInfo) {
+            recordDeveloperUsageMetric({
+                developerId: devKeyInfo.developerId,
+                keyId: devKeyInfo.keyId,
+                statusCode: 500,
+                latencyMs: Math.round(performance.now() - startTime),
+            })
+        }
         console.error('API Error:', error)
         return NextResponse.json(
             { error: 'Internal server error. Please try again.' },

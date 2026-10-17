@@ -6,12 +6,23 @@ import Link from 'next/link'
 import Image from 'next/image'
 import toast from 'react-hot-toast'
 import type { DeveloperProfile, DeveloperApiKey } from '@/lib/developerAuth'
+import DeveloperSidebar from '@/components/developer/DeveloperSidebar'
+import DeveloperTrafficChart from '@/components/developer/DeveloperTrafficChart'
+import DeveloperQuotaGauge from '@/components/developer/DeveloperQuotaGauge'
+import DeveloperKeyDistribution from '@/components/developer/DeveloperKeyDistribution'
+import LiveConsoleSparkline, { type LiveRequestEntry } from '@/components/developer/LiveConsoleSparkline'
+import DeveloperShowcaseChart from '@/components/developer/DeveloperShowcaseChart'
+import type { DeveloperAnalyticsResponse } from '@/app/api/developer/analytics/route'
 
 export default function DeveloperPortalPage() {
   const [profile, setProfile] = useState<DeveloperProfile | null>(null)
   const [keys, setKeys] = useState<DeveloperApiKey[]>([])
   const [maxKeys, setMaxKeys] = useState(3)
   const [loading, setLoading] = useState(true)
+  const [analyticsData, setAnalyticsData] = useState<DeveloperAnalyticsResponse | null>(null)
+  const [analyticsLoading, setAnalyticsLoading] = useState(false)
+  const [timeframe, setTimeframe] = useState<'24h' | '7d' | '30d'>('7d')
+  const [consoleHistory, setConsoleHistory] = useState<LiveRequestEntry[]>([])
   const [creatingKey, setCreatingKey] = useState(false)
   const [keyName, setKeyName] = useState('')
   const [newKeyModal, setNewKeyModal] = useState<{ rawKey: string; key: DeveloperApiKey } | null>(null)
@@ -20,6 +31,46 @@ export default function DeveloperPortalPage() {
   const [codeTab, setCodeTab] = useState<'sdk' | 'curl' | 'fetch' | 'python'>('sdk')
   const [activePreset, setActivePreset] = useState<string | null>(null)
   const [redirecting, setRedirecting] = useState(false)
+  const [activeSection, setActiveSection] = useState('section-overview')
+  const [mobileOpen, setMobileOpen] = useState(false)
+
+  // ScrollSpy listener to sync active sidebar section smoothly
+  useEffect(() => {
+    if (!profile) return
+
+    const sectionIds = [
+      'section-overview',
+      'section-analytics',
+      'section-keys',
+      'section-quickstart',
+      'section-console',
+      'section-specs',
+    ]
+
+    const handleScroll = () => {
+      const scrollPos = window.scrollY + 140
+      for (let i = sectionIds.length - 1; i >= 0; i--) {
+        const id = sectionIds[i]
+        const el = document.getElementById(id)
+        if (el && el.offsetTop <= scrollPos) {
+          setActiveSection(id)
+          return
+        }
+      }
+      setActiveSection('section-overview')
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [profile])
+
+  const scrollToSection = (sectionId: string) => {
+    setActiveSection(sectionId)
+    const el = document.getElementById(sectionId)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
 
   // Key Renaming & Rotation states
   const [editingKeyId, setEditingKeyId] = useState<string | null>(null)
@@ -47,6 +98,64 @@ export default function DeveloperPortalPage() {
     return null
   })
 
+  const [autoRefresh, setAutoRefresh] = useState(false)
+  const [copiedEnv, setCopiedEnv] = useState(false)
+
+  const loadAnalytics = async (tf: '24h' | '7d' | '30d', forceRefresh = false) => {
+    setAnalyticsLoading(true)
+    try {
+      const res = await fetch(`/api/developer/analytics?timeframe=${tf}${forceRefresh ? '&refresh=true' : ''}`)
+      if (res.ok) {
+        const data: DeveloperAnalyticsResponse = await res.json()
+        setAnalyticsData(data)
+      }
+    } catch (err) {
+      console.error('Failed to load analytics:', err)
+    } finally {
+      setAnalyticsLoading(false)
+    }
+  }
+
+  const handleTimeframeChange = (tf: '24h' | '7d' | '30d') => {
+    setTimeframe(tf)
+    void loadAnalytics(tf)
+  }
+
+  // Smart auto-refresh: OFF by default. Completely freezes when tab is hidden to save Turso reads!
+  useEffect(() => {
+    if (!autoRefresh || !profile) return
+
+    const interval = setInterval(() => {
+      // Skip query if tab is hidden/minimized
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+        return
+      }
+      void loadAnalytics(timeframe, false)
+    }, 30000)
+
+    return () => clearInterval(interval)
+  }, [autoRefresh, profile, timeframe])
+
+  const copyEnvSnippet = (rawKey: string) => {
+    const text = `NEPAL_LICENSE_API_KEY=${rawKey}`
+    navigator.clipboard.writeText(text)
+    setCopiedEnv(true)
+    toast.success('.env snippet copied to clipboard!')
+    setTimeout(() => setCopiedEnv(false), 2500)
+  }
+
+  const downloadEnvFile = (rawKey: string) => {
+    const text = `# Nepal License Checker API Configuration\nNEPAL_LICENSE_API_KEY=${rawKey}\n`
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = '.env.local'
+    a.click()
+    URL.revokeObjectURL(url)
+    toast.success('.env.local downloaded!')
+  }
+
   // Load developer session & API keys
   useEffect(() => {
     let isMounted = true
@@ -65,14 +174,19 @@ export default function DeveloperPortalPage() {
           if (isMounted && keysData?.keys) {
             setKeys(keysData.keys)
             if (keysData.maxKeys) setMaxKeys(keysData.maxKeys)
+            void loadAnalytics('7d')
           }
         } else {
           setProfile(null)
           setKeys([])
+          setAnalyticsData(null)
         }
       })
       .catch(() => {
-        if (isMounted) setProfile(null)
+        if (isMounted) {
+          setProfile(null)
+          setAnalyticsData(null)
+        }
       })
       .finally(() => {
         if (isMounted) setLoading(false)
@@ -88,6 +202,7 @@ export default function DeveloperPortalPage() {
       await fetch('/api/developer/auth/logout', { method: 'POST' })
       setProfile(null)
       setKeys([])
+      setAnalyticsData(null)
       toast.success('Signed out successfully.')
     } catch {
       toast.error('Failed to sign out.')
@@ -247,11 +362,35 @@ export default function DeveloperPortalPage() {
 
       const data = await res.json()
       setTestResult(data)
+
+      setConsoleHistory((prev) => [
+        {
+          id: Math.random().toString(36).slice(2),
+          duration,
+          status: res.status,
+          timestamp: Date.now(),
+          number: num,
+        },
+        ...prev,
+      ].slice(0, 10))
+
+      void loadAnalytics(timeframe)
     } catch (err: unknown) {
       const duration = Math.round(performance.now() - t0)
       setTestDuration(duration)
       setTestStatus(500)
       setTestResult({ error: 'Network request failed or server unreachable.', details: String(err) })
+
+      setConsoleHistory((prev) => [
+        {
+          id: Math.random().toString(36).slice(2),
+          duration,
+          status: 500,
+          timestamp: Date.now(),
+          number: num,
+        },
+        ...prev,
+      ].slice(0, 10))
     } finally {
       setTestLoading(false)
     }
@@ -327,78 +466,77 @@ print("License details:", data.get("data"))`
 
   const namePresets = ['Production API', 'Mobile App Backend', 'Discord / Telegram Bot', 'Local Development']
 
-  return (
-    <div className="min-h-screen bg-[var(--bg-primary)] px-4 py-8 sm:px-6 sm:py-12 text-[var(--text-primary)] transition-colors">
-      {/* Ambient background glows */}
-      <div
-        className="pointer-events-none fixed -top-40 left-1/2 -translate-x-1/2 h-96 w-full max-w-4xl rounded-full bg-gradient-to-br from-[var(--nepal-blue)]/15 via-[var(--nepal-red)]/10 to-transparent blur-3xl opacity-70"
-        aria-hidden
-      />
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[var(--bg-primary)] px-4 py-8 sm:px-6 sm:py-12 flex flex-col items-center justify-center text-[var(--text-primary)] transition-colors">
+        <div className="h-9 w-9 animate-spin rounded-full border-3 border-[var(--nepal-blue)] border-t-transparent" />
+        <p className="text-xs text-[var(--text-muted)] font-medium mt-3">Authenticating developer session...</p>
+      </div>
+    )
+  }
 
-      <div className="relative mx-auto max-w-5xl space-y-8">
-        {/* Navigation Bar */}
-        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border-default)] pb-5">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition group"
-            >
-              <span className="transition-transform group-hover:-translate-x-0.5">←</span>
-              <span>Back to Home</span>
-            </Link>
-            <span className="text-[var(--border-default)]">/</span>
-            <span className="text-xs font-bold text-[var(--text-primary)] flex items-center gap-1.5">
-              <span className="text-[var(--nepal-blue)]">⚡</span>
-              <span>Developer Platform</span>
-            </span>
-          </div>
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-[var(--bg-primary)] px-4 py-8 sm:px-6 sm:py-12 text-[var(--text-primary)] transition-colors">
+        {/* Ambient background glows */}
+        <div
+          className="pointer-events-none fixed -top-40 left-1/2 -translate-x-1/2 h-96 w-full max-w-4xl rounded-full bg-gradient-to-br from-[var(--nepal-blue)]/15 via-[var(--nepal-red)]/10 to-transparent blur-3xl opacity-70"
+          aria-hidden
+        />
 
-          <div className="flex items-center gap-3">
-            <span className="inline-flex items-center rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1 font-mono text-[10.5px] font-bold text-[var(--text-secondary)] shadow-2xs">
-              API v1.1.0 • 60 req/min
-            </span>
-            <Link
-              href="/developer/docs"
-              className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)] transition shadow-2xs"
-            >
-              SDK Docs →
-            </Link>
-          </div>
-        </header>
-
-        {/* Global Error Banner */}
-        {errorMessage && (
-          <div className="rounded-2xl border border-[var(--danger)]/30 bg-[var(--danger)]/10 p-4 text-xs font-medium text-[var(--danger)] flex items-start justify-between gap-3 animate-fade-in shadow-sm">
-            <div className="flex items-center gap-2">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
-              <span>{errorMessage}</span>
+        <div className="relative mx-auto max-w-5xl space-y-8">
+          {/* Navigation Bar */}
+          <header className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border-default)] pb-5">
+            <div className="flex items-center gap-3">
+              <Link
+                href="/"
+                className="inline-flex items-center gap-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition group"
+              >
+                <span className="transition-transform group-hover:-translate-x-0.5">←</span>
+                <span>Back to Home</span>
+              </Link>
+              <span className="text-[var(--border-default)]">/</span>
+              <span className="text-xs font-bold text-[var(--text-primary)] flex items-center gap-1.5">
+                <span className="text-[var(--nepal-blue)]">⚡</span>
+                <span>Developer Platform</span>
+              </span>
             </div>
-            <button
-              type="button"
-              onClick={() => setErrorMessage(null)}
-              className="font-bold hover:underline cursor-pointer"
-            >
-              ✕
-            </button>
-          </div>
-        )}
 
-        {/* Loading State */}
-        {loading && (
-          <div className="flex flex-col items-center justify-center py-24 space-y-3">
-            <div className="h-8 w-8 animate-spin rounded-full border-3 border-[var(--nepal-blue)] border-t-transparent" />
-            <p className="text-xs text-[var(--text-muted)] font-medium">Authenticating developer session...</p>
-          </div>
-        )}
+            <div className="flex items-center gap-3">
+              <span className="inline-flex items-center rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1 font-mono text-[10.5px] font-bold text-[var(--text-secondary)] shadow-2xs">
+                API v1.1.0 • 60 req/min
+              </span>
+              <Link
+                href="/developer/docs"
+                className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)] transition shadow-2xs"
+              >
+                SDK Docs →
+              </Link>
+            </div>
+          </header>
 
-        {/* ================================================================= */}
-        {/* STATE A: GUEST (UNAUTHENTICATED DEVELOPER LANDING)                 */}
-        {/* ================================================================= */}
-        {!loading && !profile && (
+          {/* Global Error Banner */}
+          {errorMessage && (
+            <div className="rounded-2xl border border-[var(--danger)]/30 bg-[var(--danger)]/10 p-4 text-xs font-medium text-[var(--danger)] flex items-start justify-between gap-3 animate-fade-in shadow-sm">
+              <div className="flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+                <span>{errorMessage}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setErrorMessage(null)}
+                className="font-bold hover:underline cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          {/* STATE A: GUEST (UNAUTHENTICATED DEVELOPER LANDING) */}
           <div className="space-y-10 animate-rise-in">
             {/* Hero Section */}
             <div className="relative overflow-hidden rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-7 sm:p-12 shadow-xl">
@@ -456,7 +594,7 @@ print("License details:", data.get("data"))`
 
             {/* Feature Cards Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-5 space-y-2 shadow-2xs">
+              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-5 space-y-2 shadow-2xs hover-lift">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--nepal-blue)]/10 text-[var(--nepal-blue)] font-bold text-lg">
                   ⚡
                 </div>
@@ -466,7 +604,7 @@ print("License details:", data.get("data"))`
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-5 space-y-2 shadow-2xs">
+              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-5 space-y-2 shadow-2xs hover-lift">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--success)]/10 text-[var(--success)] font-bold text-lg">
                   🔑
                 </div>
@@ -476,7 +614,7 @@ print("License details:", data.get("data"))`
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-5 space-y-2 shadow-2xs">
+              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-5 space-y-2 shadow-2xs hover-lift">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--nepal-red)]/10 text-[var(--nepal-red)] font-bold text-lg">
                   📦
                 </div>
@@ -486,7 +624,7 @@ print("License details:", data.get("data"))`
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-5 space-y-2 shadow-2xs">
+              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-5 space-y-2 shadow-2xs hover-lift">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold text-lg">
                   📊
                 </div>
@@ -496,6 +634,9 @@ print("License details:", data.get("data"))`
                 </p>
               </div>
             </div>
+
+            {/* Visual Performance Showcase */}
+            <DeveloperShowcaseChart />
 
             {/* Comparison Box */}
             <div className="rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 sm:p-8 space-y-5 shadow-sm">
@@ -543,13 +684,249 @@ print("License details:", data.get("data"))`
               </div>
             </div>
           </div>
+
+          {/* Landing Footer */}
+          <footer className="pt-8 mt-12 border-t border-[var(--border-default)] flex flex-wrap items-center justify-between gap-4 text-xs text-[var(--text-secondary)]">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span className="font-semibold text-[var(--text-primary)]">
+                © {new Date().getFullYear()} Nepal License Checker
+              </span>
+              <span>·</span>
+              <span className="font-mono text-[10px] rounded bg-[var(--bg-secondary)] px-1.5 py-0.5 border border-[var(--border-default)]">
+                v2.0.0
+              </span>
+              <span>·</span>
+              <span>Developed by</span>
+              <a
+                href="https://acharyanischal.com.np/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-[var(--nepal-blue)] hover:underline inline-flex items-center gap-0.5"
+              >
+                Nischal Acharya
+              </a>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <Link href="/developer/docs" className="text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] transition font-semibold">
+                SDK Docs
+              </Link>
+              <Link href="/" className="text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] transition font-semibold">
+                Public Search
+              </Link>
+            </div>
+          </footer>
+        </div>
+      </div>
+    )
+  }
+
+  // =================================================================
+  // STATE B: AUTHENTICATED DEVELOPER DASHBOARD WITH SIDEBAR
+  // =================================================================
+  return (
+    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors">
+      {/* Ambient background glows */}
+      <div
+        className="pointer-events-none fixed -top-40 right-0 h-96 w-96 rounded-full bg-gradient-to-br from-[var(--nepal-blue)]/10 via-[var(--nepal-red)]/5 to-transparent blur-3xl opacity-60"
+        aria-hidden
+      />
+
+      {/* Persistent Left Sidebar (Desktop) & Slide-Over Drawer (Mobile) */}
+      <DeveloperSidebar
+        profile={profile}
+        keys={keys}
+        activeSection={activeSection}
+        onSectionClick={scrollToSection}
+        onLogout={handleLogout}
+        mobileOpen={mobileOpen}
+        onCloseMobile={() => setMobileOpen(false)}
+      />
+
+      {/* Main Content Viewport (offset on desktop by md:pl-64) */}
+      <div className="md:pl-64 flex flex-col min-h-screen transition-all">
+        {/* Sticky Utility Top Header */}
+        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-[var(--border-default)] bg-[var(--surface-primary)]/85 px-4 sm:px-8 backdrop-blur-md transition-all shadow-2xs">
+          {/* Mobile Toggle & Active Breadcrumb */}
+          <div className="flex items-center gap-3 min-w-0">
+            <button
+              type="button"
+              onClick={() => setMobileOpen(true)}
+              className="md:hidden flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--nepal-blue)] transition shadow-2xs cursor-pointer shrink-0"
+              aria-label="Open navigation sidebar"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            </button>
+
+            <div className="flex items-center gap-2 text-xs truncate">
+              <span className="font-extrabold tracking-tight text-[var(--nepal-blue)] hidden sm:inline-flex items-center gap-1.5 shrink-0">
+                <span>⚡</span>
+                <span>Developer Portal</span>
+              </span>
+              <span className="text-[var(--border-default)] hidden sm:inline">/</span>
+              <span className="font-bold text-xs sm:text-sm text-[var(--text-primary)] truncate">
+                {activeSection === 'section-overview'
+                  ? 'Overview & Metrics'
+                  : activeSection === 'section-analytics'
+                  ? 'Telemetry & Graphs'
+                  : activeSection === 'section-keys'
+                  ? 'API Keys Management'
+                  : activeSection === 'section-quickstart'
+                  ? 'Code Integration'
+                  : activeSection === 'section-console'
+                  ? 'Live API Sandbox'
+                  : 'HTTP Response Specs'}
+              </span>
+            </div>
+          </div>
+
+          {/* Quick Actions & Telemetry Controls */}
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+            {/* Live Tier Badge */}
+            <div className="hidden lg:flex items-center gap-1.5 rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 font-mono text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              <span>60 req/min Tier</span>
+            </div>
+
+            {/* Quick Telemetry Refresh */}
+            <button
+              type="button"
+              onClick={() => void loadAnalytics(timeframe, true)}
+              disabled={analyticsLoading}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--nepal-blue)] transition active:scale-95 shadow-2xs cursor-pointer"
+              title="Force refresh telemetry from server (bypasses cache)"
+            >
+              <span className={analyticsLoading ? 'animate-spin' : ''}>↻</span>
+              <span className="hidden sm:inline">Refresh</span>
+            </button>
+
+            {/* Auto-Refresh Toggle */}
+            <button
+              type="button"
+              onClick={() => setAutoRefresh((prev) => !prev)}
+              className={`inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-xs font-medium transition cursor-pointer shadow-2xs ${
+                autoRefresh
+                  ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold'
+                  : 'border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+              }`}
+              title={autoRefresh ? '30s auto-refresh active (pauses when tab hidden)' : 'Enable 30s auto-refresh'}
+            >
+              <span className={`h-1.5 w-1.5 rounded-full ${autoRefresh ? 'bg-emerald-500' : 'bg-zinc-400'}`} />
+              <span className="hidden sm:inline">{autoRefresh ? 'Auto: 30s' : 'Auto: Off'}</span>
+            </button>
+
+            {/* Active Keys Pill */}
+            {keys.length > 0 && (
+              <button
+                type="button"
+                onClick={() => scrollToSection('section-keys')}
+                className="hidden xl:inline-flex items-center gap-1.5 rounded-xl border border-[var(--nepal-blue)]/30 bg-[var(--nepal-blue)]/10 px-2.5 py-1.5 text-xs font-bold text-[var(--nepal-blue)] hover:bg-[var(--nepal-blue)]/20 transition cursor-pointer shadow-2xs"
+                title="Manage active API keys"
+              >
+                <span>🔑</span>
+                <span>{keys.length} Active {keys.length === 1 ? 'Key' : 'Keys'}</span>
+              </button>
+            )}
+
+            {/* SDK Docs Link */}
+            <Link
+              href="/developer/docs"
+              className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-xs font-bold text-[var(--text-primary)] hover:text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)] transition shadow-2xs shrink-0 flex items-center gap-1"
+            >
+              <span>Docs</span>
+              <span>↗</span>
+            </Link>
+          </div>
+        </header>
+
+        {/* Global Error Banner */}
+        {errorMessage && (
+          <div className="mx-4 sm:mx-8 mt-4 rounded-2xl border border-[var(--danger)]/30 bg-[var(--danger)]/10 p-4 text-xs font-medium text-[var(--danger)] flex items-start justify-between gap-3 animate-fade-in shadow-sm">
+            <div className="flex items-center gap-2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              <span>{errorMessage}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setErrorMessage(null)}
+              className="font-bold hover:underline cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
         )}
 
-        {/* ================================================================= */}
-        {/* STATE B: AUTHENTICATED DEVELOPER DASHBOARD                        */}
-        {/* ================================================================= */}
-        {!loading && profile && (
-          <div className="space-y-8 animate-fade-in">
+        {/* Main Content Area */}
+        <main className="flex-1 px-4 py-6 sm:px-8 sm:py-8 max-w-6xl w-full mx-auto space-y-8 animate-fade-in">
+          {/* SECTION 1: OVERVIEW */}
+          <div id="section-overview" className="space-y-6 scroll-mt-24">
+
+            {/* Quick-Start Onboarding Checklist for New Developers (shown if 0 keys) */}
+            {keys.length === 0 && (
+              <div className="rounded-3xl border border-[var(--nepal-blue)]/30 bg-gradient-to-br from-[var(--nepal-blue)]/10 via-[var(--surface-primary)] to-[var(--surface-primary)] p-6 sm:p-7 shadow-sm space-y-4 animate-rise-in">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--nepal-blue)] text-white text-sm font-bold shadow-xs">
+                      🚀
+                    </span>
+                    <div>
+                      <h3 className="text-sm font-bold text-[var(--text-primary)]">Quick Setup Checklist</h3>
+                      <p className="text-xs text-[var(--text-secondary)]">Get your first API request running in under 2 minutes.</p>
+                    </div>
+                  </div>
+                  <span className="rounded-full bg-[var(--nepal-blue)]/15 px-2.5 py-0.5 font-mono text-[11px] font-bold text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/20">
+                    1 of 3 Complete
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                  <div className="flex items-center gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3.5 shadow-2xs">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--success)] text-white text-xs font-bold">
+                      ✓
+                    </span>
+                    <div>
+                      <span className="text-xs font-bold text-[var(--text-primary)] block">1. GitHub Connected</span>
+                      <span className="text-[10.5px] text-[var(--text-muted)]">@{profile.username} verified</span>
+                    </div>
+                  </div>
+
+                  <a
+                    href="#section-keys"
+                    className="flex items-center gap-3 rounded-2xl border border-[var(--nepal-blue)]/40 bg-[var(--nepal-blue)]/5 p-3.5 shadow-2xs hover:border-[var(--nepal-blue)] transition cursor-pointer group"
+                  >
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-[var(--nepal-blue)] text-[var(--nepal-blue)] text-xs font-bold group-hover:bg-[var(--nepal-blue)] group-hover:text-white transition">
+                      2
+                    </span>
+                    <div>
+                      <span className="text-xs font-bold text-[var(--nepal-blue)] block">2. Generate API Key</span>
+                      <span className="text-[10.5px] text-[var(--text-muted)]">Click to create first key →</span>
+                    </div>
+                  </a>
+
+                  <a
+                    href="#section-console"
+                    className="flex items-center gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3.5 shadow-2xs hover:border-[var(--text-secondary)] transition cursor-pointer"
+                  >
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-[var(--border-default)] text-[var(--text-muted)] text-xs font-bold">
+                      3
+                    </span>
+                    <div>
+                      <span className="text-xs font-bold text-[var(--text-primary)] block">3. Run Test Query</span>
+                      <span className="text-[10.5px] text-[var(--text-muted)]">Try Live Console below</span>
+                    </div>
+                  </a>
+                </div>
+              </div>
+            )}
+
             {/* Developer Profile Header Card */}
             <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 sm:p-7 shadow-sm">
               <div className="flex items-center gap-4">
@@ -598,7 +975,7 @@ print("License details:", data.get("data"))`
 
             {/* 4 Metric KPI Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 sm:gap-4">
-              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 space-y-1 shadow-2xs">
+              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 space-y-1 shadow-2xs hover-lift transition-all duration-200 hover:border-[var(--nepal-blue)]/40 hover:shadow-sm">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Quota Limit</span>
                 <p className="text-xl sm:text-2xl font-black text-[var(--text-primary)]">60 <span className="text-xs font-normal text-[var(--text-secondary)]">req/min</span></p>
                 <span className="inline-block rounded bg-[var(--nepal-blue)]/10 px-1.5 py-0.5 text-[10px] font-bold text-[var(--nepal-blue)]">
@@ -606,7 +983,7 @@ print("License details:", data.get("data"))`
                 </span>
               </div>
 
-              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 space-y-1 shadow-2xs">
+              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 space-y-1 shadow-2xs hover-lift transition-all duration-200 hover:border-[var(--success)]/40 hover:shadow-sm">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Rate Window</span>
                 <p className="text-xl sm:text-2xl font-black text-[var(--text-primary)]">60s <span className="text-xs font-normal text-[var(--text-secondary)]">sliding</span></p>
                 <span className="inline-block rounded bg-[var(--success)]/10 px-1.5 py-0.5 text-[10px] font-bold text-[var(--success)]">
@@ -614,7 +991,7 @@ print("License details:", data.get("data"))`
                 </span>
               </div>
 
-              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 space-y-1 shadow-2xs">
+              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 space-y-1 shadow-2xs hover-lift transition-all duration-200 hover:border-[var(--nepal-blue)]/40 hover:shadow-sm">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Active Keys</span>
                 <p className="text-xl sm:text-2xl font-black text-[var(--text-primary)]">
                   {keys.length} <span className="text-xs font-normal text-[var(--text-secondary)]">/ {maxKeys} max</span>
@@ -624,7 +1001,7 @@ print("License details:", data.get("data"))`
                 </span>
               </div>
 
-              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 space-y-1 shadow-2xs">
+              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 space-y-1 shadow-2xs hover-lift transition-all duration-200 hover:border-purple-500/40 hover:shadow-sm">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Total Queries</span>
                 <p className="text-xl sm:text-2xl font-black text-[var(--text-primary)]">
                   {keys.reduce((sum, k) => sum + (k.total_requests || 0), 0).toLocaleString()}
@@ -634,9 +1011,101 @@ print("License details:", data.get("data"))`
                 </span>
               </div>
             </div>
+          </div>
+
+          {/* API Analytics & Visual Traffic Section */}
+          <div id="section-analytics" className="rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 sm:p-8 shadow-sm space-y-6 scroll-mt-24 hover:border-[var(--nepal-blue)]/30 transition-colors">
+              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border-default)] pb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">
+                      API Analytics & Traffic Visualizer
+                    </h2>
+                    <span className="rounded-full bg-[var(--nepal-blue)]/10 px-2.5 py-0.5 text-[10px] font-bold text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/20">
+                      Live Telemetry
+                    </span>
+                  </div>
+                  <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                    Monitor request throughput, rate limits, status distribution, and edge response latency.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2.5">
+                  {analyticsData && (
+                    <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
+                      <div className="flex items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2.5 py-1">
+                        <span className="text-[var(--text-muted)]">Success Rate:</span>
+                        <span className="font-bold text-[var(--success)]">{analyticsData.summary.successRate}%</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2.5 py-1">
+                        <span className="text-[var(--text-muted)]">Avg Latency:</span>
+                        <span className="font-bold text-purple-600 dark:text-purple-400">
+                          ⚡ {analyticsData.summary.avgLatencyMs}ms
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Manual Refresh Button */}
+                  <button
+                    type="button"
+                    onClick={() => void loadAnalytics(timeframe, true)}
+                    disabled={analyticsLoading}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer active:scale-95 shadow-2xs"
+                    title="Force refresh telemetry from server (bypasses cache)"
+                  >
+                    <span className={analyticsLoading ? 'animate-spin' : ''}>↻</span>
+                    <span>Refresh</span>
+                  </button>
+
+                  {/* Auto-Refresh Toggle with Tab Visibility Protection */}
+                  <button
+                    type="button"
+                    onClick={() => setAutoRefresh((prev) => !prev)}
+                    className={`inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1 text-xs font-medium transition cursor-pointer shadow-2xs ${
+                      autoRefresh
+                        ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold'
+                        : 'border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+                    }`}
+                    title={autoRefresh ? 'Auto-refresh active (pauses when tab is hidden to save DB reads)' : 'Enable 30s auto-refresh'}
+                  >
+                    <span className={`h-1.5 w-1.5 rounded-full ${autoRefresh ? 'bg-emerald-500' : 'bg-zinc-400'}`} />
+                    <span>{autoRefresh ? 'Auto: On (30s)' : 'Auto: Off'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Responsive Grid: Main Chart (left) and Gauges/Breakdown (right) */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                {/* Traffic Volume & Status Chart (2 cols) */}
+                <div className="lg:col-span-2">
+                  <DeveloperTrafficChart
+                    timeline={analyticsData?.timeline || []}
+                    timeframe={timeframe}
+                    onTimeframeChange={handleTimeframeChange}
+                    isSampleData={analyticsData?.isSampleData}
+                    loading={analyticsLoading}
+                  />
+                </div>
+
+                {/* Quota Gauge and Key Distribution (1 col) */}
+                <div className="space-y-6">
+                  <DeveloperQuotaGauge
+                    limit={analyticsData?.quota.limit ?? 60}
+                    used={analyticsData?.quota.used ?? 0}
+                    remaining={analyticsData?.quota.remaining ?? 60}
+                    resetInSeconds={analyticsData?.quota.resetInSeconds ?? 0}
+                  />
+
+                  <DeveloperKeyDistribution
+                    keysBreakdown={analyticsData?.keysBreakdown || []}
+                  />
+                </div>
+              </div>
+            </div>
 
             {/* API Keys Management Card */}
-            <div className="rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 sm:p-8 shadow-sm space-y-6">
+            <div id="section-keys" className="rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 sm:p-8 shadow-sm space-y-6 scroll-mt-24 hover:border-[var(--nepal-blue)]/30 transition-colors">
               <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border-default)] pb-4">
                 <div>
                   <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">API Keys</h2>
@@ -733,6 +1202,15 @@ print("License details:", data.get("data"))`
                               type="text"
                               value={editingName}
                               onChange={(e) => setEditingName(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault()
+                                  void handleSaveRename(k.id)
+                                } else if (e.key === 'Escape') {
+                                  e.preventDefault()
+                                  handleCancelRename()
+                                }
+                              }}
                               maxLength={50}
                               className="rounded-lg border border-[var(--nepal-blue)] bg-[var(--surface-primary)] px-2.5 py-1 text-xs font-bold text-[var(--text-primary)] focus:outline-hidden"
                               autoFocus
@@ -816,7 +1294,7 @@ print("License details:", data.get("data"))`
             </div>
 
             {/* Quickstart Integration Code Card */}
-            <div className="rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 sm:p-8 shadow-sm space-y-4">
+            <div id="section-quickstart" className="rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 sm:p-8 shadow-sm space-y-4 scroll-mt-24 hover:border-[var(--nepal-blue)]/30 transition-colors">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">Quick Integration Guide</h2>
@@ -859,7 +1337,7 @@ print("License details:", data.get("data"))`
             </div>
 
             {/* Live Interactive API Tester & Console */}
-            <div className="rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 sm:p-8 space-y-5 shadow-sm">
+            <div id="section-console" className="rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 sm:p-8 space-y-5 shadow-sm scroll-mt-24 hover:border-[var(--nepal-blue)]/30 transition-colors">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-default)] pb-4">
                 <div>
                   <div className="flex items-center gap-2">
@@ -890,6 +1368,12 @@ print("License details:", data.get("data"))`
                         type="text"
                         value={testApiKey}
                         onChange={(e) => setTestApiKey(e.target.value)}
+                        onKeyDown={(e) => {
+                          if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                            e.preventDefault()
+                            void handleRunApiTest()
+                          }
+                        }}
                         placeholder={newKeyModal?.rawKey || 'Paste raw nlc_live_... key (or leave empty for public search)'}
                         className="flex-1 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-xs font-mono text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--nepal-blue)] focus:outline-hidden"
                       />
@@ -916,6 +1400,12 @@ print("License details:", data.get("data"))`
                       type="text"
                       value={testLicenseNumber}
                       onChange={(e) => setTestLicenseNumber(e.target.value)}
+                      onKeyDown={(e) => {
+                        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                          e.preventDefault()
+                          void handleRunApiTest()
+                        }
+                      }}
                       placeholder="e.g. 01-01-12345678 or ०१-०१-१२३४५६७८"
                       className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-xs font-mono text-[var(--text-primary)] focus:border-[var(--nepal-blue)] focus:outline-hidden"
                     />
@@ -940,24 +1430,37 @@ print("License details:", data.get("data"))`
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={handleRunApiTest}
-                    disabled={testLoading}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--nepal-blue)] px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:opacity-90 active:scale-98 disabled:opacity-50 transition cursor-pointer"
-                  >
-                    {testLoading ? (
-                      <>
-                        <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                        <span>Querying Database Mirror...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>▶</span>
-                        <span>Send Test Request</span>
-                      </>
-                    )}
-                  </button>
+                  <div>
+                    <button
+                      type="button"
+                      onClick={handleRunApiTest}
+                      disabled={testLoading}
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--nepal-blue)] px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:opacity-90 active:scale-98 disabled:opacity-50 transition cursor-pointer"
+                    >
+                      {testLoading ? (
+                        <>
+                          <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                          <span>Querying Database Mirror...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>▶</span>
+                          <span>Send Test Request</span>
+                        </>
+                      )}
+                    </button>
+                    <div className="flex items-center justify-center gap-1.5 text-[10px] text-[var(--text-muted)] pt-1.5 font-medium">
+                      <span>Pro-tip: Press</span>
+                      <kbd className="rounded border border-[var(--border-default)] bg-[var(--surface-primary)] px-1.5 py-0.5 font-mono text-[9px] font-bold shadow-2xs">
+                        Ctrl / ⌘
+                      </kbd>
+                      <span>+</span>
+                      <kbd className="rounded border border-[var(--border-default)] bg-[var(--surface-primary)] px-1.5 py-0.5 font-mono text-[9px] font-bold shadow-2xs">
+                        Enter
+                      </kbd>
+                      <span>to execute</span>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Right Column: Live Response & Header Inspector */}
@@ -979,7 +1482,20 @@ print("License details:", data.get("data"))`
                             HTTP {testStatus}
                           </span>
                           {testDuration !== null && (
-                            <span className="text-[var(--text-muted)] font-medium">⚡ {testDuration}ms</span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[var(--text-muted)] font-medium">⚡ {testDuration}ms</span>
+                              <span
+                                className={`rounded px-1.5 py-0.2 text-[9.5px] font-bold ${
+                                  testDuration < 60
+                                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                                    : testDuration < 150
+                                    ? 'bg-[var(--nepal-blue)]/10 text-[var(--nepal-blue)]'
+                                    : 'bg-zinc-500/10 text-[var(--text-muted)]'
+                                }`}
+                              >
+                                {testDuration < 60 ? '⚡ Ultra-Fast (<60ms)' : testDuration < 150 ? '⚡ Fast Edge' : 'Standard'}
+                              </span>
+                            </div>
                           )}
                         </div>
                       )}
@@ -1003,6 +1519,12 @@ print("License details:", data.get("data"))`
                       </div>
                     )}
 
+                    {consoleHistory.length > 0 && (
+                      <div className="mt-2.5">
+                        <LiveConsoleSparkline history={consoleHistory} />
+                      </div>
+                    )}
+
                     <div className="mt-2.5">
                       <pre className="overflow-x-auto max-h-56 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 font-mono text-[11px] text-[var(--text-primary)] leading-relaxed select-all">
                         <code>
@@ -1018,7 +1540,7 @@ print("License details:", data.get("data"))`
             </div>
 
             {/* HTTP API Reference Table */}
-            <div className="rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 sm:p-8 space-y-4 shadow-sm text-xs">
+            <div id="section-specs" className="rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 sm:p-8 space-y-4 shadow-sm text-xs scroll-mt-24 hover:border-[var(--nepal-blue)]/30 transition-colors">
               <h2 className="text-base font-bold text-[var(--text-primary)]">HTTP Response Headers Specification</h2>
               <p className="text-[var(--text-secondary)]">
                 The license API mirrors all standard RFC rate-limiting headers with each request:
@@ -1058,8 +1580,40 @@ print("License details:", data.get("data"))`
                 </table>
               </div>
             </div>
-          </div>
-        )}
+
+            {/* Developer Dashboard Footer */}
+            <footer className="pt-8 mt-12 border-t border-[var(--border-default)] flex flex-wrap items-center justify-between gap-4 text-xs text-[var(--text-secondary)]">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span className="font-semibold text-[var(--text-primary)]">
+                  © {new Date().getFullYear()} Nepal License Checker
+                </span>
+                <span>·</span>
+                <span className="font-mono text-[10px] rounded bg-[var(--bg-secondary)] px-1.5 py-0.5 border border-[var(--border-default)]">
+                  v2.0.0
+                </span>
+                <span>·</span>
+                <span>Developed by</span>
+                <a
+                  href="https://acharyanischal.com.np/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-[var(--nepal-blue)] hover:underline inline-flex items-center gap-0.5"
+                >
+                  Nischal Acharya
+                </a>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <Link href="/developer/docs" className="text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] transition font-semibold">
+                  SDK Docs
+                </Link>
+                <Link href="/" className="text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] transition font-semibold">
+                  Public Search
+                </Link>
+              </div>
+            </footer>
+          </main>
+        </div>
 
         {/* Modal: Reveal New Key (Shown Once) */}
         {newKeyModal && (
@@ -1095,6 +1649,26 @@ print("License details:", data.get("data"))`
                 </button>
               </div>
 
+              {/* One-Click .env Snippet Actions */}
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => copyEnvSnippet(newKeyModal.rawKey)}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--nepal-blue)] transition cursor-pointer shadow-2xs"
+                >
+                  <span>📋</span>
+                  <span>{copiedEnv ? '✓ Copied .env!' : 'Copy .env Snippet'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => downloadEnvFile(newKeyModal.rawKey)}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer shadow-2xs"
+                >
+                  <span>💾</span>
+                  <span>Download .env.local</span>
+                </button>
+              </div>
+
               {/* Instant Test Command Preview */}
               <div className="space-y-1.5">
                 <span className="text-[11px] font-bold text-[var(--text-secondary)] block">Instant Test cURL:</span>
@@ -1115,39 +1689,6 @@ print("License details:", data.get("data"))`
             </div>
           </div>
         )}
-
-        {/* Footer info */}
-        <footer className="pt-8 mt-12 border-t border-[var(--border-default)] flex flex-wrap items-center justify-between gap-4 text-xs text-[var(--text-secondary)]">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="font-semibold text-[var(--text-primary)]">
-              © {new Date().getFullYear()} Nepal License Checker
-            </span>
-            <span>·</span>
-            <span className="font-mono text-[10px] rounded bg-[var(--bg-secondary)] px-1.5 py-0.5 border border-[var(--border-default)]">
-              v2.0.0
-            </span>
-            <span>·</span>
-            <span>Developed by</span>
-            <a
-              href="https://acharyanischal.com.np/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold text-[var(--nepal-blue)] hover:underline inline-flex items-center gap-0.5"
-            >
-              Nischal Acharya
-            </a>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <Link href="/developer/docs" className="text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] transition font-semibold">
-              SDK Docs
-            </Link>
-            <Link href="/" className="text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] transition font-semibold">
-              Public Search
-            </Link>
-          </div>
-        </footer>
       </div>
-    </div>
-  )
-}
+    )
+  }

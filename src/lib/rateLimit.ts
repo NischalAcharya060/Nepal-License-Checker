@@ -133,4 +133,19 @@ export class RateLimiter {
         this.requests.delete(key)
         this.blocked.delete(key)
     }
+
+    getCurrentUsage(key: string, customLimit?: number): { used: number; remaining: number; reset: number; limit: number } {
+        const now = Date.now()
+        const effectiveLimit = customLimit ?? this.limit
+        const timestamps = this.requests.get(key) || []
+        const recent = timestamps.filter(ts => now - ts < this.window)
+        const oldest = recent[0] || now
+        const reset = Math.ceil((oldest + this.window) / 1000)
+        return {
+            used: recent.length,
+            remaining: Math.max(0, effectiveLimit - recent.length),
+            reset,
+            limit: effectiveLimit,
+        }
+    }
 }

@@ -60,6 +60,16 @@ export async function ensureDeveloperTables(): Promise<void> {
             )`,
             `CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON developer_api_keys(key_hash)`,
             `CREATE INDEX IF NOT EXISTS idx_api_keys_dev_id ON developer_api_keys(developer_id)`,
+            `CREATE TABLE IF NOT EXISTS developer_usage_metrics (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                developer_id TEXT NOT NULL,
+                key_id TEXT NOT NULL,
+                status_code INTEGER NOT NULL DEFAULT 200,
+                latency_ms INTEGER NOT NULL DEFAULT 40,
+                created_at INTEGER NOT NULL
+            )`,
+            `CREATE INDEX IF NOT EXISTS idx_dev_metrics_dev_time ON developer_usage_metrics(developer_id, created_at)`,
+            `CREATE INDEX IF NOT EXISTS idx_dev_metrics_key ON developer_usage_metrics(key_id)`,
         ],
         'write'
     )
@@ -305,3 +315,20 @@ export function recordApiKeyUsage(keyId: string): void {
         })
         .catch(() => {})
 }
+
+export function recordDeveloperUsageMetric(entry: {
+    developerId: string
+    keyId: string
+    statusCode: number
+    latencyMs: number
+}): void {
+    const now = Date.now()
+    getTurso()
+        .execute({
+            sql: `INSERT INTO developer_usage_metrics (developer_id, key_id, status_code, latency_ms, created_at)
+                  VALUES (?, ?, ?, ?, ?)`,
+            args: [entry.developerId, entry.keyId, entry.statusCode, Math.max(1, entry.latencyMs), now],
+        })
+        .catch(() => {})
+}
+
