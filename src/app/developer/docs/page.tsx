@@ -3,7 +3,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import toast, { Toaster } from 'react-hot-toast'
+import toast from 'react-hot-toast'
 import {
   validateLicenseNumber,
   formatLicenseNumber,
@@ -49,8 +49,6 @@ export default function SdkDocumentationPage() {
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] px-4 py-8 sm:px-6 sm:py-12 text-[var(--text-primary)] transition-colors">
-      <Toaster position="top-center" />
-
       {/* Ambient Glow */}
       <div
         className="pointer-events-none fixed -top-40 left-1/2 -translate-x-1/2 h-96 w-full max-w-5xl rounded-full bg-gradient-to-br from-[var(--nepal-blue)]/15 via-[var(--nepal-red)]/10 to-transparent blur-3xl opacity-75"

@@ -68,13 +68,26 @@ export async function ensureDeveloperTables(): Promise<void> {
 /* Cryptographic Session Helper (Zero-dependency Web Crypto)                  */
 /* -------------------------------------------------------------------------- */
 
+let warnedAboutSecret = false
+
 function getSecretKey(): string {
-    return (
+    const secret =
         process.env.DEVELOPER_SESSION_SECRET ||
         process.env.CRON_SECRET ||
-        process.env.MAINTENANCE_PASSWORD ||
-        'nlc-developer-portal-secure-fallback-secret-2026'
-    )
+        process.env.MAINTENANCE_PASSWORD
+
+    if (!secret) {
+        if (process.env.NODE_ENV === 'production' && !warnedAboutSecret) {
+            console.warn(
+                '[SECURITY WARNING] No DEVELOPER_SESSION_SECRET configured in production. ' +
+                'Falling back to default secret. Please configure DEVELOPER_SESSION_SECRET in your environment.'
+            )
+            warnedAboutSecret = true
+        }
+        return 'nlc-developer-portal-secure-fallback-secret-2026'
+    }
+
+    return secret
 }
 
 function b64urlEncode(bytes: Uint8Array): string {
