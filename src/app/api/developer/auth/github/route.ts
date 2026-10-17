@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
     githubAuthUrl.searchParams.set('state', state)
 
     const response = NextResponse.redirect(githubAuthUrl.toString(), 302)
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate')
 
     // Store state in a short-lived HTTP-only cookie (10 minutes)
     response.cookies.set(DEV_STATE_COOKIE, state, {

@@ -9,7 +9,7 @@
  *  - never cached     : non-GET requests, cross-origin requests, video/audio
  */
 
-const VERSION = 'v5'
+const VERSION = 'v6'
 const PRECACHE = `nlc-precache-${VERSION}`
 const PAGES = `nlc-pages-${VERSION}`
 const ASSETS = `nlc-assets-${VERSION}`
@@ -99,6 +99,11 @@ async function putInCache(cacheName, request, response) {
 async function handleNavigation(request) {
   const url = new URL(request.url)
 
+  // API endpoints must never be handled as HTML page navigations
+  if (url.pathname.startsWith('/api/')) {
+    return fetch(request)
+  }
+
   try {
     const response = await fetchWithTimeout(request, { redirect: 'follow' }, NAV_TIMEOUT)
     if (response && response.ok) {
@@ -125,11 +130,12 @@ async function handleNavigation(request) {
 }
 
 async function handleApi(request, url) {
-  // Never cache administrative, maintenance, or internal cron operations in offline storage
+  // Never cache administrative, maintenance, developer, or internal cron operations in offline storage
   if (
     url.pathname.startsWith('/api/admin') ||
     url.pathname.startsWith('/api/maintenance') ||
-    url.pathname.startsWith('/api/cron')
+    url.pathname.startsWith('/api/cron') ||
+    url.pathname.startsWith('/api/developer')
   ) {
     return fetch(request)
   }
@@ -276,13 +282,24 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return
   if (isHeavyMedia(url)) return
 
-  if (request.mode === 'navigate') {
-    event.respondWith(handleNavigation(request))
+  // 1. NEVER intercept OAuth / auth redirects or dynamic auth endpoints in the service worker.
+  // Letting the browser handle these directly ensures OAuth 302 redirects to GitHub work flawlessly.
+  if (
+    url.pathname.startsWith('/api/developer/auth') ||
+    url.pathname.startsWith('/api/admin/auth') ||
+    url.pathname.startsWith('/api/maintenance/auth')
+  ) {
     return
   }
 
+  // 2. All other /api/ calls must be handled by handleApi, NEVER as HTML page navigations
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(handleApi(request, url))
+    return
+  }
+
+  if (request.mode === 'navigate') {
+    event.respondWith(handleNavigation(request))
     return
   }
 

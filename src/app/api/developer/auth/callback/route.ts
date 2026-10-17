@@ -36,9 +36,11 @@ export async function GET(request: NextRequest) {
     const origin = `${proto}://${host}`
 
     const redirectWithError = (msg: string) => {
-        const url = new URL('/developer', origin)
+        const url = new URL('/developer/login', origin)
         url.searchParams.set('error', msg)
-        return NextResponse.redirect(url.toString(), 302)
+        const res = NextResponse.redirect(url.toString(), 302)
+        res.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate')
+        return res
     }
 
     if (!code || !state || !cookieState || state !== cookieState) {
@@ -148,6 +150,7 @@ export async function GET(request: NextRequest) {
 
         const successRedirect = new URL('/developer', origin)
         const response = NextResponse.redirect(successRedirect.toString(), 302)
+        response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate')
 
         // Set session cookie
         response.cookies.set(DEV_SESSION_COOKIE, sessionToken, {

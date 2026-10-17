@@ -50,7 +50,10 @@ export async function GET(request: NextRequest) {
             total_requests: Number(row.total_requests) || 0,
         }))
 
-        return NextResponse.json({ keys, maxKeys: MAX_KEYS_PER_DEVELOPER })
+        return NextResponse.json(
+            { keys, maxKeys: MAX_KEYS_PER_DEVELOPER },
+            { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+        )
     } catch (error) {
         console.error('Error fetching API keys:', error)
         return NextResponse.json({ error: 'Failed to fetch API keys' }, { status: 500 })

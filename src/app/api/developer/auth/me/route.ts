@@ -14,8 +14,10 @@ export async function GET(request: NextRequest) {
     const sessionToken = request.cookies.get(DEV_SESSION_COOKIE)?.value
     const session = await verifyDeveloperSessionToken(sessionToken)
 
+    const noCacheHeaders = { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
+
     if (!session) {
-        return NextResponse.json({ authenticated: false, developer: null })
+        return NextResponse.json({ authenticated: false, developer: null }, { headers: noCacheHeaders })
     }
 
     try {
@@ -28,7 +30,7 @@ export async function GET(request: NextRequest) {
         })
 
         if (!result.rows.length) {
-            return NextResponse.json({ authenticated: false, developer: null })
+            return NextResponse.json({ authenticated: false, developer: null }, { headers: noCacheHeaders })
         }
 
         const row = result.rows[0]
@@ -43,9 +45,9 @@ export async function GET(request: NextRequest) {
             updated_at: Number(row.updated_at),
         }
 
-        return NextResponse.json({ authenticated: true, developer })
+        return NextResponse.json({ authenticated: true, developer }, { headers: noCacheHeaders })
     } catch (error) {
         console.error('Error fetching developer profile:', error)
-        return NextResponse.json({ authenticated: false, error: 'Failed to fetch profile' }, { status: 500 })
+        return NextResponse.json({ authenticated: false, error: 'Failed to fetch profile' }, { status: 500, headers: noCacheHeaders })
     }
 }
