@@ -33,8 +33,28 @@ export default function DeveloperPortalPage() {
   const [redirecting, setRedirecting] = useState(false)
   const [activeSection, setActiveSection] = useState('section-overview')
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return localStorage.getItem('nlc_dev_sidebar_collapsed') === 'true'
+      } catch {
+        return false
+      }
+    }
+    return false
+  })
 
-  // ScrollSpy listener to sync active sidebar section smoothly
+  const handleToggleSidebar = () => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev
+      try {
+        localStorage.setItem('nlc_dev_sidebar_collapsed', String(next))
+      } catch {}
+      return next
+    })
+  }
+
+  // ScrollSpy listener to sync active sidebar section smoothly (including HTTP Specs)
   useEffect(() => {
     if (!profile) return
 
@@ -48,19 +68,31 @@ export default function DeveloperPortalPage() {
     ]
 
     const handleScroll = () => {
-      const scrollPos = window.scrollY + 140
+      // 1. Detect if scrolled near the bottom of the page (activates last section 'section-specs')
+      const scrollBottom = window.innerHeight + window.scrollY
+      const docHeight = document.documentElement.scrollHeight
+      if (scrollBottom >= docHeight - 80) {
+        setActiveSection('section-specs')
+        return
+      }
+
+      // 2. Viewport-based threshold (bounding rect)
       for (let i = sectionIds.length - 1; i >= 0; i--) {
         const id = sectionIds[i]
         const el = document.getElementById(id)
-        if (el && el.offsetTop <= scrollPos) {
-          setActiveSection(id)
-          return
+        if (el) {
+          const rect = el.getBoundingClientRect()
+          if (rect.top <= 200) {
+            setActiveSection(id)
+            return
+          }
         }
       }
       setActiveSection('section-overview')
     }
 
     window.addEventListener('scroll', handleScroll, { passive: true })
+    handleScroll()
     return () => window.removeEventListener('scroll', handleScroll)
   }, [profile])
 
@@ -741,10 +773,12 @@ print("License details:", data.get("data"))`
         onLogout={handleLogout}
         mobileOpen={mobileOpen}
         onCloseMobile={() => setMobileOpen(false)}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={handleToggleSidebar}
       />
 
-      {/* Main Content Viewport (offset on desktop by md:pl-64) */}
-      <div className="md:pl-64 flex flex-col min-h-screen transition-all">
+      {/* Main Content Viewport (offset on desktop by md:pl-20 or md:pl-64) */}
+      <div className={`${sidebarCollapsed ? 'md:pl-20' : 'md:pl-64'} flex flex-col min-h-screen transition-all duration-300 ease-in-out`}>
         {/* Sticky Utility Top Header */}
         <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-[var(--border-default)] bg-[var(--surface-primary)]/85 px-4 sm:px-8 backdrop-blur-md transition-all shadow-2xs">
           {/* Mobile Toggle & Active Breadcrumb */}
@@ -759,6 +793,25 @@ print("License details:", data.get("data"))`
                 <line x1="3" y1="12" x2="21" y2="12" />
                 <line x1="3" y1="6" x2="21" y2="6" />
                 <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            </button>
+
+            {/* Desktop Sidebar Collapse / Expand Toggle */}
+            <button
+              type="button"
+              onClick={handleToggleSidebar}
+              className="hidden md:flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--nepal-blue)] transition shadow-2xs cursor-pointer shrink-0"
+              title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect width="18" height="18" x="3" y="3" rx="2" />
+                <path d="M9 3v18" />
+                {sidebarCollapsed ? (
+                  <path d="m14 9 3 3-3 3" />
+                ) : (
+                  <path d="m16 9-3 3 3 3" />
+                )}
               </svg>
             </button>
 

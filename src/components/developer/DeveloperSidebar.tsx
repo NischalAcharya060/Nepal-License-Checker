@@ -13,6 +13,8 @@ interface DeveloperSidebarProps {
   onLogout: () => void
   mobileOpen: boolean
   onCloseMobile: () => void
+  collapsed?: boolean
+  onToggleCollapse?: () => void
 }
 
 const NAV_ITEMS = [
@@ -96,180 +98,303 @@ export default function DeveloperSidebar({
   onLogout,
   mobileOpen,
   onCloseMobile,
+  collapsed = false,
+  onToggleCollapse,
 }: DeveloperSidebarProps) {
-  const content = (
-    <div className="flex h-full flex-col justify-between p-4 sm:p-5 select-none">
-      {/* Top Branding */}
-      <div className="space-y-6">
-        <div className="flex items-center justify-between pb-4 border-b border-[var(--border-default)]">
-          <Link
-            href="/"
-            className="flex items-center gap-2.5 transition-transform hover:scale-101 group"
-          >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--nepal-blue)] to-[var(--nepal-blue-dark)] text-white shadow-sm font-bold text-sm">
-              🇳🇵
-            </div>
-            <div>
-              <span className="font-extrabold text-xs tracking-tight text-[var(--text-primary)] block">
-                Nepal License
-              </span>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--nepal-blue)] flex items-center gap-1">
-                <span>⚡ Dev Portal</span>
-              </span>
-            </div>
-          </Link>
+  const renderSidebarContent = (isMobile = false) => {
+    const isCollapsed = !isMobile && collapsed
 
-          {/* Close button on mobile */}
-          <button
-            type="button"
-            onClick={onCloseMobile}
-            className="md:hidden rounded-lg p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]"
-            aria-label="Close sidebar"
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* Live Tier Badge */}
-        <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 p-3 space-y-1.5 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="inline-flex items-center gap-1.5 text-[10.5px] font-bold text-[var(--text-primary)]">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              <span>Elevated Tier</span>
-            </span>
-            <span className="font-mono text-[10px] font-bold text-[var(--nepal-blue)]">
-              60 req/min
-            </span>
-          </div>
-          <div className="h-1.5 w-full rounded-full bg-[var(--border-default)] overflow-hidden">
-            <div className="h-full w-full rounded-full bg-[var(--nepal-blue)]" />
-          </div>
-          <div className="flex justify-between text-[10px] text-[var(--text-muted)] font-mono">
-            <span>4x Public Quota</span>
-            <span>Zero Lockout</span>
-          </div>
-        </div>
-
-        {/* Main Navigation Links */}
-        <nav className="space-y-1">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] px-3 mb-2 block">
-            Navigation
-          </span>
-          {NAV_ITEMS.map((item) => {
-            const isActive = activeSection === item.id
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => {
-                  onSectionClick(item.id)
-                  onCloseMobile()
-                }}
-                className={`group flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs transition-all duration-150 cursor-pointer ${
-                  isActive
-                    ? 'bg-[var(--nepal-blue)] text-white font-bold shadow-sm shadow-[var(--nepal-blue)]/20 translate-x-0.5'
-                    : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] font-medium'
-                }`}
-              >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <span
-                    className={`transition-colors shrink-0 ${
-                      isActive ? 'text-white' : 'text-[var(--text-muted)] group-hover:text-[var(--nepal-blue)]'
-                    }`}
-                  >
-                    {item.icon}
+    return (
+      <div className={`flex h-full flex-col justify-between select-none ${isCollapsed ? 'p-3' : 'p-4 sm:p-5'}`}>
+        {/* Top Branding */}
+        <div className="space-y-5">
+          <div className={`flex items-center pb-4 border-b border-[var(--border-default)] ${isCollapsed ? 'flex-col gap-2.5' : 'justify-between'}`}>
+            <Link
+              href="/"
+              className={`flex items-center gap-2.5 transition-transform hover:scale-102 group min-w-0 ${isCollapsed ? 'justify-center' : ''}`}
+              title="Nepal License Checker - Home"
+            >
+              <Image
+                src="/License-Checker-Nepal-logo.png"
+                alt="Nepal License Checker Logo"
+                width={36}
+                height={36}
+                className="h-9 w-9 rounded-xl object-contain shadow-xs shrink-0"
+                priority
+              />
+              {!isCollapsed && (
+                <div className="min-w-0 truncate">
+                  <span className="font-extrabold text-xs tracking-tight text-[var(--text-primary)] block truncate">
+                    Nepal License
                   </span>
-                  <div className="truncate">
-                    <span className="block truncate">{item.label}</span>
-                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--nepal-blue)] flex items-center gap-1">
+                    <span>⚡ Dev Portal</span>
+                  </span>
                 </div>
+              )}
+            </Link>
 
-                {item.badge && (
-                  <span
-                    className={`rounded-md px-1.5 py-0.5 font-mono text-[10px] font-bold shrink-0 ${
-                      isActive
-                        ? 'bg-white/20 text-white'
-                        : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] border border-[var(--border-default)]'
-                    }`}
-                  >
-                    {item.badge(keys.length)}
-                  </span>
-                )}
+            {/* Close button on mobile */}
+            {isMobile && (
+              <button
+                type="button"
+                onClick={onCloseMobile}
+                className="md:hidden rounded-lg p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] cursor-pointer"
+                aria-label="Close sidebar"
+              >
+                ✕
               </button>
-            )
-          })}
-        </nav>
+            )}
 
-        {/* External Documentation Link */}
-        <div className="pt-2">
-          <Link
-            href="/developer/docs"
-            className="flex w-full items-center justify-between rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)] transition shadow-2xs group"
-          >
-            <div className="flex items-center gap-2">
-              <span className="text-[var(--text-muted)] group-hover:text-[var(--nepal-blue)] transition">📖</span>
-              <span>SDK Documentation</span>
+            {/* Collapse/Expand Toggle on Desktop */}
+            {!isMobile && onToggleCollapse && (
+              <button
+                type="button"
+                onClick={onToggleCollapse}
+                className="hidden md:flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--nepal-blue)] transition shadow-2xs cursor-pointer shrink-0"
+                title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  {isCollapsed ? (
+                    <>
+                      <polyline points="13 17 18 12 13 7" />
+                      <polyline points="6 17 11 12 6 7" />
+                    </>
+                  ) : (
+                    <>
+                      <polyline points="11 17 6 12 11 7" />
+                      <polyline points="18 17 13 12 18 7" />
+                    </>
+                  )}
+                </svg>
+              </button>
+            )}
+          </div>
+
+          {/* Live Tier Badge */}
+          {isCollapsed ? (
+            <div
+              className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-2 text-center shadow-2xs cursor-help"
+              title="Elevated Tier: 60 req/min (Zero Lockout)"
+            >
+              <div className="flex flex-col items-center gap-1">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                <span className="font-mono text-[9px] font-bold text-emerald-600 dark:text-emerald-400">60/m</span>
+              </div>
             </div>
-            <span className="text-[10.5px] text-[var(--text-muted)] group-hover:translate-x-0.5 transition-transform">↗</span>
-          </Link>
-        </div>
-      </div>
-
-      {/* Sidebar Footer: Developer Account & Sign Out */}
-      <div className="space-y-3 pt-4 border-t border-[var(--border-default)]">
-        <div className="flex items-center gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-2.5 shadow-2xs">
-          {profile.avatar_url ? (
-            <Image
-              src={profile.avatar_url}
-              alt={profile.username}
-              width={38}
-              height={38}
-              className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] shrink-0"
-              unoptimized
-            />
           ) : (
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--nepal-blue)] text-white font-bold text-xs shrink-0">
-              {profile.username[0]?.toUpperCase()}
+            <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 p-3 space-y-1.5 shadow-2xs">
+              <div className="flex items-center justify-between">
+                <span className="inline-flex items-center gap-1.5 text-[10.5px] font-bold text-[var(--text-primary)]">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  <span>Elevated Tier</span>
+                </span>
+                <span className="font-mono text-[10px] font-bold text-[var(--nepal-blue)]">
+                  60 req/min
+                </span>
+              </div>
+              <div className="h-1.5 w-full rounded-full bg-[var(--border-default)] overflow-hidden">
+                <div className="h-full w-full rounded-full bg-[var(--nepal-blue)]" />
+              </div>
+              <div className="flex justify-between text-[10px] text-[var(--text-muted)] font-mono">
+                <span>4x Public Quota</span>
+                <span>Zero Lockout</span>
+              </div>
             </div>
           )}
-          <div className="min-w-0 flex-1">
-            <span className="font-bold text-xs text-[var(--text-primary)] truncate block leading-tight">
-              {profile.name || profile.username}
-            </span>
-            <span className="text-[10px] text-[var(--text-muted)] truncate block font-mono">
-              @{profile.username}
-            </span>
+
+          {/* Main Navigation Links */}
+          <nav className="space-y-1">
+            {!isCollapsed && (
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] px-3 mb-2 block">
+                Navigation
+              </span>
+            )}
+            {NAV_ITEMS.map((item) => {
+              const isActive = activeSection === item.id
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    onSectionClick(item.id)
+                    if (isMobile) onCloseMobile()
+                  }}
+                  title={isCollapsed ? `${item.label} - ${item.description}` : undefined}
+                  className={`group relative flex items-center rounded-xl transition-all duration-150 cursor-pointer ${
+                    isCollapsed
+                      ? 'h-10 w-10 mx-auto justify-center'
+                      : 'w-full justify-between px-3 py-2 text-left text-xs'
+                  } ${
+                    isActive
+                      ? 'bg-[var(--nepal-blue)] text-white font-bold shadow-sm shadow-[var(--nepal-blue)]/20'
+                      : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] font-medium'
+                  }`}
+                >
+                  <div className={`flex items-center gap-2.5 min-w-0 ${isCollapsed ? 'justify-center' : ''}`}>
+                    <span
+                      className={`transition-colors shrink-0 ${
+                        isActive ? 'text-white' : 'text-[var(--text-muted)] group-hover:text-[var(--nepal-blue)]'
+                      }`}
+                    >
+                      {item.icon}
+                    </span>
+                    {!isCollapsed && (
+                      <span className="truncate block">{item.label}</span>
+                    )}
+                  </div>
+
+                  {item.badge && (
+                    isCollapsed ? (
+                      keys.length > 0 && (
+                        <span
+                          className={`absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-mono font-bold ${
+                            isActive ? 'bg-white text-[var(--nepal-blue)]' : 'bg-[var(--nepal-blue)] text-white'
+                          }`}
+                        >
+                          {keys.length}
+                        </span>
+                      )
+                    ) : (
+                      <span
+                        className={`rounded-md px-1.5 py-0.5 font-mono text-[10px] font-bold shrink-0 ${
+                          isActive
+                            ? 'bg-white/20 text-white'
+                            : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] border border-[var(--border-default)]'
+                        }`}
+                      >
+                        {item.badge(keys.length)}
+                      </span>
+                    )
+                  )}
+                </button>
+              )
+            })}
+          </nav>
+
+          {/* External Documentation Link */}
+          <div className="pt-1">
+            <Link
+              href="/developer/docs"
+              title={isCollapsed ? 'SDK Documentation' : undefined}
+              className={`flex items-center rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)] transition shadow-2xs group ${
+                isCollapsed
+                  ? 'h-10 w-10 mx-auto justify-center'
+                  : 'w-full justify-between px-3 py-2'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-[var(--text-muted)] group-hover:text-[var(--nepal-blue)] transition">📖</span>
+                {!isCollapsed && <span>SDK Documentation</span>}
+              </div>
+              {!isCollapsed && (
+                <span className="text-[10.5px] text-[var(--text-muted)] group-hover:translate-x-0.5 transition-transform">↗</span>
+              )}
+            </Link>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5">
-          <Link
-            href="/"
-            className="flex-1 text-center rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] py-1.5 text-[11px] font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition shadow-2xs"
-          >
-            ← Home
-          </Link>
-          <button
-            type="button"
-            onClick={onLogout}
-            className="rounded-xl border border-[var(--danger)]/30 bg-[var(--danger)]/5 px-2.5 py-1.5 text-[11px] font-bold text-[var(--danger)] hover:bg-[var(--danger)] hover:text-white transition cursor-pointer"
-            title="Sign out of developer portal"
-          >
-            Sign Out
-          </button>
+        {/* Sidebar Footer: Developer Account & Sign Out */}
+        <div className={`space-y-3 pt-4 border-t border-[var(--border-default)] ${isCollapsed ? 'flex flex-col items-center' : ''}`}>
+          {isCollapsed ? (
+            <div className="flex flex-col items-center gap-2.5">
+              {profile.avatar_url ? (
+                <Image
+                  src={profile.avatar_url}
+                  alt={profile.username}
+                  width={34}
+                  height={34}
+                  title={`Signed in as @${profile.username}`}
+                  className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] shrink-0 cursor-pointer"
+                  unoptimized
+                />
+              ) : (
+                <div
+                  title={`Signed in as @${profile.username}`}
+                  className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--nepal-blue)] text-white font-bold text-xs shrink-0 cursor-pointer"
+                >
+                  {profile.username[0]?.toUpperCase()}
+                </div>
+              )}
+              <Link
+                href="/"
+                title="Return to Public Search"
+                className="flex h-8 w-8 items-center justify-center rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition shadow-2xs"
+              >
+                🏠
+              </Link>
+              <button
+                type="button"
+                onClick={onLogout}
+                title="Sign out of developer portal"
+                className="flex h-8 w-8 items-center justify-center rounded-xl border border-[var(--danger)]/30 bg-[var(--danger)]/5 text-xs font-bold text-[var(--danger)] hover:bg-[var(--danger)] hover:text-white transition cursor-pointer"
+              >
+                ⏻
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-2.5 shadow-2xs">
+                {profile.avatar_url ? (
+                  <Image
+                    src={profile.avatar_url}
+                    alt={profile.username}
+                    width={38}
+                    height={38}
+                    className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] shrink-0"
+                    unoptimized
+                  />
+                ) : (
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--nepal-blue)] text-white font-bold text-xs shrink-0">
+                    {profile.username[0]?.toUpperCase()}
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <span className="font-bold text-xs text-[var(--text-primary)] truncate block leading-tight">
+                    {profile.name || profile.username}
+                  </span>
+                  <span className="text-[10px] text-[var(--text-muted)] truncate block font-mono">
+                    @{profile.username}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <Link
+                  href="/"
+                  className="flex-1 text-center rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] py-1.5 text-[11px] font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition shadow-2xs"
+                >
+                  ← Home
+                </Link>
+                <button
+                  type="button"
+                  onClick={onLogout}
+                  className="rounded-xl border border-[var(--danger)]/30 bg-[var(--danger)]/5 px-2.5 py-1.5 text-[11px] font-bold text-[var(--danger)] hover:bg-[var(--danger)] hover:text-white transition cursor-pointer"
+                  title="Sign out of developer portal"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
-    </div>
-  )
+    )
+  }
 
   return (
     <>
-      {/* Desktop Persistent Left Sidebar */}
-      <aside className="hidden md:flex fixed top-0 bottom-0 left-0 w-64 z-30 flex-col border-r border-[var(--border-default)] bg-[var(--surface-primary)]/90 backdrop-blur-md overflow-y-auto">
-        {content}
+      {/* Desktop Persistent Left Sidebar (collapsible width) */}
+      <aside
+        className={`hidden md:flex fixed top-0 bottom-0 left-0 z-30 flex-col border-r border-[var(--border-default)] bg-[var(--surface-primary)]/95 backdrop-blur-md overflow-y-auto transition-all duration-300 ease-in-out ${
+          collapsed ? 'w-20' : 'w-64'
+        }`}
+      >
+        {renderSidebarContent(false)}
       </aside>
 
-      {/* Mobile Slide-Over Drawer */}
+      {/* Mobile Slide-Over Drawer (always full width) */}
       {mobileOpen && (
         <div className="fixed inset-0 z-50 md:hidden flex animate-fade-in">
           {/* Backdrop */}
@@ -281,7 +406,7 @@ export default function DeveloperSidebar({
 
           {/* Drawer Body */}
           <div className="relative w-72 max-w-[85vw] h-full bg-[var(--surface-primary)] border-r border-[var(--border-default)] shadow-2xl z-10 animate-slide-right overflow-y-auto">
-            {content}
+            {renderSidebarContent(true)}
           </div>
         </div>
       )}
