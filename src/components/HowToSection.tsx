@@ -162,8 +162,11 @@ export default function HowToSection({ language, lastUpdatedAt }: HowToSectionPr
           <div className="lg:col-span-7">
             <ol className="space-y-3">
               {steps.map((s, idx) => (
-                <li key={idx} className="flex gap-3.5 rounded-xl border border-[var(--border-default)]/70 bg-[var(--surface-primary)] p-3.5 sm:p-4 shadow-2xs">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[var(--nepal-blue)] text-xs font-black text-white shadow-xs">
+                <li
+                  key={idx}
+                  className="group flex gap-3.5 rounded-xl border border-[var(--border-default)]/70 bg-[var(--surface-primary)] p-3.5 sm:p-4 shadow-2xs hover-lift transition-all duration-200 hover:border-[var(--nepal-blue)]/40"
+                >
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[var(--nepal-blue)] text-xs font-black text-white shadow-xs transition-transform duration-200 group-hover:scale-108">
                     {idx + 1}
                   </div>
                   <div className="min-w-0 flex-1">

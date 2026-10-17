@@ -154,7 +154,7 @@ export default function FaqSection({ language, lastUpdatedAt }: FaqSectionProps)
           {faqs.map((f, idx) => (
             <details
               key={idx}
-              className="group rounded-xl border border-[var(--border-default)]/70 bg-[var(--surface-primary)] p-4 sm:p-5 transition hover:border-[var(--nepal-blue)]/50 hover:bg-[var(--bg-secondary)]/30 shadow-2xs"
+              className="group rounded-xl border border-[var(--border-default)]/70 bg-[var(--surface-primary)] p-4 sm:p-5 transition-all duration-200 hover-lift hover:border-[var(--nepal-blue)]/50 hover:bg-[var(--bg-secondary)]/30 shadow-2xs"
             >
               <summary className="flex cursor-pointer list-none items-start justify-between gap-3 text-sm font-bold text-[var(--text-primary)]">
                 <span className="min-w-0 flex-1">{f.q}</span>

@@ -106,14 +106,14 @@ export default function EducationalSection({
         {infoTiles.map((tile, i) => (
           <div
             key={tile.key}
-            className={`hover-lift animate-rise-in rounded-xl border bg-[var(--surface-primary)] p-4 shadow-sm ${
+            className={`group hover-lift animate-rise-in rounded-xl border bg-[var(--surface-primary)] p-4 shadow-sm transition-all duration-200 hover:border-[var(--nepal-blue)]/40 ${
               tile.highlight
                 ? 'border-[var(--nepal-blue)]/35 bg-gradient-to-b from-[var(--surface-primary)] to-[var(--nepal-blue-soft)]/40'
                 : 'border-[var(--border-default)]'
             }`}
             style={{ animationDelay: `${i * 0.06}s` }}
           >
-            <div className="mb-2.5 flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)]">
+            <div className="mb-2.5 flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)] transition-transform duration-200 group-hover:scale-110">
               {tile.icon}
             </div>
 

@@ -412,16 +412,22 @@ export default function Home() {
           />
 
           {/* License Query Form */}
-          <div className="mx-auto w-full max-w-3xl lg:max-w-4xl print:hidden">
-            <LicenseForm
-              onSubmit={checkLicense}
-              onReset={reset}
-              loading={searchState === 'loading'}
-              copy={copy.form}
-              language={language}
-              externalNumber={externalNumber}
-              lockoutUntil={lockoutUntil}
+          <div className="relative mx-auto w-full max-w-3xl lg:max-w-4xl print:hidden group">
+            <div
+              className="pointer-events-none absolute -inset-1 rounded-3xl bg-gradient-to-r from-[var(--nepal-blue)]/15 via-[var(--nepal-red)]/10 to-[var(--nepal-blue)]/15 opacity-45 blur-xl transition-opacity duration-700 group-hover:opacity-80 animate-soft-glow"
+              aria-hidden
             />
+            <div className="relative">
+              <LicenseForm
+                onSubmit={checkLicense}
+                onReset={reset}
+                loading={searchState === 'loading'}
+                copy={copy.form}
+                language={language}
+                externalNumber={externalNumber}
+                lockoutUntil={lockoutUntil}
+              />
+            </div>
           </div>
 
           {/* Result Card */}
