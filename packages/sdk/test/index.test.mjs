@@ -61,3 +61,60 @@ test('checkLicense fetches with mock fetch successfully', async () => {
   assert.equal(result.isReady, true);
   assert.equal(result.data?.holder_name, 'RAM SHARMA');
 });
+
+test('checkLicense sends apiKey in x-api-key header and extracts rate limit', async () => {
+  let capturedHeaders = null;
+  const mockFetch = async (url, init) => {
+    capturedHeaders = init?.headers;
+    return {
+      ok: true,
+      status: 200,
+      headers: {
+        get: (name) => {
+          if (name === 'x-ratelimit-limit') return '60';
+          if (name === 'x-ratelimit-remaining') return '59';
+          if (name === 'x-ratelimit-reset') return '1700000000';
+          return null;
+        },
+      },
+      json: async () => ({
+        status: 'success',
+        data: null,
+      }),
+    };
+  };
+
+  const result = await checkLicense('01-01-12345678', {
+    apiKey: 'nlc_live_sample_key_12345',
+    fetch: mockFetch,
+  });
+
+  assert.equal(capturedHeaders?.['x-api-key'], 'nlc_live_sample_key_12345');
+  assert.equal(result.status, 'success');
+  assert.equal(result.rateLimit?.limit, 60);
+  assert.equal(result.rateLimit?.remaining, 59);
+});
+
+test('checkLicense handles 429 rate limit with Retry-After header', async () => {
+  const mockFetch = async () => ({
+    ok: false,
+    status: 429,
+    headers: {
+      get: (name) => {
+        if (name === 'retry-after') return '120';
+        if (name === 'x-ratelimit-limit') return '60';
+        if (name === 'x-ratelimit-remaining') return '0';
+        return null;
+      },
+    },
+    json: async () => ({
+      error: 'Rate limit exceeded.',
+    }),
+  });
+
+  const result = await checkLicense('01-01-12345678', { fetch: mockFetch });
+  assert.equal(result.status, 'error');
+  assert.equal(result.statusCode, 429);
+  assert.equal(result.retryAfter, 120);
+  assert.equal(result.rateLimit?.remaining, 0);
+});

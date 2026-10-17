@@ -13,6 +13,15 @@ export interface LicenseData {
   updatedAt: string;
 }
 
+export interface RateLimitInfo {
+  /** Maximum requests allowed in the rate window */
+  limit?: number;
+  /** Remaining requests in the current window */
+  remaining?: number;
+  /** Epoch timestamp in seconds when the rate limit window resets */
+  reset?: number;
+}
+
 export interface CheckLicenseSuccessResult {
   status: 'success';
   /** True if the license has been printed and is ready for pickup */
@@ -23,6 +32,8 @@ export interface CheckLicenseSuccessResult {
   message?: string;
   /** HTTP response status code */
   statusCode: number;
+  /** Rate limit metadata returned by the server */
+  rateLimit?: RateLimitInfo;
 }
 
 export interface CheckLicenseErrorResult {
@@ -35,6 +46,8 @@ export interface CheckLicenseErrorResult {
   retryAfter?: number;
   /** HTTP response status code */
   statusCode?: number;
+  /** Rate limit metadata returned by the server */
+  rateLimit?: RateLimitInfo;
 }
 
 export type CheckLicenseResult = CheckLicenseSuccessResult | CheckLicenseErrorResult;
@@ -45,6 +58,11 @@ export interface CheckLicenseOptions {
    * Defaults to: "https://license-checker.acharyanischal.com.np/api/license"
    */
   baseUrl?: string;
+  /**
+   * Developer API Key to unlock higher rate limits (60 req/min).
+   * Obtainable from https://license-checker.acharyanischal.com.np/developer
+   */
+  apiKey?: string;
   /**
    * Optional custom fetch implementation (useful for testing or specific runtimes).
    */

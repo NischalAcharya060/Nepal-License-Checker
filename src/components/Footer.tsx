@@ -177,9 +177,17 @@ export default function Footer({
                 <span className="rounded bg-[var(--nepal-red)]/10 px-1 py-0.5 font-mono text-[9.5px] font-black text-[var(--nepal-red)] group-hover:bg-[var(--nepal-red)] group-hover:text-white transition-colors">
                   npm
                 </span>
-                <span>{isNe ? 'विकासकर्ता SDK (npm & GitHub)' : 'Developer SDK (npm & GitHub)'}</span>
+                <span>{isNe ? 'विकासकर्ता SDK' : 'Developer SDK'}</span>
               </button>
             )}
+
+            <a
+              href="/developer"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-xs font-semibold text-[var(--text-primary)] transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] active:scale-95 shadow-2xs cursor-pointer group"
+            >
+              <span className="text-[11px]">⚡</span>
+              <span>{isNe ? 'विकासकर्ता पोर्टल (API Key)' : 'Developer Portal (API Key)'}</span>
+            </a>
 
             <a
               href="https://github.com/NischalAcharya060/Nepal-License-Checker"
