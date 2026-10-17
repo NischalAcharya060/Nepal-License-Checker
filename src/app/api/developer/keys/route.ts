@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
         await ensureDeveloperTables()
         const db = getTurso()
         const result = await db.execute({
-            sql: `SELECT id, developer_id, key_prefix, name, rate_limit_per_minute, is_active, created_at, last_used_at
+            sql: `SELECT id, developer_id, key_prefix, name, rate_limit_per_minute, is_active, created_at, last_used_at, COALESCE(total_requests, 0) as total_requests
                   FROM developer_api_keys
                   WHERE developer_id = ?
                   ORDER BY created_at DESC`,
@@ -47,6 +47,7 @@ export async function GET(request: NextRequest) {
             is_active: Boolean(row.is_active),
             created_at: Number(row.created_at),
             last_used_at: row.last_used_at ? Number(row.last_used_at) : null,
+            total_requests: Number(row.total_requests) || 0,
         }))
 
         return NextResponse.json({ keys, maxKeys: MAX_KEYS_PER_DEVELOPER })
@@ -107,8 +108,8 @@ export async function POST(request: NextRequest) {
 
         // 4. Save to database
         await db.execute({
-            sql: `INSERT INTO developer_api_keys (id, developer_id, key_prefix, key_hash, name, rate_limit_per_minute, is_active, created_at, last_used_at)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+            sql: `INSERT INTO developer_api_keys (id, developer_id, key_prefix, key_hash, name, rate_limit_per_minute, is_active, created_at, last_used_at, total_requests)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, 0)`,
             args: [keyId, session.id, keyPrefix, keyHash, keyName, DEFAULT_DEVELOPER_RATE_LIMIT, 1, now],
         })
 
@@ -124,6 +125,7 @@ export async function POST(request: NextRequest) {
             is_active: true,
             created_at: now,
             last_used_at: null,
+            total_requests: 0,
         }
 
         return NextResponse.json(

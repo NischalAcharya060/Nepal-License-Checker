@@ -19,6 +19,26 @@ export default function DeveloperPortalPage() {
   const [copiedCode, setCopiedCode] = useState(false)
   const [codeTab, setCodeTab] = useState<'sdk' | 'curl' | 'fetch' | 'python'>('sdk')
   const [activePreset, setActivePreset] = useState<string | null>(null)
+
+  // Key Renaming & Rotation states
+  const [editingKeyId, setEditingKeyId] = useState<string | null>(null)
+  const [editingName, setEditingName] = useState('')
+  const [savingRename, setSavingRename] = useState(false)
+  const [rotatingKeyId, setRotatingKeyId] = useState<string | null>(null)
+
+  // In-Dashboard Live API Console states
+  const [testApiKey, setTestApiKey] = useState('')
+  const [testLicenseNumber, setTestLicenseNumber] = useState('01-01-12345678')
+  const [testLoading, setTestLoading] = useState(false)
+  const [testResult, setTestResult] = useState<Record<string, unknown> | null>(null)
+  const [testStatus, setTestStatus] = useState<number | null>(null)
+  const [testHeaders, setTestHeaders] = useState<{
+    limit?: string | null
+    remaining?: string | null
+    reset?: string | null
+  } | null>(null)
+  const [testDuration, setTestDuration] = useState<number | null>(null)
+
   const [errorMessage, setErrorMessage] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
       return new URLSearchParams(window.location.search).get('error')
@@ -121,6 +141,118 @@ export default function DeveloperPortalPage() {
       toast.success('API key revoked successfully.')
     } catch {
       toast.error('Failed to revoke key. Please try again.')
+    }
+  }
+
+  const handleStartRename = (id: string, currentName: string) => {
+    setEditingKeyId(id)
+    setEditingName(currentName)
+  }
+
+  const handleCancelRename = () => {
+    setEditingKeyId(null)
+    setEditingName('')
+  }
+
+  const handleSaveRename = async (id: string) => {
+    const trimmed = editingName.trim()
+    if (!trimmed) {
+      toast.error('Key name cannot be empty.')
+      return
+    }
+
+    setSavingRename(true)
+    try {
+      const res = await fetch(`/api/developer/keys/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmed }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error || 'Failed to rename key.')
+        return
+      }
+
+      setKeys((prev) => prev.map((k) => (k.id === id ? { ...k, name: data.name } : k)))
+      setEditingKeyId(null)
+      toast.success('Key renamed successfully!')
+    } catch {
+      toast.error('Failed to rename key.')
+    } finally {
+      setSavingRename(false)
+    }
+  }
+
+  const handleRotateKey = async (id: string, name: string) => {
+    if (
+      !confirm(
+        `Are you sure you want to rotate the secret for "${name}"?\n\nThe current key will stop working immediately. You will be provided with a fresh secret key.`
+      )
+    ) {
+      return
+    }
+
+    setRotatingKeyId(id)
+    try {
+      const res = await fetch(`/api/developer/keys/${id}`, { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error || 'Failed to rotate key.')
+        return
+      }
+
+      setKeys((prev) => prev.map((k) => (k.id === id ? data.key : k)))
+      setNewKeyModal({ rawKey: data.rawKey, key: data.key })
+      setTestApiKey(data.rawKey)
+      toast.success('Key rotated! Please copy your new secret.')
+    } catch {
+      toast.error('Failed to rotate key.')
+    } finally {
+      setRotatingKeyId(null)
+    }
+  }
+
+  const handleRunApiTest = async () => {
+    const num = testLicenseNumber.trim()
+    if (!num) {
+      toast.error('Please enter a license number to test.')
+      return
+    }
+
+    setTestLoading(true)
+    setTestResult(null)
+    setTestStatus(null)
+    setTestHeaders(null)
+    setTestDuration(null)
+
+    const t0 = performance.now()
+    try {
+      const headers: Record<string, string> = { Accept: 'application/json' }
+      if (testApiKey.trim()) {
+        headers['x-api-key'] = testApiKey.trim()
+      }
+
+      const res = await fetch(`/api/license?number=${encodeURIComponent(num)}`, { headers })
+      const duration = Math.round(performance.now() - t0)
+      setTestDuration(duration)
+      setTestStatus(res.status)
+
+      setTestHeaders({
+        limit: res.headers.get('x-ratelimit-limit'),
+        remaining: res.headers.get('x-ratelimit-remaining'),
+        reset: res.headers.get('x-ratelimit-reset'),
+      })
+
+      const data = await res.json()
+      setTestResult(data)
+    } catch (err: unknown) {
+      const duration = Math.round(performance.now() - t0)
+      setTestDuration(duration)
+      setTestStatus(500)
+      setTestResult({ error: 'Network request failed or server unreachable.', details: String(err) })
+    } finally {
+      setTestLoading(false)
     }
   }
 
@@ -482,10 +614,12 @@ print("License details:", data.get("data"))`
               </div>
 
               <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 space-y-1 shadow-2xs">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Package SDK</span>
-                <p className="text-xl sm:text-2xl font-black text-[var(--text-primary)]">v1.1.0</p>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Total Queries</span>
+                <p className="text-xl sm:text-2xl font-black text-[var(--text-primary)]">
+                  {keys.reduce((sum, k) => sum + (k.total_requests || 0), 0).toLocaleString()}
+                </p>
                 <span className="inline-block rounded bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-bold text-purple-600 dark:text-purple-400">
-                  Dual ESM & CJS
+                  Lifetime Calls
                 </span>
               </div>
             </div>
@@ -581,17 +715,57 @@ print("License details:", data.get("data"))`
                       key={k.id}
                       className="flex flex-wrap items-center justify-between gap-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 shadow-2xs hover:border-[var(--nepal-blue)]/50 transition"
                     >
-                      <div className="space-y-1.5">
-                        <div className="flex items-center gap-2.5">
-                          <span className="font-bold text-sm text-[var(--text-primary)]">{k.name}</span>
-                          <span className="inline-flex items-center rounded-full bg-[var(--success)]/10 px-2 py-0.5 text-[10px] font-bold text-[var(--success)]">
-                            Active
-                          </span>
-                        </div>
+                      <div className="space-y-1.5 flex-1 min-w-[260px]">
+                        {editingKeyId === k.id ? (
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={editingName}
+                              onChange={(e) => setEditingName(e.target.value)}
+                              maxLength={50}
+                              className="rounded-lg border border-[var(--nepal-blue)] bg-[var(--surface-primary)] px-2.5 py-1 text-xs font-bold text-[var(--text-primary)] focus:outline-hidden"
+                              autoFocus
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleSaveRename(k.id)}
+                              disabled={savingRename}
+                              className="rounded-lg bg-[var(--nepal-blue)] px-2.5 py-1 text-[11px] font-bold text-white hover:opacity-90 transition cursor-pointer"
+                            >
+                              Save
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleCancelRename}
+                              className="rounded-lg border border-[var(--border-default)] px-2 py-1 text-[11px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2.5">
+                            <span className="font-bold text-sm text-[var(--text-primary)]">{k.name}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleStartRename(k.id, k.name)}
+                              className="text-[11px] text-[var(--text-muted)] hover:text-[var(--nepal-blue)] transition cursor-pointer"
+                              title="Rename this key"
+                            >
+                              ✎ Rename
+                            </button>
+                            <span className="inline-flex items-center rounded-full bg-[var(--success)]/10 px-2 py-0.5 text-[10px] font-bold text-[var(--success)]">
+                              Active
+                            </span>
+                          </div>
+                        )}
 
                         <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--text-secondary)] font-mono">
                           <span className="rounded bg-[var(--bg-secondary)] px-2 py-0.5 border border-[var(--border-default)] font-bold text-[var(--text-primary)]">
                             {k.key_prefix}
+                          </span>
+                          <span>•</span>
+                          <span className="text-[var(--nepal-blue)] font-bold">
+                            {(k.total_requests || 0).toLocaleString()} queries
                           </span>
                           <span>•</span>
                           <span>{k.rate_limit_per_minute} req/min</span>
@@ -606,13 +780,24 @@ print("License details:", data.get("data"))`
                         </div>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => handleRevokeKey(k.id, k.name)}
-                        className="rounded-xl border border-[var(--danger)]/30 bg-[var(--danger)]/5 px-3 py-1.5 text-xs font-bold text-[var(--danger)] hover:bg-[var(--danger)] hover:text-white transition cursor-pointer"
-                      >
-                        Revoke Key
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleRotateKey(k.id, k.name)}
+                          disabled={rotatingKeyId === k.id}
+                          className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)]/50 transition cursor-pointer"
+                          title="Generate a fresh secret key while keeping this key configuration"
+                        >
+                          {rotatingKeyId === k.id ? 'Rotating...' : '⟳ Rotate Secret'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRevokeKey(k.id, k.name)}
+                          className="rounded-xl border border-[var(--danger)]/30 bg-[var(--danger)]/5 px-3 py-1.5 text-xs font-bold text-[var(--danger)] hover:bg-[var(--danger)] hover:text-white transition cursor-pointer"
+                        >
+                          Revoke Key
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -659,6 +844,165 @@ print("License details:", data.get("data"))`
                 >
                   {copiedCode ? '✓ Copied' : 'Copy'}
                 </button>
+              </div>
+            </div>
+
+            {/* Live Interactive API Tester & Console */}
+            <div className="rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 sm:p-8 space-y-5 shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-default)] pb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">Live API Tester & Console</h2>
+                    <span className="rounded-full bg-[var(--nepal-blue)]/10 px-2.5 py-0.5 text-[10px] font-bold text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/20">
+                      Sandbox
+                    </span>
+                  </div>
+                  <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                    Execute live test queries against the mirrored DOTM database with your active API key and inspect RFC rate-limit headers in real-time.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-[var(--text-muted)] font-mono">GET /api/license</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                {/* Left Column: Request Form */}
+                <div className="space-y-4 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 p-4 sm:p-5">
+                  <div>
+                    <label className="text-xs font-bold text-[var(--text-primary)] block mb-1">
+                      Authorization Key:
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={testApiKey}
+                        onChange={(e) => setTestApiKey(e.target.value)}
+                        placeholder={newKeyModal?.rawKey || 'Paste raw nlc_live_... key (or leave empty for public search)'}
+                        className="flex-1 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-xs font-mono text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--nepal-blue)] focus:outline-hidden"
+                      />
+                      {newKeyModal && (
+                        <button
+                          type="button"
+                          onClick={() => setTestApiKey(newKeyModal.rawKey)}
+                          className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1.5 text-[11px] font-bold text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)] transition shrink-0 cursor-pointer shadow-2xs"
+                        >
+                          Use Fresh Key
+                        </button>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-[var(--text-muted)] mt-1 block">
+                      Leave blank to test anonymous public search (15 req/min with lockout), or paste your API key for elevated 60 req/min limits.
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-[var(--text-primary)] block mb-1">
+                      Driving License Number:
+                    </label>
+                    <input
+                      type="text"
+                      value={testLicenseNumber}
+                      onChange={(e) => setTestLicenseNumber(e.target.value)}
+                      placeholder="e.g. 01-01-12345678 or ०१-०१-१२३४५६७८"
+                      className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-xs font-mono text-[var(--text-primary)] focus:border-[var(--nepal-blue)] focus:outline-hidden"
+                    />
+
+                    {/* Pre-filled Sample Chips */}
+                    <div className="flex flex-wrap items-center gap-1.5 pt-2">
+                      <span className="text-[10.5px] text-[var(--text-muted)]">Test Samples:</span>
+                      {[
+                        { label: 'Sample 1', val: '01-01-12345678' },
+                        { label: 'Nepali Digits', val: '०१-०१-१२३४५६७८' },
+                        { label: 'Sample 2', val: '01-02-87654321' },
+                      ].map((sample) => (
+                        <button
+                          key={sample.label}
+                          type="button"
+                          onClick={() => setTestLicenseNumber(sample.val)}
+                          className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2 py-0.5 text-[10px] text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)] transition cursor-pointer"
+                        >
+                          {sample.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleRunApiTest}
+                    disabled={testLoading}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--nepal-blue)] px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:opacity-90 active:scale-98 disabled:opacity-50 transition cursor-pointer"
+                  >
+                    {testLoading ? (
+                      <>
+                        <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                        <span>Querying Database Mirror...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>▶</span>
+                        <span>Send Test Request</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Right Column: Live Response & Header Inspector */}
+                <div className="space-y-3 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 p-4 sm:p-5 flex flex-col justify-between">
+                  <div>
+                    <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-[var(--border-default)]">
+                      <span className="text-xs font-bold text-[var(--text-primary)]">Response Inspector</span>
+                      {testResult && (
+                        <div className="flex items-center gap-2 font-mono text-[11px]">
+                          <span
+                            className={`rounded px-1.5 py-0.5 font-bold ${
+                              testStatus && testStatus < 300
+                                ? 'bg-[var(--success)]/15 text-[var(--success)]'
+                                : testStatus === 429
+                                ? 'bg-[var(--danger)]/15 text-[var(--danger)]'
+                                : 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                            }`}
+                          >
+                            HTTP {testStatus}
+                          </span>
+                          {testDuration !== null && (
+                            <span className="text-[var(--text-muted)] font-medium">⚡ {testDuration}ms</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Live Header Metrics */}
+                    {testHeaders && (
+                      <div className="grid grid-cols-3 gap-2 py-2.5 text-[10.5px] font-mono border-b border-[var(--border-default)]">
+                        <div>
+                          <span className="text-[var(--text-muted)] block">Quota Limit</span>
+                          <span className="font-bold text-[var(--text-primary)]">{testHeaders.limit || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="text-[var(--text-muted)] block">Remaining</span>
+                          <span className="font-bold text-[var(--nepal-blue)]">{testHeaders.remaining || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="text-[var(--text-muted)] block">Reset Timestamp</span>
+                          <span className="font-bold text-[var(--text-primary)]">{testHeaders.reset || '-'}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="mt-2.5">
+                      <pre className="overflow-x-auto max-h-56 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 font-mono text-[11px] text-[var(--text-primary)] leading-relaxed select-all">
+                        <code>
+                          {testResult
+                            ? JSON.stringify(testResult, null, 2)
+                            : '// Click "Send Test Request" to execute a live query against /api/license'}
+                        </code>
+                      </pre>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 

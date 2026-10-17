@@ -98,17 +98,68 @@ export default function SdkDocumentationPage() {
 
         {/* Hero Title Section */}
         <div className="space-y-4">
+          {/* Live Shields.io Badges & Ecosystem Tags */}
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full border border-[var(--nepal-blue)]/30 bg-[var(--nepal-blue)]/10 px-3 py-0.5 font-mono text-xs font-bold text-[var(--nepal-blue)]">
-              nepal-license-checker v1.1.0
-            </span>
-            <span className="rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-0.5 text-xs font-medium text-[var(--text-secondary)]">
+            <a
+              href="https://www.npmjs.com/package/nepal-license-checker"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:opacity-85 transition"
+              title="npm package version"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="https://img.shields.io/npm/v/nepal-license-checker?label=npm&color=cb3837&style=flat"
+                alt="npm version"
+                className="h-5"
+              />
+            </a>
+            <a
+              href="https://www.npmjs.com/package/nepal-license-checker"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:opacity-85 transition"
+              title="Weekly npm downloads"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="https://img.shields.io/npm/dw/nepal-license-checker?color=0066cc&label=downloads&style=flat"
+                alt="npm downloads"
+                className="h-5"
+              />
+            </a>
+            <a
+              href="https://bundlephobia.com/package/nepal-license-checker"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:opacity-85 transition"
+              title="Bundle size minzipped"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="https://img.shields.io/bundlephobia/minzip/nepal-license-checker?label=minzipped&color=2ea44f&style=flat"
+                alt="bundle size"
+                className="h-5"
+              />
+            </a>
+            <a
+              href="https://github.com/NischalAcharya060/Nepal-License-Checker/blob/main/packages/sdk/LICENSE"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:opacity-85 transition"
+              title="MIT License"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="https://img.shields.io/npm/l/nepal-license-checker?label=license&color=8957e5&style=flat"
+                alt="license"
+                className="h-5"
+              />
+            </a>
+            <span className="rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-0.5 text-xs font-medium text-[var(--text-secondary)] shadow-2xs">
               ⚡ Zero Dependencies
             </span>
-            <span className="rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-0.5 text-xs font-medium text-[var(--text-secondary)]">
-              🛡️ TypeScript (.d.ts)
-            </span>
-            <span className="rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-0.5 text-xs font-medium text-[var(--text-secondary)]">
+            <span className="rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-0.5 text-xs font-medium text-[var(--text-secondary)] shadow-2xs">
               🇳🇵 Nepali (०-९) Digits
             </span>
           </div>
@@ -572,6 +623,32 @@ export type CheckLicenseResult =
                   </tr>
                 </tbody>
               </table>
+            </div>
+
+            {/* Quick Export Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-[var(--border-default)]">
+              <div>
+                <span className="text-xs font-bold text-[var(--text-primary)] block">Export Schema & Collections</span>
+                <span className="text-[11px] text-[var(--text-secondary)]">Import into Postman, Insomnia, Swagger UI, or Bruno:</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <a
+                  href="/api/developer/openapi?format=postman&download=1"
+                  download="nepal-license-checker-postman.json"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3 py-1.5 text-xs font-bold text-[var(--text-primary)] hover:border-orange-500 hover:text-orange-600 dark:hover:text-orange-400 transition shadow-2xs"
+                >
+                  <span className="font-mono text-orange-500 font-black">P</span>
+                  <span>Postman Collection (.json)</span>
+                </a>
+                <a
+                  href="/api/developer/openapi?download=1"
+                  download="nepal-license-checker-openapi.json"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3 py-1.5 text-xs font-bold text-[var(--text-primary)] hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition shadow-2xs"
+                >
+                  <span className="font-mono text-emerald-500 font-black">&#123;&#125;</span>
+                  <span>OpenAPI 3.1 Spec (.json)</span>
+                </a>
+              </div>
             </div>
           </div>
         </section>

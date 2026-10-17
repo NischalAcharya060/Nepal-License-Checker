@@ -25,6 +25,7 @@ export interface DeveloperApiKey {
     is_active: boolean
     created_at: number
     last_used_at: number | null
+    total_requests: number
 }
 
 let tablesChecked = false
@@ -54,13 +55,22 @@ export async function ensureDeveloperTables(): Promise<void> {
                 rate_limit_per_minute INTEGER NOT NULL DEFAULT 60,
                 is_active INTEGER NOT NULL DEFAULT 1,
                 created_at INTEGER NOT NULL,
-                last_used_at INTEGER
+                last_used_at INTEGER,
+                total_requests INTEGER NOT NULL DEFAULT 0
             )`,
             `CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON developer_api_keys(key_hash)`,
             `CREATE INDEX IF NOT EXISTS idx_api_keys_dev_id ON developer_api_keys(developer_id)`,
         ],
         'write'
     )
+
+    // For existing tables, add total_requests if not yet present
+    try {
+        await db.execute('ALTER TABLE developer_api_keys ADD COLUMN total_requests INTEGER NOT NULL DEFAULT 0')
+    } catch {
+        // Column already exists
+    }
+
     tablesChecked = true
 }
 
@@ -269,20 +279,29 @@ export async function validateDeveloperApiKey(
     return { keyId, developerId, rateLimit }
 }
 
-// Throttle last_used_at updates so we do not write to DB on every single request
+// Throttle DB updates so we do not write to Turso on every single request
 const LAST_USED_THROTTLE = new Map<string, number>()
+const PENDING_REQUEST_COUNTS = new Map<string, number>()
 
 export function recordApiKeyUsage(keyId: string): void {
+    const currentPending = (PENDING_REQUEST_COUNTS.get(keyId) || 0) + 1
+    PENDING_REQUEST_COUNTS.set(keyId, currentPending)
+
     const now = Date.now()
     const last = LAST_USED_THROTTLE.get(keyId) || 0
-    // Write at most once every 60 seconds per key
-    if (now - last < 60000) return
+    // Flush to DB if 60 seconds have elapsed or if pending requests >= 10
+    if (now - last < 60000 && currentPending < 10) return
 
     LAST_USED_THROTTLE.set(keyId, now)
+    const countToAdd = PENDING_REQUEST_COUNTS.get(keyId) || 1
+    PENDING_REQUEST_COUNTS.delete(keyId)
+
     getTurso()
         .execute({
-            sql: `UPDATE developer_api_keys SET last_used_at = ? WHERE id = ?`,
-            args: [now, keyId],
+            sql: `UPDATE developer_api_keys 
+                  SET last_used_at = ?, total_requests = COALESCE(total_requests, 0) + ? 
+                  WHERE id = ?`,
+            args: [now, countToAdd, keyId],
         })
         .catch(() => {})
 }
