@@ -169,6 +169,162 @@ export type CheckLicenseResult =
 
 ---
 
+## Direct HTTP REST API (Non-JavaScript Languages)
+
+If you are building services in **Python, Go, PHP, Rust, Java, Dart/Flutter**, or shell scripts, you can query the mirrored REST API directly without using the npm package:
+
+### Base URL
+```http
+GET https://license-checker.acharyanischal.com.np/api/license?number={license_number}
+```
+
+### Query Parameters
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `number` | `string` | **Yes** | Nepal driving license number in `XX-XX-XXXXXXXX` format (supports ASCII `0-9` and Devanagari `०-९` digits). |
+
+### Authentication & Headers
+| Header | Type | Required | Description |
+|---|---|---|---|
+| `x-api-key` | `string` | Optional | Developer API key for **60 requests/min** quota (obtain free at the [Developer Portal](https://license-checker.acharyanischal.com.np/developer)). |
+| `Authorization` | `string` | Optional | Alternative format: `Bearer <your_api_key>`. |
+| `Accept` | `string` | Optional | `application/json` |
+
+> **Note:** Anonymous requests without an API key are rate-limited to 15 requests/minute per IP with a 5-minute lockout penalty on breach. Supplying an API key elevates your limit to **60 requests/minute** with **0s lockout penalty**.
+
+### Code Examples
+
+#### cURL
+```bash
+curl -H "x-api-key: nlc_live_your_api_key_here" \
+  "https://license-checker.acharyanischal.com.np/api/license?number=01-01-12345678"
+```
+
+#### Python (`requests`)
+```python
+import requests
+
+api_url = "https://license-checker.acharyanischal.com.np/api/license"
+headers = {"x-api-key": "nlc_live_your_api_key_here"}
+params = {"number": "01-01-12345678"}
+
+response = requests.get(api_url, params=params, headers=headers)
+data = response.json()
+
+if data.get("isReady"):
+    print(f"🎉 Ready for pickup!")
+    print(f"Holder:  {data['data']['holder_name']}")
+    print(f"Office:  {data['data']['office']}")
+    print(f"Category: {data['data']['category']}")
+else:
+    print("⏳ License is not printed yet.")
+```
+
+#### Go
+```go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+)
+
+func main() {
+	url := "https://license-checker.acharyanischal.com.np/api/license?number=01-01-12345678"
+	req, _ := http.NewRequest("GET", url, nil)
+	req.Header.Set("x-api-key", "nlc_live_your_api_key_here")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(resp.Body)
+	fmt.Println(string(body))
+}
+```
+
+#### PHP
+```php
+<?php
+$licenseNumber = '01-01-12345678';
+$apiKey = 'nlc_live_your_api_key_here';
+
+$ch = curl_init("https://license-checker.acharyanischal.com.np/api/license?number=" . urlencode($licenseNumber));
+curl_setopt($ch, CURLOPT_HTTPHEADER, [
+    "x-api-key: {$apiKey}",
+    "Accept: application/json"
+]);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+$response = curl_exec($ch);
+curl_close($ch);
+
+$data = json_decode($response, true);
+if (!empty($data['isReady'])) {
+    echo "Ready: " . $data['data']['holder_name'] . " (" . $data['data']['office'] . ")\n";
+} else {
+    echo "Not ready yet.\n";
+}
+```
+
+### HTTP Rate Limit Headers
+Every API response mirrors standard RFC rate limit headers:
+- `X-RateLimit-Limit`: Maximum requests allowed per 60-second sliding window (`60` for authenticated keys, `15` for anonymous).
+- `X-RateLimit-Remaining`: Remaining request quota in the current window.
+- `X-RateLimit-Reset`: Unix epoch timestamp when the current window resets.
+- `Retry-After`: Returned with HTTP `429 Too Many Requests` indicating how many seconds to back off before retrying.
+
+### JSON Response Formats
+
+#### 1. Printed & Ready (`200 OK`)
+```json
+{
+  "status": "success",
+  "isReady": true,
+  "data": {
+    "holder_name": "RAM BAHADUR SHRESTHA",
+    "license_number": "01-01-12345678",
+    "office": "Yatayat Karyalaya, Ekantakuna, Lalitpur",
+    "category": "A, B",
+    "createdAt": "2024-01-15T08:30:00.000Z",
+    "updatedAt": "2026-10-15T12:00:00.000Z"
+  },
+  "message": "License is printed and ready for collection.",
+  "statusCode": 200
+}
+```
+
+#### 2. Not Printed Yet (`200 OK`)
+```json
+{
+  "status": "success",
+  "isReady": false,
+  "data": null,
+  "message": "License is not printed yet or not found in official DOTM records.",
+  "statusCode": 200
+}
+```
+
+#### 3. Rate Limit Exceeded (`429 Too Many Requests`)
+```json
+{
+  "status": "error",
+  "isReady": false,
+  "data": null,
+  "error": "Rate limit exceeded. Please retry in 35 seconds.",
+  "retryAfter": 35,
+  "statusCode": 429
+}
+```
+
+---
+
 ## License
 
 MIT © [Nischal Acharya](https://acharyanischal.com.np)
+
