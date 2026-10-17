@@ -3,6 +3,9 @@
 export interface RateLimitStatus {
     allowed: boolean
     retryAfter: number // in seconds
+    limit?: number
+    remaining?: number
+    reset?: number // timestamp in seconds
 }
 
 export class RateLimiter {
@@ -46,15 +49,22 @@ export class RateLimiter {
         }
     }
 
-    checkLimit(key: string): RateLimitStatus {
+    checkLimit(key: string, customLimit?: number): RateLimitStatus {
         const now = Date.now()
         this.prune(now)
+        const effectiveLimit = customLimit ?? this.limit
 
         // 1. Check if key is currently in penalty lockout
         const blockedUntil = this.blocked.get(key)
         if (blockedUntil && now < blockedUntil) {
             const retryAfter = Math.ceil((blockedUntil - now) / 1000)
-            return { allowed: false, retryAfter }
+            return {
+                allowed: false,
+                retryAfter,
+                limit: effectiveLimit,
+                remaining: 0,
+                reset: Math.ceil(blockedUntil / 1000),
+            }
         }
 
         if (blockedUntil && now >= blockedUntil) {
@@ -65,21 +75,45 @@ export class RateLimiter {
         const timestamps = this.requests.get(key) || []
         const recent = timestamps.filter(ts => now - ts < this.window)
 
-        if (recent.length >= this.limit) {
+        if (recent.length >= effectiveLimit) {
             // Breached! Trigger lockout penalty if configured
             if (this.blockDuration > 0) {
                 const penaltyUntil = now + this.blockDuration
                 this.blocked.set(key, penaltyUntil)
                 const retryAfter = Math.ceil(this.blockDuration / 1000)
-                return { allowed: false, retryAfter }
+                return {
+                    allowed: false,
+                    retryAfter,
+                    limit: effectiveLimit,
+                    remaining: 0,
+                    reset: Math.ceil(penaltyUntil / 1000),
+                }
             }
-            const retryAfter = Math.ceil(this.window / 1000)
-            return { allowed: false, retryAfter }
+            const oldestInWindow = recent[0] || now
+            const resetTime = oldestInWindow + this.window
+            const retryAfter = Math.max(1, Math.ceil((resetTime - now) / 1000))
+            return {
+                allowed: false,
+                retryAfter,
+                limit: effectiveLimit,
+                remaining: 0,
+                reset: Math.ceil(resetTime / 1000),
+            }
         }
 
         recent.push(now)
         this.requests.set(key, recent)
-        return { allowed: true, retryAfter: 0 }
+        const oldestInWindow = recent[0] || now
+        const resetTime = oldestInWindow + this.window
+        const remaining = Math.max(0, effectiveLimit - recent.length)
+
+        return {
+            allowed: true,
+            retryAfter: 0,
+            limit: effectiveLimit,
+            remaining,
+            reset: Math.ceil(resetTime / 1000),
+        }
     }
 
     check(key: string): boolean {

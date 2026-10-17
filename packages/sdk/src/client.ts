@@ -1,4 +1,4 @@
-import { CheckLicenseOptions, CheckLicenseResult } from './types';
+import { CheckLicenseOptions, CheckLicenseResult, RateLimitInfo } from './types';
 import { devanagariToAsciiDigits, validateLicenseNumber } from './utils';
 
 export const DEFAULT_API_BASE_URL = 'https://license-checker.acharyanischal.com.np/api/license';
@@ -7,14 +7,17 @@ export const DEFAULT_API_BASE_URL = 'https://license-checker.acharyanischal.com.
  * Checks whether a Nepal driving license is printed and ready for collection.
  *
  * @param licenseNumber License number in XX-XX-XXXXXXXX format (supports English or Nepali digits)
- * @param options Optional configuration (baseUrl, signal, custom fetch)
- * @returns Object indicating status, isReady boolean, and license details
+ * @param options Optional configuration (baseUrl, apiKey, signal, custom fetch)
+ * @returns Object indicating status, isReady boolean, license details, and rate limit info
  *
  * @example
  * ```ts
  * import { checkLicense } from 'nepal-license-checker';
  *
- * const res = await checkLicense('01-01-12345678');
+ * const res = await checkLicense('01-01-12345678', {
+ *   apiKey: 'nlc_live_your_key',
+ * });
+ *
  * if (res.isReady) {
  *   console.log('License ready for:', res.data?.holder_name);
  * } else {
@@ -64,11 +67,17 @@ export async function checkLicense(
     const url = new URL(baseUrl);
     url.searchParams.set('number', normalizedNumber);
 
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+    };
+
+    if (options?.apiKey) {
+      headers['x-api-key'] = options.apiKey;
+    }
+
     const res = await fetchFn(url.toString(), {
       method: 'GET',
-      headers: {
-        Accept: 'application/json',
-      },
+      headers,
       signal: options?.signal,
     });
 
@@ -80,14 +89,48 @@ export async function checkLicense(
       retryAfter?: number;
     } | null;
 
+    // Helper to safely extract rate limit headers
+    const extractRateLimit = (): RateLimitInfo | undefined => {
+      try {
+        const getHeader = (name: string) => res.headers?.get?.(name);
+        const limitStr = getHeader('x-ratelimit-limit');
+        const remStr = getHeader('x-ratelimit-remaining');
+        const resetStr = getHeader('x-ratelimit-reset');
+
+        if (limitStr || remStr || resetStr) {
+          return {
+            limit: limitStr ? Number(limitStr) : undefined,
+            remaining: remStr ? Number(remStr) : undefined,
+            reset: resetStr ? Number(resetStr) : undefined,
+          };
+        }
+      } catch {
+        // Headers parsing not supported by custom fetch mock
+      }
+      return undefined;
+    };
+
+    const rateLimit = extractRateLimit();
+
+    let retryAfter = json?.retryAfter;
+    if (retryAfter === undefined) {
+      try {
+        const headerRetry = res.headers?.get?.('retry-after');
+        if (headerRetry) retryAfter = Number(headerRetry);
+      } catch {
+        // ignore
+      }
+    }
+
     if (res.status === 429) {
       return {
         status: 'error',
         isReady: false,
         data: null,
         error: json?.error || 'Rate limit exceeded. Please wait before retrying.',
-        retryAfter: json?.retryAfter,
+        retryAfter,
         statusCode: 429,
+        rateLimit,
       };
     }
 
@@ -98,6 +141,7 @@ export async function checkLicense(
         data: null,
         error: json?.error || `Request failed with status ${res.status}`,
         statusCode: res.status,
+        rateLimit,
       };
     }
 
@@ -109,6 +153,7 @@ export async function checkLicense(
       data: json?.data || null,
       message: json?.message,
       statusCode: res.status,
+      rateLimit,
     };
   } catch (error: unknown) {
     if (error instanceof Error && error.name === 'AbortError') {

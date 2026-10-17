@@ -1,6 +1,6 @@
 {
   "name": "nepal-license-checker",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Zero-dependency JavaScript and TypeScript SDK to check Nepal smart driving license print status via DOTM mirrored API.",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

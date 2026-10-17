@@ -1,23 +1,67 @@
+// src/app/api/license/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { getTurso, type LicenseRow } from '@/lib/turso'
 import { RateLimiter } from '@/lib/rateLimit'
 import { sanitizeInput } from '@/utils/sanitize'
 import { extractGeo } from '@/lib/geo'
 import { logSearch } from '@/lib/searchLogger'
+import { validateDeveloperApiKey, recordApiKeyUsage } from '@/lib/developerAuth'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
-// Allow up to 15 searches per minute. If exceeded, lock out the IP for 5 minutes (300,000ms).
-const rateLimiter = new RateLimiter(15, 60000, 300000)
+// Standard anonymous IP rate limiter: 15 req/min, with a 5-minute (300,000ms) lockout penalty
+const ipRateLimiter = new RateLimiter(15, 60000, 300000)
+
+// Authenticated developer rate limiter: standard sliding window per API key (default 60 req/min, 0 lockout)
+const devRateLimiter = new RateLimiter(60, 60000, 0)
 
 export async function GET(request: NextRequest) {
     try {
-        // Rate limiting with 5-minute spam lockout penalty
         const geo = extractGeo(request)
         const ip = geo.ip
 
-        const rateStatus = rateLimiter.checkLimit(ip)
+        // 1. Check for Developer API Key
+        const authHeader = request.headers.get('authorization')
+        const rawApiKey =
+            request.headers.get('x-api-key') ||
+            (authHeader?.startsWith('Bearer ') ? authHeader.slice(7).trim() : null)
+
+        let isDeveloper = false
+        let rateStatus: ReturnType<typeof ipRateLimiter.checkLimit>
+        let rateHeaders: Record<string, string> = {}
+
+        if (rawApiKey) {
+            const devKey = await validateDeveloperApiKey(rawApiKey)
+            if (!devKey) {
+                return NextResponse.json(
+                    {
+                        error: 'Invalid, revoked, or inactive API key. Please check your developer dashboard.',
+                    },
+                    { status: 401 }
+                )
+            }
+
+            isDeveloper = true
+            rateStatus = devRateLimiter.checkLimit(devKey.keyId, devKey.rateLimit)
+            recordApiKeyUsage(devKey.keyId)
+
+            rateHeaders = {
+                'X-RateLimit-Limit': String(rateStatus.limit ?? devKey.rateLimit),
+                'X-RateLimit-Remaining': String(rateStatus.remaining ?? 0),
+                'X-RateLimit-Reset': String(rateStatus.reset ?? Math.ceil(Date.now() / 1000)),
+            }
+        } else {
+            // Anonymous IP rate limiting
+            rateStatus = ipRateLimiter.checkLimit(ip)
+
+            rateHeaders = {
+                'X-RateLimit-Limit': String(rateStatus.limit ?? 15),
+                'X-RateLimit-Remaining': String(rateStatus.remaining ?? 0),
+                'X-RateLimit-Reset': String(rateStatus.reset ?? Math.ceil(Date.now() / 1000)),
+            }
+        }
+
         if (!rateStatus.allowed) {
             const minutes = Math.ceil(rateStatus.retryAfter / 60)
             const waitMsg = minutes > 1 ? `${minutes} minutes` : `${rateStatus.retryAfter} seconds`
@@ -31,6 +75,7 @@ export async function GET(request: NextRequest) {
                     headers: {
                         'Retry-After': String(rateStatus.retryAfter),
                         'Cache-Control': 'no-store, no-cache',
+                        ...rateHeaders,
                     },
                 }
             )
@@ -43,7 +88,10 @@ export async function GET(request: NextRequest) {
         if (!licenseNumber) {
             return NextResponse.json(
                 { error: 'License number is required' },
-                { status: 400 }
+                {
+                    status: 400,
+                    headers: rateHeaders,
+                }
             )
         }
 
@@ -53,7 +101,10 @@ export async function GET(request: NextRequest) {
         if (!licenseRegex.test(licenseNumber)) {
             return NextResponse.json(
                 { error: 'Invalid license number format. Expected XX-XX-XXXXXXXX (e.g. 01-01-12345678)' },
-                { status: 400 }
+                {
+                    status: 400,
+                    headers: rateHeaders,
+                }
             )
         }
 
@@ -97,7 +148,10 @@ export async function GET(request: NextRequest) {
                 },
                 {
                     headers: {
-                        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+                        'Cache-Control': isDeveloper
+                            ? 'no-cache, no-store'
+                            : 'public, s-maxage=300, stale-while-revalidate=600',
+                        ...rateHeaders,
                     },
                 }
             )
@@ -123,11 +177,13 @@ export async function GET(request: NextRequest) {
             },
             {
                 headers: {
-                    'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+                    'Cache-Control': isDeveloper
+                        ? 'no-cache, no-store'
+                        : 'public, s-maxage=60, stale-while-revalidate=120',
+                    ...rateHeaders,
                 },
             }
         )
-
     } catch (error) {
         console.error('API Error:', error)
         return NextResponse.json(

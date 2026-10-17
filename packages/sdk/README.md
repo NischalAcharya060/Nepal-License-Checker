@@ -113,18 +113,26 @@ asciiToDevanagariDigits('01-01-12345678'); // '०१-०१-१२३४५६�
 
 ---
 
-## Advanced Options
+## Advanced Options & Rate Limits
 
-You can pass options to `checkLicense`:
+By default, anonymous queries are limited to 15 searches per minute per IP. Authenticated developers can generate an API key at [https://license-checker.acharyanischal.com.np/developer](https://license-checker.acharyanischal.com.np/developer) to unlock **60 requests per minute**.
 
 ```typescript
 const result = await checkLicense('01-01-12345678', {
-  // Use a custom self-hosted API endpoint
+  // Pass Developer API Key for elevated rate limits (60 req/min)
+  apiKey: 'nlc_live_your_api_key_here',
+
+  // Use a custom self-hosted API endpoint (optional)
   baseUrl: 'https://license-checker.acharyanischal.com.np/api/license',
 
-  // AbortController signal for request timeout
+  // AbortController signal for request timeout (optional)
   signal: AbortSignal.timeout(5000),
 });
+
+// Access rate limit metadata returned by the server:
+console.log('Limit:', result.rateLimit?.limit);         // e.g. 60
+console.log('Remaining:', result.rateLimit?.remaining); // e.g. 59
+console.log('Reset:', result.rateLimit?.reset);
 ```
 
 ---
