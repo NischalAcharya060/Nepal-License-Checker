@@ -250,21 +250,40 @@ export default function DeveloperSidebar({
                       keys.length > 0 && (
                         <span
                           className={`absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-mono font-bold ${
-                            isActive ? 'bg-white text-[var(--nepal-blue)]' : 'bg-[var(--nepal-blue)] text-white'
+                            item.id === 'section-keys' && keys.some((k) => !k.is_active)
+                              ? 'bg-rose-500 text-white ring-1 ring-white/50'
+                              : isActive
+                              ? 'bg-white text-[var(--nepal-blue)]'
+                              : 'bg-[var(--nepal-blue)] text-white'
                           }`}
+                          title={
+                            item.id === 'section-keys' && keys.some((k) => !k.is_active)
+                              ? `${keys.filter((k) => !k.is_active).length} key(s) suspended`
+                              : undefined
+                          }
                         >
                           {keys.length}
                         </span>
                       )
                     ) : (
-                      <span
-                        className={`rounded-md px-1.5 py-0.5 font-mono text-[10px] font-bold shrink-0 ${
-                          isActive
-                            ? 'bg-white/20 text-white'
-                            : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] border border-[var(--border-default)]'
-                        }`}
-                      >
-                        {item.badge(keys.length)}
+                      <span className="flex items-center gap-1.5 shrink-0">
+                        {item.id === 'section-keys' && keys.some((k) => !k.is_active) && (
+                          <span
+                            className="h-1.5 w-1.5 rounded-full bg-rose-500"
+                            title="Key suspended by admin"
+                          />
+                        )}
+                        <span
+                          className={`rounded-md px-1.5 py-0.5 font-mono text-[10px] font-bold ${
+                            isActive
+                              ? 'bg-white/20 text-white'
+                              : item.id === 'section-keys' && keys.some((k) => !k.is_active)
+                              ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
+                              : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] border border-[var(--border-default)]'
+                          }`}
+                        >
+                          {item.badge(keys.length)}
+                        </span>
                       </span>
                     )
                   )}

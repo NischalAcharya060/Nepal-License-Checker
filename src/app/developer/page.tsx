@@ -441,7 +441,9 @@ export default function DeveloperPortalPage() {
     }
   }
 
-  const activeKeySample = newKeyModal?.rawKey || (keys.length > 0 ? `${keys[0].key_prefix}` : 'nlc_live_your_api_key_here')
+  const activeKeySample =
+    newKeyModal?.rawKey ||
+    (keys.find((k) => k.is_active)?.key_prefix || (keys.length > 0 ? `${keys[0].key_prefix}` : 'nlc_live_your_api_key_here'))
 
   const getCodeSnippet = () => {
     switch (codeTab) {
@@ -826,43 +828,25 @@ print("License details:", data.get("data"))`
               <span>60 req/min Tier</span>
             </div>
 
-            {/* Quick Telemetry Refresh */}
-            <button
-              type="button"
-              onClick={() => void loadAnalytics(timeframe, true)}
-              disabled={analyticsLoading}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--nepal-blue)] transition active:scale-95 shadow-2xs cursor-pointer"
-              title="Force refresh telemetry from server (bypasses cache)"
-            >
-              <span className={analyticsLoading ? 'animate-spin' : ''}>↻</span>
-              <span className="hidden sm:inline">Refresh</span>
-            </button>
 
-            {/* Auto-Refresh Toggle */}
-            <button
-              type="button"
-              onClick={() => setAutoRefresh((prev) => !prev)}
-              className={`inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-xs font-medium transition cursor-pointer shadow-2xs ${
-                autoRefresh
-                  ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold'
-                  : 'border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-              }`}
-              title={autoRefresh ? '30s auto-refresh active (pauses when tab hidden)' : 'Enable 30s auto-refresh'}
-            >
-              <span className={`h-1.5 w-1.5 rounded-full ${autoRefresh ? 'bg-emerald-500' : 'bg-zinc-400'}`} />
-              <span className="hidden sm:inline">{autoRefresh ? 'Auto: 30s' : 'Auto: Off'}</span>
-            </button>
 
             {/* Active Keys Pill */}
             {keys.length > 0 && (
               <button
                 type="button"
                 onClick={() => scrollToSection('section-keys')}
-                className="hidden xl:inline-flex items-center gap-1.5 rounded-xl border border-[var(--nepal-blue)]/30 bg-[var(--nepal-blue)]/10 px-2.5 py-1.5 text-xs font-bold text-[var(--nepal-blue)] hover:bg-[var(--nepal-blue)]/20 transition cursor-pointer shadow-2xs"
+                className="hidden xl:inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1.5 text-xs font-bold text-[var(--text-primary)] hover:border-[var(--nepal-blue)] transition cursor-pointer shadow-2xs"
                 title="Manage active API keys"
               >
                 <span>🔑</span>
-                <span>{keys.length} Active {keys.length === 1 ? 'Key' : 'Keys'}</span>
+                <span className="text-[var(--nepal-blue)]">
+                  {keys.filter((k) => k.is_active).length} Active
+                </span>
+                {keys.some((k) => !k.is_active) && (
+                  <span className="rounded-md bg-rose-500/15 border border-rose-500/30 px-1.5 py-0.5 text-[10px] text-rose-600 dark:text-rose-400 font-extrabold">
+                    {keys.filter((k) => !k.is_active).length} Suspended
+                  </span>
+                )}
               </button>
             )}
 
@@ -895,6 +879,34 @@ print("License details:", data.get("data"))`
             >
               ✕
             </button>
+          </div>
+        )}
+
+        {/* Suspended Keys Notice Banner */}
+        {keys.some((k) => !k.is_active) && (
+          <div className="mx-4 sm:mx-8 mt-4 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-xs text-rose-700 dark:text-rose-300 flex items-start gap-3 animate-fade-in shadow-xs">
+            <div className="flex h-6 w-6 items-center justify-center rounded-xl bg-rose-500/20 text-rose-600 dark:text-rose-400 shrink-0 text-sm font-bold">
+              ⚠️
+            </div>
+            <div className="flex-1 space-y-0.5">
+              <p className="font-bold text-rose-800 dark:text-rose-200">
+                Action Notice: API Key Suspended by Administrator
+              </p>
+              <p className="leading-relaxed opacity-95">
+                {keys.filter((k) => !k.is_active).length === 1
+                  ? `One of your API keys ("${keys.find((k) => !k.is_active)?.name}") has been suspended by an administrator.`
+                  : `${keys.filter((k) => !k.is_active).length} of your API keys have been suspended by an administrator.`}{' '}
+                Any API requests utilizing suspended keys will fail with <code className="font-mono bg-rose-500/20 px-1 py-0.5 rounded font-bold text-[11px]">403 Forbidden (API_KEY_SUSPENDED)</code>. Review details in the{' '}
+                <button
+                  type="button"
+                  onClick={() => scrollToSection('section-keys')}
+                  className="font-bold underline hover:text-rose-950 dark:hover:text-white cursor-pointer"
+                >
+                  API Keys section
+                </button>{' '}
+                below or contact support for reactivation.
+              </p>
+            </div>
           </div>
         )}
 
@@ -1028,11 +1040,17 @@ print("License details:", data.get("data"))`
               <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 space-y-1 shadow-2xs hover-lift transition-all duration-200 hover:border-[var(--nepal-blue)]/40 hover:shadow-sm">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Active Keys</span>
                 <p className="text-xl sm:text-2xl font-black text-[var(--text-primary)]">
-                  {keys.length} <span className="text-xs font-normal text-[var(--text-secondary)]">/ {maxKeys} max</span>
+                  {keys.filter((k) => k.is_active).length} <span className="text-xs font-normal text-[var(--text-secondary)]">/ {maxKeys} max</span>
                 </p>
-                <span className="inline-block rounded bg-[var(--bg-secondary)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--text-secondary)]">
-                  {maxKeys - keys.length} available
-                </span>
+                {keys.some((k) => !k.is_active) ? (
+                  <span className="inline-block rounded bg-rose-500/15 border border-rose-500/30 px-1.5 py-0.5 text-[10px] font-bold text-rose-600 dark:text-rose-400">
+                    {keys.filter((k) => !k.is_active).length} suspended by admin
+                  </span>
+                ) : (
+                  <span className="inline-block rounded bg-[var(--bg-secondary)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--text-secondary)]">
+                    {maxKeys - keys.length} available
+                  </span>
+                )}
               </div>
 
               <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 space-y-1 shadow-2xs hover-lift transition-all duration-200 hover:border-purple-500/40 hover:shadow-sm">
@@ -1080,32 +1098,33 @@ print("License details:", data.get("data"))`
                     </div>
                   )}
 
-                  {/* Manual Refresh Button */}
-                  <button
-                    type="button"
-                    onClick={() => void loadAnalytics(timeframe, true)}
-                    disabled={analyticsLoading}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer active:scale-95 shadow-2xs"
-                    title="Force refresh telemetry from server (bypasses cache)"
-                  >
-                    <span className={analyticsLoading ? 'animate-spin' : ''}>↻</span>
-                    <span>Refresh</span>
-                  </button>
+                  {/* Action Controls Group (Refresh + Auto Toggle) */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => void loadAnalytics(timeframe, true)}
+                      disabled={analyticsLoading}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer active:scale-95 shadow-2xs shrink-0"
+                      title="Force refresh telemetry from server (bypasses cache)"
+                    >
+                      <span className={analyticsLoading ? 'animate-spin' : ''}>↻</span>
+                      <span>Refresh</span>
+                    </button>
 
-                  {/* Auto-Refresh Toggle with Tab Visibility Protection */}
-                  <button
-                    type="button"
-                    onClick={() => setAutoRefresh((prev) => !prev)}
-                    className={`inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1 text-xs font-medium transition cursor-pointer shadow-2xs ${
-                      autoRefresh
-                        ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold'
-                        : 'border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-                    }`}
-                    title={autoRefresh ? 'Auto-refresh active (pauses when tab is hidden to save DB reads)' : 'Enable 30s auto-refresh'}
-                  >
-                    <span className={`h-1.5 w-1.5 rounded-full ${autoRefresh ? 'bg-emerald-500' : 'bg-zinc-400'}`} />
-                    <span>{autoRefresh ? 'Auto: On (30s)' : 'Auto: Off'}</span>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => setAutoRefresh((prev) => !prev)}
+                      className={`inline-flex items-center justify-center gap-1.5 rounded-xl border px-2.5 py-1 text-xs font-medium transition cursor-pointer shadow-2xs w-[86px] min-w-[86px] shrink-0 ${
+                        autoRefresh
+                          ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold'
+                          : 'border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+                      }`}
+                      title={autoRefresh ? '30s auto-refresh active (pauses when tab is hidden to save DB reads)' : 'Enable 30s auto-refresh'}
+                    >
+                      <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${autoRefresh ? 'bg-emerald-500' : 'bg-zinc-400'}`} />
+                      <span>{autoRefresh ? 'Auto: 30s' : 'Auto: Off'}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -1149,7 +1168,12 @@ print("License details:", data.get("data"))`
                 </div>
 
                 <span className="text-xs font-semibold text-[var(--text-muted)]">
-                  {keys.length} of {maxKeys} active
+                  {keys.filter((k) => k.is_active).length} of {maxKeys} active
+                  {keys.some((k) => !k.is_active) && (
+                    <span className="ml-1.5 font-bold text-rose-600 dark:text-rose-400">
+                      ({keys.filter((k) => !k.is_active).length} suspended)
+                    </span>
+                  )}
                 </span>
               </div>
 
@@ -1227,100 +1251,134 @@ print("License details:", data.get("data"))`
                   {keys.map((k) => (
                     <div
                       key={k.id}
-                      className="flex flex-wrap items-center justify-between gap-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 shadow-2xs hover:border-[var(--nepal-blue)]/50 transition"
+                      className={`flex flex-col gap-3.5 rounded-2xl border p-4 sm:p-5 shadow-2xs transition ${
+                        k.is_active
+                          ? 'border-[var(--border-default)] bg-[var(--surface-primary)] hover:border-[var(--nepal-blue)]/50'
+                          : 'border-rose-500/40 bg-rose-500/[0.03] hover:border-rose-500/60'
+                      }`}
                     >
-                      <div className="space-y-1.5 flex-1 min-w-[260px]">
-                        {editingKeyId === k.id ? (
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="text"
-                              value={editingName}
-                              onChange={(e) => setEditingName(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault()
-                                  void handleSaveRename(k.id)
-                                } else if (e.key === 'Escape') {
-                                  e.preventDefault()
-                                  handleCancelRename()
-                                }
-                              }}
-                              maxLength={50}
-                              className="rounded-lg border border-[var(--nepal-blue)] bg-[var(--surface-primary)] px-2.5 py-1 text-xs font-bold text-[var(--text-primary)] focus:outline-hidden"
-                              autoFocus
-                            />
-                            <button
-                              type="button"
-                              onClick={() => handleSaveRename(k.id)}
-                              disabled={savingRename}
-                              className="rounded-lg bg-[var(--nepal-blue)] px-2.5 py-1 text-[11px] font-bold text-white hover:opacity-90 transition cursor-pointer"
-                            >
-                              Save
-                            </button>
-                            <button
-                              type="button"
-                              onClick={handleCancelRename}
-                              className="rounded-lg border border-[var(--border-default)] px-2 py-1 text-[11px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2.5">
-                            <span className="font-bold text-sm text-[var(--text-primary)]">{k.name}</span>
-                            <button
-                              type="button"
-                              onClick={() => handleStartRename(k.id, k.name)}
-                              className="text-[11px] text-[var(--text-muted)] hover:text-[var(--nepal-blue)] transition cursor-pointer"
-                              title="Rename this key"
-                            >
-                              ✎ Rename
-                            </button>
-                            <span className="inline-flex items-center rounded-full bg-[var(--success)]/10 px-2 py-0.5 text-[10px] font-bold text-[var(--success)]">
-                              Active
+                      <div className="flex flex-wrap items-center justify-between gap-3.5">
+                        <div className="space-y-1.5 flex-1 min-w-[260px]">
+                          {editingKeyId === k.id ? (
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={editingName}
+                                onChange={(e) => setEditingName(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault()
+                                    void handleSaveRename(k.id)
+                                  } else if (e.key === 'Escape') {
+                                    e.preventDefault()
+                                    handleCancelRename()
+                                  }
+                                }}
+                                maxLength={50}
+                                className="rounded-lg border border-[var(--nepal-blue)] bg-[var(--surface-primary)] px-2.5 py-1 text-xs font-bold text-[var(--text-primary)] focus:outline-hidden"
+                                autoFocus
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleSaveRename(k.id)}
+                                disabled={savingRename}
+                                className="rounded-lg bg-[var(--nepal-blue)] px-2.5 py-1 text-[11px] font-bold text-white hover:opacity-90 transition cursor-pointer"
+                              >
+                                Save
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleCancelRename}
+                                className="rounded-lg border border-[var(--border-default)] px-2 py-1 text-[11px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2.5 flex-wrap">
+                              <span className="font-bold text-sm text-[var(--text-primary)]">{k.name}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleStartRename(k.id, k.name)}
+                                className="text-[11px] text-[var(--text-muted)] hover:text-[var(--nepal-blue)] transition cursor-pointer"
+                                title="Rename this key"
+                              >
+                                ✎ Rename
+                              </button>
+                              {k.is_active ? (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-[var(--success)]/10 px-2.5 py-0.5 text-[10px] font-bold text-[var(--success)]">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--success)]" />
+                                  Active
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/15 border border-rose-500/30 px-2.5 py-0.5 text-[10px] font-bold text-rose-600 dark:text-rose-400">
+                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                                  </svg>
+                                  Suspended by Admin
+                                </span>
+                              )}
+                            </div>
+                          )}
+
+                          <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--text-secondary)] font-mono">
+                            <span className="rounded bg-[var(--bg-secondary)] px-2 py-0.5 border border-[var(--border-default)] font-bold text-[var(--text-primary)]">
+                              {k.key_prefix}
+                            </span>
+                            <span>•</span>
+                            <span className="text-[var(--nepal-blue)] font-bold">
+                              {(k.total_requests || 0).toLocaleString()} queries
+                            </span>
+                            <span>•</span>
+                            <span>{k.rate_limit_per_minute} req/min</span>
+                            <span>•</span>
+                            <span className="text-[var(--text-muted)]">
+                              Created: {new Date(k.created_at).toLocaleDateString()}
+                            </span>
+                            <span>•</span>
+                            <span className="text-[var(--text-muted)]">
+                              {k.last_used_at ? `Last used: ${new Date(k.last_used_at).toLocaleDateString()}` : 'Never used yet'}
                             </span>
                           </div>
-                        )}
+                        </div>
 
-                        <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--text-secondary)] font-mono">
-                          <span className="rounded bg-[var(--bg-secondary)] px-2 py-0.5 border border-[var(--border-default)] font-bold text-[var(--text-primary)]">
-                            {k.key_prefix}
-                          </span>
-                          <span>•</span>
-                          <span className="text-[var(--nepal-blue)] font-bold">
-                            {(k.total_requests || 0).toLocaleString()} queries
-                          </span>
-                          <span>•</span>
-                          <span>{k.rate_limit_per_minute} req/min</span>
-                          <span>•</span>
-                          <span className="text-[var(--text-muted)]">
-                            Created: {new Date(k.created_at).toLocaleDateString()}
-                          </span>
-                          <span>•</span>
-                          <span className="text-[var(--text-muted)]">
-                            {k.last_used_at ? `Last used: ${new Date(k.last_used_at).toLocaleDateString()}` : 'Never used yet'}
-                          </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleRotateKey(k.id, k.name)}
+                            disabled={rotatingKeyId === k.id || !k.is_active}
+                            className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${
+                              !k.is_active
+                                ? 'border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-muted)] opacity-50 cursor-not-allowed'
+                                : 'border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)]/50 cursor-pointer'
+                            }`}
+                            title={!k.is_active ? 'Suspended keys cannot be rotated' : 'Generate a fresh secret key while keeping this key configuration'}
+                          >
+                            {rotatingKeyId === k.id ? 'Rotating...' : '⟳ Rotate Secret'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRevokeKey(k.id, k.name)}
+                            className="rounded-xl border border-[var(--danger)]/30 bg-[var(--danger)]/5 px-3 py-1.5 text-xs font-bold text-[var(--danger)] hover:bg-[var(--danger)] hover:text-white transition cursor-pointer"
+                          >
+                            Revoke Key
+                          </button>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleRotateKey(k.id, k.name)}
-                          disabled={rotatingKeyId === k.id}
-                          className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)]/50 transition cursor-pointer"
-                          title="Generate a fresh secret key while keeping this key configuration"
-                        >
-                          {rotatingKeyId === k.id ? 'Rotating...' : '⟳ Rotate Secret'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleRevokeKey(k.id, k.name)}
-                          className="rounded-xl border border-[var(--danger)]/30 bg-[var(--danger)]/5 px-3 py-1.5 text-xs font-bold text-[var(--danger)] hover:bg-[var(--danger)] hover:text-white transition cursor-pointer"
-                        >
-                          Revoke Key
-                        </button>
-                      </div>
+                      {/* Suspended Alert Banner inside Key Card */}
+                      {!k.is_active && (
+                        <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-700 dark:text-rose-300 flex items-start gap-2.5">
+                          <span className="text-base shrink-0">🚫</span>
+                          <div className="space-y-0.5">
+                            <p className="font-bold">This API key was suspended by an administrator.</p>
+                            <p className="text-[11px] opacity-90 leading-relaxed">
+                              All API requests attempting to authorize with this key will fail with <code className="font-mono font-bold bg-rose-500/20 px-1 py-0.5 rounded text-[11px]">HTTP 403 (API_KEY_SUSPENDED)</code>. If you need reactivation or believe this was done in error, please reach out to admin support or revoke this key and generate a fresh one.
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1424,6 +1482,12 @@ print("License details:", data.get("data"))`
                     <span className="text-[10px] text-[var(--text-muted)] mt-1 block">
                       Leave blank to test anonymous public search (15 req/min with lockout), or paste your API key for elevated 60 req/min limits.
                     </span>
+                    {keys.length > 0 && keys.every((k) => !k.is_active) && (
+                      <div className="mt-2 rounded-xl border border-rose-500/30 bg-rose-500/10 p-2.5 text-[11px] text-rose-700 dark:text-rose-300 flex items-center gap-2">
+                        <span>⚠️</span>
+                        <span>All your API keys are suspended by an administrator. Live sandbox queries with these keys will fail with HTTP 403.</span>
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -1510,10 +1574,12 @@ print("License details:", data.get("data"))`
                                 ? 'bg-[var(--success)]/15 text-[var(--success)]'
                                 : testStatus === 429
                                 ? 'bg-[var(--danger)]/15 text-[var(--danger)]'
+                                : testStatus === 403
+                                ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
                                 : 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
                             }`}
                           >
-                            HTTP {testStatus}
+                            HTTP {testStatus} {testStatus === 403 && '(Suspended)'}
                           </span>
                           {testDuration !== null && (
                             <div className="flex items-center gap-1.5">
@@ -1549,6 +1615,20 @@ print("License details:", data.get("data"))`
                         <div>
                           <span className="text-[var(--text-muted)] block">Reset Timestamp</span>
                           <span className="font-bold text-[var(--text-primary)]">{testHeaders.reset || '-'}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Suspended Key Callout if 403 received */}
+                    {testStatus === 403 && (
+                      <div className="mt-2.5 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-700 dark:text-rose-300 flex items-start gap-2.5">
+                        <span className="text-base shrink-0">🚫</span>
+                        <div className="space-y-0.5">
+                          <p className="font-bold">Key Suspended by Administrator</p>
+                          <p className="text-[11px] opacity-90 leading-relaxed">
+                            {(testResult as { error?: string })?.error ||
+                              'This API key has been suspended by an administrator. Requests cannot be completed.'}
+                          </p>
                         </div>
                       </div>
                     )}

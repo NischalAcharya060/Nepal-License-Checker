@@ -112,6 +112,8 @@ export default function LiveConsoleSparkline({ history }: LiveConsoleSparklinePr
               ? '#10b981' // Green
               : status === 429
               ? '#ef4444' // Red
+              : status === 403
+              ? '#f43f5e' // Rose (Forbidden / Suspended)
               : '#f59e0b' // Amber
 
           return (

@@ -232,15 +232,20 @@ export function invalidateApiKeyCache(keyHash?: string): void {
     }
 }
 
+export type ValidateApiKeyResult =
+    | { valid: true; keyId: string; developerId: string; rateLimit: number }
+    | { valid: false; reason: 'suspended'; keyId: string; developerId: string }
+    | { valid: false; reason: 'invalid' }
+
 /**
  * Validates an API key (using in-memory cache + Turso database).
- * Returns key info if valid and active, null otherwise.
+ * Returns key info if valid and active, or reason ('suspended' | 'invalid') if inactive or not found.
  */
 export async function validateDeveloperApiKey(
     rawKey: string
-): Promise<{ keyId: string; developerId: string; rateLimit: number } | null> {
+): Promise<ValidateApiKeyResult> {
     if (!rawKey || !rawKey.startsWith('nlc_live_')) {
-        return null
+        return { valid: false, reason: 'invalid' }
     }
 
     const keyHash = await hashApiKey(rawKey)
@@ -249,8 +254,16 @@ export async function validateDeveloperApiKey(
     // 1. Check in-memory cache
     const cached = API_KEY_CACHE.get(keyHash)
     if (cached && now - cached.cached_at < CACHE_TTL_MS) {
-        if (!cached.is_active) return null
+        if (!cached.is_active) {
+            return {
+                valid: false,
+                reason: 'suspended',
+                keyId: cached.id,
+                developerId: cached.developer_id,
+            }
+        }
         return {
+            valid: true,
             keyId: cached.id,
             developerId: cached.developer_id,
             rateLimit: cached.rate_limit,
@@ -266,7 +279,7 @@ export async function validateDeveloperApiKey(
     })
 
     if (!result.rows.length) {
-        return null
+        return { valid: false, reason: 'invalid' }
     }
 
     const row = result.rows[0]
@@ -284,9 +297,21 @@ export async function validateDeveloperApiKey(
         cached_at: now,
     })
 
-    if (!isActive) return null
+    if (!isActive) {
+        return {
+            valid: false,
+            reason: 'suspended',
+            keyId,
+            developerId,
+        }
+    }
 
-    return { keyId, developerId, rateLimit }
+    return {
+        valid: true,
+        keyId,
+        developerId,
+        rateLimit,
+    }
 }
 
 // Throttle DB updates so we do not write to Turso on every single request

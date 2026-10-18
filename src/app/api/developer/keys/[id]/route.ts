@@ -142,6 +142,13 @@ export async function POST(
 
         const row = existing.rows[0]
 
+        if (!Boolean(row.is_active)) {
+            return NextResponse.json(
+                { error: 'Cannot rotate a suspended API key. Please contact support or request reactivation.' },
+                { status: 403 }
+            )
+        }
+
         // Generate new key cryptographic credentials
         const { rawKey, keyPrefix, keyHash } = await generateApiKey()
 

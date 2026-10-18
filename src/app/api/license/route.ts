@@ -35,10 +35,29 @@ export async function GET(request: NextRequest) {
 
         if (rawApiKey) {
             const devKey = await validateDeveloperApiKey(rawApiKey)
-            if (!devKey) {
+            if (!devKey.valid) {
+                if (devKey.reason === 'suspended') {
+                    // Record metric so the developer and admin see 403 in their analytics
+                    recordDeveloperUsageMetric({
+                        developerId: devKey.developerId,
+                        keyId: devKey.keyId,
+                        statusCode: 403,
+                        latencyMs: Math.round(performance.now() - startTime),
+                    })
+
+                    return NextResponse.json(
+                        {
+                            error: 'This API key has been suspended by an administrator. Requests using this key are blocked.',
+                            code: 'API_KEY_SUSPENDED',
+                        },
+                        { status: 403 }
+                    )
+                }
+
                 return NextResponse.json(
                     {
-                        error: 'Invalid, revoked, or inactive API key. Please check your developer dashboard.',
+                        error: 'Invalid, revoked, or non-existent API key. Please check your developer dashboard.',
+                        code: 'INVALID_API_KEY',
                     },
                     { status: 401 }
                 )
