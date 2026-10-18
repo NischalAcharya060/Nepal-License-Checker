@@ -34,38 +34,41 @@ export default function HeroHeader({
 }: HeroHeaderProps) {
   return (
     <>
-      <header className="mb-8 text-center sm:mb-10 print:hidden">
-        {/* Waving Nepal flag */}
+      <header className="relative z-10 mb-8 text-center sm:mb-10 print:hidden">
+        {/* Waving Nepal flag with weightless levitation */}
         <div className="mb-3 flex justify-center animate-rise-in">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/Nepal-flag.gif"
-            alt=""
-            aria-hidden
-            width={50}
-            height={68}
-            className="h-14 w-auto object-contain drop-shadow-sm"
-          />
+          <div className="animate-levitate drop-shadow-md">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/Nepal-flag.gif"
+              alt=""
+              aria-hidden
+              width={50}
+              height={68}
+              className="h-14 w-auto object-contain transition-transform duration-300 hover:scale-110"
+            />
+          </div>
         </div>
 
         {/* Nepal flag accent ribbon */}
         <div className="mb-4 flex items-center justify-center gap-2" aria-hidden>
-          <div className="h-1.5 w-12 rounded-l-full bg-[var(--nepal-red)]" />
-          <div className="h-2.5 w-2.5 rounded-full border-2 border-[var(--border-default)] bg-[var(--surface-primary)]" />
-          <div className="h-1.5 w-12 rounded-r-full bg-[var(--nepal-blue)]" />
+          <div className="h-1.5 w-12 rounded-l-full bg-[var(--nepal-red)] shadow-xs" />
+          <div className="h-2.5 w-2.5 rounded-full border-2 border-[var(--border-default)] bg-[var(--surface-primary)] shadow-xs" />
+          <div className="h-1.5 w-12 rounded-r-full bg-[var(--nepal-blue)] shadow-xs" />
         </div>
 
-        <div className="mb-3.5 inline-flex items-center gap-2 rounded-full bg-[var(--nepal-blue)] px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.09em] text-white shadow-sm animate-rise-in sm:text-[11px] transition-transform duration-200 hover:scale-104 cursor-default">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        {/* Floating Glassmorphic Official Badge */}
+        <div className="mb-3.5 inline-flex items-center gap-2 rounded-full antigravity-glass-pill px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.1em] text-[var(--nepal-blue)] dark:text-[#88b6ff] shadow-sm animate-rise-in sm:text-[11px] cursor-default transition-all duration-300 hover:scale-105">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)] dark:text-[#88b6ff]">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
           </svg>
-          {badge}
+          <span>{badge}</span>
         </div>
 
         <h1 className="mb-3 animate-rise-in text-3xl font-extrabold tracking-tight text-[var(--text-primary)] sm:text-5xl">
-          {title} <span className="text-[var(--nepal-blue)]">{titleAccent}</span>
+          {title} <span className="text-[var(--nepal-blue)] drop-shadow-xs">{titleAccent}</span>
         </h1>
-        <p className="mx-auto max-w-xl animate-rise-in text-sm leading-6 text-[var(--text-secondary)] sm:text-base" style={{ animationDelay: '0.06s' }}>
+        <p className="mx-auto max-w-xl animate-rise-in text-sm leading-6 text-[var(--text-secondary)] sm:text-base font-normal" style={{ animationDelay: '0.06s' }}>
           {description}
         </p>
 
@@ -81,9 +84,9 @@ export default function HeroHeader({
         </p>
       </header>
 
-      {/* Trust & Authority Stats Bar */}
+      {/* Trust & Authority Stats Bar (Antigravity Glass Pill) */}
       <div
-        className="mx-auto mb-6 flex max-w-4xl flex-wrap items-center justify-center gap-x-6 gap-y-2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)]/80 px-4 py-2.5 text-[11px] font-medium text-[var(--text-secondary)] shadow-sm animate-rise-in hover-lift transition-all duration-300 hover:border-[var(--nepal-blue)]/30 print:hidden"
+        className="mx-auto mb-6 flex max-w-4xl flex-wrap items-center justify-center gap-x-6 gap-y-2.5 rounded-2xl antigravity-glass-pill px-5 py-3 text-[11px] font-medium text-[var(--text-secondary)] shadow-sm animate-rise-in transition-all duration-300 print:hidden"
         style={{ animationDelay: '0.16s' }}
       >
         <span className="inline-flex items-center gap-1.5">

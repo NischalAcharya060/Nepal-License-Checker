@@ -82,9 +82,27 @@ export default function LicenseForm({
     return []
   })
   const inputRef = useRef<HTMLInputElement>(null)
+  const cardRef = useRef<HTMLDivElement>(null)
+  const [tilt, setTilt] = useState({ x: 0, y: 0 })
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const loadingInterval = useRef<ReturnType<typeof setInterval> | null>(null)
   const initialAutoSubmitted = useRef(false)
+
+  const handleCardMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (typeof window === 'undefined') return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    if (!cardRef.current) return
+    const rect = cardRef.current.getBoundingClientRect()
+    const x = e.clientX - rect.left - rect.width / 2
+    const y = e.clientY - rect.top - rect.height / 2
+    const rotateY = Number(((x / (rect.width / 2)) * 2.2).toFixed(2))
+    const rotateX = Number((-(y / (rect.height / 2)) * 2.2).toFixed(2))
+    setTilt({ x: rotateX, y: rotateY })
+  }
+
+  const handleCardMouseLeave = () => {
+    setTilt({ x: 0, y: 0 })
+  }
 
   // Auto-submit initial valid external number once on mount
   useEffect(() => {
@@ -306,222 +324,232 @@ export default function LicenseForm({
   const progress = Math.min((licenseNumber.replace(/-/g, '').length / 12) * 100, 100)
 
   return (
-    <div className="hover-lift animate-rise-in rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-sm sm:p-6">
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <div className="flex items-center justify-between">
-          <label htmlFor="license-number" className="block text-xs font-bold uppercase tracking-[0.08em] text-[var(--text-secondary)]">
-            {copy.label}
-          </label>
-          <span className="hidden items-center gap-1 rounded border border-[var(--border-default)] bg-[var(--bg-secondary)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--text-muted)] sm:inline-flex">
-            <span>Press</span>
-            <kbd className="font-mono font-bold text-[var(--text-secondary)]">/</kbd>
-            <span>to focus</span>
-          </span>
-        </div>
-
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
-          <div className="relative flex-1">
-            <div
-              className={`pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors ${
-                focused ? 'text-[var(--nepal-blue)]' : 'text-[var(--text-muted)]'
-              }`}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="5" width="20" height="14" rx="2" />
-                <line x1="2" y1="10" x2="22" y2="10" />
-              </svg>
-            </div>
-            <input
-              ref={inputRef}
-              id="license-number"
-              type="text"
-              value={licenseNumber}
-              onChange={handleInputChange}
-              onPaste={handleInputPaste}
-              onFocus={() => setFocused(true)}
-              onBlur={() => setFocused(false)}
-              placeholder={copy.placeholder}
-              disabled={loading}
-              autoComplete="off"
-              autoCorrect="off"
-              spellCheck={false}
-              maxLength={14}
-              inputMode="numeric"
-              aria-invalid={!!error}
-              className={`h-12 w-full rounded-xl border pl-11 font-mono text-[16px] font-semibold tracking-[0.08em] outline-none transition-all duration-200 sm:h-[52px] sm:text-[17px] ${
-                licenseNumber ? 'pr-10' : 'pr-24'
-              } ${
-                error
-                  ? 'border-[var(--error-border)] bg-[var(--error-bg)] text-[var(--error)] shadow-[0_0_0_3px_rgba(220,20,60,0.12)]'
-                  : focused
-                  ? 'border-[var(--nepal-blue)] bg-[var(--surface-primary)] shadow-[0_0_0_3px_rgba(0,56,147,0.14)]'
-                  : 'border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-primary)]'
-              } ${loading ? 'opacity-70' : ''}`}
-            />
-            {!licenseNumber && !loading && (
-              <button
-                type="button"
-                disabled={isLockedOut}
-                onClick={handlePasteFromClipboard}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 inline-flex items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1 text-xs font-semibold text-[var(--text-secondary)] shadow-2xs transition hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue-soft)] hover:text-[var(--nepal-blue)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
-                aria-label={language === 'ne' ? 'क्लिपबोर्डबाट पेस्ट गर्नुहोस्' : 'Paste license number from clipboard'}
-                title={language === 'ne' ? 'क्लिपबोर्डबाट पेस्ट गर्नुहोस्' : 'Paste from clipboard'}
-              >
-                <span aria-hidden>📋</span>
-                <span>{language === 'ne' ? 'पेस्ट' : 'Paste'}</span>
-              </button>
-            )}
-            {licenseNumber && !loading && (
-              <button
-                type="button"
-                onClick={() => {
-                  setLicenseNumber('')
-                  setError('')
-                  onReset()
-                  inputRef.current?.focus()
-                }}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-[var(--text-muted)] transition hover:bg-[var(--bg-secondary)] hover:text-[var(--text-secondary)]"
-                aria-label={copy.clearLabel}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            )}
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading || isLockedOut || !!error || !licenseNumber}
-            className="inline-flex h-12 min-w-[150px] items-center justify-center gap-2 rounded-xl bg-[var(--nepal-blue)] px-5 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[var(--nepal-blue-mid)] hover:shadow-md active:translate-y-0 disabled:cursor-not-allowed disabled:bg-[var(--text-muted)] disabled:shadow-none sm:h-[52px]"
-          >
-            {isLockedOut ? (
-              <span className="flex items-center gap-1.5 font-mono text-white/95">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="animate-pulse">
-                  <circle cx="12" cy="12" r="10" />
-                  <polyline points="12 6 12 12 16 14" />
-                </svg>
-                <span>{language === 'ne' ? `पर्खनुहोस् (${countdownText})` : `Wait (${countdownText})`}</span>
-              </span>
-            ) : loading ? (
-              <>
-                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                <span>{copy.checkingLabel}</span>
-              </>
-            ) : (
-              <>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="11" cy="11" r="8" />
-                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
-                <span>{copy.submitLabel}</span>
-              </>
-            )}
-          </button>
-        </div>
-
-        {/* Input Progress indicator */}
-        {licenseNumber && !loading && (
-          <div className="mt-2 h-1 overflow-hidden rounded-full bg-[var(--nepal-blue-soft)]">
-            <div
-              className="h-full rounded-full transition-all duration-200"
-              style={{
-                width: `${progress}%`,
-                background: isValid ? 'var(--success)' : error ? 'var(--error)' : 'var(--nepal-blue)',
-              }}
-            />
-          </div>
-        )}
-
-        {/* Errors, Loading Messages & Format Hints */}
-        {isLockedOut ? (
-          <div className="flex items-center gap-2 rounded-xl border border-[var(--warning-border)] bg-[var(--warning-bg)] p-2.5 text-xs font-semibold text-[var(--warning-text)] animate-fade-in">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-[var(--warning-text)]">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-            <span>
-              {language === 'ne'
-                ? `धेरै खोजी प्रयास भयो। अर्को खोजी गर्न कृपया ${countdownText} मिनेट पर्खनुहोस्।`
-                : `Rate limit active. Please wait ${countdownText} before submitting another search.`}
+    <div className="perspective-container">
+      <div
+        ref={cardRef}
+        onMouseMove={handleCardMouseMove}
+        onMouseLeave={handleCardMouseLeave}
+        style={{
+          transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
+        }}
+        className="antigravity-card animate-rise-in rounded-3xl p-5 sm:p-7 shadow-sm transition-all duration-300"
+      >
+        <form onSubmit={handleSubmit} className="space-y-3.5">
+          <div className="flex items-center justify-between">
+            <label htmlFor="license-number" className="block text-xs font-bold uppercase tracking-[0.09em] text-[var(--text-secondary)]">
+              {copy.label}
+            </label>
+            <span className="hidden items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-secondary)]/80 px-2 py-0.5 text-[10px] font-medium text-[var(--text-muted)] sm:inline-flex shadow-2xs">
+              <span>Press</span>
+              <kbd className="font-mono font-bold text-[var(--text-secondary)]">/</kbd>
+              <span>to focus</span>
             </span>
           </div>
-        ) : error ? (
-          <p className="flex items-center gap-1.5 text-xs font-semibold text-[var(--error)] animate-fade-in">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-            {error}
-          </p>
-        ) : loading ? (
-          <div className="flex items-center gap-2.5 text-xs text-[var(--text-secondary)] animate-fade-in">
-            <div className="flex gap-1">
-              {[0, 1, 2].map((i) => (
-                <div
-                  key={i}
-                  className="h-1.5 w-1.5 rounded-full bg-[var(--nepal-blue)]"
-                  style={{ animation: `dotPulse 1.4s ease-in-out ${i * 0.2}s infinite` }}
-                />
-              ))}
+
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-stretch">
+            <div className="relative flex-1 group">
+              <div
+                className={`pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors duration-200 ${
+                  focused ? 'text-[var(--nepal-blue)]' : 'text-[var(--text-muted)]'
+                }`}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="5" width="20" height="14" rx="2" />
+                  <line x1="2" y1="10" x2="22" y2="10" />
+                </svg>
+              </div>
+              <input
+                ref={inputRef}
+                id="license-number"
+                type="text"
+                value={licenseNumber}
+                onChange={handleInputChange}
+                onPaste={handleInputPaste}
+                onFocus={() => setFocused(true)}
+                onBlur={() => setFocused(false)}
+                placeholder={copy.placeholder}
+                disabled={loading}
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
+                maxLength={14}
+                inputMode="numeric"
+                aria-invalid={!!error}
+                className={`h-12 w-full rounded-2xl border pl-11 font-mono text-[16px] font-semibold tracking-[0.08em] outline-none transition-all duration-300 sm:h-[54px] sm:text-[17px] shadow-2xs ${
+                  licenseNumber ? 'pr-10' : 'pr-24'
+                } ${
+                  error
+                    ? 'border-[var(--error-border)] bg-[var(--error-bg)] text-[var(--error)] shadow-[0_0_0_4px_rgba(220,20,60,0.14)]'
+                    : focused
+                    ? 'border-[var(--nepal-blue)] bg-[var(--surface-primary)] shadow-[0_0_0_4px_rgba(0,56,147,0.14)]'
+                    : 'border-[var(--border-default)] bg-[var(--bg-secondary)]/70 text-[var(--text-primary)] hover:border-[var(--border-default)]/90'
+                } ${loading ? 'opacity-70' : ''}`}
+              />
+              {!licenseNumber && !loading && (
+                <button
+                  type="button"
+                  disabled={isLockedOut}
+                  onClick={handlePasteFromClipboard}
+                  className="antigravity-glass-pill absolute right-2.5 top-1/2 -translate-y-1/2 inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold text-[var(--text-secondary)] shadow-xs transition hover:scale-104 hover:border-[var(--nepal-blue)]/50 hover:text-[var(--nepal-blue)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-label={language === 'ne' ? 'क्लिपबोर्डबाट पेस्ट गर्नुहोस्' : 'Paste license number from clipboard'}
+                  title={language === 'ne' ? 'क्लिपबोर्डबाट पेस्ट गर्नुहोस्' : 'Paste from clipboard'}
+                >
+                  <span aria-hidden>📋</span>
+                  <span>{language === 'ne' ? 'पेस्ट' : 'Paste'}</span>
+                </button>
+              )}
+              {licenseNumber && !loading && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLicenseNumber('')
+                    setError('')
+                    onReset()
+                    inputRef.current?.focus()
+                  }}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-xl p-1.5 text-[var(--text-muted)] transition hover:bg-[var(--bg-secondary)] hover:text-[var(--text-secondary)]"
+                  aria-label={copy.clearLabel}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              )}
             </div>
-            <span className="font-medium">{copy.loadingMessages[loadingMsgIdx] ?? copy.loadingMessages[0]}</span>
+
+            <button
+              type="submit"
+              disabled={loading || isLockedOut || !!error || !licenseNumber}
+              className="inline-flex h-12 min-w-[155px] items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[var(--nepal-blue)] to-[var(--nepal-blue-mid)] px-6 text-sm font-bold text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:brightness-110 active:translate-y-0 disabled:cursor-not-allowed disabled:bg-[var(--text-muted)] disabled:from-[var(--text-muted)] disabled:to-[var(--text-muted)] disabled:shadow-none sm:h-[54px]"
+            >
+              {isLockedOut ? (
+                <span className="flex items-center gap-1.5 font-mono text-white/95">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="animate-pulse">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
+                  <span>{language === 'ne' ? `पर्खनुहोस् (${countdownText})` : `Wait (${countdownText})`}</span>
+                </span>
+              ) : loading ? (
+                <>
+                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  <span>{copy.checkingLabel}</span>
+                </>
+              ) : (
+                <>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                  <span>{copy.submitLabel}</span>
+                </>
+              )}
+            </button>
           </div>
-        ) : (
-          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--text-muted)]">
-            <div className="flex items-center gap-1.5">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+
+          {/* Input Progress indicator */}
+          {licenseNumber && !loading && (
+            <div className="mt-2 h-1 overflow-hidden rounded-full bg-[var(--nepal-blue-soft)]">
+              <div
+                className="h-full rounded-full transition-all duration-300"
+                style={{
+                  width: `${progress}%`,
+                  background: isValid ? 'var(--success)' : error ? 'var(--error)' : 'var(--nepal-blue)',
+                }}
+              />
+            </div>
+          )}
+
+          {/* Errors, Loading Messages & Format Hints */}
+          {isLockedOut ? (
+            <div className="flex items-center gap-2 rounded-2xl border border-[var(--warning-border)] bg-[var(--warning-bg)] p-3 text-xs font-semibold text-[var(--warning-text)] animate-fade-in shadow-2xs">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-[var(--warning-text)]">
                 <circle cx="12" cy="12" r="10" />
                 <line x1="12" y1="8" x2="12" y2="12" />
                 <line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
-              <span>{copy.formatLabel}</span>
-              <code className="rounded bg-[var(--nepal-blue-soft)] px-1.5 py-0.5 font-mono text-[11px] font-semibold text-[var(--nepal-blue)]">
-                XX-XX-XXXXXXXX
-              </code>
-            </div>
-            <span className="text-[11px] text-[var(--text-muted)]">{copy.pasteHint}</span>
-          </div>
-        )}
-
-        {/* Recent Searches chips */}
-        {recentSearches.length > 0 && !loading && (
-          <div className="mt-3 border-t border-[var(--border-default)]/60 pt-3">
-            <div className="mb-2 flex items-center justify-between text-[11px] font-semibold text-[var(--text-secondary)]">
-              <span className="flex items-center gap-1">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" />
-                  <polyline points="12 6 12 12 16 14" />
-                </svg>
-                {copy.recentSearchesLabel}
+              <span>
+                {language === 'ne'
+                  ? `धेरै खोजी प्रयास भयो। अर्को खोजी गर्न कृपया ${countdownText} मिनेट पर्खनुहोस्।`
+                  : `Rate limit active. Please wait ${countdownText} before submitting another search.`}
               </span>
-              <button
-                type="button"
-                onClick={clearRecentSearches}
-                className="text-[10px] text-[var(--text-muted)] transition hover:text-[var(--nepal-red)]"
-              >
-                {copy.clearRecentLabel}
-              </button>
             </div>
-            <div className="flex flex-wrap gap-1.5">
-              {recentSearches.map((num) => (
+          ) : error ? (
+            <p className="flex items-center gap-1.5 text-xs font-semibold text-[var(--error)] animate-fade-in">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              {error}
+            </p>
+          ) : loading ? (
+            <div className="flex items-center gap-2.5 text-xs text-[var(--text-secondary)] animate-fade-in">
+              <div className="flex gap-1">
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className="h-1.5 w-1.5 rounded-full bg-[var(--nepal-blue)]"
+                    style={{ animation: `dotPulse 1.4s ease-in-out ${i * 0.2}s infinite` }}
+                  />
+                ))}
+              </div>
+              <span className="font-medium">{copy.loadingMessages[loadingMsgIdx] ?? copy.loadingMessages[0]}</span>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--text-muted)]">
+              <div className="flex items-center gap-1.5">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+                <span>{copy.formatLabel}</span>
+                <code className="rounded-md bg-[var(--nepal-blue-soft)] px-1.5 py-0.5 font-mono text-[11px] font-semibold text-[var(--nepal-blue)]">
+                  XX-XX-XXXXXXXX
+                </code>
+              </div>
+              <span className="text-[11px] text-[var(--text-muted)]">{copy.pasteHint}</span>
+            </div>
+          )}
+
+          {/* Recent Searches chips */}
+          {recentSearches.length > 0 && !loading && (
+            <div className="mt-3.5 border-t border-[var(--border-default)]/60 pt-3.5">
+              <div className="mb-2.5 flex items-center justify-between text-[11px] font-semibold text-[var(--text-secondary)]">
+                <span className="flex items-center gap-1.5">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
+                  {copy.recentSearchesLabel}
+                </span>
                 <button
-                  key={num}
                   type="button"
-                  disabled={isLockedOut}
-                  onClick={() => handleSelectRecent(num)}
-                  className="inline-flex items-center gap-1 rounded-full border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2.5 py-1 font-mono text-[11px] font-medium text-[var(--text-secondary)] transition hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue-soft)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-50"
+                  onClick={clearRecentSearches}
+                  className="text-[10px] text-[var(--text-muted)] transition hover:text-[var(--nepal-red)]"
                 >
-                  <span>{num}</span>
+                  {copy.clearRecentLabel}
                 </button>
-              ))}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {recentSearches.map((num) => (
+                  <button
+                    key={num}
+                    type="button"
+                    disabled={isLockedOut}
+                    onClick={() => handleSelectRecent(num)}
+                    className="antigravity-glass-pill inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-mono text-[11px] font-medium text-[var(--text-secondary)] transition-all duration-200 hover:scale-105 hover:text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)]/40 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <span>{num}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
-      </form>
+          )}
+        </form>
+      </div>
     </div>
   )
 }
