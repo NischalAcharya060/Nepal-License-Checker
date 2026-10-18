@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { TestimonialLog, TestimonialStatsData } from '../types'
 import { formatNepalDateTime } from '@/lib/cronHelper'
 import { formatTimeAgo, maskIpAddress } from '../helpers'
+import AdminPagination from '../AdminPagination'
 
 export interface AdminTestimonialsProps {
     testimonialLogs?: TestimonialLog[]
@@ -69,6 +70,7 @@ export default function AdminTestimonials(props: any) {
         testimonialStats = null,
         testimonialTotal = 0,
         testimonialPage = 1,
+        testimonialLimit = 50,
         testimonialTotalPages = 1,
         testimonialSearchFilter = '',
         testimonialStatusFilter = 'all',
@@ -77,6 +79,7 @@ export default function AdminTestimonials(props: any) {
         testimonialSelectMode = false,
         selectedTestimonialIds = [],
         setTestimonialPage = () => {},
+        setTestimonialLimit = () => {},
         setTestimonialSearchFilter = () => {},
         setTestimonialStatusFilter = () => {},
         setTestimonialSelectMode = () => {},
@@ -636,34 +639,19 @@ export default function AdminTestimonials(props: any) {
                 )}
             </div>
 
-            {/* Pagination Controls */}
-            {testimonialTotalPages > 1 && (
-                <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border-default)] pt-4 text-xs text-[var(--text-muted)]">
-                    <div>
-                        Showing Page <strong className="text-[var(--text-primary)]">{testimonialPage}</strong> of{' '}
-                        <strong className="text-[var(--text-primary)]">{testimonialTotalPages}</strong> ({testimonialTotal} items)
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                        <button
-                            type="button"
-                            disabled={testimonialPage <= 1}
-                            onClick={() => setTestimonialPage(Math.max(1, testimonialPage - 1))}
-                            className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1 font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] disabled:opacity-40 transition cursor-pointer"
-                        >
-                            Previous
-                        </button>
-                        <span className="px-2 font-mono">{testimonialPage}</span>
-                        <button
-                            type="button"
-                            disabled={testimonialPage >= testimonialTotalPages}
-                            onClick={() => setTestimonialPage(Math.min(testimonialTotalPages, testimonialPage + 1))}
-                            className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1 font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] disabled:opacity-40 transition cursor-pointer"
-                        >
-                            Next
-                        </button>
-                    </div>
-                </div>
-            )}
+            {/* Universal Admin Pagination Bar */}
+            <AdminPagination
+                currentPage={testimonialPage}
+                totalPages={testimonialTotalPages}
+                totalItems={testimonialTotal}
+                pageSize={testimonialLimit}
+                onPageChange={setTestimonialPage}
+                onPageSizeChange={setTestimonialLimit}
+                pageSizeOptions={[10, 25, 50, 100]}
+                itemLabel="testimonials"
+                loading={testimonialLoading}
+                className="mt-4 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-2xs"
+            />
 
             {/* Testimonial Inspection / Details Modal */}
             {activeDetailItem && (

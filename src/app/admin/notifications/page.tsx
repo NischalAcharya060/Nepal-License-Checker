@@ -3,6 +3,7 @@
 import { NotificationLog, NotificationStatsData } from '../types'
 import { formatNepalDateTime } from '@/lib/cronHelper'
 import { formatTimeAgo, maskLicenseNumber } from '../helpers'
+import AdminPagination from '../AdminPagination'
 
 export interface AdminNotificationsProps {
     notificationLogs?: NotificationLog[]
@@ -743,42 +744,18 @@ export default function AdminNotifications(props: any) {
                     </table>
                 </div>
 
-                {/* Notification Pagination Bar */}
-                <div className="flex flex-col items-center justify-between gap-3 border-t border-[var(--border-default)] px-3.5 py-3 sm:flex-row sm:px-4">
-                    <div className="text-xs text-[var(--text-muted)] text-center sm:text-left">
-                        Showing <span className="font-bold text-[var(--text-primary)]">{notificationLogs.length ? (notifPage - 1) * notifLimit + 1 : 0}</span> to{' '}
-                        <span className="font-bold text-[var(--text-primary)]">{Math.min(notifPage * notifLimit, notifTotal)}</span> of{' '}
-                        <span className="font-bold text-[var(--text-primary)]">{notifTotal.toLocaleString()}</span> subscriptions
-                    </div>
-
-                    <div className="flex items-center gap-1.5">
-                        <button
-                            type="button"
-                            disabled={notifPage <= 1 || notifLoading}
-                            onClick={() => setNotifPage(notifPage - 1)}
-                            className="inline-flex h-8 sm:h-8.5 items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] shadow-xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="15 18 9 12 15 6" />
-                            </svg>
-                            <span>Prev</span>
-                        </button>
-                        <span className="px-2 font-mono text-xs font-bold text-[var(--text-secondary)]">
-                            {notifPage} / {notifTotalPages}
-                        </span>
-                        <button
-                            type="button"
-                            disabled={notifPage >= notifTotalPages || notifLoading}
-                            onClick={() => setNotifPage(notifPage + 1)}
-                            className="inline-flex h-8 sm:h-8.5 items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] shadow-xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                            <span>Next</span>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="9 18 15 12 9 6" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
+                {/* Universal Admin Pagination Bar */}
+                <AdminPagination
+                    currentPage={notifPage}
+                    totalPages={notifTotalPages}
+                    totalItems={notifTotal}
+                    pageSize={notifLimit}
+                    onPageChange={setNotifPage}
+                    onPageSizeChange={setNotifLimit}
+                    pageSizeOptions={[10, 25, 50, 100, 200]}
+                    itemLabel="subscriptions"
+                    loading={notifLoading}
+                />
             </div>
         </section>
     )

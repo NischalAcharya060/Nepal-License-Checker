@@ -332,3 +332,243 @@ export function recordDeveloperUsageMetric(entry: {
         .catch(() => {})
 }
 
+/* -------------------------------------------------------------------------- */
+/* Admin Developer Management Helpers                                         */
+/* -------------------------------------------------------------------------- */
+
+export async function getAdminDeveloperStats(): Promise<{
+    totalDevelopers: number
+    totalKeys: number
+    activeKeys: number
+    totalQueries: number
+    queriesToday: number
+}> {
+    await ensureDeveloperTables()
+    const db = getTurso()
+
+    const startOfToday = new Date()
+    startOfToday.setHours(0, 0, 0, 0)
+    const todayTimestamp = startOfToday.getTime()
+
+    const [devsRes, keysRes, queriesTodayRes] = await Promise.all([
+        db.execute('SELECT COUNT(*) as count FROM developers'),
+        db.execute(`
+            SELECT 
+                COUNT(*) as total_keys,
+                SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active_keys,
+                COALESCE(SUM(total_requests), 0) as total_queries
+            FROM developer_api_keys
+        `),
+        db.execute({
+            sql: 'SELECT COUNT(*) as count FROM developer_usage_metrics WHERE created_at >= ?',
+            args: [todayTimestamp],
+        }).catch(() => ({ rows: [{ count: 0 }] })),
+    ])
+
+    const totalDevelopers = Number(devsRes.rows[0]?.count || 0)
+    const keysRow = keysRes.rows[0] || {}
+    const totalKeys = Number(keysRow.total_keys || 0)
+    const activeKeys = Number(keysRow.active_keys || 0)
+    const totalQueries = Number(keysRow.total_queries || 0)
+    const queriesToday = Number(queriesTodayRes.rows[0]?.count || 0)
+
+    return {
+        totalDevelopers,
+        totalKeys,
+        activeKeys,
+        totalQueries,
+        queriesToday,
+    }
+}
+
+export async function getAdminDevelopersList(params: {
+    page: number
+    limit: number
+    search?: string
+}): Promise<{
+    developers: Array<{
+        id: string
+        github_id: string
+        username: string
+        name: string | null
+        email: string | null
+        avatar_url: string | null
+        created_at: number
+        keys: Array<{
+            id: string
+            developer_id: string
+            key_prefix: string
+            name: string
+            rate_limit_per_minute: number
+            is_active: number
+            total_requests: number
+            last_used_at: number | null
+            created_at: number
+        }>
+        total_queries: number
+    }>
+    total: number
+    page: number
+    totalPages: number
+}> {
+    await ensureDeveloperTables()
+    const db = getTurso()
+
+    const { page, limit, search } = params
+    const offset = (page - 1) * limit
+    const searchTrimmed = (search || '').trim().toLowerCase()
+
+    let countSql = 'SELECT COUNT(*) as count FROM developers'
+    const countArgs: (string | number)[] = []
+
+    let querySql = `
+        SELECT id, github_id, username, name, email, avatar_url, created_at, updated_at
+        FROM developers
+    `
+    const queryArgs: (string | number)[] = []
+
+    if (searchTrimmed) {
+        const filter = `
+            WHERE LOWER(username) LIKE ? 
+               OR LOWER(COALESCE(name, '')) LIKE ? 
+               OR LOWER(COALESCE(email, '')) LIKE ?
+               OR id IN (SELECT developer_id FROM developer_api_keys WHERE LOWER(key_prefix) LIKE ? OR LOWER(name) LIKE ?)
+        `
+        const pattern = `%${searchTrimmed}%`
+        countSql += filter
+        countArgs.push(pattern, pattern, pattern, pattern, pattern)
+
+        querySql += filter
+        queryArgs.push(pattern, pattern, pattern, pattern, pattern)
+    }
+
+    querySql += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
+    queryArgs.push(limit, offset)
+
+    const [countRes, devsRes] = await Promise.all([
+        db.execute({ sql: countSql, args: countArgs }),
+        db.execute({ sql: querySql, args: queryArgs }),
+    ])
+
+    const total = Number(countRes.rows[0]?.count || 0)
+    const totalPages = Math.max(1, Math.ceil(total / limit))
+
+    if (devsRes.rows.length === 0) {
+        return { developers: [], total, page, totalPages }
+    }
+
+    const devIds = devsRes.rows.map((r) => String(r.id))
+    const placeholders = devIds.map(() => '?').join(',')
+
+    const keysRes = await db.execute({
+        sql: `SELECT id, developer_id, key_prefix, name, rate_limit_per_minute, is_active, total_requests, last_used_at, created_at
+              FROM developer_api_keys 
+              WHERE developer_id IN (${placeholders})
+              ORDER BY created_at DESC`,
+        args: devIds,
+    })
+
+    const keysByDev = new Map<string, Array<{
+        id: string
+        developer_id: string
+        key_prefix: string
+        name: string
+        rate_limit_per_minute: number
+        is_active: number
+        total_requests: number
+        last_used_at: number | null
+        created_at: number
+    }>>()
+
+    for (const row of keysRes.rows) {
+        const devId = String(row.developer_id)
+        if (!keysByDev.has(devId)) {
+            keysByDev.set(devId, [])
+        }
+        keysByDev.get(devId)!.push({
+            id: String(row.id),
+            developer_id: devId,
+            key_prefix: String(row.key_prefix),
+            name: String(row.name),
+            rate_limit_per_minute: Number(row.rate_limit_per_minute),
+            is_active: Number(row.is_active),
+            total_requests: Number(row.total_requests || 0),
+            last_used_at: row.last_used_at ? Number(row.last_used_at) : null,
+            created_at: Number(row.created_at),
+        })
+    }
+
+    const developers = devsRes.rows.map((r) => {
+        const id = String(r.id)
+        const keys = keysByDev.get(id) || []
+        const total_queries = keys.reduce((sum, k) => sum + k.total_requests, 0)
+
+        return {
+            id,
+            github_id: String(r.github_id),
+            username: String(r.username),
+            name: r.name ? String(r.name) : null,
+            email: r.email ? String(r.email) : null,
+            avatar_url: r.avatar_url ? String(r.avatar_url) : null,
+            created_at: Number(r.created_at),
+            keys,
+            total_queries,
+        }
+    })
+
+    return {
+        developers,
+        total,
+        page,
+        totalPages,
+    }
+}
+
+export async function adminToggleDeveloperKey(keyId: string, isActive: boolean): Promise<boolean> {
+    await ensureDeveloperTables()
+    const db = getTurso()
+
+    const activeVal = isActive ? 1 : 0
+
+    const res = await db.execute({
+        sql: `UPDATE developer_api_keys 
+              SET is_active = ? 
+              WHERE id = ?`,
+        args: [activeVal, keyId],
+    })
+
+    invalidateApiKeyCache()
+    return res.rowsAffected > 0
+}
+
+export async function adminUpdateDeveloperKeyRateLimit(keyId: string, rateLimit: number): Promise<boolean> {
+    await ensureDeveloperTables()
+    const db = getTurso()
+
+    const sanitizedRate = Math.min(1000, Math.max(5, rateLimit))
+
+    const res = await db.execute({
+        sql: `UPDATE developer_api_keys 
+              SET rate_limit_per_minute = ? 
+              WHERE id = ?`,
+        args: [sanitizedRate, keyId],
+    })
+
+    invalidateApiKeyCache()
+    return res.rowsAffected > 0
+}
+
+export async function adminDeleteDeveloperKey(keyId: string): Promise<boolean> {
+    await ensureDeveloperTables()
+    const db = getTurso()
+
+    const res = await db.execute({
+        sql: `DELETE FROM developer_api_keys WHERE id = ?`,
+        args: [keyId],
+    })
+
+    invalidateApiKeyCache()
+    return res.rowsAffected > 0
+}
+
+

@@ -156,3 +156,36 @@ export interface ToastState {
     message: string
     type: 'success' | 'info' | 'error'
 }
+
+export interface AdminDeveloperApiKey {
+    id: string
+    developer_id: string
+    key_prefix: string
+    name: string
+    rate_limit_per_minute: number
+    is_active: number
+    total_requests: number
+    last_used_at: number | null
+    created_at: number
+}
+
+export interface AdminDeveloper {
+    id: string
+    github_id: string
+    username: string
+    name: string | null
+    email: string | null
+    avatar_url: string | null
+    created_at: number
+    keys: AdminDeveloperApiKey[]
+    total_queries: number
+}
+
+export interface DeveloperStatsData {
+    totalDevelopers: number
+    totalKeys: number
+    activeKeys: number
+    totalQueries: number
+    queriesToday: number
+}
+

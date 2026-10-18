@@ -10,15 +10,17 @@ export interface AdminNavbarProps {
     setAutoRefresh?: (val: boolean) => void
     dataLoading?: boolean
     handleManualRefresh?: () => void
-    activeTab?: 'searches' | 'notifications' | 'feedback' | 'testimonials'
+    activeTab?: 'searches' | 'notifications' | 'feedback' | 'testimonials' | 'developers'
     exportCsv?: () => void
     exportNotificationCsv?: () => void
     exportFeedbackCsv?: () => void
     exportTestimonialsCsv?: () => void
+    exportDevelopersCsv?: () => void
     hasLogs?: boolean
     hasNotificationLogs?: boolean
     hasFeedbackLogs?: boolean
     hasTestimonialLogs?: boolean
+    hasDeveloperLogs?: boolean
     setPasskeyModalOpen?: (val: boolean) => void
     fetchPasskeys?: () => void
     passkeyCount?: number
@@ -40,10 +42,12 @@ export default function AdminNavbar(props: any) {
         exportNotificationCsv = () => {},
         exportFeedbackCsv = () => {},
         exportTestimonialsCsv = () => {},
+        exportDevelopersCsv = () => {},
         hasLogs = false,
         hasNotificationLogs = false,
         hasFeedbackLogs = false,
         hasTestimonialLogs = false,
+        hasDeveloperLogs = false,
         setPasskeyModalOpen = () => {},
         fetchPasskeys = () => {},
         passkeyCount = 0,
@@ -69,7 +73,7 @@ export default function AdminNavbar(props: any) {
                                 Admin Console
                             </h1>
                             <span className="flex items-center gap-1 text-[10px] sm:text-[11px] font-medium text-[var(--text-muted)] truncate">
-                                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--success)] animate-pulse" />
+                                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--success)]" />
                                 <span className="hidden sm:inline">Turso Edge DB Connected</span>
                                 <span className="sm:hidden">Connected</span>
                             </span>
@@ -170,7 +174,9 @@ export default function AdminNavbar(props: any) {
                                 ? exportNotificationCsv
                                 : activeTab === 'feedback'
                                 ? exportFeedbackCsv
-                                : exportTestimonialsCsv
+                                : activeTab === 'testimonials'
+                                ? exportTestimonialsCsv
+                                : exportDevelopersCsv
                         }
                         disabled={
                             activeTab === 'searches'
@@ -179,7 +185,9 @@ export default function AdminNavbar(props: any) {
                                 ? !hasNotificationLogs
                                 : activeTab === 'feedback'
                                 ? !hasFeedbackLogs
-                                : !hasTestimonialLogs
+                                : activeTab === 'testimonials'
+                                ? !hasTestimonialLogs
+                                : !hasDeveloperLogs
                         }
                         className="inline-flex h-8 sm:h-9 items-center justify-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-2 sm:px-3 text-xs font-semibold text-[var(--text-secondary)] shadow-xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:opacity-50"
                         title={
@@ -189,7 +197,9 @@ export default function AdminNavbar(props: any) {
                                 ? 'Export notification logs to CSV'
                                 : activeTab === 'feedback'
                                 ? 'Export feedback inquiries to CSV'
-                                : 'Export testimonials to CSV'
+                                : activeTab === 'testimonials'
+                                ? 'Export testimonials to CSV'
+                                : 'Export developer accounts to CSV'
                         }
                         aria-label="Export to CSV"
                     >

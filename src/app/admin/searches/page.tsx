@@ -3,6 +3,7 @@
 import { SearchLog } from '../types'
 import { formatNepalDateTime } from '@/lib/cronHelper'
 import { getFlag, formatTimeAgo, maskLicenseNumber, maskIpAddress } from '../helpers'
+import AdminPagination from '../AdminPagination'
 
 export interface AdminSearchesProps {
     logs?: SearchLog[]
@@ -139,6 +140,7 @@ export default function AdminSearches(props: any) {
                         }}
                         className="h-8.5 sm:h-9 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2 sm:px-2.5 text-[11px] sm:text-xs font-semibold text-[var(--text-secondary)] focus:outline-none"
                     >
+                        <option value={10}>10 rows</option>
                         <option value={25}>25 rows</option>
                         <option value={50}>50 rows</option>
                         <option value={100}>100 rows</option>
@@ -645,47 +647,19 @@ export default function AdminSearches(props: any) {
                     </table>
                 </div>
 
-                {/* Pagination Bar */}
-                <div className="flex flex-col items-center justify-between gap-3 border-t border-[var(--border-default)] px-3.5 py-3 sm:flex-row sm:px-4">
-                    <div className="text-xs text-[var(--text-muted)] text-center sm:text-left">
-                        Showing <span className="font-bold text-[var(--text-primary)]">{logs.length ? (page - 1) * limit + 1 : 0}</span> to{' '}
-                        <span className="font-bold text-[var(--text-primary)]">{Math.min(page * limit, total)}</span> of{' '}
-                        <span className="font-bold text-[var(--text-primary)]">{total.toLocaleString()}</span> queries
-                        {lastUpdated && (
-                            <span className="ml-2 hidden text-[11px] text-[var(--text-muted)] sm:inline">
-                                (Updated: {lastUpdated.toLocaleTimeString('en-NP', { timeZone: 'Asia/Kathmandu', hour: '2-digit', minute: '2-digit', second: '2-digit' })} NPT)
-                            </span>
-                        )}
-                    </div>
-
-                    <div className="flex items-center gap-1.5">
-                        <button
-                            type="button"
-                            disabled={page <= 1 || dataLoading}
-                            onClick={() => setPage(page - 1)}
-                            className="inline-flex h-8 sm:h-8.5 items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] shadow-xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="15 18 9 12 15 6" />
-                            </svg>
-                            <span>Prev</span>
-                        </button>
-                        <span className="px-2 font-mono text-xs font-bold text-[var(--text-secondary)]">
-                            {page} / {totalPages}
-                        </span>
-                        <button
-                            type="button"
-                            disabled={page >= totalPages || dataLoading}
-                            onClick={() => setPage(page + 1)}
-                            className="inline-flex h-8 sm:h-8.5 items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] shadow-xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                            <span>Next</span>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="9 18 15 12 9 6" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
+                {/* Universal Admin Pagination Bar */}
+                <AdminPagination
+                    currentPage={page}
+                    totalPages={totalPages}
+                    totalItems={total}
+                    pageSize={limit}
+                    onPageChange={setPage}
+                    onPageSizeChange={setLimit}
+                    pageSizeOptions={[10, 25, 50, 100, 200]}
+                    itemLabel="queries"
+                    loading={dataLoading}
+                    lastUpdated={lastUpdated}
+                />
             </div>
         </section>
     )

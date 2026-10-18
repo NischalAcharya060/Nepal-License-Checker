@@ -21,6 +21,8 @@ import {
     AdminPasskey,
     ConfirmDialogState,
     ToastState,
+    AdminDeveloper,
+    DeveloperStatsData,
 } from './types'
 import {
     INACTIVITY_TIMEOUT_MS,
@@ -38,6 +40,7 @@ import AdminSearches from './searches/page'
 import AdminNotifications from './notifications/page'
 import AdminFeedback from './feedback/page'
 import AdminTestimonials from './testimonials/page'
+import AdminDevelopers from './developers/page'
 import AdminLogin from './login/page'
 import AdminModals from './modals/page'
 
@@ -51,8 +54,8 @@ export default function AdminPage() {
     const [showPassword, setShowPassword] = useState(false)
     const [privacyMode, setPrivacyMode] = useState(true)
 
-    // View Tabs: 'searches' | 'notifications' | 'feedback' | 'testimonials'
-    const [activeTab, setActiveTab] = useState<'searches' | 'notifications' | 'feedback' | 'testimonials'>('searches')
+    // View Tabs: 'searches' | 'notifications' | 'feedback' | 'testimonials' | 'developers'
+    const [activeTab, setActiveTab] = useState<'searches' | 'notifications' | 'feedback' | 'testimonials' | 'developers'>('searches')
 
     // Dashboard State - Searches
     const [logs, setLogs] = useState<SearchLog[]>([])
@@ -112,6 +115,16 @@ export default function AdminPage() {
     const [testimonialLoading, setTestimonialLoading] = useState(false)
     const [selectedTestimonialIds, setSelectedTestimonialIds] = useState<string[]>([])
     const [testimonialSelectMode, setTestimonialSelectMode] = useState(false)
+
+    // Dashboard State - Developer Accounts & API Keys
+    const [developerStats, setDeveloperStats] = useState<DeveloperStatsData | null>(null)
+    const [developers, setDevelopers] = useState<AdminDeveloper[]>([])
+    const [devTotal, setDevTotal] = useState(0)
+    const [devPage, setDevPage] = useState(1)
+    const [devLimit, setDevLimit] = useState(50)
+    const [devTotalPages, setDevTotalPages] = useState(1)
+    const [devSearchFilter, setDevSearchFilter] = useState('')
+    const [devLoading, setDevLoading] = useState(false)
 
     const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null)
     const [confirmSubmitting] = useState(false)
@@ -383,6 +396,46 @@ export default function AdminPage() {
         }
     }, [isAuthenticated, testimonialPage, testimonialLimit, testimonialSearchFilter, testimonialStatusFilter, refreshKey])
 
+    // 2e. Fetch Developers & API Telemetry Stats
+    useEffect(() => {
+        if (!isAuthenticated) return
+        let cancelled = false
+
+        const params = new URLSearchParams({
+            page: String(devPage),
+            limit: String(devLimit),
+            search: devSearchFilter,
+        })
+
+        fetch(`/api/admin/developers?${params.toString()}`, { cache: 'no-store' })
+            .then((res) => {
+                if (res.status === 401) {
+                    if (!cancelled) setIsAuthenticated(false)
+                    return null
+                }
+                return res.json()
+            })
+            .then((json) => {
+                if (cancelled || !json) return
+                if (json.status === 'success' && json.data) {
+                    setDevelopers(json.data.developers || [])
+                    setDevTotal(json.data.total || 0)
+                    setDevTotalPages(json.data.totalPages || 1)
+                    if (json.data.stats) {
+                        setDeveloperStats(json.data.stats)
+                    }
+                }
+                setDevLoading(false)
+            })
+            .catch(() => {
+                if (!cancelled) setDevLoading(false)
+            })
+
+        return () => {
+            cancelled = true
+        }
+    }, [isAuthenticated, devPage, devLimit, devSearchFilter, refreshKey])
+
     // 3. Auto-refresh polling every 12 seconds (pauses when browser tab is hidden/inactive)
     useEffect(() => {
         if (!isAuthenticated || !autoRefresh) return
@@ -400,6 +453,7 @@ export default function AdminPage() {
         setNotifLoading(true)
         setFeedbackLoading(true)
         setTestimonialLoading(true)
+        setDevLoading(true)
         setRefreshKey((k) => k + 1)
     }
 
@@ -628,6 +682,8 @@ export default function AdminPage() {
             setNotificationStats(null)
             setFeedbackLogs([])
             setFeedbackStats(null)
+            setDevelopers([])
+            setDeveloperStats(null)
         }
     }, [])
 
@@ -1426,6 +1482,158 @@ export default function AdminPage() {
         })
     }
 
+    // 14. Developer Accounts & API Keys Handlers
+    const exportDevelopersCsv = () => {
+        if (!developers.length) return
+        const headers = [
+            'Developer ID',
+            'GitHub Username',
+            'Display Name',
+            'Email',
+            'Registered At (NPT)',
+            'Registered At (ISO)',
+            'Key ID',
+            'Key Name',
+            'Key Prefix',
+            'Key Status',
+            'Key Rate Limit/min',
+            'Key Queries Total',
+            'Key Last Used (NPT)',
+            'Key Last Used (ISO)',
+        ]
+        const rows: string[][] = []
+        developers.forEach((dev) => {
+            if (dev.keys && dev.keys.length > 0) {
+                dev.keys.forEach((key) => {
+                    rows.push([
+                        `"${dev.id}"`,
+                        `"${dev.username}"`,
+                        `"${dev.name || ''}"`,
+                        `"${dev.email || ''}"`,
+                        `"${formatNepalDateTime(dev.created_at, 'en', true)}"`,
+                        new Date(dev.created_at).toISOString(),
+                        `"${key.id}"`,
+                        `"${key.name}"`,
+                        `"${key.key_prefix}..."`,
+                        key.is_active ? 'active' : 'suspended',
+                        String(key.rate_limit_per_minute),
+                        String(key.total_requests || 0),
+                        key.last_used_at ? `"${formatNepalDateTime(key.last_used_at, 'en', true)}"` : '',
+                        key.last_used_at ? new Date(key.last_used_at).toISOString() : '',
+                    ])
+                })
+            } else {
+                rows.push([
+                    `"${dev.id}"`,
+                    `"${dev.username}"`,
+                    `"${dev.name || ''}"`,
+                    `"${dev.email || ''}"`,
+                    `"${formatNepalDateTime(dev.created_at, 'en', true)}"`,
+                    new Date(dev.created_at).toISOString(),
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    '0',
+                    '',
+                    '',
+                ])
+            }
+        })
+        const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n')
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `nepal-license-developers-${new Date().toISOString().slice(0, 10)}.csv`
+        a.click()
+        URL.revokeObjectURL(url)
+        showToast('Exported developers & API keys CSV', 'info')
+    }
+
+    const handleToggleDeveloperKeyActive = async (keyId: string, currentActive: boolean) => {
+        const next = !currentActive
+        try {
+            const res = await fetch('/api/admin/developers', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ keyId, isActive: next }),
+            })
+            if (res.ok) {
+                setDevelopers((prev) =>
+                    prev.map((dev) => ({
+                        ...dev,
+                        keys: dev.keys.map((k) => (k.id === keyId ? { ...k, is_active: next ? 1 : 0 } : k)),
+                    }))
+                )
+                setRefreshKey((k) => k + 1)
+                showToast(next ? 'API Key re-activated' : 'API Key suspended', 'info')
+            } else {
+                const err = await res.json()
+                showToast(err.error || 'Failed to update key status', 'error')
+            }
+        } catch {
+            showToast('Network error while updating key status', 'error')
+        }
+    }
+
+    const handleUpdateDeveloperRateLimit = async (keyId: string, rateLimit: number) => {
+        try {
+            const res = await fetch('/api/admin/developers', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ keyId, rateLimitPerMinute: rateLimit }),
+            })
+            if (res.ok) {
+                setDevelopers((prev) =>
+                    prev.map((dev) => ({
+                        ...dev,
+                        keys: dev.keys.map((k) =>
+                            k.id === keyId ? { ...k, rate_limit_per_minute: rateLimit } : k
+                        ),
+                    }))
+                )
+                showToast(`Rate limit updated to ${rateLimit} req/min`, 'success')
+            } else {
+                const err = await res.json()
+                showToast(err.error || 'Failed to update rate limit', 'error')
+            }
+        } catch {
+            showToast('Network error while updating rate limit', 'error')
+        }
+    }
+
+    const handleDeleteDeveloperKey = (keyId: string, keyName: string) => {
+        setConfirmDialog({
+            title: `Revoke API key "${keyName}"?`,
+            message: `Are you sure you want to permanently revoke this key? Any application or script using this key will immediately be denied access.`,
+            confirmLabel: 'Yes, Revoke Key',
+            onConfirm: async () => {
+                try {
+                    const res = await fetch(`/api/admin/developers?keyId=${encodeURIComponent(keyId)}`, {
+                        method: 'DELETE',
+                    })
+                    if (res.ok) {
+                        setDevelopers((prev) =>
+                            prev.map((dev) => ({
+                                ...dev,
+                                keys: dev.keys.filter((k) => k.id !== keyId),
+                            }))
+                        )
+                        setRefreshKey((k) => k + 1)
+                        showToast('API key permanently revoked')
+                    } else {
+                        const err = await res.json()
+                        showToast(err.error || 'Failed to revoke key', 'error')
+                    }
+                } catch {
+                    showToast('Network error while revoking key', 'error')
+                }
+            },
+        })
+    }
+
     // ----------------------------------------------------
     // Loading Screen
     // ----------------------------------------------------
@@ -1483,10 +1691,12 @@ export default function AdminPage() {
                 exportNotificationCsv={exportNotificationCsv}
                 exportFeedbackCsv={exportFeedbackCsv}
                 exportTestimonialsCsv={exportTestimonialsCsv}
+                exportDevelopersCsv={exportDevelopersCsv}
                 hasLogs={logs.length > 0}
                 hasNotificationLogs={notificationLogs.length > 0}
                 hasFeedbackLogs={feedbackLogs.length > 0}
                 hasTestimonialLogs={testimonialLogs.length > 0}
+                hasDeveloperLogs={developers.length > 0}
                 setPasskeyModalOpen={setPasskeyModalOpen}
                 fetchPasskeys={fetchPasskeys}
                 passkeyCount={passkeyCount}
@@ -1605,6 +1815,29 @@ export default function AdminPage() {
                                 </span>
                             )}
                         </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('developers')}
+                            className={`inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 sm:gap-2 rounded-lg px-2.5 sm:px-4 py-2 text-xs font-bold transition whitespace-nowrap ${
+                                activeTab === 'developers'
+                                    ? 'bg-[var(--nepal-blue)] text-white shadow-xs'
+                                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                            }`}
+                        >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                                <path d="m18 16 4-4-4-4" />
+                                <path d="m6 8-4 4 4 4" />
+                                <path d="m14.5 4-5 16" />
+                            </svg>
+                            <span className="hidden sm:inline">Developer Accounts</span>
+                            <span className="sm:hidden">Developers</span>
+                            <span className={`rounded-full px-1.5 sm:px-2 py-0.5 font-mono text-[10px] ${
+                                activeTab === 'developers' ? 'bg-white/20 text-white' : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'
+                            }`}>
+                                {devTotal.toLocaleString()}
+                            </span>
+                        </button>
                     </div>
 
                     {activeTab === 'notifications' && notificationStats && (
@@ -1653,6 +1886,24 @@ export default function AdminPage() {
                                 <span className="text-amber-500">⭐</span>
                                 <span className="font-medium text-[var(--text-secondary)]">Avg Rating:</span>
                                 <strong className="font-bold text-[var(--text-primary)]">{testimonialStats.averageRating} / 5</strong>
+                            </span>
+                        </div>
+                    )}
+
+                    {activeTab === 'developers' && developerStats && (
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-muted)]">
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-emerald-600 dark:text-emerald-400">
+                                <span className="h-1.5 w-1.5 rounded-full bg-[var(--success)]" />
+                                <span className="font-medium">Active Keys:</span>
+                                <strong className="font-bold">{developerStats.activeKeys}</strong>
+                            </span>
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1">
+                                <span className="font-medium text-[var(--text-secondary)]">Developers:</span>
+                                <strong className="font-bold text-[var(--text-primary)]">{developerStats.totalDevelopers}</strong>
+                            </span>
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1">
+                                <span className="font-medium text-[var(--text-secondary)]">API Queries:</span>
+                                <strong className="font-bold text-[var(--text-primary)]">{developerStats.totalQueries.toLocaleString()}</strong>
                             </span>
                         </div>
                     )}
@@ -1748,7 +1999,7 @@ export default function AdminPage() {
                         handleDeleteAllFeedback={handleDeleteAllFeedback}
                         startTransition={startTransition}
                     />
-                ) : (
+                ) : activeTab === 'testimonials' ? (
                     <AdminTestimonials
                         testimonialLogs={testimonialLogs}
                         testimonialStats={testimonialStats}
@@ -1778,6 +2029,28 @@ export default function AdminPage() {
                         handleDeleteRejectedTestimonials={handleDeleteRejectedTestimonials}
                         handleDeleteAllTestimonials={handleDeleteAllTestimonials}
                         exportTestimonialsCsv={exportTestimonialsCsv}
+                        startTransition={startTransition}
+                    />
+                ) : (
+                    <AdminDevelopers
+                        developers={developers}
+                        developerStats={developerStats}
+                        devTotal={devTotal}
+                        devPage={devPage}
+                        devLimit={devLimit}
+                        devTotalPages={devTotalPages}
+                        devSearchFilter={devSearchFilter}
+                        devLoading={devLoading}
+                        privacyMode={privacyMode}
+                        copiedKey={copiedKey}
+                        setDevPage={setDevPage}
+                        setDevLimit={setDevLimit}
+                        setDevSearchFilter={setDevSearchFilter}
+                        copyToClipboard={copyToClipboard}
+                        handleToggleKeyActive={handleToggleDeveloperKeyActive}
+                        handleUpdateRateLimit={handleUpdateDeveloperRateLimit}
+                        handleDeleteKey={handleDeleteDeveloperKey}
+                        exportDevelopersCsv={exportDevelopersCsv}
                         startTransition={startTransition}
                     />
                 )}
