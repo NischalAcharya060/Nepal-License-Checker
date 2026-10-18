@@ -37,7 +37,7 @@ export default function AdminDevelopers(props: any) {
         developerStats = null,
         devTotal = 0,
         devPage = 1,
-        devLimit = 50,
+        devLimit = 10,
         devTotalPages = 1,
         devSearchFilter = '',
         devLoading = false,

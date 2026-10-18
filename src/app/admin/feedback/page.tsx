@@ -62,7 +62,7 @@ export default function AdminFeedback(props: any) {
         feedbackStats = null,
         feedbackTotal = 0,
         feedbackPage = 1,
-        feedbackLimit = 50,
+        feedbackLimit = 10,
         feedbackTotalPages = 1,
         feedbackSearchFilter = '',
         feedbackStatusFilter = 'all',
@@ -257,6 +257,7 @@ export default function AdminFeedback(props: any) {
                         }}
                         className="h-8.5 sm:h-9 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2 sm:px-2.5 text-[11px] sm:text-xs font-semibold text-[var(--text-secondary)] transition focus:border-[var(--nepal-blue)] focus:outline-none"
                     >
+                        <option value="10">10 rows</option>
                         <option value="25">25 rows</option>
                         <option value="50">50 rows</option>
                         <option value="100">100 rows</option>

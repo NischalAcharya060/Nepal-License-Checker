@@ -70,7 +70,7 @@ export default function AdminTestimonials(props: any) {
         testimonialStats = null,
         testimonialTotal = 0,
         testimonialPage = 1,
-        testimonialLimit = 50,
+        testimonialLimit = 10,
         testimonialTotalPages = 1,
         testimonialSearchFilter = '',
         testimonialStatusFilter = 'all',
