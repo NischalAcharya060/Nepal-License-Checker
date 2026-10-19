@@ -28,9 +28,17 @@ export default function DeveloperPortalPage() {
   const [newKeyModal, setNewKeyModal] = useState<{ rawKey: string; key: DeveloperApiKey } | null>(null)
   const [copiedKey, setCopiedKey] = useState(false)
   const [copiedCode, setCopiedCode] = useState(false)
+  const [copiedNpm, setCopiedNpm] = useState(false)
   const [codeTab, setCodeTab] = useState<'sdk' | 'curl' | 'fetch' | 'python'>('sdk')
   const [activePreset, setActivePreset] = useState<string | null>(null)
   const [redirecting, setRedirecting] = useState(false)
+
+  const copyNpm = () => {
+    navigator.clipboard.writeText('npm install nepal-license-checker')
+    setCopiedNpm(true)
+    toast.success('npm install command copied!')
+    setTimeout(() => setCopiedNpm(false), 2000)
+  }
   const [activeSection, setActiveSection] = useState('section-overview')
   const [mobileOpen, setMobileOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -67,28 +75,46 @@ export default function DeveloperPortalPage() {
       'section-specs',
     ]
 
-    const handleScroll = () => {
-      // 1. Detect if scrolled near the bottom of the page (activates last section 'section-specs')
-      const scrollBottom = window.innerHeight + window.scrollY
-      const docHeight = document.documentElement.scrollHeight
-      if (scrollBottom >= docHeight - 80) {
-        setActiveSection('section-specs')
-        return
-      }
+    let ticking = false
 
-      // 2. Viewport-based threshold (bounding rect)
-      for (let i = sectionIds.length - 1; i >= 0; i--) {
-        const id = sectionIds[i]
-        const el = document.getElementById(id)
-        if (el) {
-          const rect = el.getBoundingClientRect()
-          if (rect.top <= 200) {
-            setActiveSection(id)
-            return
+    const handleScroll = () => {
+      if (ticking) return
+      ticking = true
+
+      requestAnimationFrame(() => {
+        ticking = false
+
+        const scrollY = window.scrollY || window.pageYOffset || 0
+
+        // 1. If at or near the top of the page, it's ALWAYS Overview
+        if (scrollY < 160) {
+          setActiveSection('section-overview')
+          return
+        }
+
+        // 2. Detect if scrolled near the bottom of the page (activates last section 'section-specs')
+        // Only valid if the user has actually scrolled down significantly and the page is scrollable
+        const scrollBottom = window.innerHeight + scrollY
+        const docHeight = document.documentElement.scrollHeight
+        if (scrollY > 400 && docHeight > window.innerHeight + 250 && scrollBottom >= docHeight - 80) {
+          setActiveSection('section-specs')
+          return
+        }
+
+        // 3. Viewport-based threshold (bounding rect)
+        for (let i = sectionIds.length - 1; i >= 0; i--) {
+          const id = sectionIds[i]
+          const el = document.getElementById(id)
+          if (el) {
+            const rect = el.getBoundingClientRect()
+            if (rect.top <= 200) {
+              setActiveSection(id)
+              return
+            }
           }
         }
-      }
-      setActiveSection('section-overview')
+        setActiveSection('section-overview')
+      })
     }
 
     window.addEventListener('scroll', handleScroll, { passive: true })
@@ -98,6 +124,10 @@ export default function DeveloperPortalPage() {
 
   const scrollToSection = (sectionId: string) => {
     setActiveSection(sectionId)
+    if (sectionId === 'section-overview') {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
     const el = document.getElementById(sectionId)
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -531,20 +561,27 @@ print("License details:", data.get("data"))`
               </Link>
               <span className="text-[var(--border-default)]">/</span>
               <span className="text-xs font-bold text-[var(--text-primary)] flex items-center gap-1.5">
-                <span className="text-[var(--nepal-blue)]">⚡</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" className="text-[var(--nepal-blue)]" aria-hidden="true">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                </svg>
                 <span>Developer Platform</span>
               </span>
             </div>
 
             <div className="flex items-center gap-3">
-              <span className="inline-flex items-center rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1 font-mono text-[10.5px] font-bold text-[var(--text-secondary)] shadow-2xs">
-                API v1.1.0 • 60 req/min
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1 font-mono text-[10.5px] font-bold text-[var(--text-secondary)] shadow-2xs">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>API v1.1.0 • 60 req/min</span>
               </span>
               <Link
                 href="/developer/docs"
-                className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)] transition shadow-2xs"
+                className="inline-flex items-center gap-1 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)] transition shadow-2xs"
               >
-                SDK Docs →
+                <span>SDK Docs</span>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <line x1="7" y1="17" x2="17" y2="7" />
+                  <polyline points="7 7 17 7 17 17" />
+                </svg>
               </Link>
             </div>
           </header>
@@ -564,8 +601,12 @@ print("License details:", data.get("data"))`
                 type="button"
                 onClick={() => setErrorMessage(null)}
                 className="font-bold hover:underline cursor-pointer"
+                aria-label="Dismiss error banner"
               >
-                ✕
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
               </button>
             </div>
           )}
@@ -573,64 +614,158 @@ print("License details:", data.get("data"))`
           {/* STATE A: GUEST (UNAUTHENTICATED DEVELOPER LANDING) */}
           <div className="space-y-10 animate-rise-in">
             {/* Hero Section */}
-            <div className="relative overflow-hidden rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-7 sm:p-12 shadow-xl">
-              <div className="absolute top-0 right-0 -mt-10 -mr-10 h-64 w-64 rounded-full bg-[var(--nepal-blue)]/10 blur-3xl pointer-events-none" />
+            <div className="relative overflow-hidden rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-7 sm:p-10 lg:p-12 shadow-xl dev-glass-card">
+              <div className="absolute top-0 right-0 -mt-10 -mr-10 h-72 w-72 rounded-full bg-gradient-to-br from-[var(--nepal-blue)]/20 via-cyan-500/10 to-transparent blur-3xl pointer-events-none" />
 
-              <div className="max-w-2xl space-y-4">
-                <div className="inline-flex items-center gap-2 rounded-full border border-[var(--nepal-blue)]/30 bg-[var(--nepal-blue)]/10 px-3.5 py-1 text-xs font-bold text-[var(--nepal-blue)]">
-                  <span>🚀</span>
-                  <span>Dedicated Developer Tier</span>
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
+                {/* Left Column: Copy & Actions */}
+                <div className="lg:col-span-7 space-y-4">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-[var(--nepal-blue)]/30 bg-[var(--nepal-blue)]/10 px-3.5 py-1 text-xs font-bold text-[var(--nepal-blue)] shadow-2xs">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+                      <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
+                      <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
+                      <path d="M12 9V4s3.03.55 4 2c1.08 1.62 0 5 0 5" />
+                    </svg>
+                    <span>Dedicated Developer Tier</span>
+                  </div>
+
+                  <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-[var(--text-primary)] leading-tight">
+                    Integrate Nepal Driving License Verification with 4x Higher Limits
+                  </h1>
+
+                  <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+                    Connect your web applications, mobile apps, and automated workflows directly to the mirrored Department of Transport Management (DOTM) database with sustained <strong>60 requests/minute</strong> quota and zero lockout penalties.
+                  </p>
+
+                  <div className="pt-2 flex flex-wrap items-center gap-3">
+                    <a
+                      href="/api/developer/auth/github"
+                      onClick={() => setRedirecting(true)}
+                      className="inline-flex items-center gap-2.5 rounded-2xl bg-black dark:bg-white text-white dark:text-black px-6 py-3.5 text-sm font-bold shadow-lg shadow-black/10 dark:shadow-white/10 hover:opacity-90 active:scale-98 transition cursor-pointer"
+                    >
+                      {redirecting ? (
+                        <>
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-white dark:border-black border-t-transparent" />
+                          <span>Connecting to GitHub...</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path
+                              fillRule="evenodd"
+                              clipRule="evenodd"
+                              d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
+                            />
+                          </svg>
+                          <span>Sign In with GitHub</span>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                            <polyline points="12 5 19 12 12 19" />
+                          </svg>
+                        </>
+                      )}
+                    </a>
+
+                    <Link
+                      href="/developer/login"
+                      className="inline-flex items-center gap-1.5 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-3.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition shadow-xs"
+                    >
+                      <span>Direct Login Portal</span>
+                    </Link>
+                  </div>
+
+                  {/* Quick-Install SDK Command Bar */}
+                  <div className="pt-2">
+                    <div className="inline-flex items-center justify-between gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/80 px-3.5 py-2 font-mono text-xs shadow-2xs max-w-full">
+                      <div className="flex items-center gap-2 truncate">
+                        <span className="text-[var(--text-muted)] select-none">$</span>
+                        <span className="text-[var(--text-primary)] font-bold truncate">npm i nepal-license-checker</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={copyNpm}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1 text-[11px] font-bold text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)] transition active:scale-95 cursor-pointer shadow-2xs shrink-0"
+                        title="Copy npm install command"
+                      >
+                        {copiedNpm ? (
+                          <>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--success)]" aria-hidden="true">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            <span className="text-[var(--success)]">Copied</span>
+                          </>
+                        ) : (
+                          <>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                              <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                            </svg>
+                            <span>Copy</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
-                <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-[var(--text-primary)] leading-tight">
-                  Integrate Nepal Driving License Verification with 4x Higher Limits
-                </h1>
+                {/* Right Column: Spatial Glass Terminal Preview */}
+                <div className="lg:col-span-5 perspective-container">
+                  <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/90 backdrop-blur-md shadow-2xl overflow-hidden text-xs font-mono">
+                    {/* Window Titlebar */}
+                    <div className="flex items-center justify-between border-b border-[var(--border-default)] px-3.5 py-2.5 bg-[var(--surface-primary)]/80">
+                      <div className="flex items-center gap-1.5">
+                        <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f56]" />
+                        <span className="h-2.5 w-2.5 rounded-full bg-[#ffbd2e]" />
+                        <span className="h-2.5 w-2.5 rounded-full bg-[#27c93f]" />
+                      </div>
+                      <span className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-wider">
+                        GET /api/license
+                      </span>
+                    </div>
 
-                <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
-                  Connect your web applications, mobile apps, and automated workflows directly to the mirrored Department of Transport Management (DOTM) database with sustained <strong>60 requests/minute</strong> quota and zero lockout penalties.
-                </p>
+                    {/* Terminal Body */}
+                    <div className="p-3.5 space-y-2.5 text-[11px] leading-relaxed select-none">
+                      <div className="flex items-center justify-between pb-2 border-b border-[var(--border-default)]/60 text-[10px]">
+                        <div className="flex items-center gap-1.5">
+                          <span className="rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold px-1.5 py-0.5">
+                            HTTP 200 OK
+                          </span>
+                          <span className="text-[var(--text-muted)]">~38ms edge</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-[var(--text-muted)]">
+                          <span>Limit:</span>
+                          <span className="text-[var(--nepal-blue)] font-bold">60</span>
+                          <span className="ml-1">Remaining:</span>
+                          <span className="text-[var(--success)] font-bold">59</span>
+                        </div>
+                      </div>
 
-                <div className="pt-3 flex flex-wrap items-center gap-3">
-                  <a
-                    href="/api/developer/auth/github"
-                    onClick={() => setRedirecting(true)}
-                    className="inline-flex items-center gap-2.5 rounded-2xl bg-black dark:bg-white text-white dark:text-black px-6 py-3.5 text-sm font-bold shadow-lg shadow-black/10 dark:shadow-white/10 hover:opacity-90 active:scale-98 transition cursor-pointer"
-                  >
-                    {redirecting ? (
-                      <>
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white dark:border-black border-t-transparent" />
-                        <span>Connecting to GitHub...</span>
-                      </>
-                    ) : (
-                      <>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                          <path
-                            fillRule="evenodd"
-                            clipRule="evenodd"
-                            d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
-                          />
-                        </svg>
-                        <span>Sign In with GitHub</span>
-                        <span className="font-mono text-xs opacity-80">→</span>
-                      </>
-                    )}
-                  </a>
-
-                  <Link
-                    href="/developer/login"
-                    className="inline-flex items-center gap-1.5 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-3.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition shadow-xs"
-                  >
-                    <span>Direct Login Portal</span>
-                  </Link>
+                      <pre className="text-[10.5px] leading-relaxed text-[var(--text-primary)] overflow-x-auto">
+{`{
+  "status": "success",
+  "isReady": true,
+  "data": {
+    "license_number": "01-01-12345678",
+    "holder_name": "Nischal Acharya",
+    "license_status": "PRINTED_READY",
+    "office": "Jhapa"
+  }
+}`}
+                      </pre>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Feature Cards Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-5 space-y-2 shadow-2xs hover-lift">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--nepal-blue)]/10 text-[var(--nepal-blue)] font-bold text-lg">
-                  ⚡
+              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-5 space-y-2.5 shadow-2xs hover-lift dev-glass-card">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--nepal-blue)]/10 text-[var(--nepal-blue)]">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                  </svg>
                 </div>
                 <h3 className="text-sm font-bold text-[var(--text-primary)]">60 Requests / Minute</h3>
                 <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
@@ -638,9 +773,11 @@ print("License details:", data.get("data"))`
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-5 space-y-2 shadow-2xs hover-lift">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--success)]/10 text-[var(--success)] font-bold text-lg">
-                  🔑
+              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-5 space-y-2.5 shadow-2xs hover-lift dev-glass-card">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--success)]/10 text-[var(--success)]">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="m21 2-2 2m-1.5 1.5L14 9l-1.5-1.5L11 9l-1-1-1.5 1.5L7 8l-5 5a4 4 0 0 0 6 6l5-5-1.5-1.5L13 11l1.5 1.5 3.5-3.5" />
+                  </svg>
                 </div>
                 <h3 className="text-sm font-bold text-[var(--text-primary)]">Hashed API Keys</h3>
                 <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
@@ -648,9 +785,15 @@ print("License details:", data.get("data"))`
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-5 space-y-2 shadow-2xs hover-lift">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--nepal-red)]/10 text-[var(--nepal-red)] font-bold text-lg">
-                  📦
+              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-5 space-y-2.5 shadow-2xs hover-lift dev-glass-card">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--nepal-red)]/10 text-[var(--nepal-red)]">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <polyline points="16.5 9.4 7.55 4.24" />
+                    <polyline points="21 16 12 21 3 16" />
+                    <polyline points="3.29 7 12 12 20.71 7" />
+                    <line x1="12" y1="22" x2="12" y2="12" />
+                    <path d="m12 2 9 5-9 5-9-5 9-5z" />
+                  </svg>
                 </div>
                 <h3 className="text-sm font-bold text-[var(--text-primary)]">Official TypeScript SDK</h3>
                 <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
@@ -658,9 +801,11 @@ print("License details:", data.get("data"))`
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-5 space-y-2 shadow-2xs hover-lift">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold text-lg">
-                  📊
+              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-5 space-y-2.5 shadow-2xs hover-lift dev-glass-card">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                  </svg>
                 </div>
                 <h3 className="text-sm font-bold text-[var(--text-primary)]">RFC Rate Headers</h3>
                 <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
@@ -673,7 +818,7 @@ print("License details:", data.get("data"))`
             <DeveloperShowcaseChart />
 
             {/* Comparison Box */}
-            <div className="rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 sm:p-8 space-y-5 shadow-sm">
+            <div className="rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 sm:p-8 space-y-5 shadow-sm dev-glass-card">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h2 className="text-lg font-bold text-[var(--text-primary)]">Access Tier Comparison</h2>
@@ -800,7 +945,9 @@ print("License details:", data.get("data"))`
 
             <div className="flex items-center gap-2 text-xs truncate">
               <span className="font-extrabold tracking-tight text-[var(--nepal-blue)] hidden sm:inline-flex items-center gap-1.5 shrink-0">
-                <span>⚡</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                </svg>
                 <span>Developer Portal</span>
               </span>
               <span className="text-[var(--border-default)] hidden sm:inline">/</span>
@@ -823,12 +970,10 @@ print("License details:", data.get("data"))`
           {/* Quick Actions & Telemetry Controls */}
           <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
             {/* Live Tier Badge */}
-            <div className="hidden lg:flex items-center gap-1.5 rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 font-mono text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            <div className="hidden lg:flex items-center gap-1.5 rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 font-mono text-[11px] font-bold text-emerald-600 dark:text-emerald-400 shadow-2xs">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
               <span>60 req/min Tier</span>
             </div>
-
-
 
             {/* Active Keys Pill */}
             {keys.length > 0 && (
@@ -838,7 +983,9 @@ print("License details:", data.get("data"))`
                 className="hidden xl:inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1.5 text-xs font-bold text-[var(--text-primary)] hover:border-[var(--nepal-blue)] transition cursor-pointer shadow-2xs"
                 title="Manage active API keys"
               >
-                <span>🔑</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]" aria-hidden="true">
+                  <path d="m21 2-2 2m-1.5 1.5L14 9l-1.5-1.5L11 9l-1-1-1.5 1.5L7 8l-5 5a4 4 0 0 0 6 6l5-5-1.5-1.5L13 11l1.5 1.5 3.5-3.5" />
+                </svg>
                 <span className="text-[var(--nepal-blue)]">
                   {keys.filter((k) => k.is_active).length} Active
                 </span>
@@ -853,10 +1000,13 @@ print("License details:", data.get("data"))`
             {/* SDK Docs Link */}
             <Link
               href="/developer/docs"
-              className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-xs font-bold text-[var(--text-primary)] hover:text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)] transition shadow-2xs shrink-0 flex items-center gap-1"
+              className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-xs font-bold text-[var(--text-primary)] hover:text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)] transition shadow-2xs shrink-0 flex items-center gap-1.5"
             >
               <span>Docs</span>
-              <span>↗</span>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <line x1="7" y1="17" x2="17" y2="7" />
+                <polyline points="7 7 17 7 17 17" />
+              </svg>
             </Link>
           </div>
         </header>
@@ -876,8 +1026,12 @@ print("License details:", data.get("data"))`
               type="button"
               onClick={() => setErrorMessage(null)}
               className="font-bold hover:underline cursor-pointer"
+              aria-label="Dismiss error banner"
             >
-              ✕
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
             </button>
           </div>
         )}
@@ -886,7 +1040,11 @@ print("License details:", data.get("data"))`
         {keys.some((k) => !k.is_active) && (
           <div className="mx-4 sm:mx-8 mt-4 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-xs text-rose-700 dark:text-rose-300 flex items-start gap-3 animate-fade-in shadow-xs">
             <div className="flex h-6 w-6 items-center justify-center rounded-xl bg-rose-500/20 text-rose-600 dark:text-rose-400 shrink-0 text-sm font-bold">
-              ⚠️
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
             </div>
             <div className="flex-1 space-y-0.5">
               <p className="font-bold text-rose-800 dark:text-rose-200">
@@ -917,11 +1075,14 @@ print("License details:", data.get("data"))`
 
             {/* Quick-Start Onboarding Checklist for New Developers (shown if 0 keys) */}
             {keys.length === 0 && (
-              <div className="rounded-3xl border border-[var(--nepal-blue)]/30 bg-gradient-to-br from-[var(--nepal-blue)]/10 via-[var(--surface-primary)] to-[var(--surface-primary)] p-6 sm:p-7 shadow-sm space-y-4 animate-rise-in">
+              <div className="rounded-3xl border border-[var(--nepal-blue)]/30 bg-gradient-to-br from-[var(--nepal-blue)]/10 via-[var(--surface-primary)] to-[var(--surface-primary)] p-6 sm:p-7 shadow-sm space-y-4 animate-rise-in dev-glass-card">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5">
                     <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--nepal-blue)] text-white text-sm font-bold shadow-xs">
-                      🚀
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+                        <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
+                      </svg>
                     </span>
                     <div>
                       <h3 className="text-sm font-bold text-[var(--text-primary)]">Quick Setup Checklist</h3>
@@ -936,7 +1097,9 @@ print("License details:", data.get("data"))`
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                   <div className="flex items-center gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3.5 shadow-2xs">
                     <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--success)] text-white text-xs font-bold">
-                      ✓
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
                     </span>
                     <div>
                       <span className="text-xs font-bold text-[var(--text-primary)] block">1. GitHub Connected</span>
@@ -974,7 +1137,7 @@ print("License details:", data.get("data"))`
             )}
 
             {/* Developer Profile Header Card */}
-            <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 sm:p-7 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 sm:p-7 shadow-sm dev-glass-card">
               <div className="flex items-center gap-4">
                 {profile.avatar_url ? (
                   <Image
@@ -998,8 +1161,11 @@ print("License details:", data.get("data"))`
                     <span className="rounded-md bg-[var(--bg-secondary)] px-2 py-0.5 font-mono text-xs font-semibold text-[var(--text-secondary)] border border-[var(--border-default)]">
                       @{profile.username}
                     </span>
-                    <span className="inline-flex items-center rounded-full bg-[var(--success)]/10 px-2.5 py-0.5 text-[10px] font-bold text-[var(--success)]">
-                      Verified Developer
+                    <span className="inline-flex items-center gap-1 rounded-full bg-[var(--success)]/10 px-2.5 py-0.5 text-[10px] font-bold text-[var(--success)]">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                      <span>Verified Developer</span>
                     </span>
                   </div>
                   <p className="text-xs text-[var(--text-muted)] mt-1">
@@ -1012,33 +1178,60 @@ print("License details:", data.get("data"))`
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3.5 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--danger)] hover:border-[var(--danger)]/40 transition cursor-pointer"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3.5 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--danger)] hover:border-[var(--danger)]/40 transition cursor-pointer"
                 >
-                  Sign Out
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
+                    <line x1="12" y1="2" x2="12" y2="12" />
+                  </svg>
+                  <span>Sign Out</span>
                 </button>
               </div>
             </div>
 
             {/* 4 Metric KPI Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 sm:gap-4">
-              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 space-y-1 shadow-2xs hover-lift transition-all duration-200 hover:border-[var(--nepal-blue)]/40 hover:shadow-sm">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Quota Limit</span>
+              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 space-y-2 shadow-2xs hover-lift transition-all duration-200 hover:border-[var(--nepal-blue)]/40 hover:shadow-sm dev-glass-card">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Quota Limit</span>
+                  <div className="h-7 w-7 rounded-lg bg-[var(--nepal-blue)]/10 text-[var(--nepal-blue)] flex items-center justify-center">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                    </svg>
+                  </div>
+                </div>
                 <p className="text-xl sm:text-2xl font-black text-[var(--text-primary)]">60 <span className="text-xs font-normal text-[var(--text-secondary)]">req/min</span></p>
-                <span className="inline-block rounded bg-[var(--nepal-blue)]/10 px-1.5 py-0.5 text-[10px] font-bold text-[var(--nepal-blue)]">
-                  Elevated Tier
+                <span className="inline-flex items-center gap-1 rounded bg-[var(--nepal-blue)]/10 px-1.5 py-0.5 text-[10px] font-bold text-[var(--nepal-blue)]">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--nepal-blue)]" />
+                  <span>Elevated Tier</span>
                 </span>
               </div>
 
-              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 space-y-1 shadow-2xs hover-lift transition-all duration-200 hover:border-[var(--success)]/40 hover:shadow-sm">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Rate Window</span>
+              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 space-y-2 shadow-2xs hover-lift transition-all duration-200 hover:border-[var(--success)]/40 hover:shadow-sm dev-glass-card">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Rate Window</span>
+                  <div className="h-7 w-7 rounded-lg bg-[var(--success)]/10 text-[var(--success)] flex items-center justify-center">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                  </div>
+                </div>
                 <p className="text-xl sm:text-2xl font-black text-[var(--text-primary)]">60s <span className="text-xs font-normal text-[var(--text-secondary)]">sliding</span></p>
                 <span className="inline-block rounded bg-[var(--success)]/10 px-1.5 py-0.5 text-[10px] font-bold text-[var(--success)]">
                   0s Lockout Penalty
                 </span>
               </div>
 
-              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 space-y-1 shadow-2xs hover-lift transition-all duration-200 hover:border-[var(--nepal-blue)]/40 hover:shadow-sm">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Active Keys</span>
+              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 space-y-2 shadow-2xs hover-lift transition-all duration-200 hover:border-[var(--nepal-blue)]/40 hover:shadow-sm dev-glass-card">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Active Keys</span>
+                  <div className="h-7 w-7 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="m21 2-2 2m-1.5 1.5L14 9l-1.5-1.5L11 9l-1-1-1.5 1.5L7 8l-5 5a4 4 0 0 0 6 6l5-5-1.5-1.5L13 11l1.5 1.5 3.5-3.5" />
+                    </svg>
+                  </div>
+                </div>
                 <p className="text-xl sm:text-2xl font-black text-[var(--text-primary)]">
                   {keys.filter((k) => k.is_active).length} <span className="text-xs font-normal text-[var(--text-secondary)]">/ {maxKeys} max</span>
                 </p>
@@ -1053,8 +1246,15 @@ print("License details:", data.get("data"))`
                 )}
               </div>
 
-              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 space-y-1 shadow-2xs hover-lift transition-all duration-200 hover:border-purple-500/40 hover:shadow-sm">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Total Queries</span>
+              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 space-y-2 shadow-2xs hover-lift transition-all duration-200 hover:border-purple-500/40 hover:shadow-sm dev-glass-card">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Total Queries</span>
+                  <div className="h-7 w-7 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                    </svg>
+                  </div>
+                </div>
                 <p className="text-xl sm:text-2xl font-black text-[var(--text-primary)]">
                   {keys.reduce((sum, k) => sum + (k.total_requests || 0), 0).toLocaleString()}
                 </p>
@@ -1066,67 +1266,91 @@ print("License details:", data.get("data"))`
           </div>
 
           {/* API Analytics & Visual Traffic Section */}
-          <div id="section-analytics" className="rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 sm:p-8 shadow-sm space-y-6 scroll-mt-24 hover:border-[var(--nepal-blue)]/30 transition-colors">
-              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border-default)] pb-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">
-                      API Analytics & Traffic Visualizer
-                    </h2>
-                    <span className="rounded-full bg-[var(--nepal-blue)]/10 px-2.5 py-0.5 text-[10px] font-bold text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/20">
-                      Live Telemetry
-                    </span>
-                  </div>
-                  <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-                    Monitor request throughput, rate limits, status distribution, and edge response latency.
-                  </p>
+          <div id="section-analytics" className="dev-glass-card rounded-3xl p-6 sm:p-8 shadow-sm space-y-6 scroll-mt-24 transition-all duration-300 relative overflow-hidden">
+            {/* Ambient decorative backdrop blur */}
+            <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-[var(--nepal-blue)]/5 blur-3xl" />
+
+            <div className="relative flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border-default)] pb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">
+                    API Analytics & Traffic Visualizer
+                  </h2>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--nepal-blue)]/10 px-2.5 py-0.5 text-[10px] font-bold text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/20">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[var(--nepal-blue)] animate-pulse" />
+                    Live Telemetry
+                  </span>
                 </div>
+                <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                  Monitor request throughput, rate limits, status distribution, and edge response latency.
+                </p>
+              </div>
 
-                <div className="flex flex-wrap items-center gap-2.5">
-                  {analyticsData && (
-                    <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
-                      <div className="flex items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2.5 py-1">
-                        <span className="text-[var(--text-muted)]">Success Rate:</span>
-                        <span className="font-bold text-[var(--success)]">{analyticsData.summary.successRate}%</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2.5 py-1">
-                        <span className="text-[var(--text-muted)]">Avg Latency:</span>
-                        <span className="font-bold text-purple-600 dark:text-purple-400">
-                          ⚡ {analyticsData.summary.avgLatencyMs}ms
-                        </span>
-                      </div>
+              <div className="flex flex-wrap items-center gap-2.5">
+                {analyticsData && (
+                  <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
+                    <div className="flex items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2.5 py-1">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                      <span className="text-[var(--text-muted)]">Success Rate:</span>
+                      <span className="font-bold text-[var(--success)]">{analyticsData.summary.successRate}%</span>
                     </div>
-                  )}
-
-                  {/* Action Controls Group (Refresh + Auto Toggle) */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => void loadAnalytics(timeframe, true)}
-                      disabled={analyticsLoading}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer active:scale-95 shadow-2xs shrink-0"
-                      title="Force refresh telemetry from server (bypasses cache)"
-                    >
-                      <span className={analyticsLoading ? 'animate-spin' : ''}>↻</span>
-                      <span>Refresh</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setAutoRefresh((prev) => !prev)}
-                      className={`inline-flex items-center justify-center gap-1.5 rounded-xl border px-2.5 py-1 text-xs font-medium transition cursor-pointer shadow-2xs w-[86px] min-w-[86px] shrink-0 ${
-                        autoRefresh
-                          ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold'
-                          : 'border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-                      }`}
-                      title={autoRefresh ? '30s auto-refresh active (pauses when tab is hidden to save DB reads)' : 'Enable 30s auto-refresh'}
-                    >
-                      <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${autoRefresh ? 'bg-emerald-500' : 'bg-zinc-400'}`} />
-                      <span>{autoRefresh ? 'Auto: 30s' : 'Auto: Off'}</span>
-                    </button>
+                    <div className="flex items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2.5 py-1">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-purple-500" aria-hidden="true">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                      </svg>
+                      <span className="text-[var(--text-muted)]">Avg Latency:</span>
+                      <span className="font-bold text-purple-600 dark:text-purple-400">
+                        {analyticsData.summary.avgLatencyMs}ms
+                      </span>
+                    </div>
                   </div>
+                )}
+
+                {/* Action Controls Group (Refresh + Auto Toggle) */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => void loadAnalytics(timeframe, true)}
+                    disabled={analyticsLoading}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--nepal-blue)]/40 transition cursor-pointer active:scale-95 shadow-2xs shrink-0"
+                    title="Force refresh telemetry from server (bypasses cache)"
+                  >
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className={`text-[var(--text-muted)] ${analyticsLoading ? 'animate-spin text-[var(--nepal-blue)]' : ''}`}
+                      aria-hidden="true"
+                    >
+                      <path d="M21 2v6h-6" />
+                      <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+                      <path d="M3 22v-6h6" />
+                      <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+                    </svg>
+                    <span>Refresh</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setAutoRefresh((prev) => !prev)}
+                    className={`inline-flex items-center justify-center gap-1.5 rounded-xl border px-2.5 py-1 text-xs font-medium transition cursor-pointer shadow-2xs w-[86px] min-w-[86px] shrink-0 ${
+                      autoRefresh
+                        ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold'
+                        : 'border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:border-[var(--nepal-blue)]/30'
+                    }`}
+                    title={autoRefresh ? '30s auto-refresh active (pauses when tab is hidden to save DB reads)' : 'Enable 30s auto-refresh'}
+                  >
+                    <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${autoRefresh ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-400'}`} />
+                    <span>{autoRefresh ? 'Auto: 30s' : 'Auto: Off'}</span>
+                  </button>
                 </div>
               </div>
+            </div>
 
               {/* Responsive Grid: Main Chart (left) and Gauges/Breakdown (right) */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
@@ -1158,23 +1382,36 @@ print("License details:", data.get("data"))`
             </div>
 
             {/* API Keys Management Card */}
-            <div id="section-keys" className="rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 sm:p-8 shadow-sm space-y-6 scroll-mt-24 hover:border-[var(--nepal-blue)]/30 transition-colors">
+            <div id="section-keys" className="dev-glass-card rounded-3xl p-6 sm:p-8 shadow-sm space-y-6 scroll-mt-24 transition-all duration-300 relative overflow-hidden">
               <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border-default)] pb-4">
-                <div>
-                  <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">API Keys</h2>
-                  <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-                    Keys authenticate requests from your servers or via the <code className="font-mono text-[var(--nepal-blue)]">nepal-license-checker</code> SDK.
-                  </p>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--nepal-blue)]/10 text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/20 mt-0.5">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <circle cx="7.5" cy="15.5" r="5.5" />
+                      <path d="m21 2-9.6 9.6" />
+                      <path d="m15.5 7.5 3 3L22 7l-3-3" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">API Keys</h2>
+                    <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                      Keys authenticate requests from your servers or via the <code className="font-mono text-[var(--nepal-blue)]">nepal-license-checker</code> SDK.
+                    </p>
+                  </div>
                 </div>
 
-                <span className="text-xs font-semibold text-[var(--text-muted)]">
-                  {keys.filter((k) => k.is_active).length} of {maxKeys} active
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3 py-1 text-xs font-semibold text-[var(--text-muted)]">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>{keys.filter((k) => k.is_active).length} of {maxKeys} active</span>
+                  </span>
                   {keys.some((k) => !k.is_active) && (
-                    <span className="ml-1.5 font-bold text-rose-600 dark:text-rose-400">
-                      ({keys.filter((k) => !k.is_active).length} suspended)
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-500/30 bg-rose-500/10 px-2.5 py-1 text-xs font-bold text-rose-600 dark:text-rose-400">
+                      <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+                      <span>{keys.filter((k) => !k.is_active).length} suspended</span>
                     </span>
                   )}
-                </span>
+                </div>
               </div>
 
               {/* Create Key Form */}
@@ -1188,7 +1425,7 @@ print("License details:", data.get("data"))`
                       onChange={(e) => setKeyName(e.target.value)}
                       placeholder="e.g. Production Web App, Mobile Backend, Discord Bot"
                       maxLength={50}
-                      className="flex-1 min-w-[240px] rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3.5 py-2.5 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--nepal-blue)] focus:outline-hidden transition"
+                      className="flex-1 min-w-[240px] rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3.5 py-2.5 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--nepal-blue)] focus:outline-hidden transition shadow-2xs"
                     />
                     <button
                       type="submit"
@@ -1202,7 +1439,10 @@ print("License details:", data.get("data"))`
                         </>
                       ) : (
                         <>
-                          <span>+</span>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <line x1="12" y1="5" x2="12" y2="19" />
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                          </svg>
                           <span>Generate API Key</span>
                         </>
                       )}
@@ -1223,7 +1463,7 @@ print("License details:", data.get("data"))`
                         className={`rounded-lg border px-2 py-0.5 text-[10px] font-medium transition cursor-pointer ${
                           activePreset === preset
                             ? 'border-[var(--nepal-blue)] bg-[var(--nepal-blue)]/10 text-[var(--nepal-blue)]'
-                            : 'border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                            : 'border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--nepal-blue)]/30'
                         }`}
                       >
                         {preset}
@@ -1232,8 +1472,12 @@ print("License details:", data.get("data"))`
                   </div>
                 </div>
               ) : (
-                <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-4 text-xs text-[var(--text-muted)] flex items-center gap-2">
-                  <span>ℹ️</span>
+                <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-4 text-xs text-[var(--text-muted)] flex items-center gap-2.5">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)] shrink-0" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                  </svg>
                   <span>You have reached the maximum quota of {maxKeys} active API keys. Revoke an unused key below to generate a new one.</span>
                 </div>
               )}
@@ -1251,14 +1495,14 @@ print("License details:", data.get("data"))`
                   {keys.map((k) => (
                     <div
                       key={k.id}
-                      className={`flex flex-col gap-3.5 rounded-2xl border p-4 sm:p-5 shadow-2xs transition ${
+                      className={`hover-lift flex flex-col gap-3.5 rounded-2xl border p-4 sm:p-5 shadow-2xs transition-all duration-300 ${
                         k.is_active
                           ? 'border-[var(--border-default)] bg-[var(--surface-primary)] hover:border-[var(--nepal-blue)]/50'
                           : 'border-rose-500/40 bg-rose-500/[0.03] hover:border-rose-500/60'
                       }`}
                     >
                       <div className="flex flex-wrap items-center justify-between gap-3.5">
-                        <div className="space-y-1.5 flex-1 min-w-[260px]">
+                        <div className="space-y-2 flex-1 min-w-[260px]">
                           {editingKeyId === k.id ? (
                             <div className="flex items-center gap-2">
                               <input
@@ -1300,19 +1544,22 @@ print("License details:", data.get("data"))`
                               <button
                                 type="button"
                                 onClick={() => handleStartRename(k.id, k.name)}
-                                className="text-[11px] text-[var(--text-muted)] hover:text-[var(--nepal-blue)] transition cursor-pointer"
+                                className="inline-flex items-center gap-1 text-[11px] text-[var(--text-muted)] hover:text-[var(--nepal-blue)] transition cursor-pointer"
                                 title="Rename this key"
                               >
-                                ✎ Rename
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                                </svg>
+                                <span>Rename</span>
                               </button>
                               {k.is_active ? (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-[var(--success)]/10 px-2.5 py-0.5 text-[10px] font-bold text-[var(--success)]">
-                                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--success)]" />
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--success)]/10 px-2.5 py-0.5 text-[10px] font-bold text-[var(--success)] border border-[var(--success)]/20">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--success)] animate-pulse" />
                                   Active
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/15 border border-rose-500/30 px-2.5 py-0.5 text-[10px] font-bold text-rose-600 dark:text-rose-400">
-                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-500/15 border border-rose-500/30 px-2.5 py-0.5 text-[10px] font-bold text-rose-600 dark:text-rose-400">
+                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
                                     <circle cx="12" cy="12" r="10" />
                                     <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
                                   </svg>
@@ -1322,47 +1569,68 @@ print("License details:", data.get("data"))`
                             </div>
                           )}
 
-                          <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--text-secondary)] font-mono">
-                            <span className="rounded bg-[var(--bg-secondary)] px-2 py-0.5 border border-[var(--border-default)] font-bold text-[var(--text-primary)]">
+                          <div className="flex flex-wrap items-center gap-2.5 text-xs text-[var(--text-secondary)] font-mono">
+                            <span className="rounded-lg bg-[var(--bg-secondary)] px-2.5 py-1 border border-[var(--border-default)] font-bold text-[var(--text-primary)]">
                               {k.key_prefix}
                             </span>
-                            <span>•</span>
-                            <span className="text-[var(--nepal-blue)] font-bold">
+                            <span className="text-[var(--border-default)]">•</span>
+                            <span className="text-[var(--nepal-blue)] font-bold tabular-nums">
                               {(k.total_requests || 0).toLocaleString()} queries
                             </span>
-                            <span>•</span>
-                            <span>{k.rate_limit_per_minute} req/min</span>
-                            <span>•</span>
-                            <span className="text-[var(--text-muted)]">
+                            <span className="text-[var(--border-default)]">•</span>
+                            <span className="tabular-nums">{k.rate_limit_per_minute} req/min</span>
+                            <span className="text-[var(--border-default)]">•</span>
+                            <span className="text-[var(--text-muted)] text-[11px]">
                               Created: {new Date(k.created_at).toLocaleDateString()}
                             </span>
-                            <span>•</span>
-                            <span className="text-[var(--text-muted)]">
+                            <span className="text-[var(--border-default)]">•</span>
+                            <span className="text-[var(--text-muted)] text-[11px]">
                               {k.last_used_at ? `Last used: ${new Date(k.last_used_at).toLocaleDateString()}` : 'Never used yet'}
                             </span>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 shrink-0">
                           <button
                             type="button"
                             onClick={() => handleRotateKey(k.id, k.name)}
                             disabled={rotatingKeyId === k.id || !k.is_active}
-                            className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${
+                            className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition shadow-2xs ${
                               !k.is_active
                                 ? 'border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-muted)] opacity-50 cursor-not-allowed'
-                                : 'border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)]/50 cursor-pointer'
+                                : 'border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)]/50 cursor-pointer active:scale-95'
                             }`}
                             title={!k.is_active ? 'Suspended keys cannot be rotated' : 'Generate a fresh secret key while keeping this key configuration'}
                           >
-                            {rotatingKeyId === k.id ? 'Rotating...' : '⟳ Rotate Secret'}
+                            <svg
+                              width="12"
+                              height="12"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2.2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className={rotatingKeyId === k.id ? 'animate-spin text-[var(--nepal-blue)]' : ''}
+                              aria-hidden="true"
+                            >
+                              <path d="M21 2v6h-6" />
+                              <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+                              <path d="M3 22v-6h6" />
+                              <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+                            </svg>
+                            <span>{rotatingKeyId === k.id ? 'Rotating...' : 'Rotate Secret'}</span>
                           </button>
                           <button
                             type="button"
                             onClick={() => handleRevokeKey(k.id, k.name)}
-                            className="rounded-xl border border-[var(--danger)]/30 bg-[var(--danger)]/5 px-3 py-1.5 text-xs font-bold text-[var(--danger)] hover:bg-[var(--danger)] hover:text-white transition cursor-pointer"
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--danger)]/30 bg-[var(--danger)]/5 px-3 py-1.5 text-xs font-bold text-[var(--danger)] hover:bg-[var(--danger)] hover:text-white transition active:scale-95 cursor-pointer shadow-2xs"
                           >
-                            Revoke Key
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                            </svg>
+                            <span>Revoke Key</span>
                           </button>
                         </div>
                       </div>
@@ -1370,7 +1638,10 @@ print("License details:", data.get("data"))`
                       {/* Suspended Alert Banner inside Key Card */}
                       {!k.is_active && (
                         <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-700 dark:text-rose-300 flex items-start gap-2.5">
-                          <span className="text-base shrink-0">🚫</span>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-rose-500 shrink-0 mt-0.5" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                          </svg>
                           <div className="space-y-0.5">
                             <p className="font-bold">This API key was suspended by an administrator.</p>
                             <p className="text-[11px] opacity-90 leading-relaxed">
@@ -1386,24 +1657,32 @@ print("License details:", data.get("data"))`
             </div>
 
             {/* Quickstart Integration Code Card */}
-            <div id="section-quickstart" className="rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 sm:p-8 shadow-sm space-y-4 scroll-mt-24 hover:border-[var(--nepal-blue)]/30 transition-colors">
+            <div id="section-quickstart" className="dev-glass-card rounded-3xl p-6 sm:p-8 shadow-sm space-y-5 scroll-mt-24 transition-all duration-300 relative overflow-hidden">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">Quick Integration Guide</h2>
-                  <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-                    Pre-populated with your active API key. Send via <code className="font-mono text-[var(--nepal-blue)]">apiKey</code> in SDK or <code className="font-mono text-[var(--nepal-blue)]">x-api-key</code> HTTP header.
-                  </p>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 mt-0.5">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <polyline points="16 18 22 12 16 6" />
+                      <polyline points="8 6 2 12 8 18" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">Quick Integration Guide</h2>
+                    <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                      Pre-populated with your active API key. Send via <code className="font-mono text-[var(--nepal-blue)]">apiKey</code> in SDK or <code className="font-mono text-[var(--nepal-blue)]">x-api-key</code> HTTP header.
+                    </p>
+                  </div>
                 </div>
 
-                <div className="flex rounded-xl border border-[var(--border-default)] p-0.5 bg-[var(--bg-secondary)]">
+                <div className="flex rounded-xl border border-[var(--border-default)] p-1 bg-[var(--bg-secondary)] shadow-2xs">
                   {(['sdk', 'curl', 'fetch', 'python'] as const).map((tab) => (
                     <button
                       key={tab}
                       type="button"
                       onClick={() => setCodeTab(tab)}
-                      className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
                         codeTab === tab
-                          ? 'bg-[var(--surface-primary)] text-[var(--nepal-blue)] shadow-2xs'
+                          ? 'bg-[var(--surface-primary)] text-[var(--nepal-blue)] shadow-xs'
                           : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
                       }`}
                     >
@@ -1413,38 +1692,78 @@ print("License details:", data.get("data"))`
                 </div>
               </div>
 
-              {/* Code Display */}
-              <div className="relative">
-                <pre className="overflow-x-auto rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-4 sm:p-5 font-mono text-xs leading-relaxed text-[var(--text-primary)]">
+              {/* Code Display with Terminal Chrome */}
+              <div className="relative rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)] overflow-hidden shadow-sm">
+                <div className="flex items-center justify-between border-b border-[var(--border-default)] bg-[var(--surface-primary)]/80 px-4 py-2.5 backdrop-blur-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-3 w-3 rounded-full bg-[#ff5f56] border border-black/10" />
+                      <div className="h-3 w-3 rounded-full bg-[#ffbd2e] border border-black/10" />
+                      <div className="h-3 w-3 rounded-full bg-[#27c93f] border border-black/10" />
+                    </div>
+                    <span className="ml-2 font-mono text-[11px] text-[var(--text-muted)]">
+                      {codeTab === 'sdk' ? 'license-client.ts' : codeTab === 'curl' ? 'request.sh' : codeTab === 'fetch' ? 'fetch-example.js' : 'verify.py'}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(getCodeSnippet(), true)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1 text-[11px] font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--nepal-blue)]/40 transition active:scale-95 cursor-pointer shadow-2xs"
+                  >
+                    {copiedCode ? (
+                      <>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500" aria-hidden="true">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        <span className="text-emerald-500">Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                          <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                        </svg>
+                        <span>Copy Code</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <pre className="overflow-x-auto p-4 sm:p-5 font-mono text-xs leading-relaxed text-[var(--text-primary)]">
                   <code>{getCodeSnippet()}</code>
                 </pre>
-                <button
-                  type="button"
-                  onClick={() => copyToClipboard(getCodeSnippet(), true)}
-                  className="absolute top-3 right-3 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1 text-[11px] font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition active:scale-95 cursor-pointer shadow-2xs"
-                >
-                  {copiedCode ? '✓ Copied' : 'Copy'}
-                </button>
               </div>
             </div>
 
             {/* Live Interactive API Tester & Console */}
-            <div id="section-console" className="rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 sm:p-8 space-y-5 shadow-sm scroll-mt-24 hover:border-[var(--nepal-blue)]/30 transition-colors">
+            <div id="section-console" className="dev-glass-card rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm scroll-mt-24 transition-all duration-300 relative overflow-hidden">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-default)] pb-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">Live API Tester & Console</h2>
-                    <span className="rounded-full bg-[var(--nepal-blue)]/10 px-2.5 py-0.5 text-[10px] font-bold text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/20">
-                      Sandbox
-                    </span>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 mt-0.5">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <polygon points="5 3 19 12 5 21 5 3" />
+                    </svg>
                   </div>
-                  <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-                    Execute live test queries against the mirrored DOTM database with your active API key and inspect RFC rate-limit headers in real-time.
-                  </p>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">Live API Tester & Console</h2>
+                      <span className="rounded-full bg-[var(--nepal-blue)]/10 px-2.5 py-0.5 text-[10px] font-bold text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/20">
+                        Interactive Sandbox
+                      </span>
+                    </div>
+                    <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                      Execute live test queries against the mirrored DOTM database with your active API key and inspect RFC rate-limit headers in real-time.
+                    </p>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-[var(--text-muted)] font-mono">GET /api/license</span>
+                <div className="flex items-center gap-2 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3 py-1.5 shadow-2xs font-mono text-xs">
+                  <span className="inline-flex items-center gap-1.5 font-bold text-emerald-600 dark:text-emerald-400">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                    GET
+                  </span>
+                  <span className="text-[var(--text-muted)]">/api/license</span>
                 </div>
               </div>
 
@@ -1467,24 +1786,28 @@ print("License details:", data.get("data"))`
                           }
                         }}
                         placeholder={newKeyModal?.rawKey || 'Paste raw nlc_live_... key (or leave empty for public search)'}
-                        className="flex-1 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-xs font-mono text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--nepal-blue)] focus:outline-hidden"
+                        className="flex-1 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-xs font-mono text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--nepal-blue)] focus:outline-hidden transition shadow-2xs"
                       />
                       {newKeyModal && (
                         <button
                           type="button"
                           onClick={() => setTestApiKey(newKeyModal.rawKey)}
-                          className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1.5 text-[11px] font-bold text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)] transition shrink-0 cursor-pointer shadow-2xs"
+                          className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1.5 text-[11px] font-bold text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)] transition shrink-0 cursor-pointer shadow-2xs active:scale-95"
                         >
                           Use Fresh Key
                         </button>
                       )}
                     </div>
-                    <span className="text-[10px] text-[var(--text-muted)] mt-1 block">
+                    <span className="text-[10px] text-[var(--text-muted)] mt-1.5 block">
                       Leave blank to test anonymous public search (15 req/min with lockout), or paste your API key for elevated 60 req/min limits.
                     </span>
                     {keys.length > 0 && keys.every((k) => !k.is_active) && (
-                      <div className="mt-2 rounded-xl border border-rose-500/30 bg-rose-500/10 p-2.5 text-[11px] text-rose-700 dark:text-rose-300 flex items-center gap-2">
-                        <span>⚠️</span>
+                      <div className="mt-2.5 rounded-xl border border-rose-500/30 bg-rose-500/10 p-2.5 text-[11px] text-rose-700 dark:text-rose-300 flex items-center gap-2">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-rose-500 shrink-0" aria-hidden="true">
+                          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                          <line x1="12" y1="9" x2="12" y2="13" />
+                          <line x1="12" y1="17" x2="12.01" y2="17" />
+                        </svg>
                         <span>All your API keys are suspended by an administrator. Live sandbox queries with these keys will fail with HTTP 403.</span>
                       </div>
                     )}
@@ -1505,7 +1828,7 @@ print("License details:", data.get("data"))`
                         }
                       }}
                       placeholder="e.g. 01-01-12345678 or ०१-०१-१२३४५६७८"
-                      className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-xs font-mono text-[var(--text-primary)] focus:border-[var(--nepal-blue)] focus:outline-hidden"
+                      className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-xs font-mono text-[var(--text-primary)] focus:border-[var(--nepal-blue)] focus:outline-hidden transition shadow-2xs"
                     />
 
                     {/* Pre-filled Sample Chips */}
@@ -1542,7 +1865,9 @@ print("License details:", data.get("data"))`
                         </>
                       ) : (
                         <>
-                          <span>▶</span>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <polygon points="5 3 19 12 5 21 5 3" />
+                          </svg>
                           <span>Send Test Request</span>
                         </>
                       )}
@@ -1583,7 +1908,12 @@ print("License details:", data.get("data"))`
                           </span>
                           {testDuration !== null && (
                             <div className="flex items-center gap-1.5">
-                              <span className="text-[var(--text-muted)] font-medium">⚡ {testDuration}ms</span>
+                              <span className="inline-flex items-center gap-1 text-[var(--text-muted)] font-medium">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-purple-500" aria-hidden="true">
+                                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                                </svg>
+                                <span>{testDuration}ms</span>
+                              </span>
                               <span
                                 className={`rounded px-1.5 py-0.2 text-[9.5px] font-bold ${
                                   testDuration < 60
@@ -1622,7 +1952,10 @@ print("License details:", data.get("data"))`
                     {/* Suspended Key Callout if 403 received */}
                     {testStatus === 403 && (
                       <div className="mt-2.5 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-700 dark:text-rose-300 flex items-start gap-2.5">
-                        <span className="text-base shrink-0">🚫</span>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-rose-500 shrink-0 mt-0.5" aria-hidden="true">
+                          <circle cx="12" cy="12" r="10" />
+                          <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                        </svg>
                         <div className="space-y-0.5">
                           <p className="font-bold">Key Suspended by Administrator</p>
                           <p className="text-[11px] opacity-90 leading-relaxed">
@@ -1654,41 +1987,68 @@ print("License details:", data.get("data"))`
             </div>
 
             {/* HTTP API Reference Table */}
-            <div id="section-specs" className="rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 sm:p-8 space-y-4 shadow-sm text-xs scroll-mt-24 hover:border-[var(--nepal-blue)]/30 transition-colors">
-              <h2 className="text-base font-bold text-[var(--text-primary)]">HTTP Response Headers Specification</h2>
-              <p className="text-[var(--text-secondary)]">
-                The license API mirrors all standard RFC rate-limiting headers with each request:
-              </p>
+            <div id="section-specs" className="dev-glass-card rounded-3xl p-6 sm:p-8 space-y-5 shadow-sm text-xs scroll-mt-24 transition-all duration-300 relative overflow-hidden">
+              <div className="flex items-start gap-3 border-b border-[var(--border-default)] pb-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--nepal-blue)]/10 text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/20 mt-0.5">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z" />
+                    <path d="M6 6h10" />
+                    <path d="M6 10h10" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">HTTP Response Headers Specification</h2>
+                  <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                    The license API mirrors all standard RFC rate-limiting headers with each request:
+                  </p>
+                </div>
+              </div>
 
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40">
                 <table className="w-full text-left font-mono border-collapse">
                   <thead>
-                    <tr className="border-b border-[var(--border-default)] text-[var(--text-secondary)]">
-                      <th className="py-2.5 px-3 font-bold">Header</th>
-                      <th className="py-2.5 px-3 font-bold">Description</th>
-                      <th className="py-2.5 px-3 font-bold">Example</th>
+                    <tr className="border-b border-[var(--border-default)] bg-[var(--surface-primary)]/80 text-[var(--text-secondary)]">
+                      <th className="py-3 px-4 font-bold">Header</th>
+                      <th className="py-3 px-4 font-bold">Description</th>
+                      <th className="py-3 px-4 font-bold">Example Value</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--border-default)] text-[var(--text-primary)]">
-                    <tr>
-                      <td className="py-2.5 px-3 text-[var(--nepal-blue)]">X-RateLimit-Limit</td>
-                      <td className="py-2.5 px-3 font-sans">Total requests allowed within the 60s sliding window</td>
-                      <td className="py-2.5 px-3 text-[var(--text-muted)]">60</td>
+                    <tr className="hover:bg-[var(--surface-primary)]/40 transition">
+                      <td className="py-3 px-4 font-semibold text-[var(--nepal-blue)]">
+                        <span className="rounded-md bg-[var(--nepal-blue)]/10 px-2 py-0.5 border border-[var(--nepal-blue)]/20">
+                          X-RateLimit-Limit
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 font-sans text-[var(--text-secondary)]">Total requests allowed within the 60s sliding window</td>
+                      <td className="py-3 px-4 text-[var(--text-primary)] font-bold">60</td>
                     </tr>
-                    <tr>
-                      <td className="py-2.5 px-3 text-[var(--nepal-blue)]">X-RateLimit-Remaining</td>
-                      <td className="py-2.5 px-3 font-sans">Remaining requests before hitting the 429 rate threshold</td>
-                      <td className="py-2.5 px-3 text-[var(--text-muted)]">58</td>
+                    <tr className="hover:bg-[var(--surface-primary)]/40 transition">
+                      <td className="py-3 px-4 font-semibold text-[var(--nepal-blue)]">
+                        <span className="rounded-md bg-[var(--nepal-blue)]/10 px-2 py-0.5 border border-[var(--nepal-blue)]/20">
+                          X-RateLimit-Remaining
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 font-sans text-[var(--text-secondary)]">Remaining requests before hitting the 429 rate threshold</td>
+                      <td className="py-3 px-4 text-emerald-600 dark:text-emerald-400 font-bold">58</td>
                     </tr>
-                    <tr>
-                      <td className="py-2.5 px-3 text-[var(--nepal-blue)]">X-RateLimit-Reset</td>
-                      <td className="py-2.5 px-3 font-sans">Unix epoch timestamp when the current rate limit window resets</td>
-                      <td className="py-2.5 px-3 text-[var(--text-muted)]">1760688000</td>
+                    <tr className="hover:bg-[var(--surface-primary)]/40 transition">
+                      <td className="py-3 px-4 font-semibold text-[var(--nepal-blue)]">
+                        <span className="rounded-md bg-[var(--nepal-blue)]/10 px-2 py-0.5 border border-[var(--nepal-blue)]/20">
+                          X-RateLimit-Reset
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 font-sans text-[var(--text-secondary)]">Unix epoch timestamp when current rate limit window resets</td>
+                      <td className="py-3 px-4 text-[var(--text-muted)]">1760688000</td>
                     </tr>
-                    <tr>
-                      <td className="py-2.5 px-3 text-[var(--nepal-red)]">Retry-After</td>
-                      <td className="py-2.5 px-3 font-sans">Returned on HTTP 429 indicating seconds to wait before retry</td>
-                      <td className="py-2.5 px-3 text-[var(--text-muted)]">35</td>
+                    <tr className="hover:bg-[var(--surface-primary)]/40 transition">
+                      <td className="py-3 px-4 font-semibold text-[var(--nepal-red)]">
+                        <span className="rounded-md bg-rose-500/10 px-2 py-0.5 border border-rose-500/20 text-rose-600 dark:text-rose-400">
+                          Retry-After
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 font-sans text-[var(--text-secondary)]">Returned on HTTP 429 indicating seconds to wait before retry</td>
+                      <td className="py-3 px-4 text-rose-600 dark:text-rose-400 font-bold">35</td>
                     </tr>
                   </tbody>
                 </table>
@@ -1732,14 +2092,19 @@ print("License details:", data.get("data"))`
         {/* Modal: Reveal New Key (Shown Once) */}
         {newKeyModal && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 backdrop-blur-md animate-fade-in"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md animate-fade-in"
             role="dialog"
             aria-modal="true"
           >
-            <div className="relative w-full max-w-lg rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 sm:p-8 shadow-2xl space-y-5 animate-rise-in">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--success)]/15 text-[var(--success)] font-bold text-xl">
-                  ✓
+            <div className="dev-glass-card relative w-full max-w-lg rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 animate-rise-in border border-[var(--border-default)] overflow-hidden">
+              {/* Top ambient highlight */}
+              <div className="pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full bg-emerald-500/10 blur-2xl" />
+
+              <div className="relative flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-500 border border-emerald-500/30">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-[var(--text-primary)]">New API Key Generated</h3>
@@ -1747,19 +2112,41 @@ print("License details:", data.get("data"))`
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-[var(--nepal-red)]/30 bg-[var(--nepal-red)]/10 p-3.5 text-xs text-[var(--nepal-red)] font-medium leading-relaxed">
-                ⚠️ <strong>Important Security Notice:</strong> Please copy this key now. For your security, this raw key will <strong>never be shown again</strong>. If lost, you will need to revoke it and generate a new key.
+              <div className="relative rounded-2xl border border-[var(--nepal-red)]/30 bg-[var(--nepal-red)]/10 p-3.5 text-xs text-[var(--nepal-red)] font-medium leading-relaxed flex items-start gap-2.5">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-red)] shrink-0 mt-0.5" aria-hidden="true">
+                  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+                <div>
+                  <strong>Important Security Notice:</strong> Please copy this key now. For your security, this raw key will <strong>never be shown again</strong>. If lost, you will need to revoke it and generate a new key.
+                </div>
               </div>
 
               {/* Raw Key Display Box */}
-              <div className="flex items-center justify-between gap-2 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-3.5 font-mono text-xs select-all">
+              <div className="flex items-center justify-between gap-2 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-3.5 font-mono text-xs select-all shadow-inner">
                 <span className="truncate text-[var(--text-primary)] font-bold">{newKeyModal.rawKey}</span>
                 <button
                   type="button"
                   onClick={() => copyToClipboard(newKeyModal.rawKey)}
-                  className="rounded-xl bg-[var(--nepal-blue)] px-3.5 py-1.5 text-xs font-bold text-white transition hover:opacity-90 active:scale-95 cursor-pointer shrink-0"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--nepal-blue)] px-3.5 py-1.5 text-xs font-bold text-white transition hover:opacity-90 active:scale-95 cursor-pointer shrink-0 shadow-xs"
                 >
-                  {copiedKey ? '✓ Copied!' : 'Copy Key'}
+                  {copiedKey ? (
+                    <>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                      <span>Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                        <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                      </svg>
+                      <span>Copy Key</span>
+                    </>
+                  )}
                 </button>
               </div>
 
@@ -1768,34 +2155,49 @@ print("License details:", data.get("data"))`
                 <button
                   type="button"
                   onClick={() => copyEnvSnippet(newKeyModal.rawKey)}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--nepal-blue)] transition cursor-pointer shadow-2xs"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--nepal-blue)] transition cursor-pointer shadow-2xs active:scale-95"
                 >
-                  <span>📋</span>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect width="8" height="4" x="8" y="2" rx="1" ry="1" />
+                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                  </svg>
                   <span>{copiedEnv ? '✓ Copied .env!' : 'Copy .env Snippet'}</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => downloadEnvFile(newKeyModal.rawKey)}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer shadow-2xs"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer shadow-2xs active:scale-95"
                 >
-                  <span>💾</span>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
                   <span>Download .env.local</span>
                 </button>
               </div>
 
-              {/* Instant Test Command Preview */}
+              {/* Instant Test Command Preview with Terminal Chrome */}
               <div className="space-y-1.5">
                 <span className="text-[11px] font-bold text-[var(--text-secondary)] block">Instant Test cURL:</span>
-                <pre className="overflow-x-auto rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-2.5 font-mono text-[10.5px] text-[var(--text-primary)]">
-                  <code>{`curl -H "x-api-key: ${newKeyModal.rawKey}" "https://license-checker.acharyanischal.com.np/api/license?number=01-01-12345678"`}</code>
-                </pre>
+                <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] overflow-hidden">
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-[var(--border-default)] bg-[var(--surface-primary)]/60">
+                    <div className="h-2 w-2 rounded-full bg-[#ff5f56]" />
+                    <div className="h-2 w-2 rounded-full bg-[#ffbd2e]" />
+                    <div className="h-2 w-2 rounded-full bg-[#27c93f]" />
+                    <span className="ml-1 font-mono text-[9.5px] text-[var(--text-muted)]">bash</span>
+                  </div>
+                  <pre className="overflow-x-auto p-2.5 font-mono text-[10.5px] text-[var(--text-primary)] leading-relaxed">
+                    <code>{`curl -H "x-api-key: ${newKeyModal.rawKey}" "https://license-checker.acharyanischal.com.np/api/license?number=01-01-12345678"`}</code>
+                  </pre>
+                </div>
               </div>
 
               <div className="pt-2 flex justify-end">
                 <button
                   type="button"
                   onClick={() => setNewKeyModal(null)}
-                  className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-5 py-2 text-xs font-bold text-[var(--text-primary)] hover:bg-[var(--surface-primary)] transition cursor-pointer"
+                  className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-5 py-2 text-xs font-bold text-[var(--text-primary)] hover:bg-[var(--surface-primary)] hover:border-[var(--nepal-blue)]/40 transition cursor-pointer shadow-2xs active:scale-95"
                 >
                   I Have Saved My Key
                 </button>

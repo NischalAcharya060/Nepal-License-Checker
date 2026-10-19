@@ -77,7 +77,18 @@ export default function DeveloperQuotaGauge({
 
       {/* Circular Gauge Centerpiece */}
       <div className="relative flex items-center justify-center my-1">
-        <svg width={size} height={size} className="transform -rotate-90">
+        <svg width={size} height={size} className="transform -rotate-90 overflow-visible">
+          <defs>
+            <linearGradient id="gauge-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor={percentage > 85 ? '#ef4444' : percentage > 60 ? '#f59e0b' : '#3b82f6'} />
+              <stop offset="100%" stopColor={gaugeColor} />
+            </linearGradient>
+            <filter id="gauge-glow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="2.5" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+          </defs>
+
           {/* Background Track Circle */}
           <circle
             cx={center}
@@ -85,7 +96,7 @@ export default function DeveloperQuotaGauge({
             r={radius}
             stroke="currentColor"
             strokeWidth={strokeWidth}
-            className="text-[var(--border-default)]/50 fill-none"
+            className="text-[var(--border-default)]/40 fill-none"
           />
 
           {/* Animated Filled Progress Arc */}
@@ -93,12 +104,13 @@ export default function DeveloperQuotaGauge({
             cx={center}
             cy={center}
             r={radius}
-            stroke={gaugeColor}
+            stroke="url(#gauge-gradient)"
             strokeWidth={strokeWidth}
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
             strokeLinecap="round"
             className="fill-none transition-all duration-700 ease-out"
+            filter={percentage > 0 ? 'url(#gauge-glow)' : undefined}
           />
         </svg>
 

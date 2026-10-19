@@ -82,7 +82,9 @@ export default function SdkDocumentationPage() {
               href="/developer"
               className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--nepal-blue)] bg-[var(--nepal-blue)]/10 px-3 py-1.5 text-xs font-bold text-[var(--nepal-blue)] hover:bg-[var(--nepal-blue)] hover:text-white transition shadow-2xs"
             >
-              <span>⚡</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+              </svg>
               <span>Get API Key (60 req/min)</span>
             </Link>
             <a
@@ -156,11 +158,14 @@ export default function SdkDocumentationPage() {
                 className="h-5"
               />
             </a>
-            <span className="rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-0.5 text-xs font-medium text-[var(--text-secondary)] shadow-2xs">
-              ⚡ Zero Dependencies
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-0.5 text-xs font-medium text-[var(--text-secondary)] shadow-2xs">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" className="text-[var(--nepal-blue)]" aria-hidden="true">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+              </svg>
+              <span>Zero Dependencies</span>
             </span>
             <span className="rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-0.5 text-xs font-medium text-[var(--text-secondary)] shadow-2xs">
-              🇳🇵 Nepali (०-९) Digits
+              Nepali (०-९) Digits
             </span>
           </div>
 
@@ -224,9 +229,18 @@ export default function SdkDocumentationPage() {
               <button
                 type="button"
                 onClick={() => copyCode(getInstallCmd(), 'install')}
-                className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1 text-[11px] font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition active:scale-95 cursor-pointer"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1 text-[11px] font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition active:scale-95 cursor-pointer"
               >
-                {copiedSection === 'install' ? '✓ Copied' : 'Copy'}
+                {copiedSection === 'install' ? (
+                  <>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--success)]" aria-hidden="true">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    <span className="text-[var(--success)]">Copied</span>
+                  </>
+                ) : (
+                  <span>Copy</span>
+                )}
               </button>
             </div>
           </div>
@@ -348,9 +362,18 @@ export async function lookupLicense(licenseNumber: string) {
                   : `const { checkLicense } = require('nepal-license-checker');\n\ncheckLicense('01-01-12345678').then(console.log);`,
                 'quickstart'
               )}
-              className="absolute top-3 right-3 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1 text-[11px] font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition active:scale-95 cursor-pointer shadow-2xs"
+              className="absolute top-3 right-3 inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1 text-[11px] font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition active:scale-95 cursor-pointer shadow-2xs"
             >
-              {copiedSection === 'quickstart' ? '✓ Copied' : 'Copy'}
+              {copiedSection === 'quickstart' ? (
+                <>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--success)]" aria-hidden="true">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  <span className="text-[var(--success)]">Copied</span>
+                </>
+              ) : (
+                <span>Copy</span>
+              )}
             </button>
           </div>
         </section>
@@ -502,8 +525,23 @@ asciiToDevanagariDigits('01-01-12345678'); // '०१-०१-१२३४५६�
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 font-mono text-xs">
               <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-3 space-y-1">
                 <span className="text-[10.5px] font-bold text-[var(--text-muted)] font-sans">Format Validity</span>
-                <p className={`font-bold ${isValidFormat ? 'text-[var(--success)]' : 'text-[var(--danger)]'}`}>
-                  {isValidFormat ? '✓ Valid (XX-XX-XXXXXXXX)' : '✕ Invalid Format'}
+                <p className={`font-bold inline-flex items-center gap-1.5 ${isValidFormat ? 'text-[var(--success)]' : 'text-[var(--danger)]'}`}>
+                  {isValidFormat ? (
+                    <>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                      <span>Valid (XX-XX-XXXXXXXX)</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                      <span>Invalid Format</span>
+                    </>
+                  )}
                 </p>
               </div>
 

@@ -110,7 +110,9 @@ export default function DeveloperLoginPage() {
 
             <div className="space-y-1">
               <div className="inline-flex items-center gap-1.5 rounded-full border border-[var(--nepal-blue)]/30 bg-[var(--nepal-blue)]/10 px-3 py-0.5 text-[11px] font-bold text-[var(--nepal-blue)]">
-                <span>⚡</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                </svg>
                 <span>Developer Portal</span>
               </div>
               <h1 className="text-xl sm:text-2xl font-black tracking-tight text-[var(--text-primary)]">
@@ -158,8 +160,10 @@ export default function DeveloperLoginPage() {
 
             {/* Why GitHub notice */}
             <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/80 p-4 space-y-2 text-xs">
-              <div className="flex items-center gap-1.5 font-bold text-[var(--text-primary)]">
-                <span className="text-[var(--nepal-blue)]">🛡️</span>
+              <div className="flex items-center gap-2 font-bold text-[var(--text-primary)]">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]" aria-hidden="true">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
                 <span>Why GitHub Authentication Only?</span>
               </div>
               <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
@@ -171,19 +175,27 @@ export default function DeveloperLoginPage() {
           {/* Perks Grid */}
           <div className="mt-6 pt-5 border-t border-[var(--border-default)] grid grid-cols-2 gap-3 text-[11px]">
             <div className="flex items-start gap-2">
-              <span className="text-[var(--success)] font-bold">✓</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--success)] shrink-0 mt-0.5" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
               <span className="text-[var(--text-secondary)]"><strong>60 req/min</strong> (4x higher limit)</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-[var(--success)] font-bold">✓</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--success)] shrink-0 mt-0.5" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
               <span className="text-[var(--text-secondary)]"><strong>Up to 3</strong> live API keys</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-[var(--success)] font-bold">✓</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--success)] shrink-0 mt-0.5" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
               <span className="text-[var(--text-secondary)]"><strong>Zero lockout</strong> penalties</span>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-[var(--success)] font-bold">✓</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--success)] shrink-0 mt-0.5" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
               <span className="text-[var(--text-secondary)]"><strong>SDK support</strong> (Node & Browser)</span>
             </div>
           </div>

@@ -94,7 +94,9 @@ export default function DeveloperShowcaseChart() {
             <div className="space-y-2.5 text-xs">
               <div className="flex items-start gap-2.5">
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-[var(--success)]/15 text-[var(--success)] font-bold text-xs">
-                  ✓
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
                 </span>
                 <div>
                   <strong className="text-[var(--text-primary)]">4x Higher Throughput:</strong> Sustained 60 requests every 60-second sliding window without dropping calls.
@@ -102,7 +104,9 @@ export default function DeveloperShowcaseChart() {
               </div>
               <div className="flex items-start gap-2.5">
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-[var(--success)]/15 text-[var(--success)] font-bold text-xs">
-                  ✓
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
                 </span>
                 <div>
                   <strong className="text-[var(--text-primary)]">Zero Lockout Penalties:</strong> Unlike public IP blocks that freeze you for 300 seconds, API keys return RFC standard <code className="font-mono text-[10px]">Retry-After</code> headers.
@@ -110,7 +114,9 @@ export default function DeveloperShowcaseChart() {
               </div>
               <div className="flex items-start gap-2.5">
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-[var(--success)]/15 text-[var(--success)] font-bold text-xs">
-                  ✓
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
                 </span>
                 <div>
                   <strong className="text-[var(--text-primary)]">Cloud Server Safe:</strong> Independent of shared NAT or public IP collisions in AWS, Vercel, or DigitalOcean.
@@ -153,7 +159,9 @@ export default function DeveloperShowcaseChart() {
             <div className="space-y-2.5 text-xs">
               <div className="flex items-start gap-2.5">
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-[var(--nepal-blue)]/15 text-[var(--nepal-blue)] font-bold text-xs">
-                  ⚡
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                  </svg>
                 </span>
                 <div>
                   <strong className="text-[var(--text-primary)]">Edge Mirroring:</strong> Requests execute with minimal latency across Kathmandu and regional nodes.
@@ -161,7 +169,9 @@ export default function DeveloperShowcaseChart() {
               </div>
               <div className="flex items-start gap-2.5">
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-[var(--nepal-blue)]/15 text-[var(--nepal-blue)] font-bold text-xs">
-                  🛡️
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  </svg>
                 </span>
                 <div>
                   <strong className="text-[var(--text-primary)]">99.98% Uptime SLA:</strong> Even when the official DOTM government website is down for maintenance, our replicas remain operational.

@@ -128,7 +128,10 @@ export default function DeveloperSidebar({
                     Nepal License
                   </span>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--nepal-blue)] flex items-center gap-1">
-                    <span>⚡ Dev Portal</span>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" className="text-[var(--nepal-blue)]" aria-hidden="true">
+                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                    </svg>
+                    <span>Dev Portal</span>
                   </span>
                 </div>
               )}
@@ -304,11 +307,19 @@ export default function DeveloperSidebar({
               }`}
             >
               <div className="flex items-center gap-2">
-                <span className="text-[var(--text-muted)] group-hover:text-[var(--nepal-blue)] transition">📖</span>
+                <span className="text-[var(--text-muted)] group-hover:text-[var(--nepal-blue)] transition">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                  </svg>
+                </span>
                 {!isCollapsed && <span>SDK Documentation</span>}
               </div>
               {!isCollapsed && (
-                <span className="text-[10.5px] text-[var(--text-muted)] group-hover:translate-x-0.5 transition-transform">↗</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-muted)] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" aria-hidden="true">
+                  <line x1="7" y1="17" x2="17" y2="7" />
+                  <polyline points="7 7 17 7 17 17" />
+                </svg>
               )}
             </Link>
           </div>
@@ -339,17 +350,25 @@ export default function DeveloperSidebar({
               <Link
                 href="/"
                 title="Return to Public Search"
-                className="flex h-8 w-8 items-center justify-center rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition shadow-2xs"
+                className="flex h-8 w-8 items-center justify-center rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--nepal-blue)] transition shadow-2xs"
+                aria-label="Home"
               >
-                🏠
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                  <polyline points="9 22 9 12 15 12 15 22" />
+                </svg>
               </Link>
               <button
                 type="button"
                 onClick={onLogout}
                 title="Sign out of developer portal"
                 className="flex h-8 w-8 items-center justify-center rounded-xl border border-[var(--danger)]/30 bg-[var(--danger)]/5 text-xs font-bold text-[var(--danger)] hover:bg-[var(--danger)] hover:text-white transition cursor-pointer"
+                aria-label="Sign out"
               >
-                ⏻
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
+                  <line x1="12" y1="2" x2="12" y2="12" />
+                </svg>
               </button>
             </div>
           ) : (
