@@ -73,13 +73,13 @@ export default function AdminPagination({
                         <span>No {itemLabel} found</span>
                     ) : (
                         <span>
-                            Showing <strong className="text-[var(--text-primary)]">{startItem.toLocaleString()}</strong> to{' '}
-                            <strong className="text-[var(--text-primary)]">{endItem.toLocaleString()}</strong> of{' '}
-                            <strong className="text-[var(--text-primary)]">{totalItems.toLocaleString()}</strong> {itemLabel}
+                            Showing <strong className="font-mono tabular-nums text-[var(--text-primary)]">{startItem.toLocaleString()}</strong> to{' '}
+                            <strong className="font-mono tabular-nums text-[var(--text-primary)]">{endItem.toLocaleString()}</strong> of{' '}
+                            <strong className="font-mono tabular-nums text-[var(--text-primary)]">{totalItems.toLocaleString()}</strong> {itemLabel}
                         </span>
                     )}
                     {lastUpdated && (
-                        <span className="ml-2 hidden text-[11px] text-[var(--text-muted)] sm:inline">
+                        <span className="ml-2 hidden text-[11px] font-mono text-[var(--text-muted)] sm:inline">
                             (Updated: {lastUpdated.toLocaleTimeString('en-NP', { timeZone: 'Asia/Kathmandu', hour: '2-digit', minute: '2-digit', second: '2-digit' })} NPT)
                         </span>
                     )}
@@ -119,11 +119,11 @@ export default function AdminPagination({
                     type="button"
                     onClick={() => onPageChange(1)}
                     disabled={currentPage <= 1 || loading}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] text-xs text-[var(--text-secondary)] shadow-2xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] text-xs text-[var(--text-secondary)] shadow-2xs transition active:scale-95 hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
                     title="First page"
                     aria-label="First page"
                 >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                         <polyline points="11 17 6 12 11 7" />
                         <polyline points="18 17 13 12 18 7" />
                     </svg>
@@ -134,11 +134,11 @@ export default function AdminPagination({
                     type="button"
                     onClick={() => onPageChange(Math.max(1, currentPage - 1))}
                     disabled={currentPage <= 1 || loading}
-                    className="inline-flex h-8 items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] shadow-2xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
+                    className="inline-flex h-8 items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] shadow-2xs transition active:scale-95 hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
                     title="Previous page"
                     aria-label="Previous page"
                 >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                         <polyline points="15 18 9 12 15 6" />
                     </svg>
                     <span className="hidden sm:inline">Prev</span>
@@ -166,7 +166,7 @@ export default function AdminPagination({
                                 onClick={() => onPageChange(num)}
                                 disabled={loading}
                                 aria-current={isActive ? 'page' : undefined}
-                                className={`inline-flex h-8 min-w-[32px] items-center justify-center rounded-lg px-2 text-xs font-bold transition shadow-2xs cursor-pointer ${
+                                className={`inline-flex h-8 min-w-[32px] items-center justify-center rounded-lg px-2 text-xs font-bold font-mono tabular-nums transition shadow-2xs active:scale-95 cursor-pointer ${
                                     isActive
                                         ? 'bg-[var(--nepal-blue)] text-white shadow-xs'
                                         : 'border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-secondary)] hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)]'
@@ -179,7 +179,7 @@ export default function AdminPagination({
                 </div>
 
                 {/* Compact Page Display on Mobile (< md) */}
-                <div className="md:hidden px-2 font-mono text-xs font-bold text-[var(--text-secondary)]">
+                <div className="md:hidden px-2 font-mono tabular-nums text-xs font-bold text-[var(--text-secondary)]">
                     {currentPage} / {safeTotalPages}
                 </div>
 
@@ -188,12 +188,12 @@ export default function AdminPagination({
                     type="button"
                     onClick={() => onPageChange(Math.min(safeTotalPages, currentPage + 1))}
                     disabled={currentPage >= safeTotalPages || loading}
-                    className="inline-flex h-8 items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] shadow-2xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
+                    className="inline-flex h-8 items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] shadow-2xs transition active:scale-95 hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
                     title="Next page"
                     aria-label="Next page"
                 >
                     <span className="hidden sm:inline">Next</span>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                         <polyline points="9 18 15 12 9 6" />
                     </svg>
                 </button>
@@ -203,11 +203,11 @@ export default function AdminPagination({
                     type="button"
                     onClick={() => onPageChange(safeTotalPages)}
                     disabled={currentPage >= safeTotalPages || loading}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] text-xs text-[var(--text-secondary)] shadow-2xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] text-xs text-[var(--text-secondary)] shadow-2xs transition active:scale-95 hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
                     title="Last page"
                     aria-label="Last page"
                 >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                         <polyline points="13 17 18 12 13 7" />
                         <polyline points="6 17 11 12 6 7" />
                     </svg>

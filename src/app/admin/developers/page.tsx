@@ -77,71 +77,83 @@ export default function AdminDevelopers(props: any) {
         <div className="space-y-6">
             {/* Top Stat Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-2xs space-y-1">
+                <div className="dev-glass-card hover-lift relative overflow-hidden rounded-2xl border border-[var(--border-default)]/80 bg-[var(--surface-primary)]/80 p-4 sm:p-5 shadow-sm backdrop-blur-md transition-all duration-300 space-y-1">
+                    <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-purple-500 to-transparent opacity-80" />
                     <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] block">
                         Registered Devs
                     </span>
                     <div className="flex items-center justify-between">
-                        <span className="font-mono text-2xl font-black text-[var(--text-primary)]">
+                        <span className="font-mono tabular-nums text-2xl font-black text-[var(--text-primary)]">
                             {developerStats ? developerStats.totalDevelopers.toLocaleString() : devTotal.toLocaleString()}
                         </span>
-                        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold text-xs">
-                            GitHub
+                        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold text-xs shadow-2xs">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
+                            </svg>
                         </span>
                     </div>
-                    <span className="text-[10px] text-[var(--text-muted)]">OAuth authorized accounts</span>
+                    <span className="text-[10.5px] text-[var(--text-muted)]">OAuth authorized accounts</span>
                 </div>
 
-                <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-2xs space-y-1">
+                <div className="dev-glass-card hover-lift relative overflow-hidden rounded-2xl border border-[var(--border-default)]/80 bg-[var(--surface-primary)]/80 p-4 sm:p-5 shadow-sm backdrop-blur-md transition-all duration-300 space-y-1">
+                    <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-[var(--success)] to-transparent opacity-80" />
                     <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] block">
                         Active API Keys
                     </span>
                     <div className="flex items-center justify-between">
-                        <span className="font-mono text-2xl font-black text-[var(--success)]">
+                        <span className="font-mono tabular-nums text-2xl font-black text-[var(--success)]">
                             {developerStats ? developerStats.activeKeys.toLocaleString() : 0}
                         </span>
-                        <span className="text-xs font-mono text-[var(--text-muted)]">
+                        <span className="text-xs font-mono tabular-nums text-[var(--text-muted)]">
                             / {developerStats ? developerStats.totalKeys.toLocaleString() : 0} total
                         </span>
                     </div>
-                    <span className="text-[10px] text-[var(--text-muted)]">60 req/min elevated limit</span>
+                    <span className="text-[10.5px] text-[var(--text-muted)]">Elevated rate quotas active</span>
                 </div>
 
-                <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-2xs space-y-1">
+                <div className="dev-glass-card hover-lift relative overflow-hidden rounded-2xl border border-[var(--border-default)]/80 bg-[var(--surface-primary)]/80 p-4 sm:p-5 shadow-sm backdrop-blur-md transition-all duration-300 space-y-1">
+                    <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-[var(--nepal-blue)] to-transparent opacity-80" />
                     <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] block">
                         Total API Queries
                     </span>
                     <div className="flex items-center justify-between">
-                        <span className="font-mono text-2xl font-black text-[var(--nepal-blue)]">
+                        <span className="font-mono tabular-nums text-2xl font-black text-[var(--nepal-blue)]">
                             {developerStats ? developerStats.totalQueries.toLocaleString() : 0}
                         </span>
-                        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--nepal-blue)]/10 text-[var(--nepal-blue)] font-bold text-xs">
-                            ⚡
+                        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)] shadow-2xs">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                            </svg>
                         </span>
                     </div>
-                    <span className="text-[10px] text-[var(--text-muted)]">Lifetime developer requests</span>
+                    <span className="text-[10.5px] text-[var(--text-muted)]">Lifetime developer requests</span>
                 </div>
 
-                <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 shadow-2xs space-y-1">
+                <div className="dev-glass-card hover-lift relative overflow-hidden rounded-2xl border border-[var(--border-default)]/80 bg-[var(--surface-primary)]/80 p-4 sm:p-5 shadow-sm backdrop-blur-md transition-all duration-300 space-y-1">
+                    <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-emerald-500 to-transparent opacity-80" />
                     <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] block">
                         24h API Volume
                     </span>
                     <div className="flex items-center justify-between">
-                        <span className="font-mono text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                        <span className="font-mono tabular-nums text-2xl font-black text-emerald-600 dark:text-emerald-400">
                             {developerStats ? developerStats.queriesToday.toLocaleString() : 0}
                         </span>
-                        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-xs">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-xs shadow-2xs">
                             Today
                         </span>
                     </div>
-                    <span className="text-[10px] text-[var(--text-muted)]">Telemetry logged requests</span>
+                    <span className="text-[10.5px] text-[var(--text-muted)]">Telemetry logged requests</span>
                 </div>
             </div>
 
             {/* Toolbar: Search, Filters & Export */}
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3.5 sm:p-4 shadow-2xs">
+            <div className="dev-glass-card flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--border-default)]/80 bg-[var(--surface-primary)]/80 p-3.5 sm:p-4 shadow-sm backdrop-blur-md">
                 <div className="flex flex-1 items-center gap-2.5 min-w-[240px]">
                     <div className="relative flex-1">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" aria-hidden="true">
+                            <circle cx="11" cy="11" r="8" />
+                            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                        </svg>
                         <input
                             type="text"
                             value={devSearchFilter}
@@ -153,7 +165,7 @@ export default function AdminDevelopers(props: any) {
                                 })
                             }}
                             placeholder="Search by GitHub username, name, or key prefix..."
-                            className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3 py-2 text-xs font-medium text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--nepal-blue)] focus:outline-hidden"
+                            className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/80 pl-9 pr-8 py-2 text-xs font-medium text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--nepal-blue)] focus:bg-[var(--surface-primary)] focus:outline-hidden"
                         />
                         {devSearchFilter && (
                             <button
@@ -163,8 +175,12 @@ export default function AdminDevelopers(props: any) {
                                     setDevPage(1)
                                 }}
                                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                                aria-label="Clear developer search"
                             >
-                                ✕
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
                             </button>
                         )}
                     </div>
@@ -190,10 +206,14 @@ export default function AdminDevelopers(props: any) {
                         type="button"
                         onClick={exportDevelopersCsv}
                         disabled={developers.length === 0}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--nepal-blue)] transition disabled:opacity-50 cursor-pointer shadow-2xs"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--nepal-blue)] active:scale-95 transition disabled:opacity-50 cursor-pointer shadow-2xs"
                         title="Export developers list to CSV"
                     >
-                        <span>⬇</span>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="7 10 12 15 17 10" />
+                            <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
                         <span className="hidden sm:inline">Export CSV</span>
                     </button>
                 </div>
@@ -201,15 +221,21 @@ export default function AdminDevelopers(props: any) {
 
             {/* Developers List & Key Management */}
             {devLoading ? (
-                <div className="flex items-center justify-center p-12 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)]">
+                <div className="dev-glass-card flex items-center justify-center p-14 rounded-2xl border border-[var(--border-default)]/80 bg-[var(--surface-primary)]/80 backdrop-blur-md">
                     <div className="flex flex-col items-center gap-3">
                         <div className="h-7 w-7 animate-spin rounded-full border-2 border-[var(--nepal-blue)] border-t-transparent" />
                         <span className="text-xs text-[var(--text-secondary)] font-medium">Loading developer accounts...</span>
                     </div>
                 </div>
             ) : developers.length === 0 ? (
-                <div className="text-center p-12 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] space-y-3">
-                    <div className="text-3xl">💻</div>
+                <div className="dev-glass-card text-center p-14 rounded-2xl border border-[var(--border-default)]/80 bg-[var(--surface-primary)]/80 backdrop-blur-md space-y-3">
+                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)] shadow-xs">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <rect x="2" y="3" width="20" height="14" rx="2" />
+                            <line x1="8" y1="21" x2="16" y2="21" />
+                            <line x1="12" y1="17" x2="12" y2="21" />
+                        </svg>
+                    </div>
                     <h3 className="text-sm font-bold text-[var(--text-primary)]">No Developer Accounts Found</h3>
                     <p className="text-xs text-[var(--text-muted)] max-w-sm mx-auto">
                         {devSearchFilter
@@ -222,10 +248,10 @@ export default function AdminDevelopers(props: any) {
                     {developers.map((dev) => (
                         <div
                             key={dev.id}
-                            className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 shadow-2xs space-y-4 hover:border-[var(--nepal-blue)]/40 transition-colors"
+                            className="dev-glass-card hover-lift rounded-2xl border border-[var(--border-default)]/80 bg-[var(--surface-primary)]/85 p-4 sm:p-5 shadow-sm backdrop-blur-md space-y-4 hover:border-[var(--nepal-blue)]/40 transition-colors"
                         >
                             {/* Developer Header Row */}
-                            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-default)] pb-3.5">
+                            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-default)]/60 pb-3.5">
                                 <div className="flex items-center gap-3 min-w-0">
                                     {dev.avatar_url ? (
                                         <Image
@@ -233,11 +259,11 @@ export default function AdminDevelopers(props: any) {
                                             alt={dev.username}
                                             width={42}
                                             height={42}
-                                            className="h-10 w-10 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] object-cover shrink-0"
+                                            className="h-10 w-10 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] object-cover shrink-0 shadow-2xs"
                                             unoptimized
                                         />
                                     ) : (
-                                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--nepal-blue)] font-bold text-white text-sm shrink-0">
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--nepal-blue)] font-bold text-white text-sm shrink-0 shadow-2xs">
                                             {dev.username[0]?.toUpperCase()}
                                         </div>
                                     )}
@@ -255,7 +281,10 @@ export default function AdminDevelopers(props: any) {
                                                 title="Open GitHub Profile"
                                             >
                                                 <span>@{dev.username}</span>
-                                                <span className="text-[9px]">↗</span>
+                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                    <line x1="7" y1="17" x2="17" y2="7" />
+                                                    <polyline points="7 7 17 7 17 17" />
+                                                </svg>
                                             </a>
                                         </div>
                                         <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-muted)] font-mono mt-0.5">
@@ -278,7 +307,7 @@ export default function AdminDevelopers(props: any) {
 
                                 <div className="flex items-center gap-3">
                                     <div className="text-right">
-                                        <span className="font-mono text-sm font-bold text-[var(--nepal-blue)] block leading-tight">
+                                        <span className="font-mono tabular-nums text-sm font-bold text-[var(--nepal-blue)] block leading-tight">
                                             {dev.total_queries.toLocaleString()} queries
                                         </span>
                                         <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider block font-semibold">
@@ -305,8 +334,8 @@ export default function AdminDevelopers(props: any) {
                                                 key={k.id}
                                                 className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border p-3 text-xs transition-colors ${
                                                     k.is_active
-                                                        ? 'border-[var(--border-default)] bg-[var(--bg-secondary)]/40'
-                                                        : 'border-[var(--danger)]/30 bg-[var(--danger)]/5 opacity-75'
+                                                        ? 'border-[var(--border-default)]/80 bg-[var(--bg-secondary)]/50'
+                                                        : 'border-rose-500/30 bg-rose-500/5 opacity-75'
                                                 }`}
                                             >
                                                 <div className="flex flex-wrap items-center gap-2.5 min-w-0">
@@ -314,10 +343,10 @@ export default function AdminDevelopers(props: any) {
                                                         className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold ${
                                                             k.is_active
                                                                 ? 'bg-[var(--success)]/15 text-[var(--success)]'
-                                                                : 'bg-[var(--danger)]/15 text-[var(--danger)]'
+                                                                : 'bg-rose-500/15 text-rose-600 dark:text-rose-400'
                                                         }`}
                                                     >
-                                                        <span className={`h-1.5 w-1.5 rounded-full ${k.is_active ? 'bg-[var(--success)]' : 'bg-[var(--danger)]'}`} />
+                                                        <span className={`h-1.5 w-1.5 rounded-full ${k.is_active ? 'bg-[var(--success)]' : 'bg-rose-500'}`} />
                                                         <span>{k.is_active ? 'Active' : 'Suspended'}</span>
                                                     </span>
 
@@ -330,7 +359,13 @@ export default function AdminDevelopers(props: any) {
                                                         title="Copy key prefix"
                                                     >
                                                         {k.key_prefix}
-                                                        {copiedKey === `key-${k.id}` && <span className="ml-1 text-[var(--success)]">✓</span>}
+                                                        {copiedKey === `key-${k.id}` ? (
+                                                            <span className="ml-1 text-[var(--success)] inline-block">
+                                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" className="inline" aria-hidden="true">
+                                                                    <polyline points="20 6 9 17 4 12" />
+                                                                </svg>
+                                                            </span>
+                                                        ) : null}
                                                     </button>
 
                                                     <span className="text-[var(--text-muted)]">•</span>
@@ -368,15 +403,19 @@ export default function AdminDevelopers(props: any) {
                                                         <button
                                                             type="button"
                                                             onClick={() => handleStartEditRate(k.id, k.rate_limit_per_minute)}
-                                                            className="rounded bg-[var(--nepal-blue)]/10 px-2 py-0.5 font-mono text-[10.5px] font-bold text-[var(--nepal-blue)] hover:bg-[var(--nepal-blue)]/20 transition cursor-pointer"
+                                                            className="inline-flex items-center gap-1 rounded bg-[var(--nepal-blue)]/10 px-2 py-0.5 font-mono tabular-nums text-[10.5px] font-bold text-[var(--nepal-blue)] hover:bg-[var(--nepal-blue)]/20 transition cursor-pointer"
                                                             title="Click to modify rate limit"
                                                         >
-                                                            {k.rate_limit_per_minute} req/min ✎
+                                                            <span>{k.rate_limit_per_minute} req/min</span>
+                                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                                <path d="M12 20h9" />
+                                                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                                                            </svg>
                                                         </button>
                                                     )}
 
                                                     <span className="text-[var(--text-muted)]">•</span>
-                                                    <span className="font-mono text-[11px] text-[var(--text-secondary)]">
+                                                    <span className="font-mono tabular-nums text-[11px] text-[var(--text-secondary)]">
                                                         {k.total_requests.toLocaleString()} queries
                                                     </span>
 
@@ -390,7 +429,7 @@ export default function AdminDevelopers(props: any) {
                                                     <button
                                                         type="button"
                                                         onClick={() => handleToggleKeyActive(k.id, Boolean(k.is_active))}
-                                                        className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition cursor-pointer ${
+                                                        className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition active:scale-95 cursor-pointer ${
                                                             k.is_active
                                                                 ? 'border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500 hover:text-white'
                                                                 : 'border border-[var(--success)]/30 bg-[var(--success)]/10 text-[var(--success)] hover:bg-[var(--success)] hover:text-white'
@@ -403,7 +442,7 @@ export default function AdminDevelopers(props: any) {
                                                     <button
                                                         type="button"
                                                         onClick={() => handleDeleteKey(k.id, k.name)}
-                                                        className="rounded-lg border border-[var(--danger)]/30 bg-[var(--danger)]/5 px-2.5 py-1 text-[11px] font-bold text-[var(--danger)] hover:bg-[var(--danger)] hover:text-white transition cursor-pointer"
+                                                        className="rounded-lg border border-rose-500/30 bg-rose-500/5 px-2.5 py-1 text-[11px] font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-500 hover:text-white transition active:scale-95 cursor-pointer"
                                                         title="Permanently revoke this API key"
                                                     >
                                                         Revoke
