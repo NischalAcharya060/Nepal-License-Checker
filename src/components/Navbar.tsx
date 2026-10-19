@@ -54,7 +54,7 @@ export default function Navbar({
   }
 
   return (
-    <nav className="sticky top-0 z-40 border-b border-[var(--border-default)]/70 bg-[var(--bg-primary)]/80 backdrop-blur-md print:hidden">
+    <nav className="sticky top-0 z-40 border-b border-[var(--border-default)]/70 bg-[var(--surface-primary)]/80 backdrop-blur-xl shadow-xs print:hidden">
       <div className="mx-auto flex w-full max-w-7xl lg:max-w-[1440px] items-center justify-between gap-3 px-4 py-2 sm:px-6 lg:px-8 sm:py-2.5">
         {/* Logo & Portal Branding */}
         <Link
@@ -88,9 +88,13 @@ export default function Navbar({
           <button
             type="button"
             onClick={onOpenOffices}
-            className="hidden items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-[11px] font-semibold text-[var(--text-secondary)] transition hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue-soft)] hover:text-[var(--nepal-blue)] sm:inline-flex"
+            className="hidden items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-[11px] font-semibold text-[var(--text-secondary)] transition hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue-soft)] hover:text-[var(--nepal-blue)] active:scale-95 sm:inline-flex cursor-pointer"
           >
-            <span>🏢</span>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]" aria-hidden="true">
+              <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
+              <path d="M9 22v-4h6v4" />
+              <path d="M8 6h.01M16 6h.01M12 6h.01M12 10h.01M12 14h.01M16 10h.01M16 14h.01M8 10h.01M8 14h.01" />
+            </svg>
             <span>{language === 'ne' ? 'कार्यालयहरू' : 'Offices'}</span>
           </button>
 
@@ -98,9 +102,12 @@ export default function Navbar({
           <button
             type="button"
             onClick={onOpenSms}
-            className="hidden items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-[11px] font-semibold text-[var(--text-secondary)] transition hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue-soft)] hover:text-[var(--nepal-blue)] sm:inline-flex"
+            className="hidden items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-[11px] font-semibold text-[var(--text-secondary)] transition hover:border-emerald-500 hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400 active:scale-95 sm:inline-flex cursor-pointer"
           >
-            <span>📱</span>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500" aria-hidden="true">
+              <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+              <line x1="12" y1="18" x2="12.01" y2="18" />
+            </svg>
             <span>{language === 'ne' ? 'एसएमएस सेवा' : 'SMS Check'}</span>
           </button>
 
@@ -109,10 +116,12 @@ export default function Navbar({
             <button
               type="button"
               onClick={onOpenFeedback}
-              className="hidden items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-[11px] font-semibold text-[var(--text-secondary)] transition hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue-soft)] hover:text-[var(--nepal-blue)] sm:inline-flex"
+              className="hidden items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-[11px] font-semibold text-[var(--text-secondary)] transition hover:border-sky-500 hover:bg-sky-500/10 hover:text-sky-600 dark:hover:text-sky-400 active:scale-95 sm:inline-flex cursor-pointer"
               title={language === 'ne' ? 'प्रतिक्रिया तथा सहायता' : 'Feedback & Support'}
             >
-              <span>💬</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-sky-500" aria-hidden="true">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
               <span>{language === 'ne' ? 'प्रतिक्रिया' : 'Feedback'}</span>
             </button>
           )}
@@ -124,10 +133,12 @@ export default function Navbar({
               const el = document.getElementById('testimonials')
               if (el) el.scrollIntoView({ behavior: 'smooth' })
             }}
-            className="hidden items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-[11px] font-semibold text-[var(--text-secondary)] transition hover:border-amber-500 hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-400 md:inline-flex cursor-pointer"
+            className="hidden items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-[11px] font-semibold text-[var(--text-secondary)] transition hover:border-amber-500 hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-400 active:scale-95 md:inline-flex cursor-pointer"
             title={language === 'ne' ? 'नागरिक समीक्षा तथा अनुभवहरू' : 'Citizen Reviews & Testimonials'}
           >
-            <span>⭐</span>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-500" aria-hidden="true">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
             <span>{language === 'ne' ? 'समीक्षाहरू' : 'Reviews'}</span>
           </button>
 
@@ -136,10 +147,14 @@ export default function Navbar({
             <button
               type="button"
               onClick={onOpenNpm}
-              className="hidden items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-[11px] font-semibold text-[var(--text-secondary)] transition hover:border-[var(--nepal-red)] hover:bg-[var(--nepal-red)]/10 hover:text-[var(--nepal-red)] sm:inline-flex cursor-pointer"
+              className="hidden items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-[11px] font-semibold text-[var(--text-secondary)] transition hover:border-[var(--nepal-red)] hover:bg-[var(--nepal-red)]/10 hover:text-[var(--nepal-red)] active:scale-95 sm:inline-flex cursor-pointer"
               title={language === 'ne' ? 'विकासकर्ता SDK (npm & GitHub Packages)' : 'Developer SDK (npm & GitHub Packages)'}
             >
-              <span className="font-mono text-[10px] font-black text-[var(--nepal-red)]">npm</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-red)]" aria-hidden="true">
+                <path d="M16.5 9.4 7.55 4.24a1.78 1.78 0 0 0-1.8 0l-4 2.31A1.78 1.78 0 0 0 1 8.08v8a1.78 1.78 0 0 0 .75 1.45l4 2.31a1.78 1.78 0 0 0 1.8 0l8.95-5.16" />
+                <polyline points="3.29 7 12 12 20.71 7" />
+                <line x1="12" y1="22" x2="12" y2="12" />
+              </svg>
               <span>{language === 'ne' ? 'SDK प्याकेज' : 'SDK / NPM'}</span>
             </button>
           )}
@@ -240,7 +255,7 @@ export default function Navbar({
 
       {/* Collapsible Mobile Menu Drawer (<sm) */}
       {isMobileMenuOpen && (
-        <div className="border-t border-[var(--border-default)]/70 bg-[var(--bg-primary)]/95 backdrop-blur-md px-4 py-3 sm:hidden animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="border-t border-[var(--border-default)]/70 bg-[var(--surface-primary)]/95 backdrop-blur-xl px-4 py-3 sm:hidden animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="flex flex-col gap-2">
             {/* Install App */}
             <InstallAppButton language={language} variant="tile" />
@@ -255,7 +270,13 @@ export default function Navbar({
               className="flex items-center justify-between rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3.5 py-2.5 text-left transition hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue-soft)] active:scale-[0.99]"
             >
               <div className="flex items-center gap-2.5">
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--nepal-blue-soft)] text-base">🏢</span>
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)]">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
+                    <path d="M9 22v-4h6v4" />
+                    <path d="M8 6h.01M16 6h.01M12 6h.01M12 10h.01M12 14h.01M16 10h.01M16 14h.01M8 10h.01M8 14h.01" />
+                  </svg>
+                </span>
                 <div className="flex flex-col">
                   <span className="text-xs font-bold text-[var(--text-primary)]">
                     {language === 'ne' ? 'यातायात कार्यालयहरू' : 'Transport Offices Directory'}
@@ -277,10 +298,15 @@ export default function Navbar({
                 onOpenSms()
                 setIsMobileMenuOpen(false)
               }}
-              className="flex items-center justify-between rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3.5 py-2.5 text-left transition hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue-soft)] active:scale-[0.99]"
+              className="flex items-center justify-between rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3.5 py-2.5 text-left transition hover:border-emerald-500 hover:bg-emerald-500/10 active:scale-[0.99]"
             >
               <div className="flex items-center gap-2.5">
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-base text-emerald-600 dark:text-emerald-400">📱</span>
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+                    <line x1="12" y1="18" x2="12.01" y2="18" />
+                  </svg>
+                </span>
                 <div className="flex flex-col">
                   <span className="text-xs font-bold text-[var(--text-primary)]">
                     {language === 'ne' ? 'एसएमएस (SMS) सेवा' : 'SMS Print Status Service'}
@@ -305,7 +331,12 @@ export default function Navbar({
               className="flex items-center justify-between rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3.5 py-2.5 text-left transition hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue-soft)] active:scale-[0.99]"
             >
               <div className="flex items-center gap-2.5">
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-base text-amber-600 dark:text-amber-400">🔍</span>
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                </span>
                 <div className="flex flex-col">
                   <span className="text-xs font-bold text-[var(--text-primary)]">
                     {language === 'ne' ? 'लाइसेन्स नम्बर ढाँचा' : 'License Number Format'}
@@ -328,10 +359,14 @@ export default function Navbar({
                   onOpenFeedback()
                   setIsMobileMenuOpen(false)
                 }}
-                className="flex items-center justify-between rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3.5 py-2.5 text-left transition hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue-soft)] active:scale-[0.99]"
+                className="flex items-center justify-between rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3.5 py-2.5 text-left transition hover:border-sky-500 hover:bg-sky-500/10 active:scale-[0.99]"
               >
                 <div className="flex items-center gap-2.5">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-500/10 text-base text-sky-600 dark:text-sky-400">💬</span>
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    </svg>
+                  </span>
                   <div className="flex flex-col">
                     <span className="text-xs font-bold text-[var(--text-primary)]">
                       {language === 'ne' ? 'प्रतिक्रिया तथा सहायता' : 'Feedback & Support'}
@@ -358,7 +393,11 @@ export default function Navbar({
               className="flex items-center justify-between rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3.5 py-2.5 text-left transition hover:border-amber-500 hover:bg-amber-500/10 active:scale-[0.99] cursor-pointer"
             >
               <div className="flex items-center gap-2.5">
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-base text-amber-500">⭐</span>
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
+                </span>
                 <div className="flex flex-col">
                   <span className="text-xs font-bold text-[var(--text-primary)]">
                     {language === 'ne' ? 'नागरिक समीक्षा (Testimonials)' : 'Reviews & Testimonials'}
@@ -384,7 +423,13 @@ export default function Navbar({
                 className="flex items-center justify-between rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3.5 py-2.5 text-left transition hover:border-[var(--nepal-red)] hover:bg-[var(--nepal-red)]/10 active:scale-[0.99]"
               >
                 <div className="flex items-center gap-2.5">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/10 font-mono text-xs font-black text-red-600 dark:text-red-400">npm</span>
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/10 text-[var(--nepal-red)]">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M16.5 9.4 7.55 4.24a1.78 1.78 0 0 0-1.8 0l-4 2.31A1.78 1.78 0 0 0 1 8.08v8a1.78 1.78 0 0 0 .75 1.45l4 2.31a1.78 1.78 0 0 0 1.8 0l8.95-5.16" />
+                      <polyline points="3.29 7 12 12 20.71 7" />
+                      <line x1="12" y1="22" x2="12" y2="12" />
+                    </svg>
+                  </span>
                   <div className="flex flex-col">
                     <span className="text-xs font-bold text-[var(--text-primary)]">
                       {language === 'ne' ? 'विकासकर्ता SDK (npm & GitHub)' : 'Developer SDK (npm & GitHub)'}

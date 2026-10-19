@@ -84,22 +84,25 @@ export default function HeroHeader({
         </p>
       </header>
 
-      {/* Trust & Authority Stats Bar (Antigravity Glass Pill) */}
+      {/* Trust & Authority Stats Bar (Spatial Glass Bar) */}
       <div
-        className="mx-auto mb-6 flex max-w-4xl flex-wrap items-center justify-center gap-x-6 gap-y-2.5 rounded-2xl antigravity-glass-pill px-5 py-3 text-[11px] font-medium text-[var(--text-secondary)] shadow-sm animate-rise-in transition-all duration-300 print:hidden"
+        className="mx-auto mb-6 flex max-w-4xl flex-wrap items-center justify-center gap-x-6 gap-y-2.5 rounded-2xl dev-glass-card hover-lift px-5 py-3 text-[11px] font-medium text-[var(--text-secondary)] shadow-sm animate-rise-in transition-all duration-300 print:hidden"
         style={{ animationDelay: '0.16s' }}
       >
         <span className="inline-flex items-center gap-1.5">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
           </svg>
-          {indexedRecords !== null
-            ? language === 'ne'
-              ? `${indexedRecords.toLocaleString(dateLocale)} अभिलेख`
-              : `${indexedRecords.toLocaleString(dateLocale)} records`
-            : language === 'ne'
-              ? '१ लाख+ अभिलेख'
-              : '100K+ records'}
+          <span className="font-mono tabular-nums font-semibold text-[var(--text-primary)]">
+            {indexedRecords !== null
+              ? language === 'ne'
+                ? `${indexedRecords.toLocaleString(dateLocale)}`
+                : `${indexedRecords.toLocaleString(dateLocale)}`
+              : language === 'ne'
+                ? '१ लाख+'
+                : '100K+'}
+          </span>
+          <span>{language === 'ne' ? 'अभिलेख' : 'records'}</span>
         </span>
 
         {/* Next Scheduled Scraper Sync */}
@@ -108,13 +111,13 @@ export default function HeroHeader({
             className="inline-flex items-center gap-1.5 cursor-help transition hover:text-[var(--nepal-blue)]"
             title={`${language === 'ne' ? 'अर्को तालिकाबद्ध सिङ्क:' : 'Next scheduled sync:'} ${formatNepalDateTime(nextScraperRun, language)} (NPT)`}
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)] animate-pulse">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)] animate-pulse">
               <circle cx="12" cy="12" r="10" />
               <polyline points="12 6 12 12 16 14" />
             </svg>
             <span>
               {nextSyncLabel || (language === 'ne' ? 'अर्को सिङ्क' : 'Next Sync')}:{' '}
-              <strong className="font-semibold text-[var(--text-primary)]">
+              <strong className="font-mono tabular-nums font-bold text-[var(--text-primary)]">
                 {formatTimeUntil(nextScraperRun, language)}
               </strong>
             </span>
@@ -123,17 +126,19 @@ export default function HeroHeader({
 
         {viewCount !== null && (
           <span className="inline-flex items-center gap-1.5 font-semibold text-[var(--text-primary)]">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]">
               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
               <circle cx="12" cy="12" r="3" />
             </svg>
-            <span>{viewCount.toLocaleString(dateLocale)} {viewsLabel}</span>
+            <span className="font-mono tabular-nums font-bold text-[var(--text-primary)]">{viewCount.toLocaleString(dateLocale)}</span>
+            <span className="text-[var(--text-secondary)] font-normal">{viewsLabel}</span>
           </span>
         )}
 
         <span className="inline-flex items-center gap-1.5" title={lastUpdatedAt ? new Date(lastUpdatedAt).toISOString() : undefined}>
-          <span className="inline-flex h-1.5 w-1.5 rounded-full bg-[var(--success)]" />
-          {(language === 'ne' ? 'स्रोत' : 'Source')}: dotm.gov.np
+          <span className="inline-flex h-2 w-2 rounded-full bg-[var(--success)] animate-glow-pulse" />
+          <span className="text-[var(--text-muted)]">{(language === 'ne' ? 'स्रोत' : 'Source')}:</span>
+          <span className="font-mono text-[var(--text-secondary)] font-semibold">dotm.gov.np</span>
         </span>
       </div>
     </>

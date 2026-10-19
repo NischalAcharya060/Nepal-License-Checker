@@ -245,7 +245,7 @@ export default function LicenseForm({
           inputRef.current?.focus()
           toast.success(
             `${copy.pastedToast || (language === 'ne' ? 'लाइसेन्स नम्बर पेस्ट गरियो' : 'License number pasted')}: ${formatted}`,
-            { id: 'paste-license', icon: '📋' }
+            { id: 'paste-license' }
           )
           return
         } else {
@@ -297,7 +297,7 @@ export default function LicenseForm({
         onReset()
         toast.success(
           `${copy.pastedToast || (language === 'ne' ? 'लाइसेन्स नम्बर पेस्ट गरियो' : 'License number pasted')}: ${formatted}`,
-          { id: 'paste-license', icon: '📋' }
+          { id: 'paste-license' }
         )
       } else {
         toast.error(
@@ -314,7 +314,7 @@ export default function LicenseForm({
       if (formatted) {
         toast.success(
           `${copy.pastedToast || (language === 'ne' ? 'लाइसेन्स नम्बर पेस्ट गरियो' : 'License number pasted')}: ${formatted}`,
-          { id: 'paste-license', icon: '📋' }
+          { id: 'paste-license' }
         )
       }
     }, 50)
@@ -332,7 +332,7 @@ export default function LicenseForm({
         style={{
           transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
         }}
-        className="antigravity-card animate-rise-in rounded-3xl p-5 sm:p-7 shadow-sm transition-all duration-300"
+        className="dev-glass-card antigravity-card animate-rise-in rounded-3xl p-5 sm:p-7 shadow-lg transition-all duration-300 border border-[var(--border-default)]/70 hover:border-[var(--nepal-blue)]/40"
       >
         <form onSubmit={handleSubmit} className="space-y-3.5">
           <div className="flex items-center justify-between">
@@ -390,11 +390,14 @@ export default function LicenseForm({
                   type="button"
                   disabled={isLockedOut}
                   onClick={handlePasteFromClipboard}
-                  className="antigravity-glass-pill absolute right-2.5 top-1/2 -translate-y-1/2 inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold text-[var(--text-secondary)] shadow-xs transition hover:scale-104 hover:border-[var(--nepal-blue)]/50 hover:text-[var(--nepal-blue)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="antigravity-glass-pill absolute right-2.5 top-1/2 -translate-y-1/2 inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold text-[var(--text-secondary)] shadow-xs transition hover:scale-104 hover:border-[var(--nepal-blue)]/50 hover:text-[var(--nepal-blue)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
                   aria-label={language === 'ne' ? 'क्लिपबोर्डबाट पेस्ट गर्नुहोस्' : 'Paste license number from clipboard'}
                   title={language === 'ne' ? 'क्लिपबोर्डबाट पेस्ट गर्नुहोस्' : 'Paste from clipboard'}
                 >
-                  <span aria-hidden>📋</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="text-[var(--nepal-blue)]">
+                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                    <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+                  </svg>
                   <span>{language === 'ne' ? 'पेस्ट' : 'Paste'}</span>
                 </button>
               )}

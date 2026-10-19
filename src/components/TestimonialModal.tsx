@@ -133,14 +133,16 @@ export default function TestimonialModal({
             aria-labelledby="testimonial-modal-title"
         >
             <div
-                className="relative w-full max-w-lg rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-5 sm:p-7 shadow-2xl transition max-h-[92vh] overflow-y-auto no-scrollbar"
+                className="relative w-full max-w-lg rounded-3xl dev-glass-card p-5 sm:p-7 shadow-2xl transition max-h-[92vh] overflow-y-auto no-scrollbar"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
                 <div className="flex items-start justify-between gap-4 border-b border-[var(--border-default)]/60 pb-4">
                     <div className="flex items-center gap-3">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20 text-xl">
-                            💬
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                            </svg>
                         </div>
                         <div>
                             <h2
@@ -159,18 +161,23 @@ export default function TestimonialModal({
                     <button
                         type="button"
                         onClick={onClose}
-                        className="rounded-xl border border-[var(--border-default)] p-1.5 text-[var(--text-muted)] transition hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
+                        className="rounded-xl border border-[var(--border-default)] p-2 text-[var(--text-muted)] transition hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
                         aria-label="Close dialog"
                     >
-                        ✕
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
                     </button>
                 </div>
 
                 {/* Success View */}
                 {isSuccess ? (
                     <div className="py-8 text-center animate-fade-in">
-                        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/15 text-3xl text-emerald-600 dark:text-emerald-400">
-                            ✓
+                        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
                         </div>
                         <h3 className="mt-4 text-base sm:text-lg font-black text-[var(--text-primary)]">
                             {isNe ? 'प्रतिक्रियाका लागि धन्यवाद!' : 'Thank you for your feedback!'}
@@ -181,8 +188,13 @@ export default function TestimonialModal({
                                 : 'Your testimonial has been received. Once reviewed and accepted by our admin team, it will appear publicly on the homepage.'}
                         </p>
 
-                        <div className="mt-5 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-300">
-                            ℹ️ {isNe ? 'गुणस्तर र मर्यादा कायम राख्न प्रत्येक समीक्षा एड्मिनबाट स्वीकृत गरिन्छ।' : 'Each submission is checked by admin to ensure authentic and respectful feedback.'}
+                        <div className="mt-5 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-300 flex items-center justify-center gap-2">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                                <circle cx="12" cy="12" r="10" />
+                                <line x1="12" y1="16" x2="12" y2="12" />
+                                <line x1="12" y1="8" x2="12.01" y2="8" />
+                            </svg>
+                            <span>{isNe ? 'गुणस्तर र मर्यादा कायम राख्न प्रत्येक समीक्षा एड्मिनबाट स्वीकृत गरिन्छ।' : 'Each submission is checked by admin to ensure authentic and respectful feedback.'}</span>
                         </div>
 
                         <div className="mt-6 flex justify-center">
@@ -308,14 +320,23 @@ export default function TestimonialModal({
 
                         {/* Error Message */}
                         {errorMessage && (
-                            <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-2.5 text-xs font-semibold text-rose-600 dark:text-rose-400">
-                                ⚠️ {errorMessage}
+                            <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-2.5 text-xs font-semibold text-rose-600 dark:text-rose-400 flex items-center gap-2">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                                    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                                    <line x1="12" y1="9" x2="12" y2="13" />
+                                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                                </svg>
+                                <span>{errorMessage}</span>
                             </div>
                         )}
 
                         {/* Moderation Notice */}
                         <div className="flex items-start gap-2 rounded-xl border border-[var(--border-default)]/60 bg-[var(--bg-secondary)]/50 p-2.5 text-[11px] text-[var(--text-muted)] leading-relaxed">
-                            <span className="shrink-0 text-amber-500">🛡️</span>
+                            <span className="shrink-0 text-amber-500">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                                </svg>
+                            </span>
                             <span>
                                 {isNe
                                     ? 'नोट: स्पाम र अवाञ्छित सामग्री रोक्नका लागि एड्मिनले स्वीकृति दिएपछि मात्र तपाईंको समीक्षा मुख्य पृष्ठमा प्रदर्शित हुनेछ।'
@@ -345,7 +366,10 @@ export default function TestimonialModal({
                                     </>
                                 ) : (
                                     <>
-                                        <span>📨</span>
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <line x1="22" y1="2" x2="11" y2="13" />
+                                            <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                                        </svg>
                                         <span>{isNe ? 'प्रतिक्रिया पठाउनुहोस्' : 'Submit Review'}</span>
                                     </>
                                 )}

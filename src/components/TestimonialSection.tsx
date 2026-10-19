@@ -241,7 +241,9 @@ export default function TestimonialSection({
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 border-b border-[var(--border-default)]/70 pb-5">
                 <div>
                     <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-[11px] font-bold text-amber-600 dark:text-amber-400 mb-2">
-                        <span>⭐</span>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-amber-500" aria-hidden="true">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                        </svg>
                         <span>{isNe ? 'नागरिक अनुभव तथा प्रतिक्रिया' : 'Citizen Experiences & Reviews'}</span>
                     </div>
                     <h2 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-[var(--text-primary)]">
@@ -257,11 +259,14 @@ export default function TestimonialSection({
                 {/* Rating KPI, Carousel Controls and Submit Button */}
                 <div className="flex flex-wrap items-center gap-3">
                     <div className="flex items-center gap-2 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3.5 py-2 shadow-xs">
-                        <div className="text-lg sm:text-xl font-black text-amber-500">
-                            ★ {averageRating.toFixed(1)}
+                        <div className="flex items-center gap-1 text-lg sm:text-xl font-black text-amber-500">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="text-amber-500" aria-hidden="true">
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                            </svg>
+                            <span className="font-mono tabular-nums">{averageRating.toFixed(1)}</span>
                         </div>
                         <div className="border-l border-[var(--border-default)] pl-2 text-[10px] sm:text-[11px] text-[var(--text-muted)] leading-tight">
-                            <strong className="block text-[var(--text-primary)] font-bold">
+                            <strong className="block text-[var(--text-primary)] font-bold font-mono tabular-nums">
                                 {totalApproved} {isNe ? 'समीक्षाहरू' : 'Reviews'}
                             </strong>
                             <span>{isNe ? 'प्रमाणित प्रयोगकर्ता' : 'Verified Users'}</span>
@@ -273,7 +278,10 @@ export default function TestimonialSection({
                         onClick={onOpenTestimonialModal}
                         className="inline-flex items-center gap-2 rounded-2xl bg-[var(--nepal-blue)] px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[var(--nepal-blue)]/90 hover:scale-[1.02] active:scale-95 transition cursor-pointer"
                     >
-                        <span>✍️</span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
                         <span>{isNe ? 'आफ्नो अनुभव लेख्नुहोस्' : 'Write a Review'}</span>
                     </button>
                 </div>
@@ -303,8 +311,12 @@ export default function TestimonialSection({
                         ))}
                     </div>
                 ) : testimonials.length === 0 ? (
-                    <div className="rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-8 text-center">
-                        <span className="text-3xl">💬</span>
+                    <div className="rounded-3xl border border-[var(--border-default)]/70 dev-glass-card p-8 text-center">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)] mx-auto mb-3">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                            </svg>
+                        </div>
                         <h3 className="mt-2 text-sm font-bold text-[var(--text-primary)]">
                             {isNe ? 'अझै कुनै समीक्षा छैन' : 'No testimonials yet'}
                         </h3>
@@ -316,9 +328,12 @@ export default function TestimonialSection({
                         <button
                             type="button"
                             onClick={onOpenTestimonialModal}
-                            className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-[var(--nepal-blue)] px-4 py-2 text-xs font-bold text-white shadow-xs hover:opacity-95 transition cursor-pointer"
+                            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[var(--nepal-blue)] px-4 py-2 text-xs font-bold text-white shadow-xs hover:opacity-95 active:scale-95 transition cursor-pointer"
                         >
-                            <span>✍️</span>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                            </svg>
                             <span>{isNe ? 'प्रतिक्रिया दिनुहोस्' : 'Submit Review'}</span>
                         </button>
                     </div>
@@ -326,7 +341,7 @@ export default function TestimonialSection({
                     // Single item view (no carousel needed)
                     <div className="max-w-md mx-auto py-2">
                         <div
-                            className={`flex flex-col justify-between rounded-3xl border p-5 sm:p-6 transition hover:shadow-md ${
+                            className={`flex flex-col justify-between rounded-3xl border dev-glass-card p-5 sm:p-6 transition hover:shadow-md ${
                                 testimonials[0].is_featured
                                     ? 'border-amber-500/40 bg-gradient-to-br from-amber-500/5 via-[var(--surface-primary)] to-[var(--surface-primary)]'
                                     : 'border-[var(--border-default)] bg-[var(--surface-primary)]'
@@ -342,8 +357,12 @@ export default function TestimonialSection({
                                             {testimonials[0].name}
                                         </h3>
                                         {testimonials[0].role && (
-                                            <p className="text-[11px] text-[var(--text-muted)]">
-                                                📍 {testimonials[0].role}
+                                            <p className="text-[11px] text-[var(--text-muted)] flex items-center gap-1">
+                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="text-[var(--nepal-blue)]">
+                                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                                    <circle cx="12" cy="10" r="3" />
+                                                </svg>
+                                                <span>{testimonials[0].role}</span>
                                             </p>
                                         )}
                                     </div>
@@ -354,11 +373,13 @@ export default function TestimonialSection({
                                 &ldquo;{testimonials[0].message}&rdquo;
                             </div>
                             <div className="mt-4 flex items-center justify-between border-t border-[var(--border-default)]/60 pt-3 text-[10px] text-[var(--text-muted)]">
-                                <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
-                                    <span>✓</span>
+                                <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
                                     <span>{isNe ? 'प्रमाणित समीक्षा' : 'Verified Query'}</span>
                                 </span>
-                                <time dateTime={new Date(testimonials[0].created_at).toISOString()}>
+                                <time dateTime={new Date(testimonials[0].created_at).toISOString()} className="font-mono tabular-nums">
                                     {formatTimeAgo(testimonials[0].created_at)}
                                 </time>
                             </div>
@@ -392,10 +413,10 @@ export default function TestimonialSection({
                                         className="shrink-0 px-2 sm:px-2.5 py-2"
                                     >
                                         <div
-                                            className={`h-full flex flex-col justify-between rounded-3xl border p-5 sm:p-6 transition duration-300 hover:shadow-lg ${
+                                            className={`h-full flex flex-col justify-between rounded-3xl border dev-glass-card p-5 sm:p-6 transition duration-300 hover:shadow-xl ${
                                                 t.is_featured
                                                     ? 'border-amber-500/40 bg-gradient-to-br from-amber-500/5 via-[var(--surface-primary)] to-[var(--surface-primary)] shadow-xs'
-                                                    : 'border-[var(--border-default)] bg-[var(--surface-primary)]'
+                                                    : 'border-[var(--border-default)]/70 bg-[var(--surface-primary)]'
                                             }`}
                                         >
                                             <div>
@@ -412,16 +433,22 @@ export default function TestimonialSection({
                                                                 </h3>
                                                                 {t.is_featured && (
                                                                     <span
-                                                                        className="rounded-full bg-amber-500/20 px-1.5 py-0.2 text-[9px] font-bold text-amber-700 dark:text-amber-300"
+                                                                        className="inline-flex items-center rounded-full bg-amber-500/20 px-1.5 py-0.5 text-[9px] font-bold text-amber-700 dark:text-amber-300"
                                                                         title="Featured Review"
                                                                     >
-                                                                        ⭐
+                                                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="text-amber-500" aria-hidden="true">
+                                                                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                                                                        </svg>
                                                                     </span>
                                                                 )}
                                                             </div>
                                                             {t.role && (
-                                                                <p className="text-[11px] text-[var(--text-muted)] line-clamp-1">
-                                                                    📍 {t.role}
+                                                                <p className="text-[11px] text-[var(--text-muted)] line-clamp-1 flex items-center gap-1">
+                                                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="text-[var(--nepal-blue)]">
+                                                                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                                                        <circle cx="12" cy="10" r="3" />
+                                                                    </svg>
+                                                                    <span>{t.role}</span>
                                                                 </p>
                                                             )}
                                                         </div>
@@ -440,11 +467,13 @@ export default function TestimonialSection({
 
                                             {/* Footer: Time and verified badge */}
                                             <div className="mt-4 flex items-center justify-between border-t border-[var(--border-default)]/60 pt-3 text-[10px] text-[var(--text-muted)]">
-                                                <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
-                                                    <span>✓</span>
+                                                <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold">
+                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                        <polyline points="20 6 9 17 4 12" />
+                                                    </svg>
                                                     <span>{isNe ? 'प्रमाणित समीक्षा' : 'Verified Query'}</span>
                                                 </span>
-                                                <time dateTime={new Date(t.created_at).toISOString()}>
+                                                <time dateTime={new Date(t.created_at).toISOString()} className="font-mono tabular-nums">
                                                     {formatTimeAgo(t.created_at)}
                                                 </time>
                                             </div>
@@ -461,7 +490,9 @@ export default function TestimonialSection({
                             aria-label="Previous testimonial"
                             className="hidden sm:flex absolute -left-4 top-1/2 -translate-y-1/2 z-10 h-10 w-10 items-center justify-center rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] text-base font-bold text-[var(--text-primary)] shadow-lg hover:bg-[var(--surface-primary)] hover:scale-110 active:scale-95 transition cursor-pointer opacity-0 group-hover:opacity-100"
                         >
-                            ‹
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <polyline points="15 18 9 12 15 6" />
+                            </svg>
                         </button>
                         <button
                             type="button"
@@ -469,7 +500,9 @@ export default function TestimonialSection({
                             aria-label="Next testimonial"
                             className="hidden sm:flex absolute -right-4 top-1/2 -translate-y-1/2 z-10 h-10 w-10 items-center justify-center rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] text-base font-bold text-[var(--text-primary)] shadow-lg hover:bg-[var(--surface-primary)] hover:scale-110 active:scale-95 transition cursor-pointer opacity-0 group-hover:opacity-100"
                         >
-                            ›
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <polyline points="9 18 15 12 9 6" />
+                            </svg>
                         </button>
 
                         {/* Centered Slide Dots */}

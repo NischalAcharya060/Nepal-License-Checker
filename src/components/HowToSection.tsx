@@ -70,12 +70,12 @@ export default function HowToSection({ language, lastUpdatedAt }: HowToSectionPr
   return (
     <section
       id="how-to-check"
-      className="mt-8 overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-sm"
+      className="mt-8 overflow-hidden rounded-3xl border border-[var(--border-default)]/70 dev-glass-card shadow-lg"
       aria-labelledby="how-to-heading"
     >
-      <div className="border-b border-[var(--border-default)] bg-gradient-to-r from-[var(--nepal-blue-soft)] to-transparent px-5 py-4 sm:px-6">
-        <div className="mb-1 flex items-center gap-2">
-          <span className="inline-flex items-center gap-2 rounded-full bg-[var(--nepal-blue)]/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--nepal-blue)]">
+      <div className="border-b border-[var(--border-default)]/70 bg-gradient-to-r from-[var(--nepal-blue-soft)]/60 to-transparent px-5 py-5 sm:px-8">
+        <div className="mb-2 flex items-center gap-2">
+          <span className="inline-flex items-center gap-2 rounded-full bg-[var(--nepal-blue)]/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/20">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 11l3 3L22 4" />
               <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
@@ -83,18 +83,20 @@ export default function HowToSection({ language, lastUpdatedAt }: HowToSectionPr
             {language === 'ne' ? 'चरण-दर-चरण' : 'Step-by-step'}
           </span>
           {lastUpdatedAt && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--bg-secondary)] px-2 py-0.5 text-[9px] font-medium text-[var(--text-muted)]">
-              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-primary)] border border-[var(--border-default)] px-2.5 py-0.5 text-[9.5px] font-medium text-[var(--text-muted)]">
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10" />
                 <polyline points="12 6 12 12 16 14" />
               </svg>
-              {language === 'ne'
-                ? `अद्यावधिक: ${new Date(lastUpdatedAt).toLocaleDateString('ne-NP', { year: 'numeric', month: 'short', day: 'numeric' })}`
-                : `Updated: ${new Date(lastUpdatedAt).toLocaleDateString('en-NP', { year: 'numeric', month: 'short', day: 'numeric' })}`}
+              <span className="font-mono tabular-nums">
+                {language === 'ne'
+                  ? `अद्यावधिक: ${new Date(lastUpdatedAt).toLocaleDateString('ne-NP', { year: 'numeric', month: 'short', day: 'numeric' })}`
+                  : `Updated: ${new Date(lastUpdatedAt).toLocaleDateString('en-NP', { year: 'numeric', month: 'short', day: 'numeric' })}`}
+              </span>
             </span>
           )}
         </div>
-        <h2 id="how-to-heading" className="text-lg font-extrabold text-[var(--text-primary)] sm:text-xl">
+        <h2 id="how-to-heading" className="text-xl font-extrabold text-[var(--text-primary)] sm:text-2xl tracking-tight">
           {language === 'ne'
             ? 'सवारी चालक अनुमतिपत्र छापिएको कि छैन कसरी जाँच्ने?'
             : 'How to check if your Nepal driving license is printed'}
@@ -113,7 +115,7 @@ export default function HowToSection({ language, lastUpdatedAt }: HowToSectionPr
           <div className="lg:col-span-5 space-y-3">
             <Link
               href="/tutorial"
-              className="group relative block aspect-video w-full overflow-hidden rounded-xl border border-[var(--border-default)] bg-black shadow-sm transition-shadow hover:shadow-md"
+              className="group relative block aspect-video w-full overflow-hidden rounded-2xl border border-[var(--border-default)] bg-black shadow-sm transition-all duration-300 hover:shadow-xl hover:border-[var(--nepal-blue)]/50"
               aria-label={
                 language === 'ne'
                   ? 'भिडियो ट्युटोरियल हेर्नुहोस्'
@@ -129,32 +131,43 @@ export default function HowToSection({ language, lastUpdatedAt }: HowToSectionPr
                 }
                 fill
                 sizes="(max-width: 1024px) 100vw, 500px"
-                className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
               />
               <span className="absolute inset-0 flex items-center justify-center" aria-hidden>
-                <span className="flex h-14 w-14 items-center justify-center rounded-full bg-black/55 backdrop-blur-sm transition-all duration-200 group-hover:scale-110 group-hover:bg-[var(--nepal-blue)]/85">
+                <span className="flex h-14 w-14 items-center justify-center rounded-full bg-black/60 backdrop-blur-md transition-all duration-200 group-hover:scale-110 group-hover:bg-[var(--nepal-blue)]/90 shadow-xl">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="white" aria-hidden>
                     <path d="M8 5v14l11-7z" />
                   </svg>
                 </span>
               </span>
-              <span className="absolute bottom-2 right-2 rounded-md bg-black/70 px-1.5 py-0.5 text-[10px] font-bold text-white">
+              <span className="absolute bottom-2.5 right-2.5 rounded-lg bg-black/75 backdrop-blur-xs px-2 py-0.5 font-mono text-[10px] font-bold text-white">
                 0:19
               </span>
-              <span className="absolute bottom-2 left-2 rounded-md bg-black/70 px-2 py-0.5 text-[11px] font-bold text-white">
+              <span className="absolute bottom-2.5 left-2.5 rounded-lg bg-black/75 backdrop-blur-xs px-2.5 py-0.5 text-[11px] font-bold text-white">
                 {language === 'ne' ? 'भिडियो ट्युटोरियल हेर्नुहोस्' : 'Watch video tutorial'}
               </span>
             </Link>
 
-            <div className="rounded-xl border border-[var(--border-default)]/70 bg-[var(--bg-secondary)]/60 p-3.5 text-xs text-[var(--text-secondary)]">
-              <span className="font-bold text-[var(--text-primary)]">
-                💡 {language === 'ne' ? 'छिटो सुझाव:' : 'Quick Tip:'}
-              </span>{' '}
-              <span>
-                {language === 'ne'
-                  ? 'तपाईंको लाइसेन्स नम्बर पुरानो स्मार्ट कार्ड वा राजस्व रसिदको माथिल्लो भागमा हुन्छ।'
-                  : 'Your license number is printed on your payment slip or old smart card.'}
-              </span>
+            <div className="rounded-2xl border border-[var(--border-default)]/70 bg-[var(--surface-primary)] p-4 text-xs text-[var(--text-secondary)] shadow-2xs">
+              <div className="flex items-start gap-2.5">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-amber-500/10 text-amber-500 mt-0.5">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <line x1="9" y1="18" x2="15" y2="18" />
+                    <line x1="10" y1="22" x2="14" y2="22" />
+                    <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14" />
+                  </svg>
+                </span>
+                <div>
+                  <span className="font-bold text-[var(--text-primary)]">
+                    {language === 'ne' ? 'छिटो सुझाव: ' : 'Quick Tip: '}
+                  </span>
+                  <span>
+                    {language === 'ne'
+                      ? 'तपाईंको लाइसेन्स नम्बर पुरानो स्मार्ट कार्ड वा राजस्व रसिदको माथिल्लो भागमा हुन्छ।'
+                      : 'Your license number is printed on your payment slip or old smart card.'}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -164,16 +177,16 @@ export default function HowToSection({ language, lastUpdatedAt }: HowToSectionPr
               {steps.map((s, idx) => (
                 <li
                   key={idx}
-                  className="group flex gap-3.5 rounded-xl border border-[var(--border-default)]/70 bg-[var(--surface-primary)] p-3.5 sm:p-4 shadow-2xs hover-lift transition-all duration-200 hover:border-[var(--nepal-blue)]/40"
+                  className="group flex gap-3.5 rounded-2xl border border-[var(--border-default)]/70 dev-glass-card p-4 sm:p-4.5 shadow-2xs hover-lift transition-all duration-200 hover:border-[var(--nepal-blue)]/50"
                 >
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[var(--nepal-blue)] text-xs font-black text-white shadow-xs transition-transform duration-200 group-hover:scale-108">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[var(--nepal-blue)] font-mono tabular-nums text-xs font-black text-white shadow-xs transition-transform duration-200 group-hover:scale-110">
                     {idx + 1}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="text-sm font-bold text-[var(--text-primary)]">{s.title}</div>
                     <p className="mt-1 text-xs sm:text-sm leading-relaxed text-[var(--text-secondary)]">{s.body}</p>
                     {s.hint && (
-                      <code className="mt-2 inline-block rounded-md border border-[var(--nepal-blue)]/25 bg-[var(--nepal-blue-soft)] px-2 py-0.5 font-mono text-[11px] text-[var(--nepal-blue)]">
+                      <code className="mt-2 inline-block rounded-md border border-[var(--nepal-blue)]/25 bg-[var(--nepal-blue-soft)] px-2 py-0.5 font-mono tabular-nums text-[11px] text-[var(--nepal-blue)]">
                         {s.hint}
                       </code>
                     )}

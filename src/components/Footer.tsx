@@ -185,7 +185,9 @@ export default function Footer({
               href="/developer"
               className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-xs font-semibold text-[var(--text-primary)] transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] active:scale-95 shadow-2xs cursor-pointer group"
             >
-              <span className="text-[11px]">⚡</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-amber-500">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+              </svg>
               <span>{isNe ? 'विकासकर्ता पोर्टल (API Key)' : 'Developer Portal (API Key)'}</span>
             </a>
 
@@ -727,13 +729,20 @@ export default function Footer({
               </div>
 
               {/* Office hours tip */}
-              <div className="rounded-xl bg-[var(--nepal-blue-soft)] border border-[var(--nepal-blue)]/20 p-3 text-[11px] leading-relaxed text-[var(--nepal-blue)]">
-                <span className="font-bold">💡 {isNe ? 'कार्यालय समय सुझाव: ' : 'Helpful Visiting Tips: '}</span>
-                <span>
-                  {isNe
-                    ? 'यातायात कार्यालयहरू आइतबारदेखि बिहीबार बिहान १० देखि ५ बजेसम्म र शुक्रबार बिहान १० देखि ३ बजेसम्म खुल्छन्। कार्ड संकलनका लागि स्वयं सेवाग्राही उपस्थित हुनुपर्छ।'
-                    : 'Transport offices operate Sunday to Thursday 10:00 AM - 5:00 PM, and Friday 10:00 AM - 3:00 PM. The applicant must appear in person.'}
-                </span>
+              <div className="rounded-xl bg-[var(--nepal-blue-soft)] border border-[var(--nepal-blue)]/20 p-3 text-[11px] leading-relaxed text-[var(--nepal-blue)] flex items-start gap-2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">
+                  <path d="M9 18h6" />
+                  <path d="M10 22h4" />
+                  <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14" />
+                </svg>
+                <div>
+                  <span className="font-bold">{isNe ? 'कार्यालय समय सुझाव: ' : 'Helpful Visiting Tips: '}</span>
+                  <span>
+                    {isNe
+                      ? 'यातायात कार्यालयहरू आइतबारदेखि बिहीबार बिहान १० देखि ५ बजेसम्म र शुक्रबार बिहान १० देखि ३ बजेसम्म खुल्छन्। कार्ड संकलनका लागि स्वयं सेवाग्राही उपस्थित हुनुपर्छ।'
+                      : 'Transport offices operate Sunday to Thursday 10:00 AM - 5:00 PM, and Friday 10:00 AM - 3:00 PM. The applicant must appear in person.'}
+                  </span>
+                </div>
               </div>
             </div>
 

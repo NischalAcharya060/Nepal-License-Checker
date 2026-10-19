@@ -69,7 +69,7 @@ export default function NpmModal({ isOpen, onClose, language }: NpmModalProps) {
       aria-labelledby="npm-modal-title"
     >
       <div
-        className="relative flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-2xl animate-rise-in"
+        className="relative flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl dev-glass-card shadow-2xl animate-rise-in"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -89,7 +89,7 @@ export default function NpmModal({ isOpen, onClose, language }: NpmModalProps) {
                 <h2 id="npm-modal-title" className="text-base font-extrabold text-[var(--text-primary)] sm:text-lg">
                   {isNe ? 'विकासकर्ता SDK प्याकेज' : 'Developer SDK Packages'}
                 </h2>
-                <span className="rounded-full bg-[var(--nepal-blue)]/10 px-2 py-0.5 text-[10px] font-bold text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/20">
+                <span className="rounded-full bg-[var(--nepal-blue)]/10 px-2 py-0.5 text-[10px] font-bold text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/20 font-mono">
                   v1.1.0
                 </span>
               </div>
@@ -121,14 +121,20 @@ export default function NpmModal({ isOpen, onClose, language }: NpmModalProps) {
             <div className="md:col-span-5 space-y-3.5">
               {/* Quick Badges */}
               <div className="flex flex-wrap gap-1.5">
-                <span className="rounded-md bg-[var(--bg-secondary)] px-2 py-0.5 text-[10px] font-semibold text-[var(--text-secondary)] border border-[var(--border-default)]">
-                  ⚡ Zero Deps
+                <span className="inline-flex items-center gap-1 rounded-md bg-[var(--bg-secondary)] px-2 py-0.5 text-[10px] font-semibold text-[var(--text-secondary)] border border-[var(--border-default)]">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-amber-500">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                  </svg>
+                  Zero Deps
                 </span>
-                <span className="rounded-md bg-[var(--bg-secondary)] px-2 py-0.5 text-[10px] font-semibold text-[var(--text-secondary)] border border-[var(--border-default)]">
-                  🛡️ TypeScript (.d.ts)
+                <span className="inline-flex items-center gap-1 rounded-md bg-[var(--bg-secondary)] px-2 py-0.5 text-[10px] font-semibold text-[var(--text-secondary)] border border-[var(--border-default)]">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  </svg>
+                  TypeScript (.d.ts)
                 </span>
-                <span className="rounded-md bg-[var(--bg-secondary)] px-2 py-0.5 text-[10px] font-semibold text-[var(--text-secondary)] border border-[var(--border-default)]">
-                  🇳🇵 ०-९ Numeral Support
+                <span className="inline-flex items-center gap-1 rounded-md bg-[var(--bg-secondary)] px-2 py-0.5 text-[10px] font-semibold text-[var(--text-secondary)] border border-[var(--border-default)] font-mono">
+                  ०-९ Numeral Support
                 </span>
               </div>
 
@@ -226,8 +232,12 @@ export default function NpmModal({ isOpen, onClose, language }: NpmModalProps) {
               {isGithub && (
                 <div className="rounded-xl border border-[var(--nepal-blue)]/20 bg-[var(--nepal-blue)]/5 p-2.5 space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10.5px] font-bold text-[var(--nepal-blue)] flex items-center gap-1">
-                      <span>ℹ️</span>
+                    <span className="text-[10.5px] font-bold text-[var(--nepal-blue)] flex items-center gap-1.5">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="16" x2="12" y2="12" />
+                        <line x1="12" y1="8" x2="12.01" y2="8" />
+                      </svg>
                       <span>.npmrc Config</span>
                     </span>
                     <button
@@ -235,7 +245,7 @@ export default function NpmModal({ isOpen, onClose, language }: NpmModalProps) {
                       onClick={copyNpmrc}
                       className="inline-flex items-center gap-1 rounded-md bg-[var(--surface-primary)] border border-[var(--border-default)] px-2 py-0.5 text-[9.5px] font-bold text-[var(--text-secondary)] transition hover:text-[var(--nepal-blue)] active:scale-95 cursor-pointer"
                     >
-                      {copiedNpmrc ? '✓ Copied' : 'Copy'}
+                      {copiedNpmrc ? 'Copied' : 'Copy'}
                     </button>
                   </div>
                   <pre className="overflow-x-auto rounded-lg bg-[var(--bg-secondary)] p-1.5 font-mono text-[9.5px] text-[var(--text-primary)] border border-[var(--border-default)]">
@@ -248,10 +258,12 @@ export default function NpmModal({ isOpen, onClose, language }: NpmModalProps) {
               <div className="rounded-2xl border border-[var(--nepal-blue)]/30 bg-gradient-to-br from-[var(--nepal-blue)]/10 via-[var(--nepal-blue)]/5 to-transparent p-3.5 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold text-[var(--nepal-blue)] flex items-center gap-1.5">
-                    <span>⚡</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-amber-500">
+                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                    </svg>
                     <span>{isNe ? 'विकासकर्ता API Key (६० req/min)' : 'Developer API Key (60 req/min)'}</span>
                   </span>
-                  <span className="rounded-full bg-[var(--nepal-blue)]/20 px-2 py-0.5 text-[9px] font-bold text-[var(--nepal-blue)]">
+                  <span className="rounded-full bg-[var(--nepal-blue)]/20 px-2 py-0.5 text-[9px] font-bold text-[var(--nepal-blue)] font-mono">
                     Elevated
                   </span>
                 </div>
@@ -315,7 +327,7 @@ const result = await checkLicense('01-01-12345678', {
 });
 
 if (result.status === 'success' && result.isReady) {
-  console.log('🎉 Ready for pickup!');
+  console.log('License is ready for pickup!');
   console.log('Holder:', result.data?.holder_name);
   console.log('Office:', result.data?.office);
 } else {
@@ -344,7 +356,9 @@ checkLicense('01-01-12345678', {
                   href="/developer"
                   className="inline-flex flex-1 min-w-[125px] items-center justify-center gap-1.5 rounded-xl border border-[var(--nepal-blue)] bg-[var(--nepal-blue)]/10 px-3 py-2 text-xs font-bold text-[var(--nepal-blue)] shadow-2xs transition hover:bg-[var(--nepal-blue)] hover:text-white active:scale-95 cursor-pointer"
                 >
-                  <span>⚡</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-amber-500">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                  </svg>
                   <span>{isNe ? 'API Key लिनुहोस् ↗' : 'Get API Key ↗'}</span>
                 </a>
                 <a
@@ -371,7 +385,11 @@ checkLicense('01-01-12345678', {
                   href="/developer/docs"
                   className="inline-flex flex-1 min-w-[90px] items-center justify-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-xs font-bold text-[var(--text-secondary)] shadow-2xs transition hover:text-[var(--text-primary)] active:scale-95"
                 >
-                  <span>Docs →</span>
+                  <span>Docs</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                    <polyline points="12 5 19 12 12 19" />
+                  </svg>
                 </a>
               </div>
             </div>

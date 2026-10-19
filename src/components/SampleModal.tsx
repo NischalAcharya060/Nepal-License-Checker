@@ -21,7 +21,7 @@ export default function SampleModal({ isOpen, onClose, language }: SampleModalPr
         role="dialog"
         aria-modal="true"
         aria-label="License format guide"
-        className="relative w-full max-w-xl overflow-hidden rounded-3xl bg-[var(--surface-primary)] shadow-2xl animate-rise-in border border-[var(--border-default)]"
+        className="relative w-full max-w-xl overflow-hidden rounded-3xl dev-glass-card shadow-2xl animate-rise-in border border-[var(--border-default)]"
         onClick={(event) => event.stopPropagation()}
       >
         <button

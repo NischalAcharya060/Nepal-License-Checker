@@ -125,12 +125,14 @@ export default function FeedbackModal({
       aria-modal="true"
       aria-labelledby="feedback-modal-title"
     >
-      <div className="relative w-full max-w-lg rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-2xl overflow-hidden transition-all">
+      <div className="relative w-full max-w-lg rounded-3xl dev-glass-card shadow-2xl overflow-hidden transition-all">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[var(--border-default)]/80 bg-[var(--bg-secondary)]/50 px-5 py-4">
           <div className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)] text-base">
-              💬
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)]">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
             </span>
             <div>
               <h3 id="feedback-modal-title" className="text-sm font-bold text-[var(--text-primary)] sm:text-base">
@@ -159,8 +161,10 @@ export default function FeedbackModal({
         <div className="p-5 sm:p-6 max-h-[80vh] overflow-y-auto">
           {isSuccess ? (
             <div className="flex flex-col items-center justify-center py-6 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--success-bg)] text-2xl text-[var(--success)] shadow-sm">
-                ✓
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--success-bg)] text-[var(--success)] shadow-xs">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
               </div>
               <h4 className="mt-4 text-base font-bold text-[var(--text-primary)] sm:text-lg">
                 {isNe ? 'धन्यवाद! तपाईंको सन्देश प्राप्त भयो' : 'Thank You! Message Received'}
@@ -182,7 +186,11 @@ export default function FeedbackModal({
             <form onSubmit={handleSubmit} className="space-y-4">
               {errorMessage && (
                 <div className="flex items-start gap-2 rounded-xl border border-[var(--error-border)] bg-[var(--error-bg)] p-3 text-xs text-[var(--error)] animate-shake">
-                  <span className="font-bold text-sm">⚠️</span>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">
+                    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                    <line x1="12" y1="9" x2="12" y2="13" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                  </svg>
                   <span className="flex-1 font-medium">{errorMessage}</span>
                 </div>
               )}
@@ -308,7 +316,10 @@ export default function FeedbackModal({
                     </>
                   ) : (
                     <>
-                      <span>📨</span>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13" />
+                        <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                      </svg>
                       <span>{isNe ? 'सन्देश पठाउनुहोस्' : 'Send Message'}</span>
                     </>
                   )}

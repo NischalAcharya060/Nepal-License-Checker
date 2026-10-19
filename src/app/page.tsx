@@ -322,7 +322,16 @@ export default function Home() {
         }
 
         if (isFromCache) {
-          toast(copy.pwa.offlineCachedHint, { icon: '📶' })
+          toast(copy.pwa.offlineCachedHint, {
+            icon: (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-500">
+                <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+                <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+                <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+                <line x1="12" y1="20" x2="12.01" y2="20" />
+              </svg>
+            ),
+          })
         }
 
         if (data.status === 'success' && data.data) {
@@ -364,15 +373,16 @@ export default function Home() {
       {/* Offline / connection-lost notice */}
       <OfflineBanner language={language} />
 
-      {/* Background ambient blobs */}
-      <div className="pointer-events-none absolute inset-0 -z-0 print:hidden">
-        <div className="animate-float-soft absolute -top-20 -left-20 h-56 w-56 rounded-full bg-[var(--nepal-blue)]/10 blur-3xl" />
+      {/* Background ambient depth & grid */}
+      <div className="pointer-events-none absolute inset-0 -z-0 print:hidden overflow-hidden">
+        <div className="absolute inset-0 dev-dot-pattern opacity-40 [mask-image:radial-gradient(ellipse_60%_50%_at_50%_20%,#000_70%,transparent_100%)]" />
+        <div className="animate-float-soft absolute -top-24 -left-24 h-96 w-96 rounded-full bg-[var(--nepal-blue)]/12 blur-3xl" />
         <div
-          className="animate-float-soft absolute top-24 -right-24 h-72 w-72 rounded-full bg-[var(--nepal-red)]/10 blur-3xl"
+          className="animate-float-soft absolute top-20 -right-24 h-96 w-96 rounded-full bg-[var(--nepal-red)]/10 blur-3xl"
           style={{ animationDelay: '0.8s' }}
         />
         <div
-          className="animate-float-soft absolute bottom-10 left-1/3 h-64 w-64 rounded-full bg-[var(--nepal-blue)]/8 blur-3xl"
+          className="animate-float-soft absolute bottom-1/4 left-1/3 h-80 w-80 rounded-full bg-[var(--nepal-blue)]/8 blur-3xl"
           style={{ animationDelay: '1.4s' }}
         />
       </div>

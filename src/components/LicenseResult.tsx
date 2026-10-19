@@ -301,7 +301,7 @@ export default function LicenseResult({
     return (
       <>
         {/* ─── 1. INTERACTIVE SCREEN CARD (Visible on Screen, Hidden during Print) ─── */}
-        <div className="animate-rise-in overflow-hidden rounded-2xl border border-[var(--success-border)] bg-[var(--surface-primary)] shadow-md print:hidden">
+        <div className="dev-glass-card hover-lift animate-rise-in overflow-hidden rounded-3xl border border-[var(--success-border)] bg-[var(--surface-primary)] shadow-xl print:hidden">
           {/* Verification banner */}
           <div className="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-[var(--success)] via-[#14a366] to-[#0d7348] px-4 py-4 sm:px-6">
             <div className="flex items-center gap-3">
@@ -376,9 +376,22 @@ export default function LicenseResult({
                   {displayOfficeName}
                 </div>
                 {officeInfo && (
-                  <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[var(--text-secondary)]">
-                    <span>📍 {language === 'ne' ? officeInfo.addressNe : officeInfo.addressEn}</span>
-                    {officeInfo.phone && <span>📞 {officeInfo.phone}</span>}
+                  <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-[var(--text-secondary)]">
+                    <span className="inline-flex items-center gap-1.5">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]" aria-hidden="true">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                        <circle cx="12" cy="10" r="3" />
+                      </svg>
+                      <span>{language === 'ne' ? officeInfo.addressNe : officeInfo.addressEn}</span>
+                    </span>
+                    {officeInfo.phone && (
+                      <span className="inline-flex items-center gap-1.5">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500" aria-hidden="true">
+                          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                        </svg>
+                        <span className="font-mono tabular-nums">{officeInfo.phone}</span>
+                      </span>
+                    )}
                     <span className="rounded bg-[var(--nepal-blue-soft)] px-2 py-0.5 font-semibold text-[var(--nepal-blue)]">
                       {language === 'ne' ? officeInfo.provinceNe : officeInfo.provinceEn}
                     </span>
@@ -447,7 +460,7 @@ export default function LicenseResult({
               <button
                 type="button"
                 onClick={handlePrint}
-                className="inline-flex flex-1 min-w-[140px] items-center justify-center gap-2 rounded-xl border border-[var(--nepal-blue)] bg-[var(--nepal-blue)] px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-[var(--nepal-blue-mid)] sm:text-sm"
+                className="inline-flex flex-1 min-w-[140px] items-center justify-center gap-2 rounded-xl border border-[var(--nepal-blue)] bg-[var(--nepal-blue)] px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-[var(--nepal-blue-mid)] active:scale-95 sm:text-sm cursor-pointer"
               >
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="6 9 6 2 18 2 18 9" />
@@ -460,7 +473,7 @@ export default function LicenseResult({
               <button
                 type="button"
                 onClick={handleShare}
-                className="inline-flex flex-1 min-w-[140px] items-center justify-center gap-2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-2.5 text-xs font-bold text-[var(--text-secondary)] shadow-sm transition hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue-soft)] hover:text-[var(--nepal-blue)] sm:text-sm"
+                className="inline-flex flex-1 min-w-[140px] items-center justify-center gap-2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-2.5 text-xs font-bold text-[var(--text-secondary)] shadow-sm transition hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue-soft)] hover:text-[var(--nepal-blue)] active:scale-95 sm:text-sm cursor-pointer"
               >
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="18" cy="5" r="3" />
@@ -475,7 +488,7 @@ export default function LicenseResult({
               <button
                 type="button"
                 onClick={onCheckAnother}
-                className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-[var(--border-default)] bg-transparent px-4 py-2.5 text-xs font-semibold text-[var(--text-secondary)] transition hover:bg-[var(--bg-secondary)] sm:text-sm"
+                className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-[var(--border-default)] bg-transparent px-4 py-2.5 text-xs font-semibold text-[var(--text-secondary)] transition hover:bg-[var(--bg-secondary)] active:scale-95 sm:text-sm cursor-pointer"
               >
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="11" cy="11" r="8" />
@@ -486,10 +499,17 @@ export default function LicenseResult({
             </div>
 
             {/* Quick non-official advisory */}
-            <p className="pt-2 text-center text-[11px] text-[var(--text-muted)]">
-              {language === 'ne'
-                ? '⚠️ सूचना: यो गैर-सरकारी पोर्टल हो। प्रिन्ट गरिएको रसिद व्यक्तिगत जानकारीका लागि मात्र हो र यसलाई सवारी चालक अनुमतिपत्रको रूपमा ट्राफिक प्रहरीलाई देखाउन मिल्दैन।'
-                : '⚠️ Notice: This is an unofficial portal. The printed slip is for personal reference only and cannot be presented to traffic police as a driving license.'}
+            <p className="pt-2 text-center text-[11px] text-[var(--text-muted)] flex items-center justify-center gap-1.5 flex-wrap">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-500 inline shrink-0" aria-hidden="true">
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+              <span>
+                {language === 'ne'
+                  ? 'सूचना: यो गैर-सरकारी पोर्टल हो। प्रिन्ट गरिएको रसिद व्यक्तिगत जानकारीका लागि मात्र हो र यसलाई सवारी चालक अनुमतिपत्रको रूपमा ट्राफिक प्रहरीलाई देखाउन मिल्दैन।'
+                  : 'Notice: This is an unofficial portal. The printed slip is for personal reference only and cannot be presented to traffic police as a driving license.'}
+              </span>
             </p>
           </div>
         </div>
@@ -544,10 +564,10 @@ export default function LicenseResult({
             style={{ borderColor: '#b91c1c', backgroundColor: '#fff5f5' }}
           >
             <div
-              className="text-[11px] font-black uppercase tracking-wide flex items-center gap-1 pb-0.5 mb-1 border-b"
+              className="text-[11px] font-black uppercase tracking-wide flex items-center gap-1.5 pb-0.5 mb-1 border-b"
               style={{ borderColor: '#fca5a5', color: '#991b1b' }}
             >
-              <span>⚠️</span>
+              <span className="font-bold">[!]</span>
               <span>महत्वपूर्ण कानूनी सूचना तथा अस्वीकरण (LEGAL NOTICE - NOT AN OFFICIAL DOCUMENT)</span>
             </div>
             <div className="space-y-0.5 text-[10px] leading-tight" style={{ color: '#111827' }}>
@@ -582,7 +602,7 @@ export default function LicenseResult({
                 DOTM Public Record Status (छपाइ अवस्था)
               </div>
               <div className="text-xs font-black text-black mt-0.5">
-                ✓ PRINTED & READY FOR COLLECTION (छापिएको छ · बुझिलिन तयार)
+                PRINTED & READY FOR COLLECTION (छापिएको छ · बुझिलिन तयार)
               </div>
             </div>
             <div
@@ -632,9 +652,9 @@ export default function LicenseResult({
                   <div className="font-bold text-xs">{displayOfficeName}</div>
                   {officeInfo && (
                     <div className="text-[10px] text-gray-700 mt-0.5 break-words leading-tight">
-                      📍 {officeInfo.addressEn} ({officeInfo.addressNe})
-                      {officeInfo.phone && ` · 📞 ${officeInfo.phone}`}
-                      {officeInfo.provinceEn && ` · 🏛️ ${officeInfo.provinceEn}`}
+                      Address: {officeInfo.addressEn} ({officeInfo.addressNe})
+                      {officeInfo.phone && ` · Tel: ${officeInfo.phone}`}
+                      {officeInfo.provinceEn && ` · Province: ${officeInfo.provinceEn}`}
                     </div>
                   )}
                 </td>
@@ -717,7 +737,7 @@ export default function LicenseResult({
           >
             <div>
               <p className="font-bold text-red-800">
-                ⚠️ कानूनी सूचना: यो गैर-सरकारी रसिद सवारी साधन चलाउन, कानूनी प्रमाणको रूपमा, वा ट्राफिक प्रहरीलाई देखाउन अमान्य छ।
+                कानूनी सूचना (Legal Disclaimer): यो गैर-सरकारी रसिद सवारी साधन चलाउन, कानूनी प्रमाणको रूपमा, वा ट्राफिक प्रहरीलाई देखाउन अमान्य छ।
               </p>
               <p className="font-semibold text-gray-800 mt-0.5">
                 Public Data Source: Department of Transport Management (DOTM, dotm.gov.np) · Online: https://license-checker.acharyanischal.com.np/?number={result.license_number}
