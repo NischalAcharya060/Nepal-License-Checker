@@ -12,6 +12,7 @@ import DeveloperQuotaGauge from '@/components/developer/DeveloperQuotaGauge'
 import DeveloperKeyDistribution from '@/components/developer/DeveloperKeyDistribution'
 import LiveConsoleSparkline, { type LiveRequestEntry } from '@/components/developer/LiveConsoleSparkline'
 import DeveloperShowcaseChart from '@/components/developer/DeveloperShowcaseChart'
+import DeveloperMobileDeviceWarning from '@/components/developer/DeveloperMobileDeviceWarning'
 import type { DeveloperAnalyticsResponse } from '@/app/api/developer/analytics/route'
 
 export default function DeveloperPortalPage() {
@@ -905,6 +906,7 @@ print("License details:", data.get("data"))`
   // =================================================================
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors">
+      <DeveloperMobileDeviceWarning />
       {/* Ambient background glows */}
       <div
         className="pointer-events-none fixed -top-40 right-0 h-96 w-96 rounded-full bg-gradient-to-br from-[var(--nepal-blue)]/10 via-[var(--nepal-red)]/5 to-transparent blur-3xl opacity-60"
