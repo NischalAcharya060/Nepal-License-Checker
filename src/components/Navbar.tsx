@@ -38,6 +38,27 @@ export default function Navbar({
   onOpenNpm,
 }: NavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  type FontSize = 'normal' | 'lg' | 'xl'
+  const [fontSize, setFontSize] = useState<FontSize>(() => {
+    if (typeof window === 'undefined') return 'normal'
+    const saved = window.localStorage.getItem('ui-font-size')
+    return saved === 'lg' || saved === 'xl' ? saved : 'normal'
+  })
+
+  const handleToggleFontSize = () => {
+    const nextSize: FontSize = fontSize === 'normal' ? 'lg' : fontSize === 'lg' ? 'xl' : 'normal'
+    setFontSize(nextSize)
+    if (typeof window !== 'undefined') {
+      if (nextSize === 'normal') {
+        window.localStorage.removeItem('ui-font-size')
+        document.documentElement.removeAttribute('data-font-size')
+      } else {
+        window.localStorage.setItem('ui-font-size', nextSize)
+        document.documentElement.setAttribute('data-font-size', nextSize)
+      }
+    }
+  }
+
 
   const handleBrandClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) {
@@ -71,14 +92,10 @@ export default function Navbar({
             className="h-9 w-9 sm:h-12 sm:w-12 rounded-xl shadow-xs object-contain transition-transform group-hover:scale-105 shrink-0"
             priority
           />
-          <div className="flex flex-col">
-            <span className="text-xs font-extrabold tracking-tight text-[var(--text-primary)] sm:text-base leading-tight whitespace-nowrap">
+          <div className="flex flex-col justify-center">
+            <span className="text-sm font-extrabold tracking-tight text-[var(--text-primary)] sm:text-base leading-tight whitespace-nowrap">
               {language === 'ne' ? 'नेपाल लाइसेन्स जाँच' : 'Nepal License Checker'}
             </span>
-            <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-semibold text-[var(--text-secondary)] whitespace-nowrap">
-              <span className="inline-flex h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-[var(--success)] animate-glow-pulse shrink-0" aria-hidden />
-              <span>DOTM · dotm.gov.np</span>
-            </div>
           </div>
         </Link>
 
@@ -147,14 +164,12 @@ export default function Navbar({
             <button
               type="button"
               onClick={onOpenNpm}
-              className="hidden items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-[11px] font-semibold text-[var(--text-secondary)] transition hover:border-[var(--nepal-red)] hover:bg-[var(--nepal-red)]/10 hover:text-[var(--nepal-red)] active:scale-95 sm:inline-flex cursor-pointer"
+              className="hidden items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-[11px] font-semibold text-[var(--text-secondary)] transition hover:border-[var(--nepal-red)] hover:bg-[var(--nepal-red)]/10 hover:text-[var(--nepal-red)] active:scale-95 sm:inline-flex cursor-pointer group"
               title={language === 'ne' ? 'विकासकर्ता SDK (npm & GitHub Packages)' : 'Developer SDK (npm & GitHub Packages)'}
             >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-red)]" aria-hidden="true">
-                <path d="M16.5 9.4 7.55 4.24a1.78 1.78 0 0 0-1.8 0l-4 2.31A1.78 1.78 0 0 0 1 8.08v8a1.78 1.78 0 0 0 .75 1.45l4 2.31a1.78 1.78 0 0 0 1.8 0l8.95-5.16" />
-                <polyline points="3.29 7 12 12 20.71 7" />
-                <line x1="12" y1="22" x2="12" y2="12" />
-              </svg>
+              <span className="rounded bg-[var(--nepal-red)]/10 px-1 py-0.5 font-mono text-[9.5px] font-black text-[var(--nepal-red)] group-hover:bg-[var(--nepal-red)] group-hover:text-white transition-colors">
+                npm
+              </span>
               <span>{language === 'ne' ? 'SDK प्याकेज' : 'SDK / NPM'}</span>
             </button>
           )}
@@ -194,6 +209,28 @@ export default function Navbar({
               <span className="hidden sm:inline">नेपाली</span>
             </button>
           </div>
+
+                    {/* Text Size / Accessibility Scaler (Aa) */}
+          <button
+            type="button"
+            onClick={handleToggleFontSize}
+            className={`inline-flex h-8 items-center justify-center rounded-full border px-2 text-xs font-bold transition active:scale-95 cursor-pointer ${
+              fontSize !== 'normal'
+                ? 'border-[var(--nepal-blue)] bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)] shadow-xs'
+                : 'border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-secondary)] hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)]'
+            }`}
+            title={
+              language === 'ne'
+                ? `अक्षरको आकार परिवर्तन गर्नुहोस् (${fontSize === 'normal' ? 'सामान्य' : fontSize === 'lg' ? 'ठूलो' : 'धेरै ठूलो'})`
+                : `Toggle Text Size (${fontSize === 'normal' ? 'Normal' : fontSize === 'lg' ? 'Large' : 'Extra Large'})`
+            }
+            aria-label="Text Size Toggle"
+          >
+            <span className="font-serif font-black tracking-tighter">A</span>
+            <span className="text-[10px] font-sans font-bold">
+              {fontSize === 'normal' ? 'a' : fontSize === 'lg' ? '+' : '++'}
+            </span>
+          </button>
 
           {/* 1-Click Theme Toggle Button (Compact) */}
           <button
@@ -423,12 +460,8 @@ export default function Navbar({
                 className="flex items-center justify-between rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3.5 py-2.5 text-left transition hover:border-[var(--nepal-red)] hover:bg-[var(--nepal-red)]/10 active:scale-[0.99]"
               >
                 <div className="flex items-center gap-2.5">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/10 text-[var(--nepal-red)]">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <path d="M16.5 9.4 7.55 4.24a1.78 1.78 0 0 0-1.8 0l-4 2.31A1.78 1.78 0 0 0 1 8.08v8a1.78 1.78 0 0 0 .75 1.45l4 2.31a1.78 1.78 0 0 0 1.8 0l8.95-5.16" />
-                      <polyline points="3.29 7 12 12 20.71 7" />
-                      <line x1="12" y1="22" x2="12" y2="12" />
-                    </svg>
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/10 font-mono text-xs font-black text-[var(--nepal-red)]">
+                    npm
                   </span>
                   <div className="flex flex-col">
                     <span className="text-xs font-bold text-[var(--text-primary)]">
@@ -444,6 +477,70 @@ export default function Navbar({
                 </svg>
               </button>
             )}
+
+                        {/* Font Size Accessibility Controls (Mobile) */}
+            <div className="flex flex-col gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3">
+              <div className="flex items-center justify-between text-xs font-bold text-[var(--text-primary)]">
+                <span className="flex items-center gap-1.5">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]">
+                    <polyline points="4 7 4 4 20 4 20 7" />
+                    <line x1="9" y1="20" x2="15" y2="20" />
+                    <line x1="12" y1="4" x2="12" y2="20" />
+                  </svg>
+                  <span>{language === 'ne' ? 'अक्षरको आकार (Accessibility)' : 'Text Size & Readability'}</span>
+                </span>
+                <span className="text-[10px] font-semibold text-[var(--text-muted)]">
+                  {fontSize === 'normal' ? '100%' : fontSize === 'lg' ? '112%' : '125%'}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-1.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFontSize('normal')
+                    window.localStorage.removeItem('ui-font-size')
+                    document.documentElement.removeAttribute('data-font-size')
+                  }}
+                  className={`rounded-lg py-1.5 text-center text-[11px] font-semibold transition ${
+                    fontSize === 'normal'
+                      ? 'bg-[var(--nepal-blue)] text-white shadow-xs'
+                      : 'border border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)]'
+                  }`}
+                >
+                  {language === 'ne' ? 'सामान्य' : 'Normal'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFontSize('lg')
+                    window.localStorage.setItem('ui-font-size', 'lg')
+                    document.documentElement.setAttribute('data-font-size', 'lg')
+                  }}
+                  className={`rounded-lg py-1.5 text-center text-[11px] font-semibold transition ${
+                    fontSize === 'lg'
+                      ? 'bg-[var(--nepal-blue)] text-white shadow-xs'
+                      : 'border border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)]'
+                  }`}
+                >
+                  {language === 'ne' ? 'ठूलो' : 'Large'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFontSize('xl')
+                    window.localStorage.setItem('ui-font-size', 'xl')
+                    document.documentElement.setAttribute('data-font-size', 'xl')
+                  }}
+                  className={`rounded-lg py-1.5 text-center text-[11px] font-semibold transition ${
+                    fontSize === 'xl'
+                      ? 'bg-[var(--nepal-blue)] text-white shadow-xs'
+                      : 'border border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)]'
+                  }`}
+                >
+                  {language === 'ne' ? 'धेरै ठूलो' : 'X-Large'}
+                </button>
+              </div>
+            </div>
 
             {/* GitHub Link in mobile menu */}
             <div className="mt-1 flex items-center justify-between pt-2 border-t border-[var(--border-default)]/60 text-[11px]">

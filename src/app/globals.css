@@ -84,6 +84,14 @@
     color-scheme: dark;
   }
 
+  html[data-font-size="lg"] {
+    font-size: 112.5%;
+  }
+
+  html[data-font-size="xl"] {
+    font-size: 125%;
+  }
+
   body {
     position: relative;
     overflow-x: hidden;

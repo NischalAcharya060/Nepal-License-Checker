@@ -31,6 +31,12 @@ const appDescriptionNe =
 const appDescription = `${appDescriptionEn} | ${appDescriptionNe}`
 
 const themeInitScript = `
+  try {
+    const savedFont = localStorage.getItem('ui-font-size');
+    if (savedFont === 'lg' || savedFont === 'xl') {
+      document.documentElement.setAttribute('data-font-size', savedFont);
+    }
+  } catch {}` + `
 (() => {
   try {
     const saved = localStorage.getItem('ui-theme');

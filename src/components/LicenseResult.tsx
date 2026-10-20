@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { isSpeechSupported, speakResultText, stopSpeech } from '@/utils/speech'
 import toast from 'react-hot-toast'
 import { formatDate } from '@/utils/helpers'
 import { getTransportOfficeByOfficeName } from '@/lib/offices'
@@ -63,6 +64,72 @@ export default function LicenseResult({
   onOpenFeedback,
 }: LicenseResultProps) {
   const [copied, setCopied] = useState(false)
+  const [isSpeaking, setIsSpeaking] = useState(false)
+
+  useEffect(() => {
+    return () => {
+      stopSpeech()
+    }
+  }, [licenseNumber, state])
+
+  const handleCheckAnother = () => {
+    stopSpeech()
+    setIsSpeaking(false)
+    onCheckAnother()
+  }
+
+  const handleToggleSpeech = () => {
+    if (isSpeaking) {
+      stopSpeech()
+      setIsSpeaking(false)
+      return
+    }
+
+    if (!isSpeechSupported()) {
+      toast.error(copy.speechNotSupportedToast)
+      return
+    }
+
+    let textToSpeak = ''
+
+    if (state === 'found' && result) {
+      if (language === 'ne') {
+        textToSpeak = `लाइसेन्स नम्बर: ${result.license_number}। स्थिति: कार्ड छापिइसकेको छ। कार्यालय जाँदा अनिवार्य लैजानुपर्ने कागजातहरू: सक्कल नेपाली नागरिकता प्रमाणपत्र, राजस्व तिरेको सक्कल रसिद, र पुरानो सवारी चालक अनुमतिपत्र।`
+      } else {
+        textToSpeak = `License number: ${result.license_number}. Status: Card is printed and ready. Mandatory documents to bring: Original citizenship card, payment receipt, and previous driving license.`
+      }
+    } else if (state === 'not_found') {
+      if (language === 'ne') {
+        textToSpeak = `लाइसेन्स नम्बर: ${licenseNumber}। स्थिति: अझै छापिएको छैन।`
+      } else {
+        textToSpeak = `License number: ${licenseNumber}. Status: Not printed yet.`
+      }
+    } else if (state === 'error') {
+      if (language === 'ne') {
+        textToSpeak = `लाइसेन्स नम्बर: ${licenseNumber}। स्थिति: जाँच गर्न सकिएन।`
+      } else {
+        textToSpeak = `License number: ${licenseNumber}. Status: Error checking record.`
+      }
+    }
+
+    if (!textToSpeak) return
+
+    const started = speakResultText({
+      text: textToSpeak,
+      lang: language,
+      onStart: () => setIsSpeaking(true),
+      onEnd: () => setIsSpeaking(false),
+      onError: () => {
+        setIsSpeaking(false)
+        toast.error(copy.speechNotSupportedToast)
+      },
+    })
+
+    if (!started) {
+      setIsSpeaking(false)
+    }
+  }
+
 
   const officeInfo = getTransportOfficeByOfficeName(result?.office)
   const categoryList = parseCategoryCodes(result?.category || '')
@@ -122,18 +189,49 @@ export default function LicenseResult({
   if (state === 'error') {
     return (
       <div className="animate-rise-in overflow-hidden rounded-2xl border border-[var(--error-border)] bg-[var(--surface-primary)] shadow-sm print:hidden">
-        <div className="flex items-center gap-3 bg-gradient-to-r from-[var(--error)] to-[#e74c3c] px-4 py-5 sm:px-6">
-          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-white/20">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-              <line x1="12" y1="9" x2="12" y2="13" />
-              <line x1="12" y1="17" x2="12.01" y2="17" />
-            </svg>
+        <div className="flex items-center justify-between gap-3 bg-gradient-to-r from-[var(--error)] to-[#e74c3c] px-4 py-5 sm:px-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-white/20">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-white">{copy.errorTitle}</h2>
+              <p className="text-sm text-white/85">{copy.errorDescription}</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-lg font-bold text-white">{copy.errorTitle}</h2>
-            <p className="text-sm text-white/85">{copy.errorDescription}</p>
-          </div>
+          <button
+            type="button"
+            onClick={handleToggleSpeech}
+            aria-label={isSpeaking ? copy.stopAudioLabel : copy.listenResultLabel}
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition shadow-sm cursor-pointer shrink-0 ${
+              isSpeaking
+                ? 'bg-white text-[var(--error)] ring-2 ring-white/60'
+                : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm'
+            }`}
+            title={isSpeaking ? copy.stopAudioLabel : copy.listenResultLabel}
+          >
+            {isSpeaking ? (
+              <>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="6" y="6" width="12" height="12" rx="2" />
+                </svg>
+                <span>{copy.stopAudioLabel}</span>
+              </>
+            ) : (
+              <>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                </svg>
+                <span>{copy.listenResultLabel}</span>
+              </>
+            )}
+          </button>
         </div>
         <div className="space-y-4 p-4 sm:p-6">
           <div className="rounded-xl border border-[var(--warning-border)] bg-[var(--warning-bg)] p-4">
@@ -146,7 +244,7 @@ export default function LicenseResult({
             </p>
           </div>
           <button
-            onClick={onCheckAnother}
+            onClick={handleCheckAnother}
             className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--border-default)] bg-transparent px-4 py-3 text-sm font-semibold text-[var(--text-secondary)] transition hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue-soft)] hover:text-[var(--nepal-blue)]"
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -177,18 +275,49 @@ export default function LicenseResult({
   if (state === 'not_found') {
     return (
       <div className="animate-rise-in overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-sm print:hidden">
-        <div className="flex items-center gap-3 bg-gradient-to-r from-[#c0392b] to-[#d35400] px-4 py-5 sm:px-6">
-          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-white/20">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="15" y1="9" x2="9" y2="15" />
-              <line x1="9" y1="9" x2="15" y2="15" />
-            </svg>
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-[#c0392b] to-[#d35400] px-4 py-5 sm:px-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-white/20">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="15" y1="9" x2="9" y2="15" />
+                <line x1="9" y1="9" x2="15" y2="15" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-white">{copy.notFoundTitle}</h2>
+              <p className="text-sm text-white/90">{copy.notFoundDescription}</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-lg font-bold text-white">{copy.notFoundTitle}</h2>
-            <p className="text-sm text-white/90">{copy.notFoundDescription}</p>
-          </div>
+          <button
+            type="button"
+            onClick={handleToggleSpeech}
+            aria-label={isSpeaking ? copy.stopAudioLabel : copy.listenResultLabel}
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition shadow-sm cursor-pointer shrink-0 ${
+              isSpeaking
+                ? 'bg-white text-orange-700 ring-2 ring-white/60'
+                : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm'
+            }`}
+            title={isSpeaking ? copy.stopAudioLabel : copy.listenResultLabel}
+          >
+            {isSpeaking ? (
+              <>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="6" y="6" width="12" height="12" rx="2" />
+                </svg>
+                <span>{copy.stopAudioLabel}</span>
+              </>
+            ) : (
+              <>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                </svg>
+                <span>{copy.listenResultLabel}</span>
+              </>
+            )}
+          </button>
         </div>
 
         <div className="space-y-4 p-4 sm:p-6">
@@ -261,7 +390,7 @@ export default function LicenseResult({
           </div>
 
           <button
-            onClick={onCheckAnother}
+            onClick={handleCheckAnother}
             className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--border-default)] bg-transparent px-4 py-3 text-sm font-semibold text-[var(--text-secondary)] transition hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue-soft)] hover:text-[var(--nepal-blue)]"
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -322,12 +451,43 @@ export default function LicenseResult({
               </div>
             </div>
 
-            <div className="hidden rounded-xl border border-white/20 bg-white/10 px-3 py-1.5 text-right sm:block">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-white/80">
-                {language === 'ne' ? 'जाँच समय' : 'Verified At'}
-              </div>
-              <div className="font-mono text-xs font-semibold text-white">
-                {verifiedTimestamp}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleToggleSpeech}
+                aria-label={isSpeaking ? copy.stopAudioLabel : copy.listenResultLabel}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition shadow-sm cursor-pointer ${
+                  isSpeaking
+                    ? 'bg-white text-emerald-800 ring-2 ring-white/60'
+                    : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm'
+                }`}
+                title={isSpeaking ? copy.stopAudioLabel : copy.listenResultLabel}
+              >
+                {isSpeaking ? (
+                  <>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                      <rect x="6" y="6" width="12" height="12" rx="2" />
+                    </svg>
+                    <span>{copy.stopAudioLabel}</span>
+                  </>
+                ) : (
+                  <>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                    </svg>
+                    <span>{copy.listenResultLabel}</span>
+                  </>
+                )}
+              </button>
+              <div className="hidden rounded-xl border border-white/20 bg-white/10 px-3 py-1.5 text-right sm:block">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-white/80">
+                  {language === 'ne' ? 'जाँच समय' : 'Verified At'}
+                </div>
+                <div className="font-mono text-xs font-semibold text-white">
+                  {verifiedTimestamp}
+                </div>
               </div>
             </div>
           </div>
@@ -455,8 +615,36 @@ export default function LicenseResult({
               </ul>
             </div>
 
-            {/* Action buttons toolbar: Print Slip, Share, Check Another */}
+            {/* Action buttons toolbar: Print Slip, Share, Listen, Check Another */}
             <div className="flex flex-wrap items-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={handleToggleSpeech}
+                className={`inline-flex flex-1 min-w-[140px] items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-xs font-bold shadow-sm transition active:scale-95 sm:text-sm cursor-pointer ${
+                  isSpeaking
+                    ? 'border-emerald-500 bg-emerald-500 text-white'
+                    : 'border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-secondary)] hover:border-emerald-500 hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400'
+                }`}
+              >
+                {isSpeaking ? (
+                  <>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                      <rect x="6" y="6" width="12" height="12" rx="2" />
+                    </svg>
+                    <span>{copy.stopAudioLabel}</span>
+                  </>
+                ) : (
+                  <>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                    </svg>
+                    <span>{copy.listenResultLabel}</span>
+                  </>
+                )}
+              </button>
+
               <button
                 type="button"
                 onClick={handlePrint}
@@ -487,7 +675,7 @@ export default function LicenseResult({
 
               <button
                 type="button"
-                onClick={onCheckAnother}
+                onClick={handleCheckAnother}
                 className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-[var(--border-default)] bg-transparent px-4 py-2.5 text-xs font-semibold text-[var(--text-secondary)] transition hover:bg-[var(--bg-secondary)] active:scale-95 sm:text-sm cursor-pointer"
               >
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

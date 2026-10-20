@@ -86,6 +86,9 @@ export interface LicenseResultCopy {
   printSlipLabel: string
   shareResultLabel: string
   copyDetailsLabel: string
+  listenResultLabel: string
+  stopAudioLabel: string
+  speechNotSupportedToast: string
   officeDetailsTitle: string
   officePhoneLabel: string
   officeAddressLabel: string
