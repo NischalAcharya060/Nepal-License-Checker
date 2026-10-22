@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import { getSiteUrl } from '@/lib/siteUrl'
+import { getNpmStats } from '@/lib/npmStats'
+import { NpmStatsProvider } from '@/components/developer/NpmStatsProvider'
 
 const siteUrl = getSiteUrl()
 const docsUrl = `${siteUrl}/developer/docs`
@@ -117,14 +119,16 @@ const docsStructuredData = {
   ],
 }
 
-export default function SdkDocsLayout({ children }: { children: React.ReactNode }) {
+export default async function SdkDocsLayout({ children }: { children: React.ReactNode }) {
+  const npmStats = await getNpmStats()
+
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(docsStructuredData) }}
       />
-      {children}
+      <NpmStatsProvider stats={npmStats}>{children}</NpmStatsProvider>
     </>
   )
 }

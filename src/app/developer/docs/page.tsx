@@ -10,8 +10,64 @@ import {
   devanagariToAsciiDigits,
   asciiToDevanagariDigits,
 } from '../../../../packages/sdk/src/utils'
+import { useNpmStats } from '@/components/developer/NpmStatsProvider'
+import {
+  formatBytes,
+  formatDownloads,
+  NPM_BUNDLEPHOBIA_URL,
+  NPM_REGISTRY_URL,
+  SDK_LICENSE_URL,
+} from '@/lib/sdkMeta'
+
+/**
+ * Self-contained shields-style badge.
+ * Rendered locally (instead of an external shields.io <img>) so it can never
+ * break, show raw alt text, or display upstream errors such as
+ * "rate limited by upstream service".
+ */
+function FlatBadge({
+  label,
+  value,
+  color,
+  href,
+  title,
+}: {
+  label: string
+  value: string
+  color: string
+  href?: string
+  title?: string
+}) {
+  const badge = (
+    <span
+      className="inline-flex h-5 items-stretch overflow-hidden rounded-[3px] text-[11px] font-semibold leading-none shadow-2xs ring-1 ring-black/10 dark:ring-white/10"
+      title={title}
+    >
+      <span className="flex items-center bg-[#555] px-1.5 text-white/90">{label}</span>
+      <span className="flex items-center px-1.5 text-white" style={{ backgroundColor: color }}>
+        {value}
+      </span>
+    </span>
+  )
+
+  if (!href) return badge
+
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="hover:opacity-85 transition"
+      title={title}
+      aria-label={title}
+    >
+      {badge}
+    </a>
+  )
+}
 
 export default function SdkDocumentationPage() {
+  const npmStats = useNpmStats()
   const [activeInstallTab, setActiveInstallTab] = useState<'npm' | 'pnpm' | 'yarn' | 'bun' | 'github'>('npm')
   const [activeUsageTab, setActiveUsageTab] = useState<'esm' | 'cjs' | 'nextjs'>('esm')
   const [copiedSection, setCopiedSection] = useState<string | null>(null)
@@ -100,69 +156,45 @@ export default function SdkDocumentationPage() {
 
         {/* Hero Title Section */}
         <div className="space-y-4">
-          {/* Live Shields.io Badges & Ecosystem Tags */}
+          {/* Live npm Badges & Ecosystem Tags */}
           <div className="flex flex-wrap items-center gap-2">
-            <a
-              href="https://www.npmjs.com/package/nepal-license-checker"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:opacity-85 transition"
-              title="npm package version"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="https://img.shields.io/npm/v/nepal-license-checker?label=npm&color=cb3837&style=flat"
-                alt="npm version"
-                className="h-5"
-              />
-            </a>
-            <a
-              href="https://www.npmjs.com/package/nepal-license-checker"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:opacity-85 transition"
+            <FlatBadge
+              label="npm"
+              value={`v${npmStats.version}`}
+              color="#cb3837"
+              href={NPM_REGISTRY_URL}
+              title={`npm version ${npmStats.version}`}
+            />
+            <FlatBadge
+              label="downloads"
+              value={formatDownloads(npmStats.weeklyDownloads)}
+              color="#0066cc"
+              href={NPM_REGISTRY_URL}
               title="Weekly npm downloads"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="https://img.shields.io/npm/dw/nepal-license-checker?color=0066cc&label=downloads&style=flat"
-                alt="npm downloads"
-                className="h-5"
-              />
-            </a>
-            <a
-              href="https://bundlephobia.com/package/nepal-license-checker"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:opacity-85 transition"
-              title="Bundle size minzipped"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="https://img.shields.io/bundlephobia/minzip/nepal-license-checker?label=minzipped&color=2ea44f&style=flat"
-                alt="bundle size"
-                className="h-5"
-              />
-            </a>
-            <a
-              href="https://github.com/NischalAcharya060/Nepal-License-Checker/blob/main/packages/sdk/LICENSE"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:opacity-85 transition"
-              title="MIT License"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="https://img.shields.io/npm/l/nepal-license-checker?label=license&color=8957e5&style=flat"
-                alt="license"
-                className="h-5"
-              />
-            </a>
+            />
+            <FlatBadge
+              label="minzipped"
+              value={formatBytes(npmStats.minzippedBytes)}
+              color="#2ea44f"
+              href={NPM_BUNDLEPHOBIA_URL}
+              title="Bundle size (minzipped)"
+            />
+            <FlatBadge
+              label="license"
+              value={npmStats.license}
+              color="#8957e5"
+              href={SDK_LICENSE_URL}
+              title={`${npmStats.license} License`}
+            />
             <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-0.5 text-xs font-medium text-[var(--text-secondary)] shadow-2xs">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" className="text-[var(--nepal-blue)]" aria-hidden="true">
                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
               </svg>
-              <span>Zero Dependencies</span>
+              <span>
+                {npmStats.dependencyCount === 0
+                  ? 'Zero Dependencies'
+                  : `${npmStats.dependencyCount} Dependencies`}
+              </span>
             </span>
             <span className="rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-0.5 text-xs font-medium text-[var(--text-secondary)] shadow-2xs">
               Nepali (०-९) Digits

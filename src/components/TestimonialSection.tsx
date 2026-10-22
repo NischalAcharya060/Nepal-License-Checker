@@ -3,7 +3,31 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import type { Language } from '@/lib/i18n'
 import type { PublicTestimonialItem } from '@/lib/testimonials'
-import { formatTimeAgo } from '@/app/admin/helpers'
+
+/**
+ * Formats a review timestamp as an absolute date (no relative "6d ago" style).
+ * Handles epoch seconds or milliseconds and renders in Nepal Standard Time.
+ */
+function formatReviewDate(timestamp: number | string | null | undefined, isNe: boolean): string {
+    if (!timestamp) return ''
+    let ms = typeof timestamp === 'number' ? timestamp : Number(timestamp)
+    if (isNaN(ms) || ms <= 0) {
+        ms = new Date(timestamp).getTime()
+    }
+    if (isNaN(ms) || ms <= 0) return ''
+    // Auto-convert epoch seconds to milliseconds
+    if (ms < 100000000000) {
+        ms *= 1000
+    }
+    const d = new Date(ms)
+    if (isNaN(d.getTime())) return ''
+    return d.toLocaleDateString(isNe ? 'ne-NP' : 'en-NP', {
+        timeZone: 'Asia/Kathmandu',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+    })
+}
 
 interface TestimonialSectionProps {
     language: Language
@@ -380,7 +404,7 @@ export default function TestimonialSection({
                                     <span>{isNe ? 'प्रमाणित समीक्षा' : 'Verified Query'}</span>
                                 </span>
                                 <time dateTime={new Date(testimonials[0].created_at).toISOString()} className="font-mono tabular-nums">
-                                    {formatTimeAgo(testimonials[0].created_at)}
+                                    {formatReviewDate(testimonials[0].created_at, isNe)}
                                 </time>
                             </div>
                         </div>
@@ -474,7 +498,7 @@ export default function TestimonialSection({
                                                     <span>{isNe ? 'प्रमाणित समीक्षा' : 'Verified Query'}</span>
                                                 </span>
                                                 <time dateTime={new Date(t.created_at).toISOString()} className="font-mono tabular-nums">
-                                                    {formatTimeAgo(t.created_at)}
+                                                    {formatReviewDate(t.created_at, isNe)}
                                                 </time>
                                             </div>
                                         </div>

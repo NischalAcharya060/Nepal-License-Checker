@@ -473,15 +473,6 @@ export default function OfficesModal({ isOpen, onClose, copy, language }: Office
                 </div>
               </div>
 
-              {/* Extra Info / Tips */}
-              <div className="rounded-xl border border-[var(--border-default)] bg-[var(--info-bg)]/40 p-3 text-[11px] text-[var(--text-secondary)] leading-relaxed">
-                <span className="font-bold text-[var(--nepal-blue)]">
-                  {language === 'ne' ? 'सुझाव: ' : 'License Code Tip: '}
-                </span>
-                {language === 'ne'
-                  ? `यो कार्यालयको कोड "${selectedOffice.code}" हो। तपाईंको लाइसेन्स नम्बर यही अङ्कबाट सुरु भएको हुनसक्छ।`
-                  : `This office code is "${selectedOffice.code}". License numbers issued from here start with this 2-digit code.`}
-              </div>
             </div>
 
             {/* Footer */}
