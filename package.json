@@ -11,7 +11,8 @@
     "sdk:build": "npm --prefix packages/sdk run build",
     "sdk:test": "npm --prefix packages/sdk test",
     "sdk:python:test": "python packages/python/tests/test_sdk.py",
-    "sdk:php:test": "php packages/php/tests/test.php"
+    "sdk:php:test": "php packages/php/tests/test.php",
+    "sdk:php:push": "git subtree push --prefix packages/php https://github.com/NischalAcharya060/nepal-license-checker-php.git master"
   },
   "dependencies": {
     "@libsql/client": "^0.17.3",
