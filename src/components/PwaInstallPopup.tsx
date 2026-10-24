@@ -13,6 +13,7 @@ interface PwaInstallPopupProps {
 
 const DISMISS_STORAGE_KEY = 'pwa_popup_dismissed_until'
 const DISMISS_DURATION_MS = 24 * 60 * 60 * 1000 // 24 hours
+const MOBILE_POPUP_DELAY_MS = 7500 // Show after user spends 7.5s (within 5-10s window) on the page
 const emptySubscribe = () => () => {}
 
 export default function PwaInstallPopup({ language }: PwaInstallPopupProps) {
@@ -49,10 +50,10 @@ export default function PwaInstallPopup({ language }: PwaInstallPopupProps) {
       // Ignore localStorage read errors
     }
 
-    // Friendly delay so initial page content loads first
+    // Delay showing popup until user has spent 5-10 seconds on the page on smaller devices
     const timer = window.setTimeout(() => {
       setIsOpen(true)
-    }, 1200)
+    }, MOBILE_POPUP_DELAY_MS)
 
     return () => window.clearTimeout(timer)
   }, [isInstalled])
@@ -105,7 +106,7 @@ export default function PwaInstallPopup({ language }: PwaInstallPopupProps) {
             type="button"
             onClick={handleDismiss}
             aria-label={copy.notNowLabel}
-            className="absolute right-3 top-3 rounded-full p-1.5 text-[var(--text-muted)] transition hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"
+            className="absolute right-2 top-2 inline-flex h-11 w-11 items-center justify-center rounded-full text-[var(--text-muted)] transition hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nepal-blue)]"
           >
             <svg
               width="18"
@@ -123,7 +124,7 @@ export default function PwaInstallPopup({ language }: PwaInstallPopupProps) {
           </button>
 
           {/* Header with App Logo & Title */}
-          <div className="flex items-start gap-3 pr-7">
+          <div className="flex items-start gap-3 pr-8">
             <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-[var(--border-default)] shadow-xs">
               <Image
                 src="/android-chrome-192x192.png"
@@ -154,7 +155,7 @@ export default function PwaInstallPopup({ language }: PwaInstallPopupProps) {
             <button
               type="button"
               onClick={handleInstallClick}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--nepal-blue)] px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-[var(--nepal-blue)]/90 active:scale-[0.98]"
+              className="flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--nepal-blue)] px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-[var(--nepal-blue)]/90 active:scale-[0.98]"
             >
               <svg
                 width="15"
@@ -177,7 +178,7 @@ export default function PwaInstallPopup({ language }: PwaInstallPopupProps) {
             <button
               type="button"
               onClick={handleDismiss}
-              className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3 py-2.5 text-xs font-semibold text-[var(--text-secondary)] transition hover:bg-[var(--surface-primary)] hover:text-[var(--text-primary)]"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3.5 py-2.5 text-xs font-semibold text-[var(--text-secondary)] transition hover:bg-[var(--surface-primary)] hover:text-[var(--text-primary)]"
             >
               {copy.notNowLabel}
             </button>

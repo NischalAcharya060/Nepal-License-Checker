@@ -35,9 +35,9 @@ export default function HeroHeader({
   return (
     <>
       <header className="relative z-10 mb-8 text-center sm:mb-10 print:hidden">
-        {/* Waving Nepal flag with weightless levitation */}
+        {/* Waving Nepal flag with calm civic presentation */}
         <div className="mb-3 flex justify-center animate-rise-in">
-          <div className="animate-levitate drop-shadow-md">
+          <div className="drop-shadow-sm">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/Nepal-flag.gif"
@@ -45,7 +45,7 @@ export default function HeroHeader({
               aria-hidden
               width={50}
               height={68}
-              className="h-14 w-auto object-contain transition-transform duration-300 hover:scale-110"
+              className="h-13 w-auto object-contain transition-transform duration-300 hover:scale-105"
             />
           </div>
         </div>
@@ -57,9 +57,9 @@ export default function HeroHeader({
           <div className="h-1.5 w-12 rounded-r-full bg-[var(--nepal-blue)] shadow-xs" />
         </div>
 
-        {/* Floating Glassmorphic Official Badge */}
-        <div className="mb-3.5 inline-flex items-center gap-2 rounded-full antigravity-glass-pill px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.1em] text-[var(--nepal-blue)] dark:text-[#88b6ff] shadow-sm animate-rise-in sm:text-[11px] cursor-default transition-all duration-300 hover:scale-105">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)] dark:text-[#88b6ff]">
+        {/* Official Status Badge - 11pt / 12px accessible typography floor */}
+        <div className="mb-3.5 inline-flex items-center gap-2 rounded-full border border-[var(--nepal-blue)]/20 bg-[var(--nepal-blue-soft)]/75 px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider text-[var(--nepal-blue)] dark:text-[#88b6ff] shadow-xs animate-rise-in cursor-default transition-all duration-300">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)] dark:text-[#88b6ff]">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
           </svg>
           <span>{badge}</span>
@@ -74,7 +74,7 @@ export default function HeroHeader({
 
         {/* Bilingual subline */}
         <p
-          className="mx-auto mt-2.5 max-w-2xl animate-rise-in text-[11px] leading-5 text-[var(--text-muted)] sm:text-xs"
+          className="mx-auto mt-2.5 max-w-2xl animate-rise-in text-xs sm:text-sm leading-relaxed text-[var(--text-muted)] font-medium"
           style={{ animationDelay: '0.12s' }}
           lang={language === 'ne' ? 'en' : 'ne'}
         >
@@ -84,11 +84,12 @@ export default function HeroHeader({
         </p>
       </header>
 
-      {/* Trust & Authority Stats Bar (Spatial Glass Bar) */}
+      {/* Trust & Authority Stats Bar (Clean High-Precision Card) */}
       <div
-        className="mx-auto mb-6 flex max-w-4xl flex-wrap items-center justify-center gap-x-6 gap-y-2.5 rounded-2xl dev-glass-card hover-lift px-5 py-3 text-[11px] font-medium text-[var(--text-secondary)] shadow-sm animate-rise-in transition-all duration-300 print:hidden"
+        className="relative overflow-hidden mx-auto mb-6 flex max-w-4xl flex-wrap items-center justify-center gap-x-6 gap-y-2.5 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)]/90 backdrop-blur-md px-5 py-3 text-xs font-medium text-[var(--text-secondary)] shadow-xs animate-rise-in transition-all duration-300 print:hidden"
         style={{ animationDelay: '0.16s' }}
       >
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--nepal-blue)] to-transparent opacity-75" />
         <span className="inline-flex items-center gap-1.5">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />

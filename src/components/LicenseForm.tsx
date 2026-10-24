@@ -82,27 +82,9 @@ export default function LicenseForm({
     return []
   })
   const inputRef = useRef<HTMLInputElement>(null)
-  const cardRef = useRef<HTMLDivElement>(null)
-  const [tilt, setTilt] = useState({ x: 0, y: 0 })
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const loadingInterval = useRef<ReturnType<typeof setInterval> | null>(null)
   const initialAutoSubmitted = useRef(false)
-
-  const handleCardMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (typeof window === 'undefined') return
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    if (!cardRef.current) return
-    const rect = cardRef.current.getBoundingClientRect()
-    const x = e.clientX - rect.left - rect.width / 2
-    const y = e.clientY - rect.top - rect.height / 2
-    const rotateY = Number(((x / (rect.width / 2)) * 2.2).toFixed(2))
-    const rotateX = Number((-(y / (rect.height / 2)) * 2.2).toFixed(2))
-    setTilt({ x: rotateX, y: rotateY })
-  }
-
-  const handleCardMouseLeave = () => {
-    setTilt({ x: 0, y: 0 })
-  }
 
   // Auto-submit initial valid external number once on mount
   useEffect(() => {
@@ -324,22 +306,17 @@ export default function LicenseForm({
   const progress = Math.min((licenseNumber.replace(/-/g, '').length / 12) * 100, 100)
 
   return (
-    <div className="perspective-container">
+    <div>
       <div
-        ref={cardRef}
-        onMouseMove={handleCardMouseMove}
-        onMouseLeave={handleCardMouseLeave}
-        style={{
-          transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
-        }}
-        className="dev-glass-card antigravity-card animate-rise-in rounded-3xl p-5 sm:p-7 shadow-lg transition-all duration-300 border border-[var(--border-default)]/70 hover:border-[var(--nepal-blue)]/40"
+        className="relative overflow-hidden antigravity-card animate-rise-in rounded-3xl p-5 sm:p-7 transition-all duration-300 border border-[var(--border-default)]"
       >
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-[var(--nepal-blue)] to-transparent opacity-80" />
         <form onSubmit={handleSubmit} className="space-y-3.5">
           <div className="flex items-center justify-between">
-            <label htmlFor="license-number" className="block text-xs font-bold uppercase tracking-[0.09em] text-[var(--text-secondary)]">
+            <label htmlFor="license-number" className="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
               {copy.label}
             </label>
-            <span className="hidden items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-secondary)]/80 px-2 py-0.5 text-[10px] font-medium text-[var(--text-muted)] sm:inline-flex shadow-2xs">
+            <span className="hidden items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-secondary)]/80 px-2.5 py-1 text-xs font-medium text-[var(--text-muted)] sm:inline-flex shadow-2xs">
               <span>Press</span>
               <kbd className="font-mono font-bold text-[var(--text-secondary)]">/</kbd>
               <span>to focus</span>
@@ -376,7 +353,7 @@ export default function LicenseForm({
                 inputMode="numeric"
                 aria-invalid={!!error}
                 className={`h-12 w-full rounded-2xl border pl-11 font-mono text-[16px] font-semibold tracking-[0.08em] outline-none transition-all duration-300 sm:h-[54px] sm:text-[17px] shadow-2xs ${
-                  licenseNumber ? 'pr-10' : 'pr-24'
+                  licenseNumber ? 'pr-12' : 'pr-24'
                 } ${
                   error
                     ? 'border-[var(--error-border)] bg-[var(--error-bg)] text-[var(--error)] shadow-[0_0_0_4px_rgba(220,20,60,0.14)]'
@@ -390,11 +367,11 @@ export default function LicenseForm({
                   type="button"
                   disabled={isLockedOut}
                   onClick={handlePasteFromClipboard}
-                  className="antigravity-glass-pill absolute right-2.5 top-1/2 -translate-y-1/2 inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold text-[var(--text-secondary)] shadow-xs transition hover:scale-104 hover:border-[var(--nepal-blue)]/50 hover:text-[var(--nepal-blue)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                  className="antigravity-glass-pill absolute right-2 top-1/2 -translate-y-1/2 inline-flex min-h-[38px] items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold text-[var(--text-secondary)] shadow-xs transition hover:scale-104 hover:border-[var(--nepal-blue)]/50 hover:text-[var(--nepal-blue)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
                   aria-label={language === 'ne' ? 'क्लिपबोर्डबाट पेस्ट गर्नुहोस्' : 'Paste license number from clipboard'}
                   title={language === 'ne' ? 'क्लिपबोर्डबाट पेस्ट गर्नुहोस्' : 'Paste from clipboard'}
                 >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="text-[var(--nepal-blue)]">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="text-[var(--nepal-blue)]">
                     <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
                     <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
                   </svg>
@@ -410,10 +387,10 @@ export default function LicenseForm({
                     onReset()
                     inputRef.current?.focus()
                   }}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-xl p-1.5 text-[var(--text-muted)] transition hover:bg-[var(--bg-secondary)] hover:text-[var(--text-secondary)]"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 flex min-h-[38px] min-w-[38px] items-center justify-center rounded-xl p-2 text-[var(--text-muted)] transition hover:bg-[var(--bg-secondary)] hover:text-[var(--text-secondary)] cursor-pointer"
                   aria-label={copy.clearLabel}
                 >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18" />
                     <line x1="6" y1="6" x2="18" y2="18" />
                   </svg>
@@ -424,7 +401,7 @@ export default function LicenseForm({
             <button
               type="submit"
               disabled={loading || isLockedOut || !!error || !licenseNumber}
-              className="inline-flex h-12 min-w-[155px] items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[var(--nepal-blue)] to-[var(--nepal-blue-mid)] px-6 text-sm font-bold text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:brightness-110 active:translate-y-0 disabled:cursor-not-allowed disabled:bg-[var(--text-muted)] disabled:from-[var(--text-muted)] disabled:to-[var(--text-muted)] disabled:shadow-none sm:h-[54px]"
+              className="inline-flex h-12 min-w-[155px] items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[var(--nepal-blue)] to-[var(--nepal-blue-mid)] px-6 text-sm font-bold text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:brightness-110 active:translate-y-0 disabled:cursor-not-allowed disabled:bg-[var(--text-muted)] disabled:from-[var(--text-muted)] disabled:to-[var(--text-muted)] disabled:shadow-none sm:h-[54px] cursor-pointer"
             >
               {isLockedOut ? (
                 <span className="flex items-center gap-1.5 font-mono text-white/95">
@@ -451,9 +428,16 @@ export default function LicenseForm({
             </button>
           </div>
 
-          {/* Input Progress indicator */}
+          {/* Input Progress indicator with ARIA semantics */}
           {licenseNumber && !loading && (
-            <div className="mt-2 h-1 overflow-hidden rounded-full bg-[var(--nepal-blue-soft)]">
+            <div
+              className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--nepal-blue-soft)]"
+              role="progressbar"
+              aria-valuenow={licenseNumber.replace(/-/g, '').length}
+              aria-valuemin={0}
+              aria-valuemax={12}
+              aria-label="License number completion progress"
+            >
               <div
                 className="h-full rounded-full transition-all duration-300"
                 style={{
@@ -503,26 +487,26 @@ export default function LicenseForm({
           ) : (
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--text-muted)]">
               <div className="flex items-center gap-1.5">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="10" />
                   <line x1="12" y1="8" x2="12" y2="12" />
                   <line x1="12" y1="16" x2="12.01" y2="16" />
                 </svg>
                 <span>{copy.formatLabel}</span>
-                <code className="rounded-md bg-[var(--nepal-blue-soft)] px-1.5 py-0.5 font-mono text-[11px] font-semibold text-[var(--nepal-blue)]">
+                <code className="rounded-md bg-[var(--nepal-blue-soft)] px-2 py-0.5 font-mono text-xs font-semibold text-[var(--nepal-blue)]">
                   XX-XX-XXXXXXXX
                 </code>
               </div>
-              <span className="text-[11px] text-[var(--text-muted)]">{copy.pasteHint}</span>
+              <span className="text-xs text-[var(--text-muted)]">{copy.pasteHint}</span>
             </div>
           )}
 
           {/* Recent Searches chips */}
           {recentSearches.length > 0 && !loading && (
             <div className="mt-3.5 border-t border-[var(--border-default)]/60 pt-3.5">
-              <div className="mb-2.5 flex items-center justify-between text-[11px] font-semibold text-[var(--text-secondary)]">
+              <div className="mb-2.5 flex items-center justify-between text-xs font-semibold text-[var(--text-secondary)]">
                 <span className="flex items-center gap-1.5">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]">
                     <circle cx="12" cy="12" r="10" />
                     <polyline points="12 6 12 12 16 14" />
                   </svg>
@@ -531,7 +515,7 @@ export default function LicenseForm({
                 <button
                   type="button"
                   onClick={clearRecentSearches}
-                  className="text-[10px] text-[var(--text-muted)] transition hover:text-[var(--nepal-red)]"
+                  className="min-h-[32px] px-2 py-1 inline-flex items-center text-xs font-medium text-[var(--text-muted)] transition hover:text-[var(--nepal-red)] cursor-pointer"
                 >
                   {copy.clearRecentLabel}
                 </button>
@@ -543,7 +527,7 @@ export default function LicenseForm({
                     type="button"
                     disabled={isLockedOut}
                     onClick={() => handleSelectRecent(num)}
-                    className="antigravity-glass-pill inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-mono text-[11px] font-medium text-[var(--text-secondary)] transition-all duration-200 hover:scale-105 hover:text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)]/40 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex min-h-[34px] items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-3.5 py-1.5 font-mono text-xs font-medium text-[var(--text-secondary)] transition-all duration-200 hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer shadow-xs"
                   >
                     <span>{num}</span>
                   </button>

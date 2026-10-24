@@ -62,16 +62,18 @@ export default function NpmModal({ isOpen, onClose, language }: NpmModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-3 sm:p-5 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/65 p-0 sm:p-5 backdrop-blur-md animate-fade-in"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="npm-modal-title"
     >
       <div
-        className="relative flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl dev-glass-card shadow-2xl animate-rise-in"
+        className="relative flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-t-[28px] sm:rounded-3xl dev-glass-card shadow-2xl animate-rise-in"
         onClick={(e) => e.stopPropagation()}
       >
+        <div className="w-10 h-1 bg-[var(--border-default)] rounded-full mx-auto my-2 sm:hidden" aria-hidden />
+
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[var(--border-default)] bg-gradient-to-r from-[var(--nepal-red)]/10 via-[var(--nepal-blue)]/10 to-transparent px-5 py-4 sm:px-6">
           <div className="flex items-center gap-3">
@@ -89,11 +91,11 @@ export default function NpmModal({ isOpen, onClose, language }: NpmModalProps) {
                 <h2 id="npm-modal-title" className="text-base font-extrabold text-[var(--text-primary)] sm:text-lg">
                   {isNe ? 'विकासकर्ता SDK प्याकेज' : 'Developer SDK Packages'}
                 </h2>
-                <span className="rounded-full bg-[var(--nepal-blue)]/10 px-2 py-0.5 text-[10px] font-bold text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/20 font-mono">
+                <span className="rounded-full bg-[var(--nepal-blue)]/10 px-2.5 py-0.5 text-xs font-bold text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/20 font-mono">
                   v1.1.0
                 </span>
               </div>
-              <p className="text-[11px] text-[var(--text-secondary)]">
+              <p className="text-xs text-[var(--text-secondary)]">
                 {isNe
                   ? 'NPM वा GitHub Packages मार्फत नेपाल लाइसेन्स प्रमाणीकरण जोड्नुहोस्'
                   : 'Zero-dependency TypeScript SDK for smart driving license verification'}
@@ -104,10 +106,10 @@ export default function NpmModal({ isOpen, onClose, language }: NpmModalProps) {
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--surface-primary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition border border-[var(--border-default)] cursor-pointer"
-            aria-label="Close"
+            className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-xl p-2 text-[var(--text-muted)] transition hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
+            aria-label={isNe ? 'मोडाल बन्द गर्नुहोस्' : 'Close modal'}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>

@@ -39,7 +39,7 @@ function Field({
 }) {
   return (
     <div className={`rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-3.5 sm:p-4 ${fullWidth ? 'sm:col-span-2' : ''}`}>
-      <div className="mb-1.5 flex items-center justify-between text-[10px] font-extrabold uppercase tracking-[0.09em] text-[var(--text-muted)]">
+      <div className="mb-1.5 flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
         <span>{label}</span>
         {action}
       </div>
@@ -207,7 +207,7 @@ export default function LicenseResult({
             type="button"
             onClick={handleToggleSpeech}
             aria-label={isSpeaking ? copy.stopAudioLabel : copy.listenResultLabel}
-            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition shadow-sm cursor-pointer shrink-0 ${
+            className={`inline-flex min-h-[38px] items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition shadow-sm cursor-pointer shrink-0 ${
               isSpeaking
                 ? 'bg-white text-[var(--error)] ring-2 ring-white/60'
                 : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm'
@@ -293,7 +293,7 @@ export default function LicenseResult({
             type="button"
             onClick={handleToggleSpeech}
             aria-label={isSpeaking ? copy.stopAudioLabel : copy.listenResultLabel}
-            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition shadow-sm cursor-pointer shrink-0 ${
+            className={`inline-flex min-h-[38px] items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition shadow-sm cursor-pointer shrink-0 ${
               isSpeaking
                 ? 'bg-white text-orange-700 ring-2 ring-white/60'
                 : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm'
@@ -324,7 +324,7 @@ export default function LicenseResult({
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label={copy.searchedLicenseLabel} value={licenseNumber} mono fullWidth />
             <div className="rounded-xl border border-[var(--error-border)] bg-[var(--error-bg)] p-3.5 sm:col-span-2 sm:p-4">
-              <div className="mb-1.5 text-[10px] font-extrabold uppercase tracking-[0.09em] text-[#e57373]">
+              <div className="mb-1.5 text-xs font-bold uppercase tracking-wider text-[var(--error)]">
                 {copy.printStatusLabel}
               </div>
               <div className="flex items-center gap-2">
@@ -334,7 +334,7 @@ export default function LicenseResult({
             </div>
             {officeInfo && (
               <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-3.5 sm:col-span-2 sm:p-4">
-                <div className="mb-1 text-[10px] font-extrabold uppercase tracking-[0.09em] text-[var(--text-muted)]">
+                <div className="mb-1 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
                   {copy.issuingOfficeLabel}
                 </div>
                 <div className="text-sm font-semibold text-[var(--text-primary)]">
@@ -442,7 +442,7 @@ export default function LicenseResult({
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="rounded bg-white/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+                  <span className="rounded bg-white/20 px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-white">
                     {language === 'ne' ? 'प्रमाणीकृत' : 'OFFICIAL VERIFICATION'}
                   </span>
                 </div>
@@ -456,7 +456,7 @@ export default function LicenseResult({
                 type="button"
                 onClick={handleToggleSpeech}
                 aria-label={isSpeaking ? copy.stopAudioLabel : copy.listenResultLabel}
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition shadow-sm cursor-pointer ${
+                className={`inline-flex min-h-[38px] items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition shadow-sm cursor-pointer ${
                   isSpeaking
                     ? 'bg-white text-emerald-800 ring-2 ring-white/60'
                     : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm'
@@ -482,7 +482,7 @@ export default function LicenseResult({
                 )}
               </button>
               <div className="hidden rounded-xl border border-white/20 bg-white/10 px-3 py-1.5 text-right sm:block">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-white/80">
+                <div className="text-xs font-bold uppercase tracking-wider text-white/90">
                   {language === 'ne' ? 'जाँच समय' : 'Verified At'}
                 </div>
                 <div className="font-mono text-xs font-semibold text-white">
@@ -503,9 +503,9 @@ export default function LicenseResult({
                   <button
                     type="button"
                     onClick={handleCopyDetails}
-                    className="inline-flex items-center gap-1 text-[10px] font-bold text-[var(--nepal-blue)] transition hover:underline"
+                    className="inline-flex items-center gap-1 text-xs font-bold text-[var(--nepal-blue)] transition hover:underline cursor-pointer"
                   >
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                       <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                     </svg>
@@ -516,7 +516,7 @@ export default function LicenseResult({
               <Field label={copy.licenseNumberLabel} value={result.license_number} mono />
 
               <div className="rounded-xl border border-[var(--success-border)] bg-[var(--success-bg)] p-3.5 sm:p-4">
-                <div className="mb-1.5 text-[10px] font-extrabold uppercase tracking-[0.09em] text-[#0f7b4d] dark:text-[#47c28a]">
+                <div className="mb-1.5 text-xs font-bold uppercase tracking-wider text-[var(--success)]">
                   {copy.statusLabel}
                 </div>
                 <div className="flex items-center gap-2">
@@ -529,7 +529,7 @@ export default function LicenseResult({
 
               {/* Issuing Office with full details */}
               <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-3.5 sm:col-span-2 sm:p-4">
-                <div className="mb-1 text-[10px] font-extrabold uppercase tracking-[0.09em] text-[var(--text-muted)]">
+                <div className="mb-1 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
                   {copy.issuingOfficeLabel}
                 </div>
                 <div className="text-[15px] font-bold text-[var(--text-primary)]">
@@ -562,7 +562,7 @@ export default function LicenseResult({
               {/* Category breakdown with icons and descriptions */}
               {categoryList.length > 0 && (
                 <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-3.5 sm:col-span-2 sm:p-4">
-                  <div className="mb-2 text-[10px] font-extrabold uppercase tracking-[0.09em] text-[var(--text-muted)]">
+                  <div className="mb-2 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
                     {copy.categoryBreakdownTitle}
                   </div>
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -575,7 +575,7 @@ export default function LicenseResult({
                           <div className="text-xs font-bold text-[var(--text-primary)]">
                             {language === 'ne' ? cat.nameNe : cat.nameEn}
                           </div>
-                          <div className="text-[11px] text-[var(--text-secondary)] truncate">
+                          <div className="text-xs text-[var(--text-secondary)] truncate">
                             {language === 'ne' ? cat.vehiclesNe : cat.vehiclesEn}
                           </div>
                         </div>
@@ -587,7 +587,7 @@ export default function LicenseResult({
 
               {result.updatedAt && (
                 <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-3.5 sm:col-span-2 sm:p-4">
-                  <div className="mb-1 text-[10px] font-extrabold uppercase tracking-[0.09em] text-[var(--text-muted)]">
+                  <div className="mb-1 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
                     {copy.recordUpdatedLabel}
                   </div>
                   <div className="text-sm font-semibold text-[var(--text-secondary)]">
@@ -620,7 +620,7 @@ export default function LicenseResult({
               <button
                 type="button"
                 onClick={handleToggleSpeech}
-                className={`inline-flex flex-1 min-w-[140px] items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-xs font-bold shadow-sm transition active:scale-95 sm:text-sm cursor-pointer ${
+                className={`inline-flex flex-1 min-w-[140px] min-h-[44px] items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-xs font-bold shadow-sm transition active:scale-95 sm:text-sm cursor-pointer ${
                   isSpeaking
                     ? 'border-emerald-500 bg-emerald-500 text-white'
                     : 'border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-secondary)] hover:border-emerald-500 hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400'
@@ -648,7 +648,7 @@ export default function LicenseResult({
               <button
                 type="button"
                 onClick={handlePrint}
-                className="inline-flex flex-1 min-w-[140px] items-center justify-center gap-2 rounded-xl border border-[var(--nepal-blue)] bg-[var(--nepal-blue)] px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-[var(--nepal-blue-mid)] active:scale-95 sm:text-sm cursor-pointer"
+                className="inline-flex flex-1 min-w-[140px] min-h-[44px] items-center justify-center gap-2 rounded-xl border border-[var(--nepal-blue)] bg-[var(--nepal-blue)] px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-[var(--nepal-blue-mid)] active:scale-95 sm:text-sm cursor-pointer"
               >
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="6 9 6 2 18 2 18 9" />
@@ -661,7 +661,7 @@ export default function LicenseResult({
               <button
                 type="button"
                 onClick={handleShare}
-                className="inline-flex flex-1 min-w-[140px] items-center justify-center gap-2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-2.5 text-xs font-bold text-[var(--text-secondary)] shadow-sm transition hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue-soft)] hover:text-[var(--nepal-blue)] active:scale-95 sm:text-sm cursor-pointer"
+                className="inline-flex flex-1 min-w-[140px] min-h-[44px] items-center justify-center gap-2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-2.5 text-xs font-bold text-[var(--text-secondary)] shadow-sm transition hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue-soft)] hover:text-[var(--nepal-blue)] active:scale-95 sm:text-sm cursor-pointer"
               >
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="18" cy="5" r="3" />
@@ -676,7 +676,7 @@ export default function LicenseResult({
               <button
                 type="button"
                 onClick={handleCheckAnother}
-                className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-[var(--border-default)] bg-transparent px-4 py-2.5 text-xs font-semibold text-[var(--text-secondary)] transition hover:bg-[var(--bg-secondary)] active:scale-95 sm:text-sm cursor-pointer"
+                className="inline-flex w-full sm:w-auto min-h-[44px] items-center justify-center gap-2 rounded-xl border border-[var(--border-default)] bg-transparent px-4 py-2.5 text-xs font-semibold text-[var(--text-secondary)] transition hover:bg-[var(--bg-secondary)] active:scale-95 sm:text-sm cursor-pointer"
               >
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="11" cy="11" r="8" />
@@ -687,7 +687,7 @@ export default function LicenseResult({
             </div>
 
             {/* Quick non-official advisory */}
-            <p className="pt-2 text-center text-[11px] text-[var(--text-muted)] flex items-center justify-center gap-1.5 flex-wrap">
+            <p className="pt-2 text-center text-xs text-[var(--text-muted)] font-medium flex items-center justify-center gap-1.5 flex-wrap">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-500 inline shrink-0" aria-hidden="true">
                 <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
                 <line x1="12" y1="9" x2="12" y2="13" />

@@ -14,25 +14,27 @@ export default function SampleModal({ isOpen, onClose, language }: SampleModalPr
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-3 sm:p-4 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/65 p-0 sm:p-4 backdrop-blur-md animate-fade-in"
       onClick={onClose}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label="License format guide"
-        className="relative w-full max-w-xl overflow-hidden rounded-3xl dev-glass-card shadow-2xl animate-rise-in border border-[var(--border-default)]"
+        className="relative w-full max-w-xl overflow-hidden rounded-t-[28px] sm:rounded-3xl dev-glass-card shadow-2xl animate-rise-in border border-[var(--border-default)]"
         onClick={(event) => event.stopPropagation()}
       >
+        <div className="w-10 h-1 bg-[var(--border-default)] rounded-full mx-auto my-2.5 sm:hidden" aria-hidden />
+
         <button
           type="button"
           aria-label="Close guide"
           onClick={onClose}
-          className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md transition-all hover:bg-[var(--nepal-red)] hover:scale-105 active:scale-95 shadow-md"
+          className="absolute right-3.5 top-3.5 z-10 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-md transition-all hover:bg-[var(--nepal-red)] hover:scale-105 active:scale-95 shadow-md cursor-pointer"
         >
           <svg
-            width="18"
-            height="18"
+            width="20"
+            height="20"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"

@@ -70,21 +70,21 @@ export default function HowToSection({ language, lastUpdatedAt }: HowToSectionPr
   return (
     <section
       id="how-to-check"
-      className="mt-8 overflow-hidden rounded-3xl border border-[var(--border-default)]/70 dev-glass-card shadow-lg"
+      className="mt-8 overflow-hidden rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-xs"
       aria-labelledby="how-to-heading"
     >
-      <div className="border-b border-[var(--border-default)]/70 bg-gradient-to-r from-[var(--nepal-blue-soft)]/60 to-transparent px-5 py-5 sm:px-8">
+      <div className="border-b border-[var(--border-default)] bg-gradient-to-r from-[var(--nepal-blue-soft)]/60 to-transparent px-5 py-5 sm:px-8">
         <div className="mb-2 flex items-center gap-2">
-          <span className="inline-flex items-center gap-2 rounded-full bg-[var(--nepal-blue)]/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/20">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <span className="inline-flex items-center gap-2 rounded-full bg-[var(--nepal-blue)]/10 px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/20">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 11l3 3L22 4" />
               <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
             </svg>
             {language === 'ne' ? 'चरण-दर-चरण' : 'Step-by-step'}
           </span>
           {lastUpdatedAt && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-primary)] border border-[var(--border-default)] px-2.5 py-0.5 text-[9.5px] font-medium text-[var(--text-muted)]">
-              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-primary)] border border-[var(--border-default)] px-2.5 py-1 text-xs font-medium text-[var(--text-muted)]">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10" />
                 <polyline points="12 6 12 12 16 14" />
               </svg>

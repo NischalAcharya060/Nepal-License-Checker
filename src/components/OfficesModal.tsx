@@ -105,16 +105,18 @@ export default function OfficesModal({ isOpen, onClose, copy, language }: Office
       {/* Main Offices Directory Modal */}
       <div
         style={{ zIndex: 1000 }}
-        className="fixed inset-0 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in"
+        className="fixed inset-0 flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4 backdrop-blur-sm animate-fade-in"
         onClick={onClose}
         role="dialog"
         aria-modal="true"
         aria-labelledby="offices-modal-title"
       >
         <div
-          className="relative flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl dev-glass-card shadow-2xl animate-rise-in"
+          className="relative flex max-h-[90vh] sm:max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[28px] sm:rounded-3xl dev-glass-card shadow-2xl animate-rise-in"
           onClick={(e) => e.stopPropagation()}
         >
+          <div className="w-10 h-1 bg-[var(--border-default)] rounded-full mx-auto my-2 sm:hidden" aria-hidden />
+
           {/* Header */}
           <div className="flex items-start justify-between border-b border-[var(--border-default)] bg-gradient-to-r from-[var(--nepal-blue-soft)] to-transparent p-4 sm:p-5">
             <div>
@@ -143,7 +145,7 @@ export default function OfficesModal({ isOpen, onClose, copy, language }: Office
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg p-1.5 text-[var(--text-muted)] transition hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
+              className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-xl p-2 text-[var(--text-muted)] transition hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
               aria-label={copy.closeLabel}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -295,7 +297,7 @@ export default function OfficesModal({ isOpen, onClose, copy, language }: Office
       {selectedOffice && (
         <div
           style={{ zIndex: 2000 }}
-          className="fixed inset-0 flex items-center justify-center bg-black/75 p-3 sm:p-4 backdrop-blur-md animate-fade-in"
+          className="fixed inset-0 flex items-end sm:items-center justify-center bg-black/75 p-0 sm:p-4 backdrop-blur-md animate-fade-in"
           onClick={() => setSelectedOffice(null)}
           role="dialog"
           aria-modal="true"
@@ -303,9 +305,11 @@ export default function OfficesModal({ isOpen, onClose, copy, language }: Office
         >
           <div
             style={{ zIndex: 2001 }}
-            className="relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl dev-glass-card shadow-2xl animate-rise-in"
+            className="relative flex max-h-[90vh] sm:max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-t-[28px] sm:rounded-3xl dev-glass-card shadow-2xl animate-rise-in"
             onClick={(e) => e.stopPropagation()}
           >
+            <div className="w-10 h-1 bg-[var(--border-default)] rounded-full mx-auto my-2 sm:hidden" aria-hidden />
+
             {/* Header */}
             <div className="flex items-start justify-between border-b border-[var(--border-default)] bg-gradient-to-r from-[var(--nepal-blue-soft)] to-transparent p-4 sm:p-5">
               <div className="flex items-center gap-3">
@@ -324,7 +328,7 @@ export default function OfficesModal({ isOpen, onClose, copy, language }: Office
               <button
                 type="button"
                 onClick={() => setSelectedOffice(null)}
-                className="rounded-lg p-1.5 text-[var(--text-muted)] transition hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
+                className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-xl p-2 text-[var(--text-muted)] transition hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
                 aria-label="Close"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

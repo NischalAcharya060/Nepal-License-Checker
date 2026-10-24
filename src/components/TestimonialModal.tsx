@@ -126,16 +126,18 @@ export default function TestimonialModal({
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-fade-in"
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4 backdrop-blur-xs animate-fade-in"
             onClick={onClose}
             role="dialog"
             aria-modal="true"
             aria-labelledby="testimonial-modal-title"
         >
             <div
-                className="relative w-full max-w-lg rounded-3xl dev-glass-card p-5 sm:p-7 shadow-2xl transition max-h-[92vh] overflow-y-auto no-scrollbar"
+                className="relative w-full max-w-lg rounded-t-[28px] sm:rounded-3xl dev-glass-card p-5 sm:p-7 shadow-2xl transition max-h-[92vh] overflow-y-auto no-scrollbar"
                 onClick={(e) => e.stopPropagation()}
             >
+                <div className="w-10 h-1 bg-[var(--border-default)] rounded-full mx-auto -mt-2 mb-3 sm:hidden" aria-hidden />
+
                 {/* Header */}
                 <div className="flex items-start justify-between gap-4 border-b border-[var(--border-default)]/60 pb-4">
                     <div className="flex items-center gap-3">
@@ -161,7 +163,7 @@ export default function TestimonialModal({
                     <button
                         type="button"
                         onClick={onClose}
-                        className="rounded-xl border border-[var(--border-default)] p-2 text-[var(--text-muted)] transition hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
+                        className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-xl border border-[var(--border-default)] p-2 text-[var(--text-muted)] transition hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
                         aria-label="Close dialog"
                     >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

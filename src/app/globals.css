@@ -25,7 +25,7 @@
 
     --text-primary: #0f172a;
     --text-secondary: #475569;
-    --text-muted: #64748b;
+    --text-muted: #475569;
 
     --border-default: #d4dce8;
 
@@ -65,7 +65,7 @@
 
     --text-primary: #e5edff;
     --text-secondary: #b9c7e4;
-    --text-muted: #8d9dbd;
+    --text-muted: #94a3b8;
 
     --border-default: #2a3a57;
 
@@ -239,44 +239,39 @@
 
 .antigravity-card {
   position: relative;
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  box-shadow: 0 20px 45px -12px rgba(0, 38, 102, 0.08),
-              0 4px 12px -2px rgba(0, 38, 102, 0.03),
-              inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  transform-style: preserve-3d;
-  will-change: transform;
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-              border-color 0.3s ease;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-default);
+  box-shadow: 0 10px 30px -4px rgba(0, 38, 102, 0.08),
+              0 2px 6px -1px rgba(0, 38, 102, 0.03);
+  transition: box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.25s ease;
 }
 
 :root[data-theme="dark"] .antigravity-card,
 html.dark .antigravity-card,
 [data-theme="dark"] .antigravity-card {
-  background: rgba(21, 34, 56, 0.75);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 25px 50px -15px rgba(0, 0, 0, 0.65),
-              0 6px 16px -4px rgba(0, 0, 0, 0.3),
-              inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  background: rgba(18, 30, 49, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-default);
+  box-shadow: 0 12px 36px -4px rgba(0, 0, 0, 0.55),
+              0 2px 6px 0 rgba(0, 0, 0, 0.3);
 }
 
 .antigravity-card:hover {
-  box-shadow: 0 30px 60px -15px rgba(0, 38, 102, 0.14),
-              0 8px 20px -4px rgba(0, 38, 102, 0.05),
-              inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  border-color: rgba(0, 56, 147, 0.3);
+  box-shadow: 0 14px 40px -4px rgba(0, 38, 102, 0.12),
+              0 4px 10px 0 rgba(0, 38, 102, 0.04);
 }
 
 :root[data-theme="dark"] .antigravity-card:hover,
 html.dark .antigravity-card:hover,
 [data-theme="dark"] .antigravity-card:hover {
-  box-shadow: 0 32px 65px -15px rgba(0, 0, 0, 0.8),
-              0 10px 24px -4px rgba(0, 0, 0, 0.4),
-              inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  border-color: rgba(79, 140, 246, 0.4);
+  box-shadow: 0 16px 42px -4px rgba(0, 0, 0, 0.7),
+              0 4px 10px 0 rgba(0, 0, 0, 0.4);
 }
 
 /* ─── Developer Portal Premium Polish & Depth ─── */
@@ -407,6 +402,17 @@ html.dark .antigravity-glass-pill,
   .antigravity-glass-pill:hover {
     transform: none !important;
     box-shadow: none !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  nav,
+  .dev-glass-card,
+  .antigravity-card,
+  .antigravity-glass-pill {
+    background: var(--surface-primary) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   }
 }
 

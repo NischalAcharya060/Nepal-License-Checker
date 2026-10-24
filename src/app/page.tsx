@@ -374,8 +374,8 @@ export default function Home() {
       <OfflineBanner language={language} />
 
       {/* Background ambient depth & grid */}
-      <div className="pointer-events-none absolute inset-0 -z-0 print:hidden overflow-hidden">
-        <div className="absolute inset-0 dev-dot-pattern opacity-40 [mask-image:radial-gradient(ellipse_60%_50%_at_50%_20%,#000_70%,transparent_100%)]" />
+      <div className="pointer-events-none absolute inset-0 -z-0 print:hidden overflow-hidden" aria-hidden="true">
+        <div className="absolute inset-0 dev-dot-pattern opacity-35 [mask-image:radial-gradient(ellipse_60%_50%_at_50%_20%,#000_70%,transparent_100%)]" />
         <div className="animate-float-soft absolute -top-24 -left-24 h-96 w-96 rounded-full bg-[var(--nepal-blue)]/12 blur-3xl" />
         <div
           className="animate-float-soft absolute top-20 -right-24 h-96 w-96 rounded-full bg-[var(--nepal-red)]/10 blur-3xl"
@@ -424,8 +424,8 @@ export default function Home() {
           {/* License Query Form */}
           <div className="relative mx-auto w-full max-w-3xl lg:max-w-4xl print:hidden group">
             <div
-              className="pointer-events-none absolute -inset-1 rounded-3xl bg-gradient-to-r from-[var(--nepal-blue)]/15 via-[var(--nepal-red)]/10 to-[var(--nepal-blue)]/15 opacity-45 blur-xl transition-opacity duration-700 group-hover:opacity-80 animate-soft-glow"
-              aria-hidden
+              className="pointer-events-none absolute -inset-1 rounded-3xl bg-gradient-to-r from-[var(--nepal-blue)]/15 via-[var(--nepal-red)]/10 to-[var(--nepal-blue)]/15 opacity-50 blur-xl transition-opacity duration-700 group-hover:opacity-85 animate-soft-glow"
+              aria-hidden="true"
             />
             <div className="relative">
               <LicenseForm

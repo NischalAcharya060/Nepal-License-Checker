@@ -118,14 +118,14 @@ export default function EducationalSection({
             </div>
 
             <div className="mb-2 flex items-center justify-between gap-2">
-              <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--text-primary)]">
+              <div className="text-xs font-bold uppercase tracking-wider text-[var(--text-primary)]">
                 {tile.title}
               </div>
               {tile.showHelp && (
                 <button
                   type="button"
                   onClick={onOpenSample}
-                  className="rounded-full bg-[var(--nepal-blue-soft)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--nepal-blue)] transition hover:bg-[var(--nepal-blue)] hover:text-white active:scale-95 cursor-pointer"
+                  className="rounded-full bg-[var(--nepal-blue-soft)] px-3 py-1 text-xs font-bold text-[var(--nepal-blue)] transition hover:bg-[var(--nepal-blue)] hover:text-white active:scale-95 cursor-pointer"
                 >
                   {language === 'ne' ? 'ढाँचा हेर्नुहोस्' : 'View Sample'}
                 </button>
@@ -136,11 +136,11 @@ export default function EducationalSection({
 
             {tile.meta && (
               <div className="mt-3.5 rounded-xl border border-[var(--nepal-blue)]/25 bg-[var(--surface-primary)]/80 p-3 shadow-2xs">
-                <div className="flex items-center gap-2 text-[11px] font-semibold text-[var(--nepal-blue)]">
+                <div className="flex items-center gap-2 text-xs font-semibold text-[var(--nepal-blue)]">
                   <span className="inline-flex h-2 w-2 rounded-full bg-[var(--success)] animate-glow-pulse" />
                   <span className="font-mono tabular-nums">{tile.meta}</span>
                 </div>
-                {tile.metaSub && <div className="mt-1 font-mono tabular-nums text-[10.5px] text-[var(--text-secondary)]">{tile.metaSub}</div>}
+                {tile.metaSub && <div className="mt-1 font-mono tabular-nums text-xs text-[var(--text-secondary)]">{tile.metaSub}</div>}
               </div>
             )}
 
