@@ -1,0 +1,46 @@
+{
+  "name": "nepal-license-checker/nepal-license-checker",
+  "description": "Zero-dependency PHP and Laravel SDK to check Nepal smart driving license print status via the DOTM mirrored API.",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Nischal Acharya",
+      "email": "Nischal060@gmail.com",
+      "homepage": "https://acharyanischal.com.np"
+    }
+  ],
+  "keywords": [
+    "nepal",
+    "driving-license",
+    "nepal-license",
+    "nepal-license-checker",
+    "dotm",
+    "yatayat",
+    "laravel"
+  ],
+  "homepage": "https://license-checker.acharyanischal.com.np",
+  "require": {
+    "php": ">=8.0",
+    "ext-json": "*"
+  },
+  "suggest": {
+    "ext-curl": "Recommended for high-performance HTTP requests"
+  },
+  "autoload": {
+    "psr-4": {
+      "NepalLicenseChecker\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "NepalLicenseChecker\\Laravel\\LicenseCheckerServiceProvider"
+      ],
+      "aliases": {
+        "LicenseChecker": "NepalLicenseChecker\\Laravel\\Facades\\LicenseChecker"
+      }
+    }
+  },
+  "minimum-stability": "stable"
+}

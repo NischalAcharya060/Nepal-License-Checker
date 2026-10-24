@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import InstallAppButton from '@/components/InstallAppButton'
+import { SdkCodeIcon } from '@/components/SdkLogos'
 import type { Language } from '@/lib/i18n'
 
 export type ThemeMode = 'light' | 'dark'
@@ -159,18 +160,16 @@ export default function Navbar({
             <span>{language === 'ne' ? 'समीक्षाहरू' : 'Reviews'}</span>
           </button>
 
-          {/* NPM / GitHub Package button (Desktop) */}
+          {/* Developer SDKs Button (Desktop) */}
           {onOpenNpm && (
             <button
               type="button"
               onClick={onOpenNpm}
-              className="hidden items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] transition hover:border-[var(--nepal-red)] hover:bg-[var(--nepal-red)]/10 hover:text-[var(--nepal-red)] active:scale-95 sm:inline-flex cursor-pointer group"
-              title={language === 'ne' ? 'विकासकर्ता SDK (npm & GitHub Packages)' : 'Developer SDK (npm & GitHub Packages)'}
+              className="hidden items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] transition hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue)]/10 hover:text-[var(--nepal-blue)] active:scale-95 sm:inline-flex cursor-pointer group shadow-2xs"
+              title={language === 'ne' ? 'विकासकर्ता SDK तथा API' : 'Developer SDKs & API'}
             >
-              <span className="rounded bg-[var(--nepal-red)]/10 px-1.5 py-0.5 font-mono text-xs font-bold text-[var(--nepal-red)] group-hover:bg-[var(--nepal-red)] group-hover:text-white transition-colors">
-                npm
-              </span>
-              <span>{language === 'ne' ? 'SDK प्याकेज' : 'SDK / NPM'}</span>
+              <SdkCodeIcon className="h-3.5 w-3.5 text-[var(--nepal-blue)] transition-transform group-hover:scale-110" />
+              <span>{language === 'ne' ? 'SDK प्याकेजहरू' : 'SDKs & API'}</span>
             </button>
           )}
 
@@ -449,7 +448,7 @@ export default function Navbar({
               </svg>
             </button>
 
-            {/* NPM Package (Mobile) */}
+            {/* Multi-Language SDKs (Mobile) */}
             {onOpenNpm && (
               <button
                 type="button"
@@ -457,18 +456,18 @@ export default function Navbar({
                   onOpenNpm()
                   setIsMobileMenuOpen(false)
                 }}
-                className="flex items-center justify-between rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3.5 py-2.5 text-left transition hover:border-[var(--nepal-red)] hover:bg-[var(--nepal-red)]/10 active:scale-[0.99]"
+                className="flex items-center justify-between rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3.5 py-2.5 text-left transition hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue)]/10 active:scale-[0.99]"
               >
                 <div className="flex items-center gap-2.5">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/10 font-mono text-xs font-black text-[var(--nepal-red)]">
-                    npm
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10 text-[var(--nepal-blue)]" aria-hidden="true">
+                    <SdkCodeIcon className="h-4 w-4" />
                   </span>
                   <div className="flex flex-col">
                     <span className="text-xs font-bold text-[var(--text-primary)]">
-                      {language === 'ne' ? 'विकासकर्ता SDK (npm & GitHub)' : 'Developer SDK (npm & GitHub)'}
+                      {language === 'ne' ? 'विकासकर्ता SDK तथा API' : 'Developer SDKs & API'}
                     </span>
                     <span className="text-[10px] text-[var(--text-secondary)]">
-                      {language === 'ne' ? 'npm वा GitHub Packages बाट इन्स्टल गर्नुहोस्' : 'Install via npm or GitHub Packages'}
+                      {language === 'ne' ? 'TypeScript, Python वा PHP बाट जोड्नुहोस्' : 'Install via npm, pip, or composer'}
                     </span>
                   </div>
                 </div>

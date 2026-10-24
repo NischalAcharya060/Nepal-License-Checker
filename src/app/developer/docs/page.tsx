@@ -68,8 +68,11 @@ function FlatBadge({
 
 export default function SdkDocumentationPage() {
   const npmStats = useNpmStats()
+  const [selectedLang, setSelectedLang] = useState<'ts' | 'php' | 'python'>('ts')
   const [activeInstallTab, setActiveInstallTab] = useState<'npm' | 'pnpm' | 'yarn' | 'bun' | 'github'>('npm')
   const [activeUsageTab, setActiveUsageTab] = useState<'esm' | 'cjs' | 'nextjs'>('esm')
+  const [activePhpTab, setActivePhpTab] = useState<'pure' | 'laravel'>('pure')
+  const [activePythonTab, setActivePythonTab] = useState<'basic' | 'fastapi'>('basic')
   const [copiedSection, setCopiedSection] = useState<string | null>(null)
 
   // Interactive Live Playground states
@@ -202,16 +205,17 @@ export default function SdkDocumentationPage() {
           </div>
 
           <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-[var(--text-primary)]">
-            Official JavaScript & TypeScript SDK Documentation
+            Official SDKs & API Developer Documentation
           </h1>
           <p className="text-sm text-[var(--text-secondary)] max-w-3xl leading-relaxed">
-            The official zero-dependency client SDK for checking smart driving license print status via the mirrored Department of Transport Management (DOTM) database in Nepal. Works seamlessly across Node.js (18+), Bun, Deno, Next.js, Vite, React Native, and standard browsers.
+            Production-ready zero-dependency client SDKs for <strong>TypeScript/Node.js</strong>, <strong>PHP/Laravel</strong>, and <strong>Python</strong> to query smart driving license print status via the mirrored Department of Transport Management (DOTM) database in Nepal. Includes full <strong>OpenAPI 3.1</strong> specifications and a 1-click <strong>Postman Collection</strong>.
           </p>
         </div>
 
         {/* Quick Jump Bar */}
         <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 text-xs shadow-2xs">
           <span className="font-bold text-[var(--text-muted)] text-[11px] uppercase tracking-wider mr-1">Jump to:</span>
+          <a href="#openapi-postman" className="rounded-lg bg-orange-500/10 px-2.5 py-1 font-bold text-orange-600 dark:text-orange-400 hover:bg-orange-500 hover:text-white transition">Postman & OpenAPI</a>
           <a href="#installation" className="rounded-lg bg-[var(--bg-secondary)] px-2.5 py-1 font-medium text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] transition">Installation</a>
           <a href="#quickstart" className="rounded-lg bg-[var(--bg-secondary)] px-2.5 py-1 font-medium text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] transition">Quickstart</a>
           <a href="#api-key" className="rounded-lg bg-[var(--bg-secondary)] px-2.5 py-1 font-medium text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] transition">API Key & Limits</a>
@@ -221,46 +225,169 @@ export default function SdkDocumentationPage() {
           <a href="#http-api" className="rounded-lg bg-[var(--bg-secondary)] px-2.5 py-1 font-medium text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] transition">HTTP REST API</a>
         </div>
 
+        {/* Section 0: Interactive OpenAPI 3.1 & Postman Suite */}
+        <section id="openapi-postman" className="relative overflow-hidden rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 sm:p-7 shadow-sm space-y-4 scroll-mt-20">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-orange-500 via-amber-500 to-emerald-500 opacity-80" />
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-orange-500/30 bg-orange-500/10 px-2.5 py-0.5 text-xs font-bold text-orange-600 dark:text-orange-400">
+                <span className="font-mono text-xs font-black">P</span>
+                <span>Instant API Testing & Tools</span>
+              </div>
+              <h2 className="text-lg font-bold text-[var(--text-primary)]">
+                One-Click Postman Collection & OpenAPI 3.1 Suite
+              </h2>
+              <p className="text-xs text-[var(--text-secondary)] max-w-xl leading-relaxed">
+                Test our endpoints with zero configuration. Import our pre-configured Postman collection with environment variables, or download the formal OpenAPI 3.1 JSON specification.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5">
+              <a
+                href="/api/developer/openapi?format=postman&download=1"
+                download="nepal-license-checker-postman.json"
+                className="inline-flex min-h-[40px] items-center gap-2 rounded-xl border border-orange-500/40 bg-orange-500/10 px-3.5 py-2 text-xs font-bold text-orange-600 dark:text-orange-400 hover:bg-orange-500 hover:text-white transition active:scale-95 shadow-2xs cursor-pointer"
+                title="Download Postman Collection v2.1"
+              >
+                <span className="font-mono text-sm font-black leading-none">P</span>
+                <span>Download Postman (.json)</span>
+              </a>
+
+              <a
+                href="/api/developer/openapi?download=1"
+                download="nepal-license-checker-openapi.json"
+                className="inline-flex min-h-[40px] items-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3.5 py-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white transition active:scale-95 shadow-2xs cursor-pointer"
+                title="Download OpenAPI 3.1 Spec in JSON"
+              >
+                <span className="font-mono text-xs font-black leading-none">&#123;&#125;</span>
+                <span>Download OpenAPI 3.1 (.json)</span>
+              </a>
+
+              <a
+                href="/api/developer/openapi"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--nepal-blue)] transition shadow-2xs"
+                title="View Raw OpenAPI JSON schema in browser"
+              >
+                <span>Raw Spec ↗</span>
+              </a>
+            </div>
+          </div>
+        </section>
+
+        {/* Multi-Language SDK Selector */}
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-2 sm:p-2.5 shadow-xs">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] px-2">SDK Ecosystem:</span>
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                onClick={() => setSelectedLang('ts')}
+                className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${
+                  selectedLang === 'ts'
+                    ? 'bg-[var(--nepal-blue)] text-white shadow-2xs'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
+                }`}
+              >
+                <span>TypeScript / Node.js</span>
+                <span className={`rounded px-1.5 py-0.2 text-[10px] font-mono ${selectedLang === 'ts' ? 'bg-white/20' : 'bg-[var(--bg-secondary)]'}`}>npm</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedLang('php')}
+                className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${
+                  selectedLang === 'php'
+                    ? 'bg-[var(--nepal-blue)] text-white shadow-2xs'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
+                }`}
+              >
+                <span>PHP & Laravel</span>
+                <span className={`rounded px-1.5 py-0.2 text-[10px] font-mono ${selectedLang === 'php' ? 'bg-white/20' : 'bg-[var(--bg-secondary)]'}`}>Composer</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedLang('python')}
+                className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${
+                  selectedLang === 'python'
+                    ? 'bg-[var(--nepal-blue)] text-white shadow-2xs'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
+                }`}
+              >
+                <span>Python</span>
+                <span className={`rounded px-1.5 py-0.2 text-[10px] font-mono ${selectedLang === 'python' ? 'bg-white/20' : 'bg-[var(--bg-secondary)]'}`}>pip</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Section 1: Installation */}
         <section id="installation" className="rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 sm:p-8 space-y-4 shadow-sm scroll-mt-20">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-default)] pb-4">
             <div>
               <h2 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
                 <span>1.</span>
-                <span>Installation</span>
+                <span>
+                  {selectedLang === 'ts'
+                    ? 'Installation (Node.js & TypeScript)'
+                    : selectedLang === 'php'
+                    ? 'Installation (PHP & Laravel)'
+                    : 'Installation (Python)'}
+                </span>
               </h2>
               <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-                Install from the official npm Registry or GitHub Packages.
+                {selectedLang === 'ts'
+                  ? 'Install from the official npm Registry or GitHub Packages.'
+                  : selectedLang === 'php'
+                  ? 'Install via Composer for standard PHP or Laravel applications.'
+                  : 'Install from PyPI using pip.'}
               </p>
             </div>
 
-            <div className="flex rounded-xl border border-[var(--border-default)] p-0.5 bg-[var(--bg-secondary)]">
-              {(['npm', 'pnpm', 'yarn', 'bun', 'github'] as const).map((tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => setActiveInstallTab(tab)}
-                  className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${
-                    activeInstallTab === tab
-                      ? 'bg-[var(--surface-primary)] text-[var(--nepal-blue)] shadow-2xs'
-                      : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-                  }`}
-                >
-                  {tab === 'github' ? 'GitHub Pkg' : tab}
-                </button>
-              ))}
-            </div>
+            {selectedLang === 'ts' && (
+              <div className="flex rounded-xl border border-[var(--border-default)] p-0.5 bg-[var(--bg-secondary)]">
+                {(['npm', 'pnpm', 'yarn', 'bun', 'github'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => setActiveInstallTab(tab)}
+                    className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${
+                      activeInstallTab === tab
+                        ? 'bg-[var(--surface-primary)] text-[var(--nepal-blue)] shadow-2xs'
+                        : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                    }`}
+                  >
+                    {tab === 'github' ? 'GitHub Pkg' : tab}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="relative">
             <div className="flex items-center justify-between gap-2 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-4 py-3 font-mono text-xs select-all text-[var(--text-primary)]">
               <span>
                 <span className="text-[var(--text-muted)] select-none mr-2">$</span>
-                {getInstallCmd()}
+                {selectedLang === 'ts'
+                  ? getInstallCmd()
+                  : selectedLang === 'php'
+                  ? 'composer require nepal-license-checker/nepal-license-checker'
+                  : 'pip install nepal-license-checker'}
               </span>
               <button
                 type="button"
-                onClick={() => copyCode(getInstallCmd(), 'install')}
+                onClick={() =>
+                  copyCode(
+                    selectedLang === 'ts'
+                      ? getInstallCmd()
+                      : selectedLang === 'php'
+                      ? 'composer require nepal-license-checker/nepal-license-checker'
+                      : 'pip install nepal-license-checker',
+                    'install'
+                  )
+                }
                 className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1 text-[11px] font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition active:scale-95 cursor-pointer"
               >
                 {copiedSection === 'install' ? (
@@ -277,7 +404,7 @@ export default function SdkDocumentationPage() {
             </div>
           </div>
 
-          {activeInstallTab === 'github' && (
+          {selectedLang === 'ts' && activeInstallTab === 'github' && (
             <div className="rounded-2xl border border-[var(--nepal-blue)]/20 bg-[var(--nepal-blue)]/5 p-4 text-xs space-y-2">
               <span className="font-bold text-[var(--nepal-blue)] block">GitHub Packages Scope Configuration:</span>
               <p className="text-[var(--text-secondary)]">
@@ -296,34 +423,84 @@ export default function SdkDocumentationPage() {
             <div>
               <h2 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
                 <span>2.</span>
-                <span>Quickstart & Usage</span>
+                <span>
+                  {selectedLang === 'ts'
+                    ? 'Quickstart & Usage (JavaScript / TypeScript)'
+                    : selectedLang === 'php'
+                    ? 'Quickstart & Usage (PHP & Laravel)'
+                    : 'Quickstart & Usage (Python)'}
+                </span>
               </h2>
               <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-                The core function <code className="font-mono text-[var(--nepal-blue)]">checkLicense()</code> validates, normalizes, and fetches print status.
+                {selectedLang === 'ts'
+                  ? 'Core client function checkLicense() normalizes numerals and verifies print status.'
+                  : selectedLang === 'php'
+                  ? 'Use LicenseChecker::check() or native Laravel Facade LicenseChecker::checkLicense().'
+                  : 'Call check_license() with standard library zero-dependency networking.'}
               </p>
             </div>
 
-            <div className="flex rounded-xl border border-[var(--border-default)] p-0.5 bg-[var(--bg-secondary)]">
-              {(['esm', 'cjs', 'nextjs'] as const).map((tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => setActiveUsageTab(tab)}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
-                    activeUsageTab === tab
-                      ? 'bg-[var(--surface-primary)] text-[var(--nepal-blue)] shadow-2xs'
-                      : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-                  }`}
-                >
-                  {tab === 'esm' ? 'ESM / TypeScript' : tab === 'cjs' ? 'CommonJS' : 'Next.js / React'}
-                </button>
-              ))}
-            </div>
+            {selectedLang === 'ts' && (
+              <div className="flex rounded-xl border border-[var(--border-default)] p-0.5 bg-[var(--bg-secondary)]">
+                {(['esm', 'cjs', 'nextjs'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => setActiveUsageTab(tab)}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                      activeUsageTab === tab
+                        ? 'bg-[var(--surface-primary)] text-[var(--nepal-blue)] shadow-2xs'
+                        : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                    }`}
+                  >
+                    {tab === 'esm' ? 'ESM / TypeScript' : tab === 'cjs' ? 'CommonJS' : 'Next.js / React'}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {selectedLang === 'php' && (
+              <div className="flex rounded-xl border border-[var(--border-default)] p-0.5 bg-[var(--bg-secondary)]">
+                {(['pure', 'laravel'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => setActivePhpTab(tab)}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                      activePhpTab === tab
+                        ? 'bg-[var(--surface-primary)] text-[var(--nepal-blue)] shadow-2xs'
+                        : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                    }`}
+                  >
+                    {tab === 'pure' ? 'Pure PHP 8+' : 'Laravel 10 / 11'}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {selectedLang === 'python' && (
+              <div className="flex rounded-xl border border-[var(--border-default)] p-0.5 bg-[var(--bg-secondary)]">
+                {(['basic', 'fastapi'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => setActivePythonTab(tab)}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                      activePythonTab === tab
+                        ? 'bg-[var(--surface-primary)] text-[var(--nepal-blue)] shadow-2xs'
+                        : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                    }`}
+                  >
+                    {tab === 'basic' ? 'Standard Python' : 'FastAPI / Web'}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="relative">
             <pre className="overflow-x-auto rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-4 sm:p-5 font-mono text-xs leading-relaxed text-[var(--text-primary)]">
-              {activeUsageTab === 'esm' && (
+              {selectedLang === 'ts' && activeUsageTab === 'esm' && (
                 <code>
 {`import { checkLicense } from 'nepal-license-checker';
 
@@ -354,7 +531,7 @@ checkMyLicense();`}
                 </code>
               )}
 
-              {activeUsageTab === 'cjs' && (
+              {selectedLang === 'ts' && activeUsageTab === 'cjs' && (
                 <code>
 {`const { checkLicense } = require('nepal-license-checker');
 
@@ -371,7 +548,7 @@ checkLicense('०१-०१-१२३४५६७८', {
                 </code>
               )}
 
-              {activeUsageTab === 'nextjs' && (
+              {selectedLang === 'ts' && activeUsageTab === 'nextjs' && (
                 <code>
 {`// app/actions.ts (Next.js Server Action)
 'use server'
@@ -385,15 +562,117 @@ export async function lookupLicense(licenseNumber: string) {
 }`}
                 </code>
               )}
+
+              {selectedLang === 'php' && activePhpTab === 'pure' && (
+                <code>
+{`<?php
+require_once __DIR__ . '/vendor/autoload.php';
+
+use NepalLicenseChecker\\LicenseChecker;
+
+// 1. Basic lookup (accepts English or Devanagari numerals)
+$result = LicenseChecker::check('01-01-12345678', 'nlc_live_your_api_key_here');
+
+if ($result['is_ready']) {
+    echo "🎉 Ready for pickup!\\n";
+    echo "Holder: " . $result['data']['holder_name'] . "\\n";
+    echo "Office: " . $result['data']['office'] . "\\n";
+} else {
+    echo "⏳ License is not printed yet by DOTM.\\n";
+}`}
+                </code>
+              )}
+
+              {selectedLang === 'php' && activePhpTab === 'laravel' && (
+                <code>
+{`<?php
+namespace App\\Http\\Controllers;
+
+use Illuminate\\Http\\Request;
+use NepalLicenseChecker\\Laravel\\Facades\\LicenseChecker;
+
+class LicenseVerificationController extends Controller
+{
+    public function verify(Request $request)
+    {
+        $validated = $request->validate([
+            'number' => 'required|string',
+        ]);
+
+        $res = LicenseChecker::checkLicense($validated['number']);
+
+        if ($res['is_ready']) {
+            return response()->json([
+                'status' => 'verified',
+                'holder' => $res['data']['holder_name'],
+                'office' => $res['data']['office'],
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'pending',
+            'message' => 'License card not printed yet.',
+        ], 404);
+    }
+}`}
+                </code>
+              )}
+
+              {selectedLang === 'python' && activePythonTab === 'basic' && (
+                <code>
+{`from nepal_license_checker import check_license
+
+# Zero dependencies! Standard library urllib powered.
+result = check_license(
+    "01-01-12345678",
+    api_key="nlc_live_your_api_key_here"  # Optional elevated quota
+)
+
+if result["is_ready"]:
+    data = result["data"]
+    print("🎉 License is ready for pickup!")
+    print(f"Holder: {data.get('holder_name')}")
+    print(f"Office: {data.get('office')}")
+    if result.get("rate_limit"):
+        print(f"Quota Remaining: {result['rate_limit']['remaining']}")
+else:
+    print("⏳ License is not printed yet.")`}
+                </code>
+              )}
+
+              {selectedLang === 'python' && activePythonTab === 'fastapi' && (
+                <code>
+{`from fastapi import FastAPI, HTTPException
+from nepal_license_checker import check_license, validate_license_number
+
+app = FastAPI(title="Nepal License Gateway")
+
+@app.get("/verify/{license_number}")
+def verify_license(license_number: str):
+    if not validate_license_number(license_number):
+        raise HTTPException(status_code=400, detail="Invalid license format. Expected XX-XX-XXXXXXXX")
+
+    res = check_license(license_number)
+    if not res["is_ready"]:
+        return {"status": "pending", "message": "License not ready yet"}
+    
+    return {"status": "ready", "data": res["data"]}`}
+                </code>
+              )}
             </pre>
             <button
               type="button"
-              onClick={() => copyCode(
-                activeUsageTab === 'esm'
-                  ? `import { checkLicense } from 'nepal-license-checker';\n\nconst result = await checkLicense('01-01-12345678', { apiKey: 'nlc_live_your_key' });\nconsole.log(result);`
-                  : `const { checkLicense } = require('nepal-license-checker');\n\ncheckLicense('01-01-12345678').then(console.log);`,
-                'quickstart'
-              )}
+              onClick={() => {
+                let snippet = ''
+                if (selectedLang === 'ts') {
+                  snippet = `import { checkLicense } from 'nepal-license-checker';\nconst result = await checkLicense('01-01-12345678');\nconsole.log(result);`
+                } else if (selectedLang === 'php') {
+                  snippet = `use NepalLicenseChecker\\LicenseChecker;\n$res = LicenseChecker::check('01-01-12345678');\nprint_r($res);`
+                } else {
+                  snippet = `from nepal_license_checker import check_license\nres = check_license('01-01-12345678')\nprint(res)`
+                }
+                copyCode(snippet, 'quickstart')
+              }}
               className="absolute top-3 right-3 inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1 text-[11px] font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition active:scale-95 cursor-pointer shadow-2xs"
             >
               {copiedSection === 'quickstart' ? (
@@ -478,7 +757,11 @@ export async function lookupLicense(licenseNumber: string) {
             <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-4 sm:p-5 space-y-2">
               <div className="flex items-center justify-between">
                 <code className="font-mono text-xs font-bold text-[var(--nepal-blue)]">
-                  validateLicenseNumber(license: string): boolean
+                  {selectedLang === 'ts'
+                    ? 'validateLicenseNumber(license: string): boolean'
+                    : selectedLang === 'php'
+                    ? 'LicenseChecker::validate(string $number): bool'
+                    : 'validate_license_number(license: str) -> bool'}
                 </code>
                 <span className="text-[10px] font-mono text-[var(--text-muted)]">Offline Regex</span>
               </div>
@@ -486,9 +769,31 @@ export async function lookupLicense(licenseNumber: string) {
                 Validates whether a string matches the required Nepal driving license pattern <code className="font-mono">XX-XX-XXXXXXXX</code>. Seamlessly supports both English (<code className="font-mono">0-9</code>) and Nepali Devanagari numerals (<code className="font-mono">०-९</code>).
               </p>
               <pre className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 font-mono text-xs">
+                {selectedLang === 'ts' && (
+                  <code>
 {`validateLicenseNumber('01-01-12345678');  // true
 validateLicenseNumber('०१-०१-१२३४५६७८');  // true
 validateLicenseNumber('12-34-5678');        // false`}
+                  </code>
+                )}
+                {selectedLang === 'php' && (
+                  <code>
+{`use NepalLicenseChecker\\LicenseChecker;
+
+LicenseChecker::validate('01-01-12345678');  // true
+LicenseChecker::validate('०१-०१-१२३४५६७८');  // true
+LicenseChecker::validate('12-34-5678');        // false`}
+                  </code>
+                )}
+                {selectedLang === 'python' && (
+                  <code>
+{`from nepal_license_checker import validate_license_number
+
+validate_license_number('01-01-12345678')  # True
+validate_license_number('०१-०१-१२३४५६७८')  # True
+validate_license_number('12-34-5678')        # False`}
+                  </code>
+                )}
               </pre>
             </div>
 
@@ -496,7 +801,11 @@ validateLicenseNumber('12-34-5678');        // false`}
             <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-4 sm:p-5 space-y-2">
               <div className="flex items-center justify-between">
                 <code className="font-mono text-xs font-bold text-[var(--nepal-blue)]">
-                  formatLicenseNumber(input: string): string
+                  {selectedLang === 'ts'
+                    ? 'formatLicenseNumber(input: string): string'
+                    : selectedLang === 'php'
+                    ? 'LicenseChecker::format(string $raw): string'
+                    : 'format_license_number(raw: str) -> str'}
                 </code>
                 <span className="text-[10px] font-mono text-[var(--text-muted)]">Input Masking</span>
               </div>
@@ -504,8 +813,24 @@ validateLicenseNumber('12-34-5678');        // false`}
                 Formats raw numeric inputs into the standard hyphenated <code className="font-mono">XX-XX-XXXXXXXX</code> pattern. Perfect for form auto-formatting on user input.
               </p>
               <pre className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 font-mono text-xs">
+                {selectedLang === 'ts' && (
+                  <code>
 {`formatLicenseNumber('010112345678');  // '01-01-12345678'
 formatLicenseNumber('०१०११२३४५६७८');  // '01-01-12345678'`}
+                  </code>
+                )}
+                {selectedLang === 'php' && (
+                  <code>
+{`LicenseChecker::format('010112345678');  // '01-01-12345678'
+LicenseChecker::format('०१०११२३४५६७८');  // '01-01-12345678'`}
+                  </code>
+                )}
+                {selectedLang === 'python' && (
+                  <code>
+{`format_license_number('010112345678')  # '01-01-12345678'
+format_license_number('०१०११२३४५६७८')  # '01-01-12345678'`}
+                  </code>
+                )}
               </pre>
             </div>
 
@@ -513,7 +838,11 @@ formatLicenseNumber('०१०११२३४५६७८');  // '01-01-12345678
             <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-4 sm:p-5 space-y-2">
               <div className="flex items-center justify-between">
                 <code className="font-mono text-xs font-bold text-[var(--nepal-blue)]">
-                  devanagariToAsciiDigits(str) / asciiToDevanagariDigits(str)
+                  {selectedLang === 'ts'
+                    ? 'devanagariToAsciiDigits(str) / asciiToDevanagariDigits(str)'
+                    : selectedLang === 'php'
+                    ? 'LicenseChecker::devanagariToAscii() / asciiToDevanagari()'
+                    : 'devanagari_to_ascii_digits() / ascii_to_devanagari_digits()'}
                 </code>
                 <span className="text-[10px] font-mono text-[var(--text-muted)]">Numeral Converter</span>
               </div>
@@ -521,8 +850,24 @@ formatLicenseNumber('०१०११२३४५६७८');  // '01-01-12345678
                 Bidirectional numeral conversion between Nepali Devanagari (<code className="font-mono">०-९</code>) and Western ASCII (<code className="font-mono">0-9</code>).
               </p>
               <pre className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 font-mono text-xs">
+                {selectedLang === 'ts' && (
+                  <code>
 {`devanagariToAsciiDigits('०१-०१-१२३४५६७८'); // '01-01-12345678'
 asciiToDevanagariDigits('01-01-12345678'); // '०१-०१-१२३४५६७८'`}
+                  </code>
+                )}
+                {selectedLang === 'php' && (
+                  <code>
+{`LicenseChecker::devanagariToAscii('०१-०१-१२३४५६७८'); // '01-01-12345678'
+LicenseChecker::asciiToDevanagari('01-01-12345678'); // '०१-०१-१२३४५६७८'`}
+                  </code>
+                )}
+                {selectedLang === 'python' && (
+                  <code>
+{`devanagari_to_ascii_digits('०१-०१-१२३४५६७८') # '01-01-12345678'
+ascii_to_devanagari_digits('01-01-12345678') # '०१-०१-१२३४५६७८'`}
+                  </code>
+                )}
               </pre>
             </div>
           </div>

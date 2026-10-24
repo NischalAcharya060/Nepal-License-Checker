@@ -200,12 +200,12 @@ export default function EducationalSection({
             onClick={onOpenNpm}
             className="flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 text-xs font-bold text-[var(--text-primary)] shadow-sm active:scale-95"
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-red)]" aria-hidden="true">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]" aria-hidden="true">
               <path d="M16.5 9.4 7.55 4.24a1.78 1.78 0 0 0-1.8 0l-4 2.31A1.78 1.78 0 0 0 1 8.08v8a1.78 1.78 0 0 0 .75 1.45l4 2.31a1.78 1.78 0 0 0 1.8 0l8.95-5.16" />
               <polyline points="3.29 7 12 12 20.71 7" />
               <line x1="12" y1="22" x2="12" y2="12" />
             </svg>
-            <span>{language === 'ne' ? 'विकासकर्ता SDK प्याकेज (npm & GitHub)' : 'Developer SDK (npm & GitHub Packages)'}</span>
+            <span>{language === 'ne' ? 'विकासकर्ता SDKs (TypeScript, Python, PHP)' : 'Developer SDKs (TypeScript, Python, PHP)'}</span>
           </button>
         )}
       </div>

@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nepal-license-checker"
+version = "1.0.0"
+description = "Zero-dependency Python SDK to check Nepal smart driving license print status via the DOTM mirrored API."
+readme = "README.md"
+authors = [
+  { name = "Nischal Acharya", email = "Nischal060@gmail.com" }
+]
+license = { text = "MIT" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+keywords = [
+    "nepal",
+    "driving-license",
+    "nepal-license",
+    "nepal-license-checker",
+    "dotm",
+    "yatayat",
+]
+requires-python = ">=3.8"
+dependencies = []
+
+[project.urls]
+"Homepage" = "https://license-checker.acharyanischal.com.np"
+"Documentation" = "https://license-checker.acharyanischal.com.np/developer/docs"
+"Repository" = "https://github.com/NischalAcharya060/Nepal-License-Checker"
+"Bug Tracker" = "https://github.com/NischalAcharya060/Nepal-License-Checker/issues"

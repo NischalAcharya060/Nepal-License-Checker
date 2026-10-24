@@ -30,7 +30,7 @@ export default function DeveloperPortalPage() {
   const [copiedKey, setCopiedKey] = useState(false)
   const [copiedCode, setCopiedCode] = useState(false)
   const [copiedNpm, setCopiedNpm] = useState(false)
-  const [codeTab, setCodeTab] = useState<'sdk' | 'curl' | 'fetch' | 'python'>('sdk')
+  const [codeTab, setCodeTab] = useState<'sdk' | 'curl' | 'fetch' | 'python' | 'php'>('sdk')
   const [activePreset, setActivePreset] = useState<string | null>(null)
   const [redirecting, setRedirecting] = useState(false)
 
@@ -512,20 +512,38 @@ const result = await response.json();
 console.log('RateLimit Remaining:', response.headers.get('x-ratelimit-remaining'));
 console.log('Result:', result);`
       case 'python':
-        return `# Python 3 with requests
-import requests
+        return `# Install: pip install nepal-license-checker
+from nepal_license_checker import check_license
 
-url = "https://license-checker.acharyanischal.com.np/api/license"
-headers = {
-    "Accept": "application/json",
-    "x-api-key": "${activeKeySample}"
-}
-params = {"number": "01-01-12345678"}
+result = check_license(
+    license_no="01-01-12345678",
+    api_key="${activeKeySample}"
+)
 
-response = requests.get(url, headers=headers, params=params)
-data = response.json()
-print("Status:", data.get("status"))
-print("License details:", data.get("data"))`
+if result["status"] == "success" and result["is_ready"]:
+    print(f"🎉 Ready for pickup: {result['data']['holder_name']}")
+    print(f"Office: {result['data']['office']}")
+    print(f"Remaining quota: {result['rate_limit']['remaining']}")
+else:
+    print("License not printed yet or check failed.")`
+      case 'php':
+        return `<?php
+// Install: composer require nepal-license-checker/nepal-license-checker
+require_once __DIR__ . '/vendor/autoload.php';
+
+use NepalLicenseChecker\\LicenseChecker;
+
+$result = LicenseChecker::check('01-01-12345678', [
+    'apiKey' => '${activeKeySample}'
+]);
+
+if ($result['status'] === 'success' && $result['isReady']) {
+    echo "🎉 Ready for pickup: " . $result['data']['holder_name'] . "\\n";
+    echo "Office: " . $result['data']['office'] . "\\n";
+    echo "Remaining quota: " . ($result['rateLimit']['remaining'] ?? 'N/A') . "\\n";
+} else {
+    echo "License not printed yet.\\n";
+}`
     }
   }
 
@@ -1675,7 +1693,7 @@ print("License details:", data.get("data"))`
                 </div>
 
                 <div className="flex rounded-xl border border-[var(--border-default)] p-1 bg-[var(--bg-secondary)] shadow-2xs">
-                  {(['sdk', 'curl', 'fetch', 'python'] as const).map((tab) => (
+                  {(['sdk', 'php', 'python', 'curl', 'fetch'] as const).map((tab) => (
                     <button
                       key={tab}
                       type="button"
@@ -1686,7 +1704,7 @@ print("License details:", data.get("data"))`
                           : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
                       }`}
                     >
-                      {tab === 'sdk' ? 'TypeScript SDK' : tab === 'curl' ? 'cURL' : tab === 'fetch' ? 'Fetch API' : 'Python'}
+                      {tab === 'sdk' ? 'TypeScript SDK' : tab === 'php' ? 'PHP / Laravel' : tab === 'python' ? 'Python' : tab === 'curl' ? 'cURL' : 'Fetch API'}
                     </button>
                   ))}
                 </div>
@@ -1702,7 +1720,7 @@ print("License details:", data.get("data"))`
                       <div className="h-3 w-3 rounded-full bg-[#27c93f] border border-black/10" />
                     </div>
                     <span className="ml-2 font-mono text-[11px] text-[var(--text-muted)]">
-                      {codeTab === 'sdk' ? 'license-client.ts' : codeTab === 'curl' ? 'request.sh' : codeTab === 'fetch' ? 'fetch-example.js' : 'verify.py'}
+                      {codeTab === 'sdk' ? 'license-client.ts' : codeTab === 'php' ? 'VerifyLicense.php' : codeTab === 'python' ? 'verify.py' : codeTab === 'curl' ? 'request.sh' : 'fetch-example.js'}
                     </span>
                   </div>
 

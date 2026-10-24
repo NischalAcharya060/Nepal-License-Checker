@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
+import { SdkCodeIcon } from '@/components/SdkLogos'
 import type { Language } from '@/lib/i18n'
 import { VEHICLE_CATEGORIES } from '@/lib/categories'
 import { formatNepalDateTime, formatTimeUntil } from '@/lib/cronHelper'
@@ -172,12 +173,10 @@ export default function Footer({
               <button
                 type="button"
                 onClick={onOpenNpm}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-xs font-semibold text-[var(--text-primary)] transition hover:border-[var(--nepal-red)] hover:text-[var(--nepal-red)] active:scale-95 shadow-2xs cursor-pointer group"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-xs font-semibold text-[var(--text-primary)] transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] active:scale-95 shadow-2xs cursor-pointer group"
               >
-                <span className="rounded bg-[var(--nepal-red)]/10 px-1 py-0.5 font-mono text-[9.5px] font-black text-[var(--nepal-red)] group-hover:bg-[var(--nepal-red)] group-hover:text-white transition-colors">
-                  npm
-                </span>
-                <span>{isNe ? 'विकासकर्ता SDK' : 'Developer SDK'}</span>
+                <SdkCodeIcon className="h-3.5 w-3.5 text-[var(--nepal-blue)] transition-transform group-hover:scale-110" />
+                <span>{isNe ? 'विकासकर्ता SDKs' : 'Developer SDKs'}</span>
               </button>
             )}
 
@@ -260,10 +259,10 @@ export default function Footer({
                   <button
                     type="button"
                     onClick={onOpenNpm}
-                    className="group flex items-center gap-2 text-left font-medium text-[var(--text-secondary)] hover:text-[var(--nepal-red)] transition cursor-pointer w-full"
+                    className="group flex items-center gap-2 text-left font-medium text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] transition cursor-pointer w-full"
                   >
-                    <span className="font-mono text-[10px] font-bold text-[var(--nepal-red)] shrink-0">npm</span>
-                    <span>{isNe ? 'विकासकर्ता SDK (npm & GitHub)' : 'Developer SDK (npm & GitHub)'}</span>
+                    <SdkCodeIcon className="h-3.5 w-3.5 text-[var(--nepal-blue)] shrink-0 transition-transform group-hover:scale-110" />
+                    <span>{isNe ? 'विकासकर्ता SDKs (TS, Python, PHP)' : 'Developer SDKs (TS, Python, PHP)'}</span>
                   </button>
                 </li>
               )}
