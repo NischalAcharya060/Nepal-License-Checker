@@ -73,11 +73,11 @@ export default function AdminNavbar(props: any) {
                                 <h1 className="text-xs sm:text-base font-black tracking-tight truncate text-[var(--text-primary)]">
                                     Admin Console
                                 </h1>
-                                <span className="hidden sm:inline-flex rounded-full bg-[var(--nepal-blue)]/10 px-2 py-0.5 text-[9.5px] font-bold text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/20 font-mono">
+                                <span className="hidden sm:inline-flex rounded-full bg-[var(--nepal-blue)]/10 px-2 py-0.5 text-xs font-bold text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/20 font-mono">
                                     v2.0
                                 </span>
                             </div>
-                            <span className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-medium text-[var(--text-muted)] truncate">
+                            <span className="flex items-center gap-1.5 text-xs font-medium text-[var(--text-muted)] truncate">
                                 <span className="relative flex h-2 w-2">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -89,7 +89,7 @@ export default function AdminNavbar(props: any) {
                     </Link>
                 </div>
 
-                <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                     {/* Privacy Mode Toggle (ON by default) */}
                     <button
                         type="button"
@@ -103,7 +103,7 @@ export default function AdminNavbar(props: any) {
                                 'info'
                             )
                         }}
-                        className={`inline-flex h-8 sm:h-9 items-center gap-1.5 rounded-xl border px-2.5 sm:px-3 text-xs font-semibold shadow-2xs transition active:scale-95 cursor-pointer ${
+                        className={`inline-flex min-h-[38px] sm:h-9 items-center gap-1.5 rounded-xl border px-2.5 sm:px-3 text-xs font-semibold shadow-2xs transition active:scale-95 cursor-pointer ${
                             privacyMode
                                 ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-bold'
                                 : 'border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400 font-bold'
@@ -127,7 +127,7 @@ export default function AdminNavbar(props: any) {
                             </svg>
                         )}
                         <span className="hidden sm:inline">Privacy</span>
-                        <span className="text-[10.5px] sm:text-xs font-mono font-bold uppercase">{privacyMode ? 'ON' : 'OFF'}</span>
+                        <span className="text-xs font-mono font-bold uppercase">{privacyMode ? 'ON' : 'OFF'}</span>
                     </button>
 
                     {/* Auto-refresh toggle */}
@@ -199,7 +199,7 @@ export default function AdminNavbar(props: any) {
                                 ? !hasTestimonialLogs
                                 : !hasDeveloperLogs
                         }
-                        className="inline-flex h-8 sm:h-9 items-center justify-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 sm:px-3 text-xs font-semibold text-[var(--text-secondary)] shadow-2xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                        className="inline-flex min-h-[38px] sm:h-9 items-center justify-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 sm:px-3 text-xs font-semibold text-[var(--text-secondary)] shadow-2xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                         title={
                             activeTab === 'searches'
                                 ? 'Export search queries to CSV'
@@ -228,7 +228,7 @@ export default function AdminNavbar(props: any) {
                             setPasskeyModalOpen(true)
                             fetchPasskeys()
                         }}
-                        className="inline-flex h-8 sm:h-9 items-center justify-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 sm:px-3 text-xs font-semibold text-[var(--text-secondary)] shadow-2xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] active:scale-95 cursor-pointer"
+                        className="inline-flex min-h-[38px] sm:h-9 items-center justify-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 sm:px-3 text-xs font-semibold text-[var(--text-secondary)] shadow-2xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] active:scale-95 cursor-pointer"
                         title="Manage Passkeys (Windows Hello, Touch ID, Face ID, YubiKey)"
                         aria-label="Passkeys"
                     >
@@ -238,7 +238,7 @@ export default function AdminNavbar(props: any) {
                         </svg>
                         <span className="hidden lg:inline">Passkeys</span>
                         {passkeyCount > 0 && (
-                            <span className="rounded-md bg-[var(--nepal-blue-soft)] px-1.5 py-0.2 text-[10px] font-mono font-bold text-[var(--nepal-blue)]">
+                            <span className="rounded-md bg-[var(--nepal-blue-soft)] px-1.5 py-0.2 text-xs font-mono font-bold text-[var(--nepal-blue)]">
                                 {passkeyCount}
                             </span>
                         )}
@@ -248,7 +248,7 @@ export default function AdminNavbar(props: any) {
                     <button
                         type="button"
                         onClick={() => handleLogout()}
-                        className="inline-flex h-8 sm:h-9 items-center justify-center gap-1.5 rounded-xl border border-[var(--error-border)]/60 bg-[var(--error-bg)]/80 px-2.5 sm:px-3 text-xs font-bold text-[var(--error)] shadow-2xs transition hover:bg-[var(--error)] hover:text-white active:scale-95 cursor-pointer"
+                        className="inline-flex min-h-[38px] sm:h-9 items-center justify-center gap-1.5 rounded-xl border border-[var(--error-border)]/60 bg-[var(--error-bg)]/80 px-2.5 sm:px-3 text-xs font-bold text-[var(--error)] shadow-2xs transition hover:bg-[var(--error)] hover:text-white active:scale-95 cursor-pointer"
                         title="Sign out from admin console"
                         aria-label="Sign out"
                     >

@@ -54,15 +54,18 @@ function ConfirmDeleteModal({ dialog, onClose, isSubmitting }: ConfirmDeleteModa
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-3 sm:p-4 backdrop-blur-md animate-fade-in"
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 p-0 sm:p-4 backdrop-blur-md animate-fade-in"
             onClick={() => {
                 if (!isSubmitting) onClose()
             }}
         >
             <div
-                className="relative w-full max-w-md rounded-3xl dev-glass-card border border-[var(--border-strong)] p-5 sm:p-6 shadow-2xl backdrop-blur-xl animate-in zoom-in-95 duration-150"
+                className="relative w-full max-w-md rounded-t-3xl sm:rounded-3xl border border-[var(--border-strong)] bg-[var(--surface-primary)] p-5 sm:p-6 shadow-2xl animate-in zoom-in-95 duration-150 max-h-[92vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
             >
+                {/* Visual grabber bar on mobile */}
+                <div className="mx-auto -mt-1 mb-3 h-1 w-12 rounded-full bg-[var(--border-strong)] sm:hidden" />
+
                 <div className="flex items-start gap-3.5">
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--error-border)] bg-[var(--error-bg)] text-[var(--error)] shadow-xs">
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -129,7 +132,7 @@ function ConfirmDeleteModal({ dialog, onClose, isSubmitting }: ConfirmDeleteModa
                         type="button"
                         disabled={isSubmitting}
                         onClick={onClose}
-                        className="w-full sm:w-auto rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-2.5 text-xs font-bold text-[var(--text-secondary)] transition hover:border-[var(--text-muted)] hover:text-[var(--text-primary)] active:scale-95 disabled:opacity-50 text-center cursor-pointer"
+                        className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-2.5 text-xs font-bold text-[var(--text-secondary)] transition hover:border-[var(--text-muted)] hover:text-[var(--text-primary)] active:scale-95 disabled:opacity-50 text-center cursor-pointer"
                     >
                         Cancel
                     </button>
@@ -137,7 +140,7 @@ function ConfirmDeleteModal({ dialog, onClose, isSubmitting }: ConfirmDeleteModa
                         type="button"
                         disabled={isSubmitting || !isPhraseMatched}
                         onClick={handleExecute}
-                        className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--error)] px-4.5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                        className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--error)] px-4.5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                     >
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                             <polyline points="3 6 5 6 21 6" />
@@ -183,18 +186,21 @@ export default function AdminModals(props: any) {
             {/* Detail Message Modal */}
             {selectedFeedbackMessage && (
                 <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-3 sm:p-4 backdrop-blur-md animate-fade-in"
+                    className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 p-0 sm:p-4 backdrop-blur-md animate-fade-in"
                     onClick={() => setSelectedFeedbackMessage(null)}
                 >
                     <div
-                        className="relative w-full max-w-xl rounded-3xl dev-glass-card border border-[var(--border-strong)] p-5 sm:p-6 shadow-2xl backdrop-blur-xl animate-in zoom-in-95 duration-150 max-h-[92vh] overflow-y-auto"
+                        className="relative w-full max-w-xl rounded-t-3xl sm:rounded-3xl border border-[var(--border-strong)] bg-[var(--surface-primary)] p-5 sm:p-6 shadow-2xl animate-in zoom-in-95 duration-150 max-h-[92vh] overflow-y-auto"
                         onClick={(e) => e.stopPropagation()}
                     >
+                        {/* Visual grabber bar on mobile */}
+                        <div className="mx-auto -mt-1 mb-3 h-1 w-12 rounded-full bg-[var(--border-strong)] sm:hidden" />
+
                         {/* Modal Header */}
                         <div className="flex items-start justify-between gap-3 border-b border-[var(--border-default)] pb-4">
                             <div>
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${
+                                    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-bold ${
                                         selectedFeedbackMessage.status === 'new'
                                             ? 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400'
                                             : 'border-[var(--success)]/30 bg-[var(--success-bg)] text-[var(--success)]'
@@ -225,10 +231,10 @@ export default function AdminModals(props: any) {
                             <button
                                 type="button"
                                 onClick={() => setSelectedFeedbackMessage(null)}
-                                className="rounded-full border border-[var(--border-default)] p-1.5 text-[var(--text-muted)] hover:border-[var(--nepal-blue)] hover:text-[var(--text-primary)] transition cursor-pointer shrink-0"
+                                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--border-default)] text-[var(--text-muted)] hover:border-[var(--nepal-blue)] hover:text-[var(--text-primary)] transition cursor-pointer shrink-0"
                                 aria-label="Close modal"
                             >
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                     <line x1="18" y1="6" x2="6" y2="18" />
                                     <line x1="6" y1="6" x2="18" y2="18" />
                                 </svg>
@@ -286,7 +292,7 @@ export default function AdminModals(props: any) {
                             <button
                                 type="button"
                                 onClick={() => handleToggleFeedbackStatus(selectedFeedbackMessage.id, selectedFeedbackMessage.status)}
-                                className={`inline-flex items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition active:scale-95 cursor-pointer ${
+                                className={`min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition active:scale-95 cursor-pointer ${
                                     selectedFeedbackMessage.status === 'new'
                                         ? 'bg-[var(--success)] text-white hover:bg-emerald-600'
                                         : 'border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-primary)] hover:border-amber-500 hover:text-amber-600'
@@ -313,7 +319,7 @@ export default function AdminModals(props: any) {
                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                                 <a
                                     href={`mailto:${selectedFeedbackMessage.email}?subject=${encodeURIComponent(`Re: [Support] ${selectedFeedbackMessage.subject}`)}`}
-                                    className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--nepal-blue)] px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-[var(--nepal-blue-mid)] active:scale-95"
+                                    className="min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--nepal-blue)] px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-[var(--nepal-blue-mid)] active:scale-95"
                                 >
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                         <rect x="2" y="4" width="20" height="16" rx="2" />
@@ -325,7 +331,7 @@ export default function AdminModals(props: any) {
                                 <button
                                     type="button"
                                     onClick={() => setSelectedFeedbackMessage(null)}
-                                    className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3.5 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-center transition active:scale-95 cursor-pointer"
+                                    className="min-h-[44px] inline-flex items-center justify-center rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-center transition active:scale-95 cursor-pointer"
                                 >
                                     Close
                                 </button>
@@ -338,13 +344,16 @@ export default function AdminModals(props: any) {
             {/* Passkeys & Biometric Security Modal */}
             {passkeyModalOpen && (
                 <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-3 sm:p-4 backdrop-blur-md animate-fade-in"
+                    className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 p-0 sm:p-4 backdrop-blur-md animate-fade-in"
                     onClick={() => setPasskeyModalOpen(false)}
                 >
                     <div
-                        className="relative w-full max-w-lg rounded-3xl dev-glass-card border border-[var(--border-strong)] p-5 sm:p-6 shadow-2xl backdrop-blur-xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto"
+                        className="relative w-full max-w-lg rounded-t-3xl sm:rounded-3xl border border-[var(--border-strong)] bg-[var(--surface-primary)] p-5 sm:p-6 shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto"
                         onClick={(e) => e.stopPropagation()}
                     >
+                        {/* Visual grabber bar on mobile */}
+                        <div className="mx-auto -mt-1 mb-3 h-1 w-12 rounded-full bg-[var(--border-strong)] sm:hidden" />
+
                         {/* Modal Header */}
                         <div className="flex items-start justify-between gap-3 border-b border-[var(--border-default)] pb-4">
                             <div className="flex items-center gap-3">
@@ -368,10 +377,10 @@ export default function AdminModals(props: any) {
                             <button
                                 type="button"
                                 onClick={() => setPasskeyModalOpen(false)}
-                                className="rounded-full border border-[var(--border-default)] p-1.5 text-[var(--text-muted)] hover:border-[var(--nepal-blue)] hover:text-[var(--text-primary)] transition cursor-pointer shrink-0"
+                                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--border-default)] text-[var(--text-muted)] hover:border-[var(--nepal-blue)] hover:text-[var(--text-primary)] transition cursor-pointer shrink-0"
                                 aria-label="Close"
                             >
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                     <line x1="18" y1="6" x2="6" y2="18" />
                                     <line x1="6" y1="6" x2="18" y2="18" />
                                 </svg>
@@ -394,12 +403,12 @@ export default function AdminModals(props: any) {
                                     onChange={(e) => setNewPasskeyName(e.target.value)}
                                     placeholder="Device name (e.g. My Laptop, iPhone, YubiKey)"
                                     maxLength={50}
-                                    className="h-9 sm:h-10 flex-1 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 text-xs text-[var(--text-primary)] transition focus:border-[var(--nepal-blue)] focus:outline-none"
+                                    className="h-11 sm:h-10 flex-1 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 text-xs text-[var(--text-primary)] transition focus:border-[var(--nepal-blue)] focus:outline-none"
                                 />
                                 <button
                                     type="submit"
                                     disabled={registeringPasskey}
-                                    className="inline-flex h-9 sm:h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-[var(--nepal-blue)] px-4 text-xs font-bold text-white shadow-xs transition hover:bg-[var(--nepal-blue-mid)] active:scale-95 disabled:opacity-50 cursor-pointer"
+                                    className="inline-flex min-h-[44px] sm:h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-[var(--nepal-blue)] px-4 text-xs font-bold text-white shadow-xs transition hover:bg-[var(--nepal-blue-mid)] active:scale-95 disabled:opacity-50 cursor-pointer"
                                 >
                                     {registeringPasskey ? (
                                         <>
@@ -528,15 +537,18 @@ export default function AdminModals(props: any) {
             {/* Inactivity Auto-Logout Warning Modal */}
             {inactivityWarningOpen && (
                 <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-3 sm:p-4 backdrop-blur-md animate-fade-in"
+                    className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 p-0 sm:p-4 backdrop-blur-md animate-fade-in"
                     role="alertdialog"
                     aria-labelledby="inactivity-warning-title"
                     aria-describedby="inactivity-warning-desc"
                 >
                     <div
-                        className="relative w-full max-w-md rounded-3xl dev-glass-card border border-[var(--warning-border)] bg-[var(--surface-primary)] p-5 sm:p-6 shadow-2xl backdrop-blur-xl animate-in zoom-in-95 duration-200"
+                        className="relative w-full max-w-md rounded-t-3xl sm:rounded-3xl border border-[var(--warning-border)] bg-[var(--surface-primary)] p-5 sm:p-6 shadow-2xl animate-in zoom-in-95 duration-200"
                         onClick={(e) => e.stopPropagation()}
                     >
+                        {/* Visual grabber bar on mobile */}
+                        <div className="mx-auto -mt-1 mb-3 h-1 w-12 rounded-full bg-[var(--border-strong)] sm:hidden" />
+
                         <div className="flex items-start gap-3.5">
                             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--warning-border)] bg-[var(--warning-bg)] text-[var(--warning-text)] shadow-xs">
                                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="animate-pulse" aria-hidden="true">
@@ -549,7 +561,7 @@ export default function AdminModals(props: any) {
                                     <h3 id="inactivity-warning-title" className="text-base font-black text-[var(--text-primary)]">
                                         Inactivity Warning
                                     </h3>
-                                    <span className="inline-flex items-center rounded-full border border-[var(--warning-border)] bg-[var(--warning-bg)] px-2 py-0.5 text-[10px] font-bold text-[var(--warning-text)]">
+                                    <span className="inline-flex items-center rounded-full border border-[var(--warning-border)] bg-[var(--warning-bg)] px-2 py-0.5 text-xs font-bold text-[var(--warning-text)]">
                                         Auto Logout
                                     </span>
                                 </div>
@@ -577,7 +589,7 @@ export default function AdminModals(props: any) {
                             <button
                                 type="button"
                                 onClick={() => handleLogout('inactivity')}
-                                className="w-full sm:w-auto rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-2.5 text-xs font-bold text-[var(--text-secondary)] transition hover:border-[var(--text-muted)] hover:text-[var(--text-primary)] active:scale-95 text-center cursor-pointer"
+                                className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-2.5 text-xs font-bold text-[var(--text-secondary)] transition hover:border-[var(--text-muted)] hover:text-[var(--text-primary)] active:scale-95 text-center cursor-pointer"
                             >
                                 Log Out Now
                             </button>
@@ -585,7 +597,7 @@ export default function AdminModals(props: any) {
                                 type="button"
                                 autoFocus
                                 onClick={stayLoggedIn}
-                                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--nepal-blue)] px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[var(--nepal-blue-mid)] active:scale-95 text-center cursor-pointer"
+                                className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--nepal-blue)] px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[var(--nepal-blue-mid)] active:scale-95 text-center cursor-pointer"
                             >
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                     <polyline points="20 6 9 17 4 12" />

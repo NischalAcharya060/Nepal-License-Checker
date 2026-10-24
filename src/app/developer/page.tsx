@@ -543,19 +543,13 @@ print("License details:", data.get("data"))`
   if (!profile) {
     return (
       <div className="min-h-screen bg-[var(--bg-primary)] px-4 py-8 sm:px-6 sm:py-12 text-[var(--text-primary)] transition-colors">
-        {/* Ambient background glows */}
-        <div
-          className="pointer-events-none fixed -top-40 left-1/2 -translate-x-1/2 h-96 w-full max-w-4xl rounded-full bg-gradient-to-br from-[var(--nepal-blue)]/15 via-[var(--nepal-red)]/10 to-transparent blur-3xl opacity-70"
-          aria-hidden
-        />
-
         <div className="relative mx-auto max-w-5xl space-y-8">
           {/* Navigation Bar */}
           <header className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border-default)] pb-5">
             <div className="flex items-center gap-3">
               <Link
                 href="/"
-                className="inline-flex items-center gap-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition group"
+                className="inline-flex min-h-[44px] items-center gap-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition group"
               >
                 <span className="transition-transform group-hover:-translate-x-0.5">←</span>
                 <span>Back to Home</span>
@@ -570,13 +564,13 @@ print("License details:", data.get("data"))`
             </div>
 
             <div className="flex items-center gap-3">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1 font-mono text-[10.5px] font-bold text-[var(--text-secondary)] shadow-2xs">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1 font-mono text-xs font-bold text-[var(--text-secondary)] shadow-2xs">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 <span>API v1.1.0 • 60 req/min</span>
               </span>
               <Link
                 href="/developer/docs"
-                className="inline-flex items-center gap-1 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)] transition shadow-2xs"
+                className="inline-flex min-h-[44px] items-center gap-1 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)] transition shadow-2xs"
               >
                 <span>SDK Docs</span>
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -601,10 +595,10 @@ print("License details:", data.get("data"))`
               <button
                 type="button"
                 onClick={() => setErrorMessage(null)}
-                className="font-bold hover:underline cursor-pointer"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-xl font-bold hover:bg-[var(--danger)]/20 transition cursor-pointer"
                 aria-label="Dismiss error banner"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
@@ -615,9 +609,9 @@ print("License details:", data.get("data"))`
           {/* STATE A: GUEST (UNAUTHENTICATED DEVELOPER LANDING) */}
           <div className="space-y-10 animate-rise-in">
             {/* Hero Section */}
-            <div className="relative overflow-hidden rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-7 sm:p-10 lg:p-12 shadow-xl dev-glass-card">
-              <div className="absolute top-0 right-0 -mt-10 -mr-10 h-72 w-72 rounded-full bg-gradient-to-br from-[var(--nepal-blue)]/20 via-cyan-500/10 to-transparent blur-3xl pointer-events-none" />
-
+            <div className="relative overflow-hidden rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-7 sm:p-10 lg:p-12 shadow-sm">
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-[var(--nepal-blue)] to-transparent opacity-90" />
+              <div className="pointer-events-none absolute -top-24 -right-24 h-80 w-80 rounded-full bg-[var(--nepal-blue)]/8 blur-3xl -z-0" aria-hidden="true" />
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
                 {/* Left Column: Copy & Actions */}
                 <div className="lg:col-span-7 space-y-4">
@@ -643,7 +637,7 @@ print("License details:", data.get("data"))`
                     <a
                       href="/api/developer/auth/github"
                       onClick={() => setRedirecting(true)}
-                      className="inline-flex items-center gap-2.5 rounded-2xl bg-black dark:bg-white text-white dark:text-black px-6 py-3.5 text-sm font-bold shadow-lg shadow-black/10 dark:shadow-white/10 hover:opacity-90 active:scale-98 transition cursor-pointer"
+                      className="inline-flex min-h-[44px] items-center gap-2.5 rounded-2xl bg-black dark:bg-white text-white dark:text-black px-6 py-3.5 text-sm font-bold shadow-lg shadow-black/10 dark:shadow-white/10 hover:opacity-90 active:scale-98 transition cursor-pointer"
                     >
                       {redirecting ? (
                         <>
@@ -670,7 +664,7 @@ print("License details:", data.get("data"))`
 
                     <Link
                       href="/developer/login"
-                      className="inline-flex items-center gap-1.5 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-3.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition shadow-xs"
+                      className="inline-flex min-h-[44px] items-center gap-1.5 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-3.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition shadow-xs"
                     >
                       <span>Direct Login Portal</span>
                     </Link>
@@ -686,7 +680,7 @@ print("License details:", data.get("data"))`
                       <button
                         type="button"
                         onClick={copyNpm}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1 text-[11px] font-bold text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)] transition active:scale-95 cursor-pointer shadow-2xs shrink-0"
+                        className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1 text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)] transition active:scale-95 cursor-pointer shadow-2xs shrink-0"
                         title="Copy npm install command"
                       >
                         {copiedNpm ? (
@@ -1193,7 +1187,8 @@ print("License details:", data.get("data"))`
 
             {/* 4 Metric KPI Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 sm:gap-4">
-              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 space-y-2 shadow-2xs hover-lift transition-all duration-200 hover:border-[var(--nepal-blue)]/40 hover:shadow-sm dev-glass-card">
+              <div className="relative overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 space-y-2 shadow-2xs hover-lift transition-all duration-200 hover:border-[var(--nepal-blue)]/40 hover:shadow-sm dev-glass-card">
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-[var(--nepal-blue)] to-transparent opacity-80" />
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Quota Limit</span>
                   <div className="h-7 w-7 rounded-lg bg-[var(--nepal-blue)]/10 text-[var(--nepal-blue)] flex items-center justify-center">
@@ -1209,7 +1204,8 @@ print("License details:", data.get("data"))`
                 </span>
               </div>
 
-              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 space-y-2 shadow-2xs hover-lift transition-all duration-200 hover:border-[var(--success)]/40 hover:shadow-sm dev-glass-card">
+              <div className="relative overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 space-y-2 shadow-2xs hover-lift transition-all duration-200 hover:border-[var(--success)]/40 hover:shadow-sm dev-glass-card">
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-[var(--success)] to-transparent opacity-80" />
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Rate Window</span>
                   <div className="h-7 w-7 rounded-lg bg-[var(--success)]/10 text-[var(--success)] flex items-center justify-center">
@@ -1225,7 +1221,8 @@ print("License details:", data.get("data"))`
                 </span>
               </div>
 
-              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 space-y-2 shadow-2xs hover-lift transition-all duration-200 hover:border-[var(--nepal-blue)]/40 hover:shadow-sm dev-glass-card">
+              <div className="relative overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 space-y-2 shadow-2xs hover-lift transition-all duration-200 hover:border-[var(--nepal-blue)]/40 hover:shadow-sm dev-glass-card">
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent opacity-80" />
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Active Keys</span>
                   <div className="h-7 w-7 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
@@ -1248,7 +1245,8 @@ print("License details:", data.get("data"))`
                 )}
               </div>
 
-              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 space-y-2 shadow-2xs hover-lift transition-all duration-200 hover:border-purple-500/40 hover:shadow-sm dev-glass-card">
+              <div className="relative overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 space-y-2 shadow-2xs hover-lift transition-all duration-200 hover:border-purple-500/40 hover:shadow-sm dev-glass-card">
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-purple-500 to-transparent opacity-80" />
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Total Queries</span>
                   <div className="h-7 w-7 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
@@ -1546,7 +1544,7 @@ print("License details:", data.get("data"))`
                               <button
                                 type="button"
                                 onClick={() => handleStartRename(k.id, k.name)}
-                                className="inline-flex items-center gap-1 text-[11px] text-[var(--text-muted)] hover:text-[var(--nepal-blue)] transition cursor-pointer"
+                                className="inline-flex min-h-[36px] items-center gap-1 rounded-lg px-2 text-xs text-[var(--text-muted)] hover:text-[var(--nepal-blue)] transition cursor-pointer"
                                 title="Rename this key"
                               >
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -1555,12 +1553,12 @@ print("License details:", data.get("data"))`
                                 <span>Rename</span>
                               </button>
                               {k.is_active ? (
-                                <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--success)]/10 px-2.5 py-0.5 text-[10px] font-bold text-[var(--success)] border border-[var(--success)]/20">
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--success)]/10 px-2.5 py-0.5 text-xs font-bold text-[var(--success)] border border-[var(--success)]/20">
                                   <span className="h-1.5 w-1.5 rounded-full bg-[var(--success)] animate-pulse" />
                                   Active
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-500/15 border border-rose-500/30 px-2.5 py-0.5 text-[10px] font-bold text-rose-600 dark:text-rose-400">
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-500/15 border border-rose-500/30 px-2.5 py-0.5 text-xs font-bold text-rose-600 dark:text-rose-400">
                                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
                                     <circle cx="12" cy="12" r="10" />
                                     <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
@@ -1592,12 +1590,12 @@ print("License details:", data.get("data"))`
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex flex-wrap items-center gap-2 shrink-0">
                           <button
                             type="button"
                             onClick={() => handleRotateKey(k.id, k.name)}
                             disabled={rotatingKeyId === k.id || !k.is_active}
-                            className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition shadow-2xs ${
+                            className={`min-h-[44px] inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-semibold transition shadow-2xs ${
                               !k.is_active
                                 ? 'border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-muted)] opacity-50 cursor-not-allowed'
                                 : 'border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)]/50 cursor-pointer active:scale-95'
@@ -1626,7 +1624,7 @@ print("License details:", data.get("data"))`
                           <button
                             type="button"
                             onClick={() => handleRevokeKey(k.id, k.name)}
-                            className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--danger)]/30 bg-[var(--danger)]/5 px-3 py-1.5 text-xs font-bold text-[var(--danger)] hover:bg-[var(--danger)] hover:text-white transition active:scale-95 cursor-pointer shadow-2xs"
+                            className="min-h-[44px] inline-flex items-center gap-1.5 rounded-xl border border-[var(--danger)]/30 bg-[var(--danger)]/5 px-3.5 py-2 text-xs font-bold text-[var(--danger)] hover:bg-[var(--danger)] hover:text-white transition active:scale-95 cursor-pointer shadow-2xs"
                           >
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                               <polyline points="3 6 5 6 21 6" />

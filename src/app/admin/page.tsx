@@ -1729,11 +1729,11 @@ export default function AdminPage() {
 
                 {/* View Mode Tab Switcher */}
                 <div className="mt-6 flex flex-col gap-3.5 border-b border-[var(--border-default)]/70 pb-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="dev-glass-card flex w-full sm:w-auto overflow-x-auto no-scrollbar rounded-2xl border border-[var(--border-default)]/80 bg-[var(--surface-primary)]/80 p-1.5 shadow-sm backdrop-blur-md">
+                    <div className="flex w-full sm:w-auto overflow-x-auto no-scrollbar rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-1.5 shadow-xs">
                         <button
                             type="button"
                             onClick={() => setActiveTab('searches')}
-                            className={`inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-3 sm:px-4 py-2 text-xs font-bold transition-all duration-200 whitespace-nowrap active:scale-95 cursor-pointer ${
+                            className={`inline-flex min-h-[44px] flex-1 sm:flex-initial items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-3 sm:px-4 py-2 text-xs font-bold transition-all duration-200 whitespace-nowrap active:scale-95 cursor-pointer ${
                                 activeTab === 'searches'
                                     ? 'bg-[var(--nepal-blue)] text-white shadow-md shadow-[var(--nepal-blue)]/25'
                                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]/60'
@@ -1745,7 +1745,7 @@ export default function AdminPage() {
                             </svg>
                             <span className="hidden sm:inline">Search Queries</span>
                             <span className="sm:hidden">Searches</span>
-                            <span className={`rounded-full px-2 py-0.5 font-mono tabular-nums text-[10px] font-semibold transition ${
+                            <span className={`rounded-full px-2 py-0.5 font-mono tabular-nums text-xs font-semibold transition ${
                                 activeTab === 'searches' ? 'bg-white/20 text-white' : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'
                             }`}>
                                 {total.toLocaleString()}
@@ -1755,7 +1755,7 @@ export default function AdminPage() {
                         <button
                             type="button"
                             onClick={() => setActiveTab('notifications')}
-                            className={`inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-3 sm:px-4 py-2 text-xs font-bold transition-all duration-200 whitespace-nowrap active:scale-95 cursor-pointer ${
+                            className={`inline-flex min-h-[44px] flex-1 sm:flex-initial items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-3 sm:px-4 py-2 text-xs font-bold transition-all duration-200 whitespace-nowrap active:scale-95 cursor-pointer ${
                                 activeTab === 'notifications'
                                     ? 'bg-[var(--nepal-blue)] text-white shadow-md shadow-[var(--nepal-blue)]/25'
                                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]/60'
@@ -1767,7 +1767,7 @@ export default function AdminPage() {
                             </svg>
                             <span className="hidden sm:inline">Email Notifications</span>
                             <span className="sm:hidden">Notifications</span>
-                            <span className={`rounded-full px-2 py-0.5 font-mono tabular-nums text-[10px] font-semibold transition ${
+                            <span className={`rounded-full px-2 py-0.5 font-mono tabular-nums text-xs font-semibold transition ${
                                 activeTab === 'notifications' ? 'bg-white/20 text-white' : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'
                             }`}>
                                 {notifTotal.toLocaleString()}
@@ -1777,7 +1777,7 @@ export default function AdminPage() {
                         <button
                             type="button"
                             onClick={() => setActiveTab('feedback')}
-                            className={`inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-3 sm:px-4 py-2 text-xs font-bold transition-all duration-200 whitespace-nowrap active:scale-95 cursor-pointer ${
+                            className={`inline-flex min-h-[44px] flex-1 sm:flex-initial items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-3 sm:px-4 py-2 text-xs font-bold transition-all duration-200 whitespace-nowrap active:scale-95 cursor-pointer ${
                                 activeTab === 'feedback'
                                     ? 'bg-[var(--nepal-blue)] text-white shadow-md shadow-[var(--nepal-blue)]/25'
                                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]/60'
@@ -1788,13 +1788,13 @@ export default function AdminPage() {
                             </svg>
                             <span className="hidden sm:inline">Feedback & Support</span>
                             <span className="sm:hidden">Feedback</span>
-                            <span className={`rounded-full px-2 py-0.5 font-mono tabular-nums text-[10px] font-semibold transition ${
+                            <span className={`rounded-full px-2 py-0.5 font-mono tabular-nums text-xs font-semibold transition ${
                                 activeTab === 'feedback' ? 'bg-white/20 text-white' : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'
                             }`}>
                                 {feedbackTotal.toLocaleString()}
                             </span>
                             {feedbackStats && feedbackStats.newCount > 0 && (
-                                <span className="inline-flex items-center justify-center rounded-full bg-[var(--nepal-red)] px-1.5 py-0.5 text-[9.5px] font-bold text-white shadow-xs animate-pulse" title={`${feedbackStats.newCount} new unread feedbacks`}>
+                                <span className="inline-flex items-center justify-center rounded-full bg-[var(--nepal-red)] px-1.5 py-0.5 text-xs font-bold text-white shadow-xs animate-pulse" title={`${feedbackStats.newCount} new unread feedbacks`}>
                                     {feedbackStats.newCount} new
                                 </span>
                             )}
@@ -1803,7 +1803,7 @@ export default function AdminPage() {
                         <button
                             type="button"
                             onClick={() => setActiveTab('testimonials')}
-                            className={`inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-3 sm:px-4 py-2 text-xs font-bold transition-all duration-200 whitespace-nowrap active:scale-95 cursor-pointer ${
+                            className={`inline-flex min-h-[44px] flex-1 sm:flex-initial items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-3 sm:px-4 py-2 text-xs font-bold transition-all duration-200 whitespace-nowrap active:scale-95 cursor-pointer ${
                                 activeTab === 'testimonials'
                                     ? 'bg-[var(--nepal-blue)] text-white shadow-md shadow-[var(--nepal-blue)]/25'
                                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]/60'
@@ -1814,13 +1814,13 @@ export default function AdminPage() {
                             </svg>
                             <span className="hidden sm:inline">Testimonials</span>
                             <span className="sm:hidden">Testimonials</span>
-                            <span className={`rounded-full px-2 py-0.5 font-mono tabular-nums text-[10px] font-semibold transition ${
+                            <span className={`rounded-full px-2 py-0.5 font-mono tabular-nums text-xs font-semibold transition ${
                                 activeTab === 'testimonials' ? 'bg-white/20 text-white' : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'
                             }`}>
                                 {testimonialTotal.toLocaleString()}
                             </span>
                             {testimonialStats && testimonialStats.pendingCount > 0 && (
-                                <span className="inline-flex items-center justify-center rounded-full bg-amber-500 px-1.5 py-0.5 text-[9.5px] font-bold text-white shadow-xs animate-pulse" title={`${testimonialStats.pendingCount} testimonials waiting for approval`}>
+                                <span className="inline-flex items-center justify-center rounded-full bg-amber-500 px-1.5 py-0.5 text-xs font-bold text-white shadow-xs animate-pulse" title={`${testimonialStats.pendingCount} testimonials waiting for approval`}>
                                     {testimonialStats.pendingCount} pending
                                 </span>
                             )}
@@ -1829,7 +1829,7 @@ export default function AdminPage() {
                         <button
                             type="button"
                             onClick={() => setActiveTab('developers')}
-                            className={`inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-3 sm:px-4 py-2 text-xs font-bold transition-all duration-200 whitespace-nowrap active:scale-95 cursor-pointer ${
+                            className={`inline-flex min-h-[44px] flex-1 sm:flex-initial items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-3 sm:px-4 py-2 text-xs font-bold transition-all duration-200 whitespace-nowrap active:scale-95 cursor-pointer ${
                                 activeTab === 'developers'
                                     ? 'bg-[var(--nepal-blue)] text-white shadow-md shadow-[var(--nepal-blue)]/25'
                                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]/60'
@@ -1842,7 +1842,7 @@ export default function AdminPage() {
                             </svg>
                             <span className="hidden sm:inline">Developer Accounts</span>
                             <span className="sm:hidden">Developers</span>
-                            <span className={`rounded-full px-2 py-0.5 font-mono tabular-nums text-[10px] font-semibold transition ${
+                            <span className={`rounded-full px-2 py-0.5 font-mono tabular-nums text-xs font-semibold transition ${
                                 activeTab === 'developers' ? 'bg-white/20 text-white' : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'
                             }`}>
                                 {devTotal.toLocaleString()}

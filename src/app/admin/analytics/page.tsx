@@ -25,10 +25,10 @@ export default function AdminAnalytics(props: any) {
             {/* KPI Metrics Cards */}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
                 {/* Total Searches */}
-                <div className="dev-glass-card hover-lift relative overflow-hidden rounded-2xl border border-[var(--border-default)]/80 bg-[var(--surface-primary)]/80 p-4 sm:p-5 shadow-sm backdrop-blur-md transition-all duration-300">
+                <div className="relative overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 shadow-xs transition-all duration-300">
                     <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-[var(--nepal-blue)] to-transparent opacity-80" />
                     <div className="flex items-center justify-between text-[var(--text-muted)]">
-                        <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Total Searches</span>
+                        <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Total Searches</span>
                         <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)] shadow-2xs">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                 <circle cx="11" cy="11" r="8" />
@@ -39,14 +39,14 @@ export default function AdminAnalytics(props: any) {
                     <p className="mt-2 text-2xl sm:text-3xl font-black font-mono tabular-nums tracking-tight text-[var(--text-primary)]">
                         {stats ? stats.total.toLocaleString() : '—'}
                     </p>
-                    <p className="mt-1 text-[10.5px] sm:text-[11px] text-[var(--text-muted)]">All-time recorded queries</p>
+                    <p className="mt-1 text-xs text-[var(--text-muted)]">All-time recorded queries</p>
                 </div>
 
                 {/* Today's Searches */}
-                <div className="dev-glass-card hover-lift relative overflow-hidden rounded-2xl border border-[var(--border-default)]/80 bg-[var(--surface-primary)]/80 p-4 sm:p-5 shadow-sm backdrop-blur-md transition-all duration-300">
+                <div className="relative overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 shadow-xs transition-all duration-300">
                     <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-sky-500 to-transparent opacity-80" />
                     <div className="flex items-center justify-between text-[var(--text-muted)]">
-                        <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Today</span>
+                        <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Today</span>
                         <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-[var(--info-bg)] text-[var(--info-text)] shadow-2xs">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
@@ -59,14 +59,14 @@ export default function AdminAnalytics(props: any) {
                     <p className="mt-2 text-2xl sm:text-3xl font-black font-mono tabular-nums tracking-tight text-[var(--text-primary)]">
                         {stats ? stats.today.toLocaleString() : '—'}
                     </p>
-                    <p className="mt-1 text-[10.5px] sm:text-[11px] text-[var(--text-muted)]">Since midnight local</p>
+                    <p className="mt-1 text-xs text-[var(--text-muted)]">Since midnight local</p>
                 </div>
 
                 {/* Found Success Rate */}
-                <div className="dev-glass-card hover-lift relative overflow-hidden rounded-2xl border border-[var(--border-default)]/80 bg-[var(--surface-primary)]/80 p-4 sm:p-5 shadow-sm backdrop-blur-md transition-all duration-300">
+                <div className="relative overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 shadow-xs transition-all duration-300">
                     <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-[var(--success)] to-transparent opacity-80" />
                     <div className="flex items-center justify-between text-[var(--text-muted)]">
-                        <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Found Rate</span>
+                        <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Found Rate</span>
                         <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-[var(--success-bg)] text-[var(--success)] shadow-2xs">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
@@ -78,7 +78,7 @@ export default function AdminAnalytics(props: any) {
                         <p className="text-2xl sm:text-3xl font-black font-mono tabular-nums tracking-tight text-[var(--success)]">
                             {stats ? `${stats.foundRate}%` : '—'}
                         </p>
-                        <span className="text-[10px] sm:text-xs font-mono text-[var(--text-muted)]">
+                        <span className="text-xs font-mono text-[var(--text-muted)]">
                             ({stats ? stats.found.toLocaleString() : 0} printed)
                         </span>
                     </div>
@@ -91,10 +91,10 @@ export default function AdminAnalytics(props: any) {
                 </div>
 
                 {/* Unique Visitors / IPs */}
-                <div className="dev-glass-card hover-lift relative overflow-hidden rounded-2xl border border-[var(--border-default)]/80 bg-[var(--surface-primary)]/80 p-4 sm:p-5 shadow-sm backdrop-blur-md transition-all duration-300">
+                <div className="relative overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 shadow-xs transition-all duration-300">
                     <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-purple-500 to-transparent opacity-80" />
                     <div className="flex items-center justify-between text-[var(--text-muted)]">
-                        <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Unique IPs</span>
+                        <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Unique IPs</span>
                         <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 shadow-2xs">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -107,7 +107,7 @@ export default function AdminAnalytics(props: any) {
                     <p className="mt-2 text-2xl sm:text-3xl font-black font-mono tabular-nums tracking-tight text-[var(--text-primary)]">
                         {stats ? stats.uniqueIps.toLocaleString() : '—'}
                     </p>
-                    <p className="mt-1 text-[10.5px] sm:text-[11px] text-[var(--text-muted)]">Unique searcher addresses</p>
+                    <p className="mt-1 text-xs text-[var(--text-muted)]">Unique searcher addresses</p>
                 </div>
             </div>
 

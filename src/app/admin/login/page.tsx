@@ -41,27 +41,19 @@ export default function AdminLogin(props: any) {
         setShowPassword = () => {},
     }: AdminLoginProps = props || {}
     return (
-        <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[var(--bg-primary)] px-4 py-8">
-            {/* Ambient glowing orbs for spatial depth */}
-            <div
-                className="pointer-events-none absolute -top-32 left-1/2 -translate-x-1/2 h-96 w-full max-w-xl rounded-full bg-gradient-to-br from-[var(--nepal-blue)]/20 via-[var(--nepal-red)]/12 to-transparent blur-3xl opacity-80"
-                aria-hidden="true"
-            />
-            <div
-                className="pointer-events-none absolute -bottom-32 -left-20 h-80 w-80 rounded-full bg-[var(--nepal-blue)]/10 blur-3xl"
-                aria-hidden="true"
-            />
-            <div
-                className="pointer-events-none absolute -bottom-32 -right-20 h-80 w-80 rounded-full bg-[var(--nepal-red)]/10 blur-3xl"
-                aria-hidden="true"
-            />
+        <main className="relative flex min-h-screen flex-col items-center justify-center bg-[var(--bg-primary)] px-4 py-8 overflow-hidden">
+            {/* Refined Ambient Background Gradient Glow */}
+            <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden" aria-hidden="true">
+                <div className="absolute -top-40 -left-40 h-96 w-96 rounded-full bg-[var(--nepal-blue)]/12 blur-3xl" />
+                <div className="absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-red-500/8 blur-3xl" />
+            </div>
 
             <div className="relative w-full max-w-md animate-rise-in">
                 {/* Brand header */}
 
                 <div className="mb-8 flex flex-col items-center text-center">
                     {/* Logo */}
-                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-lg shadow-black/[0.06]">
+                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-sm">
                         <Image
                             src="/License-Checker-Nepal-logo.png"
                             alt="Nepal License Checker"
@@ -73,7 +65,7 @@ export default function AdminLogin(props: any) {
                     </div>
 
                     {/* Security Badge */}
-                    <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[var(--nepal-blue)]/15 bg-[var(--nepal-blue)]/[0.06] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--nepal-blue)]">
+                    <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[var(--nepal-blue)]/15 bg-[var(--nepal-blue)]/[0.06] px-3.5 py-1 text-xs font-bold uppercase tracking-[0.14em] text-[var(--nepal-blue)]">
                         <svg
                             width="13"
                             height="13"
@@ -101,11 +93,9 @@ export default function AdminLogin(props: any) {
                     </p>
                 </div>
 
-
                 {/* Login Card */}
-                <div className="dev-glass-card relative overflow-hidden rounded-3xl border border-[var(--border-default)]/80 bg-[var(--surface-primary)]/85 p-6 sm:p-8 shadow-2xl backdrop-blur-xl">
-                    {/* Top subtle highlight border line */}
-                    <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-[var(--nepal-blue)] to-transparent opacity-80" />
+                <div className="relative overflow-hidden rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)]/90 backdrop-blur-xl p-6 sm:p-8 shadow-xl">
+                    <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-[var(--nepal-blue)] to-transparent opacity-90" />
 
                     {inactivityNotice && (
                         <div className="mb-5 flex items-start gap-2.5 rounded-2xl border border-[var(--warning-border)] bg-[var(--warning-bg)] p-3.5 text-xs text-[var(--warning-text)] shadow-xs">
@@ -206,7 +196,7 @@ export default function AdminLogin(props: any) {
                                         <button
                                             type="button"
                                             onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] transition hover:text-[var(--text-primary)]"
+                                            className="absolute right-1 top-1/2 -translate-y-1/2 inline-flex h-11 w-11 items-center justify-center rounded-lg text-[var(--text-muted)] transition hover:text-[var(--text-primary)]"
                                             aria-label={showPassword ? 'Hide password' : 'Show password'}
                                         >
                                             {showPassword ? (
@@ -262,7 +252,7 @@ export default function AdminLogin(props: any) {
                     <div className="mt-5 border-t border-[var(--border-default)]/60 pt-4 text-center">
                         <Link
                             href="/"
-                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--text-muted)] transition hover:text-[var(--nepal-blue)]"
+                            className="inline-flex min-h-[44px] items-center gap-1.5 text-xs font-semibold text-[var(--text-muted)] transition hover:text-[var(--nepal-blue)]"
                         >
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                 <polyline points="15 18 9 12 15 6" />

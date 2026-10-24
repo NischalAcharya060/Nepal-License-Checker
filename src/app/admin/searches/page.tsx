@@ -101,9 +101,10 @@ export default function AdminSearches(props: any) {
                                 setSearchFilter('')
                                 setPage(1)
                             }}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 inline-flex h-9 w-9 items-center justify-center rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer"
+                            aria-label="Clear filter"
                         >
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                 <line x1="18" y1="6" x2="6" y2="18" />
                                 <line x1="6" y1="6" x2="18" y2="18" />
                             </svg>
@@ -228,7 +229,7 @@ export default function AdminSearches(props: any) {
             </div>
 
             {/* Search Logs Container (Mobile Cards + Desktop Table) */}
-            <div className="mt-4 overflow-hidden rounded-2xl dev-glass-card backdrop-blur-md shadow-xs">
+            <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-xs">
                 {/* Mobile Card List (Visible on < md) */}
                 <div className="block md:hidden">
                     {dataLoading && !logs.length ? (
@@ -304,18 +305,18 @@ export default function AdminSearches(props: any) {
                                                             className="h-4 w-4 cursor-pointer rounded border-[var(--border-default)] accent-[var(--nepal-blue)]"
                                                         />
                                                     )}
-                                                    <span className="rounded-md bg-[var(--bg-secondary)] px-1.5 py-0.5 font-mono text-[10px] font-bold text-[var(--text-muted)]">
+                                                    <span className="rounded-md bg-[var(--bg-secondary)] px-1.5 py-0.5 font-mono text-xs font-bold text-[var(--text-muted)]">
                                                         #{sn}
                                                     </span>
                                                     {isFound ? (
-                                                        <span className="inline-flex items-center gap-1 rounded-full border border-[var(--success-border)] bg-[var(--success-bg)] px-2 py-0.5 text-[10px] font-bold text-[var(--success)]">
+                                                        <span className="inline-flex items-center gap-1 rounded-full border border-[var(--success-border)] bg-[var(--success-bg)] px-2 py-0.5 text-xs font-bold text-[var(--success)]">
                                                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                                                 <polyline points="20 6 9 17 4 12" />
                                                             </svg>
                                                             <span>Found</span>
                                                         </span>
                                                     ) : (
-                                                        <span className="inline-flex items-center gap-1 rounded-full border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2 py-0.5 text-[10px] font-semibold text-[var(--text-muted)]">
+                                                        <span className="inline-flex items-center gap-1 rounded-full border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2 py-0.5 text-xs font-semibold text-[var(--text-muted)]">
                                                             <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                                                 <line x1="18" y1="6" x2="6" y2="18" />
                                                                 <line x1="6" y1="6" x2="18" y2="18" />
@@ -325,7 +326,7 @@ export default function AdminSearches(props: any) {
                                                     )}
                                                 </div>
                                                 <span
-                                                    className="font-mono text-[10px] text-[var(--text-muted)]"
+                                                    className="font-mono text-xs text-[var(--text-muted)]"
                                                     title={`${formatNepalDateTime(log.created_at, 'en', true)} (NPT, UTC+5:45)`}
                                                 >
                                                     {formatTimeAgo(log.created_at)}
@@ -341,7 +342,7 @@ export default function AdminSearches(props: any) {
                                                             <button
                                                                 type="button"
                                                                 onClick={() => copyToClipboard(log.license_number, `m-lic-${log.id}`)}
-                                                                className="text-[var(--text-muted)] hover:text-[var(--nepal-blue)] transition cursor-pointer"
+                                                                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-muted)] hover:text-[var(--nepal-blue)] transition cursor-pointer"
                                                                 title="Copy license number"
                                                             >
                                                                 {copiedKey === `m-lic-${log.id}` ? (
@@ -363,7 +364,7 @@ export default function AdminSearches(props: any) {
                                                         </p>
                                                     )}
                                                     {log.office && (
-                                                        <p className="text-[10px] text-[var(--text-muted)] truncate">
+                                                        <p className="text-[11px] text-[var(--text-muted)] truncate">
                                                             {log.office}
                                                         </p>
                                                     )}
@@ -373,7 +374,7 @@ export default function AdminSearches(props: any) {
                                                 <button
                                                     type="button"
                                                     onClick={() => handleDeleteSearchLog(log.id, log.license_number)}
-                                                    className="inline-flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-lg border border-[var(--border-default)] text-[var(--text-muted)] transition hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95 cursor-pointer"
+                                                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[var(--border-default)] text-[var(--text-muted)] transition hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95 cursor-pointer"
                                                     title="Delete search log"
                                                 >
                                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -569,14 +570,14 @@ export default function AdminSearches(props: any) {
                                             {/* Result Status Badge */}
                                             <td className="whitespace-nowrap px-3 py-3">
                                                 {isFound ? (
-                                                    <span className="inline-flex items-center gap-1 rounded-full border border-[var(--success-border)] bg-[var(--success-bg)] px-2 py-0.5 text-[10px] font-bold text-[var(--success)]">
+                                                    <span className="inline-flex items-center gap-1 rounded-full border border-[var(--success-border)] bg-[var(--success-bg)] px-2.5 py-0.5 text-xs font-bold text-[var(--success)]">
                                                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                                             <polyline points="20 6 9 17 4 12" />
                                                         </svg>
                                                         <span>Found</span>
                                                     </span>
                                                 ) : (
-                                                    <span className="inline-flex items-center gap-1 rounded-full border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2 py-0.5 text-[10px] font-semibold text-[var(--text-muted)]">
+                                                    <span className="inline-flex items-center gap-1 rounded-full border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2.5 py-0.5 text-xs font-semibold text-[var(--text-muted)]">
                                                         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                                             <line x1="18" y1="6" x2="6" y2="18" />
                                                             <line x1="6" y1="6" x2="18" y2="18" />
@@ -594,7 +595,7 @@ export default function AdminSearches(props: any) {
                                                             {log.holder_name}
                                                         </span>
                                                         {log.office && (
-                                                            <p className="text-[10px] text-[var(--text-muted)]">
+                                                            <p className="text-[11px] text-[var(--text-muted)]">
                                                                 {log.office}
                                                             </p>
                                                         )}

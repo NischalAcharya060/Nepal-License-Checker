@@ -54,20 +54,16 @@ export default function DeveloperMobileDeviceWarning() {
       role="dialog"
       aria-modal="true"
       aria-labelledby="mobile-dev-title"
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm animate-fade-in"
       onClick={handleDismiss}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-md overflow-hidden rounded-3xl border border-cyan-500/30 bg-slate-950/90 p-6 text-slate-100 shadow-[0_0_50px_rgba(6,182,212,0.15)] backdrop-blur-2xl animate-rise-in"
+        className="relative w-full max-w-md overflow-hidden rounded-t-3xl sm:rounded-3xl border border-cyan-500/30 bg-slate-950 p-5 sm:p-6 text-slate-100 shadow-2xl animate-rise-in max-h-[90vh] overflow-y-auto"
       >
-        {/* Glow ambient background effect */}
-        <div className="pointer-events-none absolute -top-24 -right-24 h-48 w-48 rounded-full bg-cyan-500/20 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-24 -left-24 h-48 w-48 rounded-full bg-emerald-500/15 blur-3xl" />
-
         {/* Top Header Badge & Close Button */}
         <div className="flex items-center justify-between mb-4">
-          <span className="inline-flex items-center rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-amber-400">
+          <span className="inline-flex items-center rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-xs font-mono font-bold uppercase tracking-wider text-amber-400">
             REAL_DEV_CHECK.sh
           </span>
 
@@ -75,9 +71,9 @@ export default function DeveloperMobileDeviceWarning() {
             type="button"
             onClick={handleDismiss}
             aria-label="Close dialog"
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-800 bg-slate-900/80 text-slate-400 transition hover:border-slate-700 hover:text-slate-100 active:scale-95 cursor-pointer"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-800 bg-slate-900/80 text-slate-400 transition hover:border-slate-700 hover:text-slate-100 active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
@@ -86,13 +82,13 @@ export default function DeveloperMobileDeviceWarning() {
 
         {/* Fun visual icon & headline */}
         <div className="flex flex-col items-center text-center">
-          <div className="relative mb-3 flex h-16 w-16 items-center justify-center rounded-2xl border border-cyan-500/30 bg-gradient-to-br from-cyan-500/20 via-slate-900 to-slate-950 shadow-inner">
-            <span className="text-3xl select-none" role="img" aria-label="Laptop and smartphone">
+          <div className="relative mb-3 flex h-14 w-14 items-center justify-center rounded-2xl border border-cyan-500/30 bg-gradient-to-br from-cyan-500/20 via-slate-900 to-slate-950 shadow-inner">
+            <span className="text-2xl select-none" role="img" aria-label="Laptop and smartphone">
               💻📱
             </span>
           </div>
 
-          <h2 id="mobile-dev-title" className="text-lg font-black tracking-tight text-white sm:text-xl">
+          <h2 id="mobile-dev-title" className="text-base font-black tracking-tight text-white sm:text-xl">
             Wait... are you really coding on a phone? 🤨
           </h2>
 
@@ -121,13 +117,13 @@ export default function DeveloperMobileDeviceWarning() {
         </div>
 
         {/* Action Buttons */}
-        <div className="mt-5 flex flex-col gap-2">
+        <div className="mt-5 flex flex-col gap-2.5">
           <button
             type="button"
             onClick={handleCopyUrl}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-cyan-500/25 transition hover:brightness-110 active:scale-[0.98] cursor-pointer"
+            className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-cyan-500/25 transition hover:brightness-110 active:scale-[0.98] cursor-pointer"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
               <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
             </svg>
@@ -137,7 +133,7 @@ export default function DeveloperMobileDeviceWarning() {
           <button
             type="button"
             onClick={handleDismiss}
-            className="w-full rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-2 text-xs font-medium text-slate-400 transition hover:border-slate-700 hover:text-slate-200 active:scale-[0.98] cursor-pointer"
+            className="flex min-h-[44px] w-full items-center justify-center rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-2 text-xs font-semibold text-slate-300 transition hover:border-slate-700 hover:text-slate-100 active:scale-[0.98] cursor-pointer"
           >
             I like suffering (Continue on Phone)
           </button>

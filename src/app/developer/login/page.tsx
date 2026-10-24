@@ -44,28 +44,24 @@ export default function DeveloperLoginPage() {
   }, [router, errorMessage])
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[var(--bg-primary)] px-4 py-12 text-[var(--text-primary)] transition-colors">
-      {/* Ambient background glows */}
-      <div
-        className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-96 w-full max-w-2xl rounded-full bg-gradient-to-br from-[var(--nepal-blue)]/20 via-[var(--nepal-red)]/10 to-transparent blur-3xl opacity-75"
-        aria-hidden
-      />
-      <div
-        className="pointer-events-none absolute -bottom-40 right-10 h-80 w-80 rounded-full bg-[var(--nepal-blue)]/10 blur-3xl"
-        aria-hidden
-      />
+    <main className="relative flex min-h-screen flex-col items-center justify-center bg-[var(--bg-primary)] px-4 py-12 text-[var(--text-primary)] transition-colors overflow-hidden">
+      {/* Refined Ambient Background Gradient Glow */}
+      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden" aria-hidden="true">
+        <div className="absolute -top-40 -left-40 h-96 w-96 rounded-full bg-[var(--nepal-blue)]/12 blur-3xl" />
+        <div className="absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-purple-500/10 blur-3xl" />
+      </div>
 
       <div className="relative w-full max-w-lg space-y-6 animate-rise-in">
         {/* Top Back Link */}
         <div className="flex items-center justify-between">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition group"
+            className="inline-flex min-h-[44px] items-center gap-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition group"
           >
             <span className="transition-transform group-hover:-translate-x-0.5">←</span>
             <span>Back to Public Search</span>
           </Link>
-          <span className="inline-flex items-center rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-0.5 font-mono text-[10px] font-bold text-[var(--text-muted)] shadow-2xs">
+          <span className="inline-flex items-center rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-0.5 font-mono text-xs font-bold text-[var(--text-muted)] shadow-2xs">
             v1.1.0 API
           </span>
         </div>
@@ -84,7 +80,8 @@ export default function DeveloperLoginPage() {
             <button
               type="button"
               onClick={() => setErrorMessage(null)}
-              className="font-bold hover:underline cursor-pointer"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-xl font-bold hover:bg-[var(--danger)]/20 transition cursor-pointer text-xs"
+              aria-label="Dismiss error notice"
             >
               ✕
             </button>
@@ -92,9 +89,9 @@ export default function DeveloperLoginPage() {
         )}
 
         {/* Premium Developer Login Card */}
-        <div className="relative overflow-hidden rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)]/90 backdrop-blur-xl p-7 sm:p-9 shadow-2xl transition-all">
-          {/* Subtle top gradient accent */}
-          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[var(--nepal-red)] via-[var(--nepal-blue)] to-[var(--nepal-blue)]" />
+        <div className="relative overflow-hidden rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)]/90 backdrop-blur-xl p-7 sm:p-9 shadow-xl transition-all">
+          {/* Subtle top accent gradient */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-[var(--nepal-blue)] to-transparent opacity-90" />
 
           {/* Brand & Badge Header */}
           <div className="flex flex-col items-center text-center space-y-3">
@@ -135,7 +132,7 @@ export default function DeveloperLoginPage() {
               <a
                 href="/api/developer/auth/github"
                 onClick={() => setRedirecting(true)}
-                className="group relative flex w-full items-center justify-center gap-3 rounded-2xl bg-black dark:bg-white text-white dark:text-black px-6 py-3.5 text-sm font-bold shadow-lg shadow-black/10 dark:shadow-white/10 hover:opacity-90 active:scale-98 transition duration-200 cursor-pointer"
+                className="group relative flex min-h-[44px] w-full items-center justify-center gap-3 rounded-2xl bg-black dark:bg-white text-white dark:text-black px-6 py-3.5 text-sm font-bold shadow-lg shadow-black/10 dark:shadow-white/10 hover:opacity-90 active:scale-98 transition duration-200 cursor-pointer"
               >
                 {redirecting ? (
                   <>
