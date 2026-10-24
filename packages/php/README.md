@@ -1,5 +1,7 @@
 # Nepal License Checker (PHP & Laravel SDK)
 
+> 💡 **Monorepo Notice**: This repository is a split distribution subtree for Composer / Packagist. The primary development repository containing the web application, mirror database, and TypeScript/Python SDKs is maintained at [NischalAcharya060/Nepal-License-Checker](https://github.com/NischalAcharya060/Nepal-License-Checker).
+
 Official zero-dependency PHP & Laravel client SDK to check Nepal smart driving license print status via the mirrored Department of Transport Management (DOTM) database API.
 
 Works on **PHP 8.0+** with zero external dependencies. Includes native **Laravel auto-discovery** and Facade support.

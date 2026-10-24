@@ -20,6 +20,10 @@
     "laravel"
   ],
   "homepage": "https://license-checker.acharyanischal.com.np",
+  "support": {
+    "issues": "https://github.com/NischalAcharya060/Nepal-License-Checker/issues",
+    "source": "https://github.com/NischalAcharya060/nepal-license-checker-php"
+  },
   "require": {
     "php": ">=8.0",
     "ext-json": "*"
