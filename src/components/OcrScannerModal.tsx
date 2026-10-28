@@ -69,10 +69,22 @@ export default function OcrScannerModal({
   const [scanning, setScanning] = useState(false)
   const [cameraError, setCameraError] = useState<string | null>(null)
 
+  // Auto-capture countdown & document detection states
+  const [autoCaptureEnabled, setAutoCaptureEnabled] = useState(true)
+  const [countdown, setCountdown] = useState<number | null>(null)
+  const [flash, setFlash] = useState(false)
+  const [docDetected, setDocDetected] = useState(false)
+
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const cameraInputRef = useRef<HTMLInputElement | null>(null)
+
+  const analyzerCanvasRef = useRef<HTMLCanvasElement | null>(null)
+  const prevFrameDataRef = useRef<Uint8Array | null>(null)
+  const steadyCountRef = useRef(0)
+  const countdownTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const countdownValRef = useRef<number | null>(null)
 
   const isNe = language === 'ne'
 
@@ -89,14 +101,32 @@ export default function OcrScannerModal({
       ? 'लाइसेन्स नम्बर वा रसिदलाई फ्रेमभित्र स्पष्ट देखिने गरी राख्नुहोस्'
       : 'Position the license number or receipt clearly inside the frame')
 
+  // Helper to stop countdown timer and refs without triggering state updates
+  const stopCountdownTimer = useCallback(() => {
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current)
+      countdownTimerRef.current = null
+    }
+    countdownValRef.current = null
+    steadyCountRef.current = 0
+  }, [])
+
+  // Cancel any active auto-capture countdown and reset stability tracking
+  const clearCountdown = useCallback(() => {
+    stopCountdownTimer()
+    setCountdown(null)
+    setDocDetected(false)
+  }, [stopCountdownTimer])
+
   // Stop video stream helper
   const stopCamera = useCallback(() => {
+    clearCountdown()
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop())
       streamRef.current = null
     }
     setCameraActive(false)
-  }, [])
+  }, [clearCountdown])
 
   // Manage live camera lifecycle
   useEffect(() => {
@@ -194,12 +224,14 @@ export default function OcrScannerModal({
 
   // Handle closing modal with slide-down animation
   const handleFinalCleanup = useCallback(() => {
+    clearCountdown()
+    setFlash(false)
     stopCamera()
     setPreviewImage(null)
     setScanning(false)
     setCameraError(null)
     onClose()
-  }, [stopCamera, onClose])
+  }, [clearCountdown, stopCamera, onClose])
 
   const {
     isRendered,
@@ -216,11 +248,92 @@ export default function OcrScannerModal({
 
   // Toggle camera direction (front / back)
   const toggleFacingMode = () => {
+    clearCountdown()
     setFacingMode((prev) => (prev === 'environment' ? 'user' : 'environment'))
   }
 
-  // Capture frame from active video stream
-  const capturePhotoFromVideo = () => {
+  // Send to /api/ocr with strict 10s max timeout
+  const processOcr = useCallback(
+    async (base64Data: string, mimeType = 'image/jpeg') => {
+      setScanning(true)
+      const toastId = toast.loading(copy?.scanProcessing || (isNe ? 'AI ले रसिद पहिचान गर्दैछ...' : 'Recognizing with AI Vision...'))
+
+      // Client-side hard timeout: abort fetch after 10,000ms
+      const controller = new AbortController()
+      const timeoutTimer = setTimeout(() => {
+        controller.abort()
+      }, 10000)
+
+      try {
+        const res = await fetch('/api/ocr', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            image: base64Data,
+            mimeType,
+          }),
+          signal: controller.signal,
+        })
+
+        clearTimeout(timeoutTimer)
+        const result = await res.json()
+
+        if (res.ok && result.status === 'success' && result.data?.licenseNumber) {
+          const foundNumber = result.data.licenseNumber
+          // Haptic feedback
+          if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+            try {
+              navigator.vibrate([40, 50, 40])
+            } catch {
+              // Ignore
+            }
+          }
+
+          toast.success(
+            `${copy?.scanSuccessToast || (isNe ? 'लाइसेन्स नम्बर पहिचान भयो' : 'License number recognized')}: ${foundNumber}`,
+            { id: toastId, duration: 4500 }
+          )
+
+          onDetected(foundNumber)
+          triggerClose()
+        } else {
+          const errorMsg =
+            result?.message ||
+            copy?.scanFailedToast ||
+            (isNe
+              ? 'लाइसेन्स नम्बर फेला परेन। कृपया पुनः प्रयास गर्नुहोस् वा हातले टाइप गर्नुहोस्।'
+              : 'Could not detect license number. Please try again or type manually.')
+          toast.error(errorMsg, { id: toastId, duration: 5000 })
+        }
+      } catch (err: unknown) {
+        clearTimeout(timeoutTimer)
+        if (err instanceof Error && err.name === 'AbortError') {
+          toast.error(
+            isNe
+              ? 'स्क्यान समय सकियो (१० सेकेन्ड सीमा)। कृपया पुनः प्रयास गर्नुहोस्।'
+              : 'Scan timed out (10s limit). Please try again.',
+            { id: toastId, duration: 4500 }
+          )
+        } else {
+          toast.error(
+            copy?.scanFailedToast ||
+              (isNe
+                ? 'स्क्यान गर्दा समस्या आयो। कृपया पुनः प्रयास गर्नुहोस्।'
+                : 'Error while scanning. Please try again.'),
+            { id: toastId }
+          )
+        }
+      } finally {
+        clearTimeout(timeoutTimer)
+        setScanning(false)
+      }
+    },
+    [copy, isNe, onDetected, triggerClose]
+  )
+
+  // Capture frame from active video stream (used by both manual button and auto-capture)
+  const capturePhotoFromVideo = useCallback(() => {
+    clearCountdown()
     if (!videoRef.current) return
     const video = videoRef.current
     const canvas = document.createElement('canvas')
@@ -229,16 +342,184 @@ export default function OcrScannerModal({
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
+    // Visual shutter flash
+    setFlash(true)
+    setTimeout(() => setFlash(false), 220)
+
+    // Haptic shutter click
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      try {
+        navigator.vibrate([40, 30, 40])
+      } catch {
+        // Ignore
+      }
+    }
+
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
     const base64 = canvas.toDataURL('image/jpeg', 0.85)
 
     stopCamera()
     setPreviewImage(base64)
     processOcr(base64, 'image/jpeg')
-  }
+  }, [clearCountdown, stopCamera, processOcr])
+
+  // Start 3, 2, 1 countdown sequence when license or receipt is detected and held steady
+  const triggerAutoCountdown = useCallback(() => {
+    if (countdownValRef.current !== null || scanning || previewImage) return
+
+    setDocDetected(true)
+    countdownValRef.current = 3
+    setCountdown(3)
+
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      try {
+        navigator.vibrate(35)
+      } catch {
+        // Ignore
+      }
+    }
+
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current)
+    }
+
+    countdownTimerRef.current = setInterval(() => {
+      if (countdownValRef.current === null) {
+        if (countdownTimerRef.current) clearInterval(countdownTimerRef.current)
+        return
+      }
+
+      const nextVal = countdownValRef.current - 1
+      if (nextVal > 0) {
+        countdownValRef.current = nextVal
+        setCountdown(nextVal)
+        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+          try {
+            navigator.vibrate(35)
+          } catch {
+            // Ignore
+          }
+        }
+      } else {
+        // Reached 0: automatically capture photo!
+        if (countdownTimerRef.current) {
+          clearInterval(countdownTimerRef.current)
+          countdownTimerRef.current = null
+        }
+        countdownValRef.current = null
+        setCountdown(null)
+        capturePhotoFromVideo()
+      }
+    }, 800)
+  }, [scanning, previewImage, capturePhotoFromVideo])
+
+  // Real-time document detection & device stability analyzer
+  useEffect(() => {
+    if (!isOpen || !cameraActive || previewImage || scanning || !autoCaptureEnabled) {
+      stopCountdownTimer()
+      prevFrameDataRef.current = null
+      return
+    }
+
+    const intervalId = setInterval(() => {
+      const video = videoRef.current
+      if (!video || video.readyState < 2 || video.videoWidth === 0 || video.videoHeight === 0) {
+        return
+      }
+
+      if (!analyzerCanvasRef.current) {
+        analyzerCanvasRef.current = document.createElement('canvas')
+        analyzerCanvasRef.current.width = 160
+        analyzerCanvasRef.current.height = 120
+      }
+
+      const canvas = analyzerCanvasRef.current
+      const ctx = canvas.getContext('2d', { willReadFrequently: true })
+      if (!ctx) return
+
+      try {
+        ctx.drawImage(video, 0, 0, 160, 120)
+
+        // Center reticle analysis box (x: 28 to 132, y: 24 to 96)
+        const boxX = 28
+        const boxY = 24
+        const boxW = 104
+        const boxH = 72
+        const imgData = ctx.getImageData(boxX, boxY, boxW, boxH)
+        const data = imgData.data
+        const totalPixels = boxW * boxH
+
+        let sumLuminance = 0
+        const currentLuminances = new Uint8Array(totalPixels)
+
+        for (let i = 0, p = 0; i < data.length; i += 4, p++) {
+          const lum = (data[i] * 299 + data[i + 1] * 587 + data[i + 2] * 114) / 1000
+          currentLuminances[p] = lum
+          sumLuminance += lum
+        }
+
+        const avgLum = sumLuminance / totalPixels
+
+        // Variance / Contrast standard deviation
+        let sumSqDiff = 0
+        for (let p = 0; p < totalPixels; p++) {
+          const diff = currentLuminances[p] - avgLum
+          sumSqDiff += diff * diff
+        }
+        const contrastStdDev = Math.sqrt(sumSqDiff / totalPixels)
+
+        // Motion delta between consecutive frames
+        let motionDelta = 0
+        if (prevFrameDataRef.current && prevFrameDataRef.current.length === totalPixels) {
+          const prev = prevFrameDataRef.current
+          let totalDiff = 0
+          for (let p = 0; p < totalPixels; p += 2) {
+            totalDiff += Math.abs(currentLuminances[p] - prev[p])
+          }
+          motionDelta = totalDiff / (totalPixels / 2)
+        }
+        prevFrameDataRef.current = currentLuminances
+
+        // Target content criteria:
+        // - Contrast from license/receipt text and card boundaries: contrastStdDev >= 18
+        // - Balanced lighting: 28 < avgLum < 240
+        // - Device held steady without panning: motionDelta < 14
+        const hasContent = contrastStdDev >= 18 && avgLum > 28 && avgLum < 240
+        const isSteady = motionDelta < 14
+
+        // If countdown is active and device experiences sudden movement:
+        if (countdownValRef.current !== null && motionDelta > 25) {
+          clearCountdown()
+          return
+        }
+
+        if (hasContent && isSteady) {
+          steadyCountRef.current += 1
+          if (steadyCountRef.current >= 2 && countdownValRef.current === null) {
+            triggerAutoCountdown()
+          }
+        } else {
+          if (steadyCountRef.current > 0) {
+            steadyCountRef.current -= 1
+          }
+          if (!hasContent && countdownValRef.current !== null) {
+            clearCountdown()
+          }
+        }
+      } catch {
+        // Silent fallback
+      }
+    }, 250)
+
+    return () => {
+      clearInterval(intervalId)
+      stopCountdownTimer()
+    }
+  }, [isOpen, cameraActive, previewImage, scanning, autoCaptureEnabled, stopCountdownTimer, clearCountdown, triggerAutoCountdown])
 
   // Handle file select (gallery / photo take)
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    clearCountdown()
     const file = e.target.files?.[0]
     if (!file) return
 
@@ -254,83 +535,9 @@ export default function OcrScannerModal({
     }
   }
 
-  // Send to /api/ocr with strict 10s max timeout
-  const processOcr = async (base64Data: string, mimeType = 'image/jpeg') => {
-    setScanning(true)
-    const toastId = toast.loading(copy?.scanProcessing || (isNe ? 'AI ले रसिद पहिचान गर्दैछ...' : 'Recognizing with AI Vision...'))
-
-    // Client-side hard timeout: abort fetch after 10,000ms
-    const controller = new AbortController()
-    const timeoutTimer = setTimeout(() => {
-      controller.abort()
-    }, 10000)
-
-    try {
-      const res = await fetch('/api/ocr', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          image: base64Data,
-          mimeType,
-        }),
-        signal: controller.signal,
-      })
-
-      clearTimeout(timeoutTimer)
-      const result = await res.json()
-
-      if (res.ok && result.status === 'success' && result.data?.licenseNumber) {
-        const foundNumber = result.data.licenseNumber
-        // Haptic feedback
-        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-          try {
-            navigator.vibrate([40, 50, 40])
-          } catch {
-            // Ignore
-          }
-        }
-
-        toast.success(
-          `${copy?.scanSuccessToast || (isNe ? 'लाइसेन्स नम्बर पहिचान भयो' : 'License number recognized')}: ${foundNumber}`,
-          { id: toastId, duration: 4500 }
-        )
-
-        onDetected(foundNumber)
-        triggerClose()
-      } else {
-        const errorMsg =
-          result?.message ||
-          copy?.scanFailedToast ||
-          (isNe
-            ? 'लाइसेन्स नम्बर फेला परेन। कृपया पुनः प्रयास गर्नुहोस् वा हातले टाइप गर्नुहोस्।'
-            : 'Could not detect license number. Please try again or type manually.')
-        toast.error(errorMsg, { id: toastId, duration: 5000 })
-      }
-    } catch (err: unknown) {
-      clearTimeout(timeoutTimer)
-      if (err instanceof Error && err.name === 'AbortError') {
-        toast.error(
-          isNe
-            ? 'स्क्यान समय सकियो (१० सेकेन्ड सीमा)। कृपया पुनः प्रयास गर्नुहोस्।'
-            : 'Scan timed out (10s limit). Please try again.',
-          { id: toastId, duration: 4500 }
-        )
-      } else {
-        toast.error(
-          copy?.scanFailedToast ||
-            (isNe
-              ? 'स्क्यान गर्दा समस्या आयो। कृपया पुनः प्रयास गर्नुहोस्।'
-              : 'Error while scanning. Please try again.'),
-          { id: toastId }
-        )
-      }
-    } finally {
-      clearTimeout(timeoutTimer)
-      setScanning(false)
-    }
-  }
-
   const handleRetake = () => {
+    clearCountdown()
+    setFlash(false)
     setPreviewImage(null)
     setScanning(false)
   }
@@ -441,37 +648,105 @@ export default function OcrScannerModal({
 
               {cameraActive ? (
                 <>
-                  {/* Viewfinder Targeting Reticle */}
-                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-4 min-[380px]:p-6">
-                    <div className="relative h-36 min-[380px]:h-40 min-[420px]:h-44 w-64 min-[380px]:w-72 max-w-[85%] rounded-2xl border-2 border-dashed border-white/70 shadow-[0_0_0_9999px_rgba(0,0,0,0.45)]">
-                      {/* Glowing corners */}
-                      <span className="absolute -left-1 -top-1 h-5 w-5 border-l-3 border-t-3 border-[var(--nepal-blue)]" />
-                      <span className="absolute -right-1 -top-1 h-5 w-5 border-r-3 border-t-3 border-[var(--nepal-blue)]" />
-                      <span className="absolute -bottom-1 -left-1 h-5 w-5 border-b-3 border-l-3 border-[var(--nepal-blue)]" />
-                      <span className="absolute -bottom-1 -right-1 h-5 w-5 border-b-3 border-r-3 border-[var(--nepal-blue)]" />
+                  {/* Shutter Flash Animation */}
+                  {flash && (
+                    <div className="pointer-events-none absolute inset-0 z-30 bg-white/95 transition-opacity duration-150" />
+                  )}
 
-                      {/* Laser scan animation line */}
-                      <div className="absolute inset-x-2 top-0 h-0.5 bg-gradient-to-r from-transparent via-[var(--nepal-red)] to-transparent animate-pulse shadow-[0_0_8px_var(--nepal-red)]" />
+                  {/* Top Bar: Mode Toggle (Auto / Manual) and Camera Switch */}
+                  <div className="absolute top-3 inset-x-3 z-20 flex items-center justify-between">
+                    {/* Auto / Manual Mode Pill */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        clearCountdown()
+                        setAutoCaptureEnabled((prev) => !prev)
+                      }}
+                      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold backdrop-blur-md shadow-md transition cursor-pointer ${
+                        autoCaptureEnabled
+                          ? 'bg-emerald-500/90 text-white border border-emerald-400/50 hover:bg-emerald-500'
+                          : 'bg-black/60 text-white/80 border border-white/20 hover:bg-black/80'
+                      }`}
+                      title={autoCaptureEnabled ? 'Auto-capture enabled' : 'Manual capture mode'}
+                    >
+                      <span className="text-xs">{autoCaptureEnabled ? '⚡' : '🖐️'}</span>
+                      <span>
+                        {autoCaptureEnabled
+                          ? (isNe ? 'स्वतः स्क्यान (Auto)' : 'Auto Capture')
+                          : (isNe ? 'म्यानुअल (Manual)' : 'Manual Mode')}
+                      </span>
+                    </button>
 
-                      <div className="absolute inset-x-0 bottom-2 text-center">
-                        <span className="rounded-md bg-black/60 px-2 py-0.5 text-[11px] font-medium text-white/90 backdrop-blur-xs">
-                          {isNe ? 'लाइसेन्स वा रसिद नम्बर' : 'License / Receipt No.'}
-                        </span>
-                      </div>
-                    </div>
+                    {/* Camera Switch Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        clearCountdown()
+                        toggleFacingMode()
+                      }}
+                      className="flex h-9 w-9 min-[380px]:h-10 min-[380px]:w-10 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md border border-white/20 transition hover:bg-black/80 hover:scale-105 active:scale-95 cursor-pointer shadow-md"
+                      title={copy?.scanSwitchCamera || (isNe ? 'क्यामेरा बदल्नुहोस्' : 'Switch Camera')}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+                      </svg>
+                    </button>
                   </div>
 
-                  {/* Camera Switch Button */}
-                  <button
-                    type="button"
-                    onClick={toggleFacingMode}
-                    className="absolute right-3 bottom-3 z-10 flex h-9 w-9 min-[380px]:h-10 min-[380px]:w-10 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md transition hover:bg-black/80 hover:scale-105 active:scale-95 cursor-pointer"
-                    title={copy?.scanSwitchCamera || (isNe ? 'क्यामेरा बदल्नुहोस्' : 'Switch Camera')}
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
-                    </svg>
-                  </button>
+                  {/* Viewfinder Targeting Reticle */}
+                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-4 min-[380px]:p-6">
+                    <div
+                      className={`relative h-36 min-[380px]:h-40 min-[420px]:h-44 w-64 min-[380px]:w-72 max-w-[85%] rounded-2xl border-2 transition-all duration-300 ${
+                        countdown !== null
+                          ? 'border-emerald-400 shadow-[0_0_24px_rgba(52,211,153,0.7)] ring-2 ring-emerald-400/40 bg-emerald-500/5'
+                          : docDetected
+                            ? 'border-emerald-400/80 shadow-[0_0_16px_rgba(52,211,153,0.4)]'
+                            : 'border-dashed border-white/70 shadow-[0_0_0_9999px_rgba(0,0,0,0.45)]'
+                      }`}
+                    >
+                      {/* Glowing corners */}
+                      <span className={`absolute -left-1 -top-1 h-5 w-5 border-l-3 border-t-3 transition-colors duration-300 ${
+                        countdown !== null ? 'border-emerald-400' : 'border-[var(--nepal-blue)]'
+                      }`} />
+                      <span className={`absolute -right-1 -top-1 h-5 w-5 border-r-3 border-t-3 transition-colors duration-300 ${
+                        countdown !== null ? 'border-emerald-400' : 'border-[var(--nepal-blue)]'
+                      }`} />
+                      <span className={`absolute -bottom-1 -left-1 h-5 w-5 border-b-3 border-l-3 transition-colors duration-300 ${
+                        countdown !== null ? 'border-emerald-400' : 'border-[var(--nepal-blue)]'
+                      }`} />
+                      <span className={`absolute -bottom-1 -right-1 h-5 w-5 border-b-3 border-r-3 transition-colors duration-300 ${
+                        countdown !== null ? 'border-emerald-400' : 'border-[var(--nepal-blue)]'
+                      }`} />
+
+                      {/* Laser scan animation line */}
+                      <div className={`absolute inset-x-2 top-0 h-0.5 transition-all duration-300 ${
+                        countdown !== null
+                          ? 'bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_10px_#34d399]'
+                          : 'bg-gradient-to-r from-transparent via-[var(--nepal-red)] to-transparent animate-pulse shadow-[0_0_8px_var(--nepal-red)]'
+                      }`} />
+
+                      {/* Reticle Center: Countdown or Standard Label */}
+                      {countdown !== null ? (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                          {/* Pulsing countdown number badge */}
+                          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-black/80 border-2 border-emerald-400 text-white shadow-[0_0_24px_rgba(52,211,153,0.85)] backdrop-blur-md animate-pulse">
+                            <span className="text-3xl font-black text-emerald-400 tabular-nums">
+                              {countdown}
+                            </span>
+                          </div>
+                          <div className="mt-2.5 rounded-full bg-emerald-950/90 border border-emerald-500/60 px-3 py-1 text-[11px] font-bold text-emerald-200 shadow-md backdrop-blur-md">
+                            ✋ {isNe ? 'उपकरण नहल्लाउनुहोस्...' : 'Do not move device...'}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="absolute inset-x-0 bottom-2 text-center">
+                          <span className="rounded-md bg-black/60 px-2 py-0.5 text-[11px] font-medium text-white/90 backdrop-blur-xs">
+                            {isNe ? 'लाइसेन्स वा रसिद नम्बर' : 'License / Receipt No.'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </>
               ) : (
                 /* Camera loading or error placeholder */
@@ -500,9 +775,15 @@ export default function OcrScannerModal({
         </div>
 
         {/* Tip banner */}
-        <div className="bg-[var(--info-bg)]/60 px-3.5 py-1.5 min-[380px]:py-2 border-b border-[var(--border-default)]/60">
-          <p className="text-center text-[11px] min-[380px]:text-xs text-[var(--info-text)] font-medium leading-tight">
-            💡 {instructionText}
+        <div className={`px-3.5 py-1.5 min-[380px]:py-2 border-b transition-colors duration-300 ${
+          countdown !== null
+            ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-900 dark:text-emerald-200'
+            : 'bg-[var(--info-bg)]/60 border-[var(--border-default)]/60 text-[var(--info-text)]'
+        }`}>
+          <p className="text-center text-[11px] min-[380px]:text-xs font-medium leading-tight">
+            {countdown !== null
+              ? `⚡ ${isNe ? 'कागजात भेटियो! यन्त्र नहल्लाउनुहोस् (' + countdown + ')' : 'Document detected! Hold device steady (' + countdown + ')'}`
+              : `💡 ${instructionText}`}
           </p>
         </div>
 
@@ -547,7 +828,7 @@ export default function OcrScannerModal({
             </div>
           ) : (
             <div className="flex flex-col sm:flex-row items-center gap-2 min-[380px]:gap-2.5">
-              {/* Primary Capture Button */}
+              {/* Primary Capture Button (Manual Shutter Button) */}
               {cameraActive ? (
                 <button
                   type="button"
@@ -559,7 +840,11 @@ export default function OcrScannerModal({
                     <circle cx="12" cy="12" r="10" />
                     <circle cx="12" cy="12" r="3" fill="currentColor" />
                   </svg>
-                  <span>{copy?.scanTakePhoto || (isNe ? 'फोटो खिच्नुहोस्' : 'Take Photo')}</span>
+                  <span>
+                    {countdown !== null
+                      ? (isNe ? 'अहिले फोटो खिच्नुहोस् (म्यानुअल)' : 'Capture Now (Manual)')
+                      : copy?.scanTakePhoto || (isNe ? 'फोटो खिच्नुहोस् (म्यानुअल)' : 'Take Photo (Manual)')}
+                  </span>
                 </button>
               ) : (
                 <button
