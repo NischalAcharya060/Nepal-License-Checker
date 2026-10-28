@@ -10,17 +10,19 @@ export interface AdminNavbarProps {
     setAutoRefresh?: (val: boolean) => void
     dataLoading?: boolean
     handleManualRefresh?: () => void
-    activeTab?: 'searches' | 'notifications' | 'feedback' | 'testimonials' | 'developers'
+    activeTab?: 'searches' | 'notifications' | 'feedback' | 'testimonials' | 'developers' | 'ocr'
     exportCsv?: () => void
     exportNotificationCsv?: () => void
     exportFeedbackCsv?: () => void
     exportTestimonialsCsv?: () => void
     exportDevelopersCsv?: () => void
+    exportOcrCsv?: () => void
     hasLogs?: boolean
     hasNotificationLogs?: boolean
     hasFeedbackLogs?: boolean
     hasTestimonialLogs?: boolean
     hasDeveloperLogs?: boolean
+    hasOcrLogs?: boolean
     setPasskeyModalOpen?: (val: boolean) => void
     fetchPasskeys?: () => void
     passkeyCount?: number
@@ -43,11 +45,13 @@ export default function AdminNavbar(props: any) {
         exportFeedbackCsv = () => {},
         exportTestimonialsCsv = () => {},
         exportDevelopersCsv = () => {},
+        exportOcrCsv = () => {},
         hasLogs = false,
         hasNotificationLogs = false,
         hasFeedbackLogs = false,
         hasTestimonialLogs = false,
         hasDeveloperLogs = false,
+        hasOcrLogs = false,
         setPasskeyModalOpen = () => {},
         fetchPasskeys = () => {},
         passkeyCount = 0,
@@ -186,7 +190,9 @@ export default function AdminNavbar(props: any) {
                                 ? exportFeedbackCsv
                                 : activeTab === 'testimonials'
                                 ? exportTestimonialsCsv
-                                : exportDevelopersCsv
+                                : activeTab === 'developers'
+                                ? exportDevelopersCsv
+                                : exportOcrCsv
                         }
                         disabled={
                             activeTab === 'searches'
@@ -197,7 +203,9 @@ export default function AdminNavbar(props: any) {
                                 ? !hasFeedbackLogs
                                 : activeTab === 'testimonials'
                                 ? !hasTestimonialLogs
-                                : !hasDeveloperLogs
+                                : activeTab === 'developers'
+                                ? !hasDeveloperLogs
+                                : !hasOcrLogs
                         }
                         className="inline-flex min-h-[38px] sm:h-9 items-center justify-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 sm:px-3 text-xs font-semibold text-[var(--text-secondary)] shadow-2xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                         title={
@@ -209,7 +217,9 @@ export default function AdminNavbar(props: any) {
                                 ? 'Export feedback inquiries to CSV'
                                 : activeTab === 'testimonials'
                                 ? 'Export testimonials to CSV'
-                                : 'Export developer accounts to CSV'
+                                : activeTab === 'developers'
+                                ? 'Export developer accounts to CSV'
+                                : 'Export OCR scan logs to CSV'
                         }
                         aria-label="Export to CSV"
                     >

@@ -189,3 +189,40 @@ export interface DeveloperStatsData {
     queriesToday: number
 }
 
+export interface AdminOcrConfig {
+    apiKey: string
+    maskedApiKey: string
+    hasKey: boolean
+    keySource: 'database' | 'environment' | 'none'
+    model: string
+    enabled: boolean
+}
+
+export interface AdminOcrLog {
+    id: number
+    license_number: string | null
+    status: 'success' | 'not_found' | 'timeout' | 'error'
+    latency_ms: number
+    confidence: string | null
+    detected_source: string | null
+    model_used: string | null
+    ip: string | null
+    error_message: string | null
+    created_at: number
+}
+
+export interface AdminOcrStatsData {
+    totalScans: number
+    todayScans: number
+    successCount: number
+    notFoundCount: number
+    timeoutCount: number
+    errorCount: number
+    successRate: number
+    avgLatencyMs: number
+    dailyQuotaLimit: number
+    dailyQuotaUsed: number
+    dailyQuotaPercent: number
+    rpmLimit: number
+}
+

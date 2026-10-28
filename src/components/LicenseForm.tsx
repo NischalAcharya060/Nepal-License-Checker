@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { validateLicenseNumber, formatLicenseNumber } from '@/utils/validation'
 import { devanagariToAsciiDigits } from '@/utils/sanitize'
+import OcrScannerModal from '@/components/OcrScannerModal'
 import type { LicenseFormCopy } from '@/lib/i18n'
 
 interface LicenseFormProps {
@@ -65,6 +66,7 @@ export default function LicenseForm({
   })
   const [error, setError] = useState('')
   const [focused, setFocused] = useState(false)
+  const [isScanModalOpen, setIsScanModalOpen] = useState(false)
   const [loadingMsgIdx, setLoadingMsgIdx] = useState(0)
   const [recentSearches, setRecentSearches] = useState<string[]>(() => {
     if (typeof window === 'undefined') return []
@@ -198,6 +200,20 @@ export default function LicenseForm({
     startLoadingMessages()
     await onSubmit(licenseNumber)
     stopLoadingMessages()
+  }
+
+  const handleOcrDetected = (detectedNumber: string) => {
+    const formatted = formatLicenseNumber(detectedNumber)
+    if (formatted) {
+      setLicenseNumber(formatted)
+      setError(
+        formatted.length === 14 && !validateLicenseNumber(formatted)
+          ? copy.errors.invalidShort
+          : ''
+      )
+      onReset()
+      inputRef.current?.focus()
+    }
   }
 
   const handlePasteFromClipboard = async () => {
@@ -398,34 +414,63 @@ export default function LicenseForm({
               )}
             </div>
 
-            <button
-              type="submit"
-              disabled={loading || isLockedOut || !!error || !licenseNumber}
-              className="inline-flex h-12 min-w-[155px] items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[var(--nepal-blue)] to-[var(--nepal-blue-mid)] px-6 text-sm font-bold text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:brightness-110 active:translate-y-0 disabled:cursor-not-allowed disabled:bg-[var(--text-muted)] disabled:from-[var(--text-muted)] disabled:to-[var(--text-muted)] disabled:shadow-none sm:h-[54px] cursor-pointer"
-            >
-              {isLockedOut ? (
-                <span className="flex items-center gap-1.5 font-mono text-white/95">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="animate-pulse">
-                    <circle cx="12" cy="12" r="10" />
-                    <polyline points="12 6 12 12 16 14" />
-                  </svg>
-                  <span>{language === 'ne' ? `पर्खनुहोस् (${countdownText})` : `Wait (${countdownText})`}</span>
-                </span>
-              ) : loading ? (
-                <>
-                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                  <span>{copy.checkingLabel}</span>
-                </>
-              ) : (
-                <>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="11" cy="11" r="8" />
-                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                  </svg>
-                  <span>{copy.submitLabel}</span>
-                </>
-              )}
-            </button>
+            <div className="flex items-center gap-2 sm:gap-2.5">
+              <button
+                type="button"
+                disabled={loading || isLockedOut}
+                onClick={() => setIsScanModalOpen(true)}
+                className="group/scan flex h-12 w-12 sm:h-[54px] sm:w-[54px] shrink-0 items-center justify-center rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--nepal-blue)] shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue-light)]/40 hover:shadow-md active:translate-y-0 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                aria-label={copy.scanTitle || (language === 'ne' ? 'लाइसेन्स वा रसिद स्क्यान गर्नुहोस्' : 'Scan license or receipt')}
+                title={copy.scanTitle || (language === 'ne' ? 'लाइसेन्स वा रसिद स्क्यान गर्नुहोस्' : 'Scan license or receipt')}
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="transition-transform duration-300 group-hover/scan:scale-110"
+                >
+                  <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+                  <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+                  <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+                  <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+                  <circle cx="12" cy="12" r="3.2" />
+                </svg>
+              </button>
+
+              <button
+                type="submit"
+                disabled={loading || isLockedOut || !!error || !licenseNumber}
+                className="inline-flex h-12 flex-1 sm:flex-initial sm:min-w-[155px] items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[var(--nepal-blue)] to-[var(--nepal-blue-mid)] px-6 text-sm font-bold text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:brightness-110 active:translate-y-0 disabled:cursor-not-allowed disabled:bg-[var(--text-muted)] disabled:from-[var(--text-muted)] disabled:to-[var(--text-muted)] disabled:shadow-none sm:h-[54px] cursor-pointer"
+              >
+                {isLockedOut ? (
+                  <span className="flex items-center gap-1.5 font-mono text-white/95">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="animate-pulse">
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                    <span>{language === 'ne' ? `पर्खनुहोस् (${countdownText})` : `Wait (${countdownText})`}</span>
+                  </span>
+                ) : loading ? (
+                  <>
+                    <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    <span>{copy.checkingLabel}</span>
+                  </>
+                ) : (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="11" cy="11" r="8" />
+                      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                    <span>{copy.submitLabel}</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Input Progress indicator with ARIA semantics */}
@@ -537,6 +582,15 @@ export default function LicenseForm({
           )}
         </form>
       </div>
+
+      {/* AI OCR Scanner Modal */}
+      <OcrScannerModal
+        isOpen={isScanModalOpen}
+        onClose={() => setIsScanModalOpen(false)}
+        onDetected={handleOcrDetected}
+        language={language}
+        copy={copy}
+      />
     </div>
   )
 }
