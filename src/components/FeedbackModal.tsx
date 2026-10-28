@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSwipeDownToClose } from '@/hooks/useSwipeDownToClose'
 import type { Language } from '@/lib/i18n'
 import { FEEDBACK_CATEGORIES } from '@/lib/feedback'
 
@@ -51,8 +52,6 @@ export default function FeedbackModal({
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, isSubmitting, onClose])
-
-  if (!isOpen) return null
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -115,21 +114,52 @@ export default function FeedbackModal({
     }
   }
 
+  const {
+    isRendered,
+    triggerClose,
+    modalStyle,
+    backdropStyle,
+    handleProps,
+    containerProps,
+  } = useSwipeDownToClose({
+    isOpen,
+    onClose,
+  })
+
+  if (!isRendered) return null
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs transition-opacity duration-300"
+      style={backdropStyle}
       onClick={(e) => {
-        if (e.target === e.currentTarget && !isSubmitting) onClose()
+        if (e.target === e.currentTarget && !isSubmitting) triggerClose()
       }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="feedback-modal-title"
     >
-      <div className="relative w-full max-w-lg rounded-t-[28px] sm:rounded-3xl dev-glass-card shadow-2xl overflow-hidden transition-all">
-        <div className="w-10 h-1 bg-[var(--border-default)] rounded-full mx-auto my-2 sm:hidden" aria-hidden />
+      <div
+        style={modalStyle}
+        {...containerProps}
+        className="relative w-full max-w-lg rounded-t-[28px] sm:rounded-3xl dev-glass-card shadow-2xl overflow-hidden pb-[max(1rem,env(safe-area-inset-bottom))]"
+      >
+        {/* Mobile handle indicator & Swipe Down zone */}
+        <div
+          className="w-full pt-3 pb-1 flex flex-col items-center justify-center cursor-grab active:cursor-grabbing touch-none select-none sm:hidden"
+          {...handleProps}
+        >
+          <div className="w-12 h-1.5 bg-[var(--border-default)] hover:bg-[var(--text-muted)] rounded-full transition-colors" />
+          <span className="text-[10px] text-[var(--text-muted)] mt-1 font-medium opacity-65 tracking-tight">
+            {isNe ? 'बन्द गर्न तल तान्नुहोस्' : 'Swipe down to close'}
+          </span>
+        </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[var(--border-default)]/80 bg-[var(--bg-secondary)]/50 px-5 py-4">
+        <div
+          className="flex items-center justify-between border-b border-[var(--border-default)]/80 bg-[var(--bg-secondary)]/50 px-5 py-4 select-none cursor-grab active:cursor-grabbing sm:cursor-default"
+          {...handleProps}
+        >
           <div className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)]">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -147,7 +177,7 @@ export default function FeedbackModal({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={triggerClose}
             disabled={isSubmitting}
             className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-xl p-2 text-[var(--text-muted)] hover:bg-[var(--surface-primary)] hover:text-[var(--text-primary)] transition disabled:opacity-50 cursor-pointer"
             title="Close"
@@ -178,8 +208,8 @@ export default function FeedbackModal({
               </p>
               <button
                 type="button"
-                onClick={onClose}
-                className="mt-6 inline-flex items-center gap-1.5 rounded-xl bg-[var(--nepal-blue)] px-6 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-[var(--nepal-blue-dark)]"
+                onClick={triggerClose}
+                className="mt-6 inline-flex items-center gap-1.5 rounded-xl bg-[var(--nepal-blue)] px-6 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-[var(--nepal-blue-dark)] cursor-pointer"
               >
                 {isNe ? 'बन्द गर्नुहोस्' : 'Done & Close'}
               </button>

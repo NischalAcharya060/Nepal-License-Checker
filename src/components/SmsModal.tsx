@@ -1,5 +1,7 @@
 'use client'
 
+import React from 'react'
+import { useSwipeDownToClose } from '@/hooks/useSwipeDownToClose'
 import type { SmsGuideCopy } from '@/lib/i18n'
 
 interface SmsModalProps {
@@ -11,26 +13,53 @@ interface SmsModalProps {
 }
 
 export default function SmsModal({ isOpen, onClose, copy }: SmsModalProps) {
-  if (!isOpen) return null
+  const {
+    isRendered,
+    triggerClose,
+    modalStyle,
+    backdropStyle,
+    handleProps,
+    containerProps,
+  } = useSwipeDownToClose({
+    isOpen,
+    onClose,
+  })
+
+  if (!isRendered) return null
 
   const sampleFormat = 'LC 12345678'
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4 backdrop-blur-sm animate-fade-in"
-      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4 backdrop-blur-sm transition-opacity duration-300"
+      style={backdropStyle}
+      onClick={triggerClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="sms-modal-title"
     >
       <div
-        className="relative flex max-h-[90vh] sm:max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-t-[28px] sm:rounded-3xl dev-glass-card shadow-2xl animate-rise-in"
+        style={modalStyle}
+        {...containerProps}
+        className="relative flex max-h-[90vh] sm:max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-t-[28px] sm:rounded-3xl dev-glass-card shadow-2xl pb-[max(1rem,env(safe-area-inset-bottom))]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="w-10 h-1 bg-[var(--border-default)] rounded-full mx-auto my-2 sm:hidden" aria-hidden />
+        {/* Mobile handle indicator & Swipe Down zone */}
+        <div
+          className="w-full pt-3 pb-1 flex flex-col items-center justify-center cursor-grab active:cursor-grabbing touch-none select-none sm:hidden"
+          {...handleProps}
+        >
+          <div className="w-12 h-1.5 bg-[var(--border-default)] hover:bg-[var(--text-muted)] rounded-full transition-colors" />
+          <span className="text-[10px] text-[var(--text-muted)] mt-1 font-medium opacity-65 tracking-tight">
+            Swipe down to close
+          </span>
+        </div>
 
         {/* Header */}
-        <div className="flex items-start justify-between border-b border-[var(--border-default)] bg-gradient-to-r from-[var(--nepal-blue-soft)] to-transparent p-4 sm:p-5">
+        <div
+          className="flex items-start justify-between border-b border-[var(--border-default)] bg-gradient-to-r from-[var(--nepal-blue-soft)] to-transparent p-4 sm:p-5 select-none cursor-grab active:cursor-grabbing sm:cursor-default"
+          {...handleProps}
+        >
           <div className="flex items-center gap-3">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--nepal-blue)] text-white shadow-sm">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -47,7 +76,7 @@ export default function SmsModal({ isOpen, onClose, copy }: SmsModalProps) {
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={triggerClose}
             className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-xl p-2 text-[var(--text-muted)] transition hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
             aria-label={copy.closeLabel}
           >
@@ -93,8 +122,8 @@ export default function SmsModal({ isOpen, onClose, copy }: SmsModalProps) {
         <div className="border-t border-[var(--border-default)] bg-[var(--bg-secondary)] px-4 py-3 text-right">
           <button
             type="button"
-            onClick={onClose}
-            className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-2 text-xs font-bold text-[var(--text-secondary)] transition hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"
+            onClick={triggerClose}
+            className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-2 text-xs font-bold text-[var(--text-secondary)] transition hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
           >
             {copy.closeLabel}
           </button>

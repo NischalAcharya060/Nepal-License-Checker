@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import toast from 'react-hot-toast'
+import { useSwipeDownToClose } from '@/hooks/useSwipeDownToClose'
 import type { Language, LicenseFormCopy } from '@/lib/i18n'
 
 interface OcrScannerModalProps {
@@ -144,7 +145,11 @@ export default function OcrScannerModal({
         streamRef.current = stream
         if (videoRef.current) {
           videoRef.current.srcObject = stream
-          await videoRef.current.play()
+          try {
+            await videoRef.current.play()
+          } catch {
+            // Ignore autoplay interruption
+          }
         }
 
         if (!isCancelled) {
@@ -152,7 +157,8 @@ export default function OcrScannerModal({
           setCameraError(null)
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        console.warn('Camera getUserMedia error:', err)
         if (!isCancelled) {
           setCameraActive(false)
           setCameraError(
@@ -176,14 +182,37 @@ export default function OcrScannerModal({
     }
   }, [isOpen, previewImage, facingMode, copy?.scanPermissionDenied, isNe])
 
-  // Handle closing modal
-  const handleClose = () => {
+  // Ensure stream is attached to video element as soon as videoRef mounts or updates
+  useEffect(() => {
+    if (isOpen && !previewImage && streamRef.current && videoRef.current) {
+      if (videoRef.current.srcObject !== streamRef.current) {
+        videoRef.current.srcObject = streamRef.current
+        videoRef.current.play().catch(() => {})
+      }
+    }
+  }, [isOpen, previewImage, cameraActive])
+
+  // Handle closing modal with slide-down animation
+  const handleFinalCleanup = useCallback(() => {
     stopCamera()
     setPreviewImage(null)
     setScanning(false)
     setCameraError(null)
     onClose()
-  }
+  }, [stopCamera, onClose])
+
+  const {
+    isRendered,
+    triggerClose,
+    modalStyle,
+    backdropStyle,
+    handleProps,
+    containerProps,
+  } = useSwipeDownToClose({
+    isOpen,
+    onClose: handleFinalCleanup,
+    onStartClosing: stopCamera,
+  })
 
   // Toggle camera direction (front / back)
   const toggleFacingMode = () => {
@@ -267,7 +296,7 @@ export default function OcrScannerModal({
         )
 
         onDetected(foundNumber)
-        handleClose()
+        triggerClose()
       } else {
         const errorMsg =
           result?.message ||
@@ -306,29 +335,40 @@ export default function OcrScannerModal({
     setScanning(false)
   }
 
-  if (!isOpen) return null
+  if (!isRendered) return null
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 p-0 sm:p-4 backdrop-blur-md animate-fade-in"
-      onClick={handleClose}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 p-0 sm:p-4 backdrop-blur-md transition-opacity duration-300"
+      style={backdropStyle}
+      onClick={triggerClose}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label={modalTitle}
-        className="relative w-full max-w-lg overflow-hidden rounded-t-[28px] sm:rounded-3xl dev-glass-card shadow-2xl animate-rise-in border border-[var(--border-default)] bg-[var(--surface-primary)]"
+        style={modalStyle}
+        {...containerProps}
+        className="relative w-full max-w-lg overflow-hidden rounded-t-[28px] sm:rounded-3xl dev-glass-card shadow-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] max-h-[92vh] sm:max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Mobile handle indicator */}
-        <div className="w-12 h-1 bg-[var(--border-default)] rounded-full mx-auto my-3 sm:hidden" aria-hidden />
+        {/* Mobile handle indicator & Swipe Down zone */}
+        <div
+          className="w-full pt-3 pb-1 flex flex-col items-center justify-center cursor-grab active:cursor-grabbing touch-none select-none sm:hidden"
+          {...handleProps}
+        >
+          <div className="w-12 h-1.5 bg-[var(--border-default)] hover:bg-[var(--text-muted)] rounded-full transition-colors" />
+          <span className="text-[10px] text-[var(--text-muted)] mt-1 font-medium opacity-65 tracking-tight">
+            {isNe ? 'बन्द गर्न तल तान्नुहोस्' : 'Swipe down to close'}
+          </span>
+        </div>
 
         {/* Close Button */}
         <button
           type="button"
-          onClick={handleClose}
+          onClick={triggerClose}
           aria-label={copy?.scanClose || (isNe ? 'बन्द गर्नुहोस्' : 'Close')}
-          className="absolute right-3.5 top-3.5 z-20 flex min-h-[40px] min-w-[40px] items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md transition-all hover:bg-[var(--nepal-red)] hover:scale-105 active:scale-95 shadow-md cursor-pointer"
+          className="absolute right-3.5 top-3.5 z-20 flex h-9 w-9 min-[380px]:h-10 min-[380px]:w-10 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md transition-all hover:bg-[var(--nepal-red)] hover:scale-105 active:scale-95 shadow-md cursor-pointer"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="18" y1="6" x2="6" y2="18" />
@@ -336,20 +376,23 @@ export default function OcrScannerModal({
           </svg>
         </button>
 
-        {/* Header */}
-        <div className="border-b border-[var(--border-default)] px-5 py-4 sm:px-6">
+        {/* Header - also draggable on mobile */}
+        <div
+          className="border-b border-[var(--border-default)] px-4 py-2.5 min-[380px]:px-5 min-[380px]:py-3.5 sm:px-6 sm:py-4 select-none cursor-grab active:cursor-grabbing sm:cursor-default"
+          {...handleProps}
+        >
           <div className="flex items-center gap-2.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--nepal-blue)] to-[var(--nepal-blue-mid)] text-white shadow-xs">
+            <div className="flex h-9 w-9 min-[380px]:h-10 min-[380px]:w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--nepal-blue)] to-[var(--nepal-blue-mid)] text-white shadow-xs shrink-0">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
                 <circle cx="12" cy="13" r="4" />
               </svg>
             </div>
-            <div>
-              <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">
+            <div className="min-w-0 pr-9">
+              <h2 className="text-sm min-[380px]:text-base sm:text-lg font-bold text-[var(--text-primary)] leading-snug truncate">
                 {modalTitle}
               </h2>
-              <p className="text-xs text-[var(--text-muted)] line-clamp-1">
+              <p className="text-[11px] min-[380px]:text-xs text-[var(--text-muted)] line-clamp-1">
                 {modalSubtitle}
               </p>
             </div>
@@ -357,7 +400,7 @@ export default function OcrScannerModal({
         </div>
 
         {/* Viewfinder / Preview Area */}
-        <div className="relative aspect-[4/3] w-full overflow-hidden bg-black flex items-center justify-center">
+        <div className="relative h-[210px] min-[380px]:h-[250px] min-[420px]:h-[280px] sm:h-auto sm:aspect-[4/3] w-full overflow-hidden bg-black flex items-center justify-center shrink-0">
           {previewImage ? (
             // Preview mode
             <div className="relative h-full w-full">
@@ -383,85 +426,95 @@ export default function OcrScannerModal({
                 </div>
               )}
             </div>
-          ) : cameraActive ? (
-            // Live Camera Viewfinder
-            <div className="relative h-full w-full">
+          ) : (
+            <>
+              {/* Always keep video mounted so getUserMedia stream attaches immediately on first modal open */}
               <video
                 ref={videoRef}
                 autoPlay
                 playsInline
                 muted
-                className="h-full w-full object-cover"
+                className={`h-full w-full object-cover transition-opacity duration-300 ${
+                  cameraActive ? 'opacity-100' : 'opacity-0 absolute inset-0 pointer-events-none'
+                }`}
               />
 
-              {/* Viewfinder Targeting Reticle */}
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-6">
-                <div className="relative h-44 w-72 max-w-[85%] rounded-2xl border-2 border-dashed border-white/70 shadow-[0_0_0_9999px_rgba(0,0,0,0.45)]">
-                  {/* Glowing corners */}
-                  <span className="absolute -left-1 -top-1 h-5 w-5 border-l-3 border-t-3 border-[var(--nepal-blue)]" />
-                  <span className="absolute -right-1 -top-1 h-5 w-5 border-r-3 border-t-3 border-[var(--nepal-blue)]" />
-                  <span className="absolute -bottom-1 -left-1 h-5 w-5 border-b-3 border-l-3 border-[var(--nepal-blue)]" />
-                  <span className="absolute -bottom-1 -right-1 h-5 w-5 border-b-3 border-r-3 border-[var(--nepal-blue)]" />
+              {cameraActive ? (
+                <>
+                  {/* Viewfinder Targeting Reticle */}
+                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-4 min-[380px]:p-6">
+                    <div className="relative h-36 min-[380px]:h-40 min-[420px]:h-44 w-64 min-[380px]:w-72 max-w-[85%] rounded-2xl border-2 border-dashed border-white/70 shadow-[0_0_0_9999px_rgba(0,0,0,0.45)]">
+                      {/* Glowing corners */}
+                      <span className="absolute -left-1 -top-1 h-5 w-5 border-l-3 border-t-3 border-[var(--nepal-blue)]" />
+                      <span className="absolute -right-1 -top-1 h-5 w-5 border-r-3 border-t-3 border-[var(--nepal-blue)]" />
+                      <span className="absolute -bottom-1 -left-1 h-5 w-5 border-b-3 border-l-3 border-[var(--nepal-blue)]" />
+                      <span className="absolute -bottom-1 -right-1 h-5 w-5 border-b-3 border-r-3 border-[var(--nepal-blue)]" />
 
-                  {/* Laser scan animation line */}
-                  <div className="absolute inset-x-2 top-0 h-0.5 bg-gradient-to-r from-transparent via-[var(--nepal-red)] to-transparent animate-pulse shadow-[0_0_8px_var(--nepal-red)]" />
+                      {/* Laser scan animation line */}
+                      <div className="absolute inset-x-2 top-0 h-0.5 bg-gradient-to-r from-transparent via-[var(--nepal-red)] to-transparent animate-pulse shadow-[0_0_8px_var(--nepal-red)]" />
 
-                  <div className="absolute inset-x-0 bottom-2 text-center">
-                    <span className="rounded-md bg-black/60 px-2 py-0.5 text-[11px] font-medium text-white/90 backdrop-blur-xs">
-                      {isNe ? 'लाइसेन्स वा रसिद नम्बर' : 'License / Receipt No.'}
-                    </span>
+                      <div className="absolute inset-x-0 bottom-2 text-center">
+                        <span className="rounded-md bg-black/60 px-2 py-0.5 text-[11px] font-medium text-white/90 backdrop-blur-xs">
+                          {isNe ? 'लाइसेन्स वा रसिद नम्बर' : 'License / Receipt No.'}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              {/* Camera Switch Button */}
-              <button
-                type="button"
-                onClick={toggleFacingMode}
-                className="absolute right-3 bottom-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md transition hover:bg-black/80 hover:scale-105 active:scale-95 cursor-pointer"
-                title={copy?.scanSwitchCamera || (isNe ? 'क्यामेरा बदल्नुहोस्' : 'Switch Camera')}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
-                </svg>
-              </button>
-            </div>
-          ) : (
-            // Camera unavailable or permission denied placeholder
-            <div className="p-6 text-center text-white/80">
-              <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-white/70">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                  <circle cx="12" cy="13" r="4" />
-                  <line x1="1" y1="1" x2="23" y2="23" strokeWidth="2.2" />
-                </svg>
-              </div>
-              <p className="text-sm font-medium text-white/90">
-                {cameraError || (isNe ? 'क्यामेरा लोड हुँदैछ...' : 'Loading camera...')}
-              </p>
-              <p className="mt-1 text-xs text-white/60">
-                {isNe ? 'वा तलको बटनबाट ग्यालरीबाट सिधै फोटो छान्नुहोस्' : 'Or upload a photo directly from your device'}
-              </p>
-            </div>
+                  {/* Camera Switch Button */}
+                  <button
+                    type="button"
+                    onClick={toggleFacingMode}
+                    className="absolute right-3 bottom-3 z-10 flex h-9 w-9 min-[380px]:h-10 min-[380px]:w-10 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md transition hover:bg-black/80 hover:scale-105 active:scale-95 cursor-pointer"
+                    title={copy?.scanSwitchCamera || (isNe ? 'क्यामेरा बदल्नुहोस्' : 'Switch Camera')}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+                    </svg>
+                  </button>
+                </>
+              ) : (
+                /* Camera loading or error placeholder */
+                <div className="p-6 text-center text-white/80">
+                  <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-white/70">
+                    {cameraError ? (
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                        <circle cx="12" cy="13" r="4" />
+                        <line x1="1" y1="1" x2="23" y2="23" strokeWidth="2.2" />
+                      </svg>
+                    ) : (
+                      <span className="inline-block h-8 w-8 animate-spin rounded-full border-3 border-white/30 border-t-white" />
+                    )}
+                  </div>
+                  <p className="text-sm font-medium text-white/90">
+                    {cameraError || (isNe ? 'क्यामेरा खुल्दैछ...' : 'Starting camera...')}
+                  </p>
+                  <p className="mt-1 text-xs text-white/60">
+                    {isNe ? 'वा तलको बटनबाट ग्यालरीबाट सिधै फोटो छान्नुहोस्' : 'Or upload a photo directly from your device'}
+                  </p>
+                </div>
+              )}
+            </>
           )}
         </div>
 
         {/* Tip banner */}
-        <div className="bg-[var(--info-bg)]/60 px-4 py-2 border-b border-[var(--border-default)]/60">
-          <p className="text-center text-xs text-[var(--info-text)] font-medium">
+        <div className="bg-[var(--info-bg)]/60 px-3.5 py-1.5 min-[380px]:py-2 border-b border-[var(--border-default)]/60">
+          <p className="text-center text-[11px] min-[380px]:text-xs text-[var(--info-text)] font-medium leading-tight">
             💡 {instructionText}
           </p>
         </div>
 
         {/* Controls / Actions */}
-        <div className="p-4 sm:p-5">
+        <div className="p-3.5 min-[380px]:p-4 sm:p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
           {previewImage ? (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5 sm:gap-3">
               <button
                 type="button"
                 onClick={handleRetake}
                 disabled={scanning}
-                className="flex-1 inline-flex h-11 items-center justify-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-4 text-xs sm:text-sm font-bold text-[var(--text-secondary)] transition hover:bg-[var(--surface-primary)] hover:text-[var(--text-primary)] active:scale-95 disabled:opacity-50 cursor-pointer"
+                className="flex-1 inline-flex h-10 min-[380px]:h-11 items-center justify-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3 text-xs min-[380px]:text-sm font-bold text-[var(--text-secondary)] transition hover:bg-[var(--surface-primary)] hover:text-[var(--text-primary)] active:scale-95 disabled:opacity-50 cursor-pointer"
               >
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
@@ -474,7 +527,7 @@ export default function OcrScannerModal({
                 type="button"
                 onClick={() => processOcr(previewImage)}
                 disabled={scanning}
-                className="flex-1 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[var(--nepal-blue)] to-[var(--nepal-blue-mid)] px-4 text-xs sm:text-sm font-bold text-white shadow-md transition hover:brightness-110 active:scale-95 disabled:opacity-50 cursor-pointer"
+                className="flex-1 inline-flex h-10 min-[380px]:h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[var(--nepal-blue)] to-[var(--nepal-blue-mid)] px-3 text-xs min-[380px]:text-sm font-bold text-white shadow-md transition hover:brightness-110 active:scale-95 disabled:opacity-50 cursor-pointer"
               >
                 {scanning ? (
                   <>
@@ -493,26 +546,26 @@ export default function OcrScannerModal({
               </button>
             </div>
           ) : (
-            <div className="flex flex-col sm:flex-row items-center gap-2.5">
+            <div className="flex flex-col sm:flex-row items-center gap-2 min-[380px]:gap-2.5">
               {/* Primary Capture Button */}
               {cameraActive ? (
                 <button
                   type="button"
                   onClick={capturePhotoFromVideo}
                   disabled={scanning}
-                  className="w-full sm:flex-1 inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[var(--nepal-blue)] to-[var(--nepal-blue-mid)] px-4 text-sm font-bold text-white shadow-md transition hover:scale-101 hover:brightness-110 active:scale-98 cursor-pointer"
+                  className="w-full sm:flex-1 inline-flex h-11 sm:h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[var(--nepal-blue)] to-[var(--nepal-blue-mid)] px-4 text-xs min-[380px]:text-sm font-bold text-white shadow-md transition hover:scale-101 hover:brightness-110 active:scale-98 cursor-pointer"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="10" />
                     <circle cx="12" cy="12" r="3" fill="currentColor" />
                   </svg>
-                  <span>{copy?.scanTakePhoto || (isNe ? 'फोटो खिच्नुहोस्' : 'Capture Photo')}</span>
+                  <span>{copy?.scanTakePhoto || (isNe ? 'फोटो खिच्नुहोस्' : 'Take Photo')}</span>
                 </button>
               ) : (
                 <button
                   type="button"
                   onClick={() => cameraInputRef.current?.click()}
-                  className="w-full sm:flex-1 inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[var(--nepal-blue)] to-[var(--nepal-blue-mid)] px-4 text-sm font-bold text-white shadow-md transition hover:brightness-110 active:scale-98 cursor-pointer"
+                  className="w-full sm:flex-1 inline-flex h-11 sm:h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[var(--nepal-blue)] to-[var(--nepal-blue-mid)] px-4 text-xs min-[380px]:text-sm font-bold text-white shadow-md transition hover:brightness-110 active:scale-98 cursor-pointer"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
@@ -527,14 +580,14 @@ export default function OcrScannerModal({
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={scanning}
-                className="w-full sm:w-auto inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-4 text-sm font-bold text-[var(--text-secondary)] transition hover:bg-[var(--surface-primary)] hover:text-[var(--text-primary)] active:scale-98 cursor-pointer"
+                className="w-full sm:w-auto inline-flex h-11 sm:h-12 items-center justify-center gap-2 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-4 text-xs min-[380px]:text-sm font-bold text-[var(--text-secondary)] transition hover:bg-[var(--surface-primary)] hover:text-[var(--text-primary)] active:scale-98 cursor-pointer"
               >
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                   <polyline points="17 8 12 3 7 8" />
                   <line x1="12" y1="3" x2="12" y2="15" />
                 </svg>
-                <span>{copy?.scanUploadFile || (isNe ? 'ग्यालरीबाट छान्नुहोस्' : 'Upload File')}</span>
+                <span>{copy?.scanUploadFile || (isNe ? 'ग्यालरीबाट छान्नुहोस्' : 'Upload Photo')}</span>
               </button>
 
               {/* Hidden file inputs */}

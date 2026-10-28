@@ -45,9 +45,20 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       status: 'success',
+      data: {
+        config,
+        stats,
+        logs: logsData.logs,
+        total: logsData.total,
+        totalPages: logsData.totalPages,
+        page,
+        limit,
+      },
       config,
       stats,
       logs: logsData.logs,
+      total: logsData.total,
+      totalPages: logsData.totalPages,
       pagination: {
         page,
         limit,
@@ -80,6 +91,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         status: 'success',
         message: 'OCR settings updated successfully',
+        data: {
+          config: updatedConfig,
+        },
         config: updatedConfig,
       })
     }
@@ -100,6 +114,7 @@ export async function POST(request: NextRequest) {
       const testResult = await testGeminiKey(keyToTest, modelToTest)
       return NextResponse.json({
         status: testResult.success ? 'success' : 'error',
+        data: testResult,
         ...testResult,
       })
     }

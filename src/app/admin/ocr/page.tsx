@@ -76,7 +76,7 @@ export default function AdminOcr(props: any) {
   const [editingKey, setEditingKey] = useState(false)
   const [apiKeyInput, setApiKeyInput] = useState('')
   const [showKeySecret, setShowKeySecret] = useState(false)
-  const [selectedModel, setSelectedModel] = useState(ocrConfig?.model || 'gemini-3.5-flash-lite')
+  const [modelOverride, setModelOverride] = useState<string | null>(null)
   const [testingKey, setTestingKey] = useState(false)
   const [testResult, setTestResult] = useState<{
     success: boolean
@@ -86,8 +86,14 @@ export default function AdminOcr(props: any) {
   } | null>(null)
   const [savingConfig, setSavingConfig] = useState(false)
 
+  const selectedModel = modelOverride ?? ocrConfig?.model ?? 'gemini-3.5-flash-lite'
+
   const activeKey = ocrConfig?.apiKey || ''
-  const maskedKey = ocrConfig?.maskedApiKey || '••••••••'
+  const maskedKey =
+    ocrConfig?.maskedApiKey ||
+    (activeKey && activeKey.length >= 8
+      ? `${activeKey.slice(0, 6)}••••••••${activeKey.slice(-4)}`
+      : activeKey || '••••••••')
 
   const onStartEditKey = () => {
     setApiKeyInput(activeKey)
@@ -111,7 +117,7 @@ export default function AdminOcr(props: any) {
   }
 
   const onModelChange = async (newModel: string) => {
-    setSelectedModel(newModel)
+    setModelOverride(newModel)
     await handleSaveOcrConfig({ model: newModel })
   }
 

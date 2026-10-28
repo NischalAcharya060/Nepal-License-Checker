@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import toast from 'react-hot-toast'
+import { useSwipeDownToClose } from '@/hooks/useSwipeDownToClose'
 import { getAllTransportOffices, type TransportOffice } from '@/lib/offices'
 import type { OfficesModalCopy } from '@/lib/i18n'
 
@@ -54,8 +55,6 @@ export default function OfficesModal({ isOpen, onClose, copy, language }: Office
     })
   }, [offices, search])
 
-  if (!isOpen) return null
-
   const fallbackCopy = (text: string, onSuccess: () => void) => {
     try {
       const textArea = document.createElement('textarea')
@@ -100,25 +99,53 @@ export default function OfficesModal({ isOpen, onClose, copy, language }: Office
     }
   }
 
+  const {
+    isRendered,
+    triggerClose,
+    modalStyle,
+    backdropStyle,
+    handleProps,
+    containerProps,
+  } = useSwipeDownToClose({
+    isOpen: isOpen && !selectedOffice,
+    onClose,
+  })
+
+  if (!isOpen && !isRendered) return null
+
   return (
     <>
       {/* Main Offices Directory Modal */}
       <div
-        style={{ zIndex: 1000 }}
-        className="fixed inset-0 flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4 backdrop-blur-sm animate-fade-in"
-        onClick={onClose}
+        style={{ zIndex: 1000, ...backdropStyle }}
+        className="fixed inset-0 flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4 backdrop-blur-sm transition-opacity duration-300"
+        onClick={triggerClose}
         role="dialog"
         aria-modal="true"
         aria-labelledby="offices-modal-title"
       >
         <div
-          className="relative flex max-h-[90vh] sm:max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[28px] sm:rounded-3xl dev-glass-card shadow-2xl animate-rise-in"
+          style={modalStyle}
+          {...containerProps}
+          className="relative flex max-h-[90vh] sm:max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[28px] sm:rounded-3xl dev-glass-card shadow-2xl pb-[max(1rem,env(safe-area-inset-bottom))]"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="w-10 h-1 bg-[var(--border-default)] rounded-full mx-auto my-2 sm:hidden" aria-hidden />
+          {/* Mobile handle indicator & Swipe Down zone */}
+          <div
+            className="w-full pt-3 pb-1 flex flex-col items-center justify-center cursor-grab active:cursor-grabbing touch-none select-none sm:hidden"
+            {...handleProps}
+          >
+            <div className="w-12 h-1.5 bg-[var(--border-default)] hover:bg-[var(--text-muted)] rounded-full transition-colors" />
+            <span className="text-[10px] text-[var(--text-muted)] mt-1 font-medium opacity-65 tracking-tight">
+              Swipe down to close
+            </span>
+          </div>
 
           {/* Header */}
-          <div className="flex items-start justify-between border-b border-[var(--border-default)] bg-gradient-to-r from-[var(--nepal-blue-soft)] to-transparent p-4 sm:p-5">
+          <div
+            className="flex items-start justify-between border-b border-[var(--border-default)] bg-gradient-to-r from-[var(--nepal-blue-soft)] to-transparent p-4 sm:p-5 select-none cursor-grab active:cursor-grabbing sm:cursor-default"
+            {...handleProps}
+          >
             <div>
               <div className="flex items-center gap-2">
                 <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--nepal-blue)] text-white shadow-xs">
@@ -144,7 +171,7 @@ export default function OfficesModal({ isOpen, onClose, copy, language }: Office
             </div>
             <button
               type="button"
-              onClick={onClose}
+              onClick={triggerClose}
               className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-xl p-2 text-[var(--text-muted)] transition hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
               aria-label={copy.closeLabel}
             >

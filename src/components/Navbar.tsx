@@ -77,12 +77,12 @@ export default function Navbar({
 
   return (
     <nav className="sticky top-0 z-40 border-b border-[var(--border-default)]/70 bg-[var(--surface-primary)]/80 backdrop-blur-xl shadow-xs print:hidden">
-      <div className="mx-auto flex w-full max-w-7xl lg:max-w-[1440px] items-center justify-between gap-3 px-4 py-2 sm:px-6 lg:px-8 sm:py-2.5">
+      <div className="mx-auto flex w-full max-w-7xl lg:max-w-[1440px] items-center justify-between gap-2 sm:gap-3 px-3 py-2 sm:px-6 lg:px-8 sm:py-2.5">
         {/* Logo & Portal Branding */}
         <Link
           href="/"
           onClick={handleBrandClick}
-          className="flex items-center gap-2.5 sm:gap-3 shrink-0 cursor-pointer group"
+          className="flex items-center gap-2 sm:gap-3 shrink min-w-0 cursor-pointer group"
           title={language === 'ne' ? 'पृष्ठ पुनः ताजा गर्नुहोस्' : 'Refresh page'}
         >
           <Image
@@ -90,18 +90,26 @@ export default function Navbar({
             alt="Nepal License Checker Logo"
             width={56}
             height={56}
-            className="h-9 w-9 sm:h-12 sm:w-12 rounded-xl shadow-xs object-contain transition-transform group-hover:scale-105 shrink-0"
+            className="h-8 w-8 min-[380px]:h-9 min-[380px]:w-9 sm:h-12 sm:w-12 rounded-xl shadow-xs object-contain transition-transform group-hover:scale-105 shrink-0"
             priority
           />
-          <div className="flex flex-col justify-center">
-            <span className="text-sm font-extrabold tracking-tight text-[var(--text-primary)] sm:text-base leading-tight whitespace-nowrap">
-              {language === 'ne' ? 'नेपाल लाइसेन्स जाँच' : 'Nepal License Checker'}
+          <div className="flex flex-col justify-center min-w-0">
+            <span className="text-[13px] min-[390px]:text-sm sm:text-base font-extrabold tracking-tight text-[var(--text-primary)] leading-tight whitespace-nowrap truncate">
+              {language === 'ne' ? (
+                <>
+                  <span className="hidden min-[340px]:inline">नेपाल </span>लाइसेन्स जाँच
+                </>
+              ) : (
+                <>
+                  <span className="hidden min-[360px]:inline">Nepal </span>License Checker
+                </>
+              )}
             </span>
           </div>
         </Link>
 
         {/* Quick Actions & Navigation */}
-        <div className="flex items-center justify-end gap-1.5 sm:gap-2 shrink-0">
+        <div className="flex items-center justify-end gap-1 min-[380px]:gap-1.5 sm:gap-2 shrink-0">
           {/* Offices Directory button (Desktop) */}
           <button
             type="button"
@@ -173,9 +181,9 @@ export default function Navbar({
             </button>
           )}
 
-          {/* Language Switcher - accessible tap target */}
+          {/* Language Switcher - compact, touch-friendly on all mobile screens */}
           <div
-            className="inline-flex items-center rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] p-0.5 sm:p-1 text-xs"
+            className="inline-flex items-center rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] p-0.5 sm:p-1 text-xs shrink-0"
             role="group"
             aria-label="Language switch"
           >
@@ -184,7 +192,7 @@ export default function Navbar({
               id="lang-en"
               aria-pressed={language === 'en'}
               onClick={() => setLanguage('en')}
-              className={`min-h-[34px] min-w-[34px] sm:min-h-[32px] sm:min-w-[32px] rounded-full px-2.5 py-1 font-semibold transition ${
+              className={`h-7 min-w-[28px] sm:min-h-[32px] sm:min-w-[32px] rounded-full px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-xs font-semibold transition active:scale-95 ${
                 language === 'en'
                   ? 'bg-[var(--nepal-blue)] text-white shadow-xs'
                   : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'
@@ -198,7 +206,7 @@ export default function Navbar({
               aria-pressed={language === 'ne'}
               onClick={() => setLanguage('ne')}
               lang="ne"
-              className={`min-h-[34px] min-w-[34px] sm:min-h-[32px] sm:min-w-[32px] rounded-full px-2.5 py-1 font-semibold transition ${
+              className={`h-7 min-w-[28px] sm:min-h-[32px] sm:min-w-[32px] rounded-full px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-xs font-semibold transition active:scale-95 ${
                 language === 'ne'
                   ? 'bg-[var(--nepal-red)] text-white shadow-xs'
                   : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'
@@ -209,11 +217,11 @@ export default function Navbar({
             </button>
           </div>
 
-          {/* Text Size / Accessibility Scaler (Aa) */}
+          {/* Text Size / Accessibility Scaler (Aa) - visible on wider screens; on narrow devices it is featured in the drawer */}
           <button
             type="button"
             onClick={handleToggleFontSize}
-            className={`inline-flex min-h-[38px] sm:min-h-[36px] items-center justify-center rounded-full border px-2.5 text-xs font-bold transition active:scale-95 cursor-pointer ${
+            className={`hidden min-[480px]:inline-flex sm:inline-flex min-h-[34px] sm:min-h-[36px] items-center justify-center rounded-full border px-2 sm:px-2.5 text-xs font-bold transition active:scale-95 cursor-pointer shrink-0 ${
               fontSize !== 'normal'
                 ? 'border-[var(--nepal-blue)] bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)] shadow-xs'
                 : 'border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-secondary)] hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)]'
@@ -236,16 +244,16 @@ export default function Navbar({
             type="button"
             aria-label={theme === 'dark' ? lightLabel : darkLabel}
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="inline-flex min-h-[38px] min-w-[38px] sm:min-h-[36px] sm:min-w-[36px] items-center justify-center rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-secondary)] transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] active:scale-95"
+            className="inline-flex h-7.5 w-7.5 min-[380px]:h-8 min-[380px]:w-8 sm:min-h-[36px] sm:min-w-[36px] items-center justify-center rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-secondary)] transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] active:scale-95 shrink-0"
             title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           >
             {theme === 'dark' ? (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400">
                 <circle cx="12" cy="12" r="4" />
                 <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
               </svg>
             ) : (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 12.79A9 9 0 1 1 11.21 3A7 7 0 0 0 21 12.79z" />
               </svg>
             )}
@@ -265,21 +273,21 @@ export default function Navbar({
             </svg>
           </a>
 
-          {/* Mobile Menu Hamburger Button (<sm) - Meets Apple 44x44pt Touch Floor */}
+          {/* Mobile Menu Hamburger Button (<sm) */}
           <button
             type="button"
             onClick={() => setIsMobileMenuOpen((prev) => !prev)}
             aria-expanded={isMobileMenuOpen}
             aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
-            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-secondary)] transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] active:scale-95 sm:hidden cursor-pointer"
+            className="inline-flex h-8 w-8 min-[380px]:h-8.5 min-[380px]:w-8.5 items-center justify-center rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-secondary)] transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] active:scale-95 sm:hidden cursor-pointer shrink-0"
           >
             {isMobileMenuOpen ? (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18" />
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="3" y1="12" x2="21" y2="12" />
                 <line x1="3" y1="6" x2="21" y2="6" />
                 <line x1="3" y1="18" x2="21" y2="18" />
@@ -291,8 +299,67 @@ export default function Navbar({
 
       {/* Collapsible Mobile Menu Drawer (<sm) */}
       {isMobileMenuOpen && (
-        <div className="border-t border-[var(--border-default)]/70 bg-[var(--surface-primary)]/95 backdrop-blur-xl px-4 py-3 sm:hidden animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="border-t border-[var(--border-default)]/70 bg-[var(--surface-primary)]/95 backdrop-blur-xl px-3.5 py-3 sm:hidden animate-in fade-in slide-in-from-top-2 duration-200 max-h-[calc(100vh-60px)] overflow-y-auto overscroll-contain pb-[max(1.5rem,env(safe-area-inset-bottom))]">
           <div className="flex flex-col gap-2">
+            {/* Quick Settings & Mode Switcher in Mobile Drawer */}
+            <div className="grid grid-cols-2 gap-2 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 p-2">
+              {/* Theme Toggle in Drawer */}
+              <button
+                type="button"
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                className="flex items-center justify-between rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-2 text-left transition hover:border-[var(--nepal-blue)] active:scale-[0.98] cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500 shrink-0">
+                    {theme === 'dark' ? (
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400">
+                        <circle cx="12" cy="12" r="4" />
+                        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+                      </svg>
+                    ) : (
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-600 dark:text-slate-300">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3A7 7 0 0 0 21 12.79z" />
+                      </svg>
+                    )}
+                  </span>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-[11px] font-bold text-[var(--text-primary)] truncate">
+                      {theme === 'dark' ? (language === 'ne' ? 'डार्क मोड' : 'Dark Mode') : (language === 'ne' ? 'लाइट मोड' : 'Light Mode')}
+                    </span>
+                    <span className="text-[9px] text-[var(--text-muted)]">
+                      {language === 'ne' ? 'बदल्नुहोस्' : 'Tap to switch'}
+                    </span>
+                  </div>
+                </div>
+              </button>
+
+              {/* Language Toggle in Drawer */}
+              <div className="flex items-center justify-between rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-1 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setLanguage('en')}
+                  className={`flex-1 rounded-lg py-1.5 text-center text-[11px] font-bold transition cursor-pointer ${
+                    language === 'en'
+                      ? 'bg-[var(--nepal-blue)] text-white shadow-xs'
+                      : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'
+                  }`}
+                >
+                  English
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLanguage('ne')}
+                  className={`flex-1 rounded-lg py-1.5 text-center text-[11px] font-bold transition cursor-pointer ${
+                    language === 'ne'
+                      ? 'bg-[var(--nepal-red)] text-white shadow-xs'
+                      : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'
+                  }`}
+                >
+                  नेपाली
+                </button>
+              </div>
+            </div>
+
             {/* Install App */}
             <InstallAppButton language={language} variant="tile" />
 

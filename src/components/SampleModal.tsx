@@ -1,6 +1,8 @@
 'use client'
 
+import React from 'react'
 import Image from 'next/image'
+import { useSwipeDownToClose } from '@/hooks/useSwipeDownToClose'
 import type { Language } from '@/lib/i18n'
 
 interface SampleModalProps {
@@ -10,27 +12,53 @@ interface SampleModalProps {
 }
 
 export default function SampleModal({ isOpen, onClose, language }: SampleModalProps) {
-  if (!isOpen) return null
+  const {
+    isRendered,
+    triggerClose,
+    modalStyle,
+    backdropStyle,
+    handleProps,
+    containerProps,
+  } = useSwipeDownToClose({
+    isOpen,
+    onClose,
+  })
+
+  if (!isRendered) return null
+
+  const isNe = language === 'ne'
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/65 p-0 sm:p-4 backdrop-blur-md animate-fade-in"
-      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/65 p-0 sm:p-4 backdrop-blur-md transition-opacity duration-300"
+      style={backdropStyle}
+      onClick={triggerClose}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label="License format guide"
-        className="relative w-full max-w-xl overflow-hidden rounded-t-[28px] sm:rounded-3xl dev-glass-card shadow-2xl animate-rise-in border border-[var(--border-default)]"
+        style={modalStyle}
+        {...containerProps}
+        className="relative w-full max-w-xl overflow-hidden rounded-t-[28px] sm:rounded-3xl dev-glass-card shadow-2xl border border-[var(--border-default)] pb-[max(1rem,env(safe-area-inset-bottom))]"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="w-10 h-1 bg-[var(--border-default)] rounded-full mx-auto my-2.5 sm:hidden" aria-hidden />
+        {/* Mobile handle indicator & Swipe Down zone */}
+        <div
+          className="w-full pt-3 pb-1 flex flex-col items-center justify-center cursor-grab active:cursor-grabbing touch-none select-none sm:hidden"
+          {...handleProps}
+        >
+          <div className="w-12 h-1.5 bg-[var(--border-default)] hover:bg-[var(--text-muted)] rounded-full transition-colors" />
+          <span className="text-[10px] text-[var(--text-muted)] mt-1 font-medium opacity-65 tracking-tight">
+            {isNe ? 'बन्द गर्न तल तान्नुहोस्' : 'Swipe down to close'}
+          </span>
+        </div>
 
         <button
           type="button"
           aria-label="Close guide"
-          onClick={onClose}
-          className="absolute right-3.5 top-3.5 z-10 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-md transition-all hover:bg-[var(--nepal-red)] hover:scale-105 active:scale-95 shadow-md cursor-pointer"
+          onClick={triggerClose}
+          className="absolute right-3.5 top-3.5 z-10 flex min-h-[40px] min-w-[40px] items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-md transition-all hover:bg-[var(--nepal-red)] hover:scale-105 active:scale-95 shadow-md cursor-pointer"
         >
           <svg
             width="20"
@@ -59,10 +87,10 @@ export default function SampleModal({ isOpen, onClose, language }: SampleModalPr
         </div>
         <div className="p-5 text-center">
           <h3 className="text-sm font-extrabold uppercase tracking-wide text-[var(--text-primary)]">
-            {language === 'ne' ? 'ढाँचा निर्देशिका' : 'Format Guide'}
+            {isNe ? 'ढाँचा निर्देशिका' : 'Format Guide'}
           </h3>
           <p className="mt-1 text-xs text-[var(--text-secondary)] leading-relaxed">
-            {language === 'ne'
+            {isNe
               ? 'तपाईंको अनुमति पत्र नम्बर अस्थायी रसिद वा पुरानो स्मार्ट कार्डमा फेला पार्न सक्नुहुन्छ।'
               : 'You can find your license number on your temporary receipt or your old smart card.'}
           </p>

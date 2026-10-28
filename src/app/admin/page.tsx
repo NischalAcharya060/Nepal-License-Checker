@@ -476,13 +476,14 @@ export default function AdminPage() {
             })
             .then((json) => {
                 if (cancelled || !json) return
-                if (json.status === 'success' && json.data) {
-                    setOcrConfig(json.data.config || null)
-                    setOcrLogs(json.data.logs || [])
-                    setOcrTotal(json.data.total || 0)
-                    setOcrTotalPages(json.data.totalPages || 1)
-                    if (json.data.stats) {
-                        setOcrStats(json.data.stats)
+                const payload = json.data || json
+                if (json.status === 'success' && payload) {
+                    setOcrConfig(payload.config || null)
+                    setOcrLogs(payload.logs || [])
+                    setOcrTotal(payload.total || payload.pagination?.total || 0)
+                    setOcrTotalPages(payload.totalPages || payload.pagination?.totalPages || 1)
+                    if (payload.stats) {
+                        setOcrStats(payload.stats)
                     }
                 }
                 setOcrLoading(false)
@@ -1751,14 +1752,15 @@ export default function AdminPage() {
                 }),
             })
             const json = await res.json()
+            const payload = json.data || json
             if (res.ok && json.status === 'success') {
-                if (json.data?.config) {
-                    setOcrConfig(json.data.config)
+                if (payload.config) {
+                    setOcrConfig(payload.config)
                 }
                 setRefreshKey((k) => k + 1)
                 showToast('OCR configuration saved successfully')
             } else {
-                showToast(json.error || 'Failed to save OCR configuration', 'error')
+                showToast(json.error || json.message || 'Failed to save OCR configuration', 'error')
             }
         } catch {
             showToast('Network error while saving OCR config', 'error')
@@ -1777,13 +1779,13 @@ export default function AdminPage() {
                 }),
             })
             const json = await res.json()
-            if (res.ok && json.status === 'success') {
-                return json.data
+            if (res.ok && (json.status === 'success' || json.success)) {
+                return json.data || json
             }
             return {
                 success: false,
                 latencyMs: 0,
-                error: json.error || 'Connection test failed',
+                error: json.error || json.message || 'Connection test failed',
             }
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Network error testing API key'
