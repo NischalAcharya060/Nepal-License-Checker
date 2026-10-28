@@ -23,6 +23,9 @@ import {
     ToastState,
     AdminDeveloper,
     DeveloperStatsData,
+    AdminOcrConfig,
+    AdminOcrLog,
+    AdminOcrStatsData,
 } from './types'
 import {
     INACTIVITY_TIMEOUT_MS,
@@ -41,6 +44,7 @@ import AdminNotifications from './notifications/page'
 import AdminFeedback from './feedback/page'
 import AdminTestimonials from './testimonials/page'
 import AdminDevelopers from './developers/page'
+import AdminOcr from './ocr/page'
 import AdminLogin from './login/page'
 import AdminModals from './modals/page'
 
@@ -54,8 +58,8 @@ export default function AdminPage() {
     const [showPassword, setShowPassword] = useState(false)
     const [privacyMode, setPrivacyMode] = useState(true)
 
-    // View Tabs: 'searches' | 'notifications' | 'feedback' | 'testimonials' | 'developers'
-    const [activeTab, setActiveTab] = useState<'searches' | 'notifications' | 'feedback' | 'testimonials' | 'developers'>('searches')
+    // View Tabs: 'searches' | 'notifications' | 'feedback' | 'testimonials' | 'developers' | 'ocr'
+    const [activeTab, setActiveTab] = useState<'searches' | 'notifications' | 'feedback' | 'testimonials' | 'developers' | 'ocr'>('searches')
 
     // Dashboard State - Searches
     const [logs, setLogs] = useState<SearchLog[]>([])
@@ -125,6 +129,20 @@ export default function AdminPage() {
     const [devTotalPages, setDevTotalPages] = useState(1)
     const [devSearchFilter, setDevSearchFilter] = useState('')
     const [devLoading, setDevLoading] = useState(false)
+
+    // Dashboard State - AI Vision & OCR Scanner
+    const [ocrConfig, setOcrConfig] = useState<AdminOcrConfig | null>(null)
+    const [ocrStats, setOcrStats] = useState<AdminOcrStatsData | null>(null)
+    const [ocrLogs, setOcrLogs] = useState<AdminOcrLog[]>([])
+    const [ocrTotal, setOcrTotal] = useState(0)
+    const [ocrPage, setOcrPage] = useState(1)
+    const [ocrLimit, setOcrLimit] = useState(15)
+    const [ocrTotalPages, setOcrTotalPages] = useState(1)
+    const [ocrSearchFilter, setOcrSearchFilter] = useState('')
+    const [ocrStatusFilter, setOcrStatusFilter] = useState<string>('all')
+    const [ocrLoading, setOcrLoading] = useState(false)
+    const [ocrSelectMode, setOcrSelectMode] = useState(false)
+    const [selectedOcrIds, setSelectedOcrIds] = useState<number[]>([])
 
     const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null)
     const [confirmSubmitting] = useState(false)
@@ -436,6 +454,48 @@ export default function AdminPage() {
         }
     }, [isAuthenticated, devPage, devLimit, devSearchFilter, refreshKey])
 
+    // 2f. Fetch OCR Config, Analytics & Scan Logs
+    useEffect(() => {
+        if (!isAuthenticated) return
+        let cancelled = false
+
+        const params = new URLSearchParams({
+            page: String(ocrPage),
+            limit: String(ocrLimit),
+            search: ocrSearchFilter,
+            status: ocrStatusFilter,
+        })
+
+        fetch(`/api/admin/ocr?${params.toString()}`, { cache: 'no-store' })
+            .then((res) => {
+                if (res.status === 401) {
+                    if (!cancelled) setIsAuthenticated(false)
+                    return null
+                }
+                return res.json()
+            })
+            .then((json) => {
+                if (cancelled || !json) return
+                if (json.status === 'success' && json.data) {
+                    setOcrConfig(json.data.config || null)
+                    setOcrLogs(json.data.logs || [])
+                    setOcrTotal(json.data.total || 0)
+                    setOcrTotalPages(json.data.totalPages || 1)
+                    if (json.data.stats) {
+                        setOcrStats(json.data.stats)
+                    }
+                }
+                setOcrLoading(false)
+            })
+            .catch(() => {
+                if (!cancelled) setOcrLoading(false)
+            })
+
+        return () => {
+            cancelled = true
+        }
+    }, [isAuthenticated, ocrPage, ocrLimit, ocrSearchFilter, ocrStatusFilter, refreshKey])
+
     // 3. Auto-refresh polling every 12 seconds (pauses when browser tab is hidden/inactive)
     useEffect(() => {
         if (!isAuthenticated || !autoRefresh) return
@@ -454,6 +514,7 @@ export default function AdminPage() {
         setFeedbackLoading(true)
         setTestimonialLoading(true)
         setDevLoading(true)
+        setOcrLoading(true)
         setRefreshKey((k) => k + 1)
     }
 
@@ -1634,6 +1695,171 @@ export default function AdminPage() {
         })
     }
 
+    // 15. OCR & AI Vision Handlers
+    const exportOcrCsv = () => {
+        if (!ocrLogs.length) return
+        const headers = [
+            'ID',
+            'Date (NPT)',
+            'Date (ISO)',
+            'Detected License',
+            'Status',
+            'Confidence',
+            'Latency (ms)',
+            'Model Used',
+            'Source',
+            'IP Address',
+            'Error Message',
+        ]
+        const rows = ocrLogs.map((l) => [
+            l.id,
+            `"${formatNepalDateTime(l.created_at, 'en', true)}"`,
+            new Date(l.created_at).toISOString(),
+            `"${l.license_number ? maskLicenseNumber(l.license_number, privacyMode) : 'N/A'}"`,
+            l.status,
+            l.confidence || '',
+            l.latency_ms,
+            `"${l.model_used || ''}"`,
+            `"${l.detected_source || ''}"`,
+            maskIpAddress(l.ip, privacyMode),
+            `"${(l.error_message || '').replace(/"/g, '""')}"`,
+        ])
+        const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n')
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `nepal-license-ocr-logs-${new Date().toISOString().slice(0, 10)}.csv`
+        a.click()
+        URL.revokeObjectURL(url)
+        showToast(
+            privacyMode
+                ? 'Exported OCR logs CSV (Privacy Masked)'
+                : 'Exported OCR logs CSV (Full Data)',
+            'info'
+        )
+    }
+
+    const handleSaveOcrConfig = async (params: { apiKey?: string; model?: string; enabled?: boolean }) => {
+        try {
+            const res = await fetch('/api/admin/ocr', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'update_config',
+                    ...params,
+                }),
+            })
+            const json = await res.json()
+            if (res.ok && json.status === 'success') {
+                if (json.data?.config) {
+                    setOcrConfig(json.data.config)
+                }
+                setRefreshKey((k) => k + 1)
+                showToast('OCR configuration saved successfully')
+            } else {
+                showToast(json.error || 'Failed to save OCR configuration', 'error')
+            }
+        } catch {
+            showToast('Network error while saving OCR config', 'error')
+        }
+    }
+
+    const handleTestOcrKey = async (keyToTest?: string, modelToTest?: string) => {
+        try {
+            const res = await fetch('/api/admin/ocr', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'test_key',
+                    apiKey: keyToTest,
+                    model: modelToTest,
+                }),
+            })
+            const json = await res.json()
+            if (res.ok && json.status === 'success') {
+                return json.data
+            }
+            return {
+                success: false,
+                latencyMs: 0,
+                error: json.error || 'Connection test failed',
+            }
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Network error testing API key'
+            return {
+                success: false,
+                latencyMs: 0,
+                error: message,
+            }
+        }
+    }
+
+    const handleDeleteOcrLogs = async (ids: number[]) => {
+        if (!ids.length) return
+        setConfirmDialog({
+            title: `Delete ${ids.length} selected OCR log${ids.length > 1 ? 's' : ''}?`,
+            message: `Are you sure you want to permanently delete ${ids.length} scan log record${ids.length > 1 ? 's' : ''}? This action cannot be undone.`,
+            confirmLabel: `Yes, Delete (${ids.length})`,
+            onConfirm: async () => {
+                try {
+                    const res = await fetch('/api/admin/ocr', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'delete_logs',
+                            ids,
+                        }),
+                    })
+                    if (res.ok) {
+                        const idSet = new Set(ids)
+                        setOcrLogs((prev) => prev.filter((item) => !idSet.has(item.id)))
+                        setSelectedOcrIds([])
+                        setOcrSelectMode(false)
+                        setRefreshKey((k) => k + 1)
+                        showToast(`Deleted ${ids.length} OCR scan log${ids.length > 1 ? 's' : ''}`)
+                    } else {
+                        showToast('Failed to delete OCR logs', 'error')
+                    }
+                } catch {
+                    showToast('Network error while deleting OCR logs', 'error')
+                }
+            },
+        })
+    }
+
+    const handleClearAllOcrLogs = async () => {
+        if (!ocrLogs.length && ocrTotal === 0) return
+        setConfirmDialog({
+            title: 'Clear all OCR scan logs?',
+            message: `This will permanently delete all ${ocrTotal.toLocaleString()} OCR scan logs from the database. Analytics stats will be reset.`,
+            confirmLabel: 'Yes, Clear All Logs',
+            requiredPhrase: 'clear all logs',
+            onConfirm: async () => {
+                try {
+                    const res = await fetch('/api/admin/ocr', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'clear_logs',
+                        }),
+                    })
+                    if (res.ok) {
+                        setOcrLogs([])
+                        setSelectedOcrIds([])
+                        setOcrTotal(0)
+                        setRefreshKey((k) => k + 1)
+                        showToast('All OCR scan logs cleared')
+                    } else {
+                        showToast('Failed to clear OCR logs', 'error')
+                    }
+                } catch {
+                    showToast('Network error while clearing OCR logs', 'error')
+                }
+            },
+        })
+    }
+
     // ----------------------------------------------------
     // Loading Screen
     // ----------------------------------------------------
@@ -1702,11 +1928,13 @@ export default function AdminPage() {
                 exportFeedbackCsv={exportFeedbackCsv}
                 exportTestimonialsCsv={exportTestimonialsCsv}
                 exportDevelopersCsv={exportDevelopersCsv}
+                exportOcrCsv={exportOcrCsv}
                 hasLogs={logs.length > 0}
                 hasNotificationLogs={notificationLogs.length > 0}
                 hasFeedbackLogs={feedbackLogs.length > 0}
                 hasTestimonialLogs={testimonialLogs.length > 0}
                 hasDeveloperLogs={developers.length > 0}
+                hasOcrLogs={ocrLogs.length > 0}
                 setPasskeyModalOpen={setPasskeyModalOpen}
                 fetchPasskeys={fetchPasskeys}
                 passkeyCount={passkeyCount}
@@ -1848,6 +2076,28 @@ export default function AdminPage() {
                                 {devTotal.toLocaleString()}
                             </span>
                         </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('ocr')}
+                            className={`inline-flex min-h-[44px] flex-1 sm:flex-initial items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-3 sm:px-4 py-2 text-xs font-bold transition-all duration-200 whitespace-nowrap active:scale-95 cursor-pointer ${
+                                activeTab === 'ocr'
+                                    ? 'bg-[var(--nepal-blue)] text-white shadow-md shadow-[var(--nepal-blue)]/25'
+                                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]/60'
+                            }`}
+                        >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-hidden="true">
+                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                                <circle cx="12" cy="13" r="4" />
+                            </svg>
+                            <span className="hidden sm:inline">AI Vision & OCR</span>
+                            <span className="sm:hidden">OCR</span>
+                            <span className={`rounded-full px-2 py-0.5 font-mono tabular-nums text-xs font-semibold transition ${
+                                activeTab === 'ocr' ? 'bg-white/20 text-white' : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'
+                            }`}>
+                                {ocrTotal.toLocaleString()}
+                            </span>
+                        </button>
                     </div>
 
                     {activeTab === 'notifications' && notificationStats && (
@@ -1917,6 +2167,37 @@ export default function AdminPage() {
                                 <span className="font-medium text-[var(--text-secondary)]">API Queries:</span>
                                 <strong className="font-mono tabular-nums font-bold text-[var(--text-primary)]">{developerStats.totalQueries.toLocaleString()}</strong>
                             </span>
+                        </div>
+                    )}
+
+                    {activeTab === 'ocr' && ocrStats && (
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-muted)]">
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-default)]/80 bg-[var(--surface-primary)]/80 backdrop-blur-md px-3 py-1 shadow-2xs">
+                                <span className="h-1.5 w-1.5 rounded-full bg-[var(--nepal-blue)]" />
+                                <span className="font-medium text-[var(--text-secondary)]">Today:</span>
+                                <strong className="font-mono tabular-nums font-bold text-[var(--text-primary)]">{ocrStats.todayScans.toLocaleString()}</strong>
+                            </span>
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-emerald-600 dark:text-emerald-400 backdrop-blur-md shadow-2xs">
+                                <span className="h-1.5 w-1.5 rounded-full bg-[var(--success)]" />
+                                <span className="font-medium">Success Rate:</span>
+                                <strong className="font-mono tabular-nums font-bold">{ocrStats.successRate}%</strong>
+                            </span>
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-default)]/80 bg-[var(--surface-primary)]/80 backdrop-blur-md px-3 py-1 shadow-2xs">
+                                <span className="font-medium text-[var(--text-secondary)]">Avg Latency:</span>
+                                <strong className="font-mono tabular-nums font-bold text-[var(--text-primary)]">
+                                    {ocrStats.avgLatencyMs ? `${(ocrStats.avgLatencyMs / 1000).toFixed(1)}s` : 'N/A'}
+                                </strong>
+                            </span>
+                            {ocrConfig && (
+                                <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 backdrop-blur-md shadow-2xs ${
+                                    ocrConfig.enabled
+                                        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                                        : 'border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                                }`}>
+                                    <span className={`h-1.5 w-1.5 rounded-full ${ocrConfig.enabled ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                                    <span className="font-medium">{ocrConfig.enabled ? 'AI Enabled' : 'AI Paused'}</span>
+                                </span>
+                            )}
                         </div>
                     )}
                 </div>
@@ -2043,7 +2324,7 @@ export default function AdminPage() {
                         exportTestimonialsCsv={exportTestimonialsCsv}
                         startTransition={startTransition}
                     />
-                ) : (
+                ) : activeTab === 'developers' ? (
                     <AdminDevelopers
                         developers={developers}
                         developerStats={developerStats}
@@ -2063,6 +2344,36 @@ export default function AdminPage() {
                         handleUpdateRateLimit={handleUpdateDeveloperRateLimit}
                         handleDeleteKey={handleDeleteDeveloperKey}
                         exportDevelopersCsv={exportDevelopersCsv}
+                        startTransition={startTransition}
+                    />
+                ) : (
+                    <AdminOcr
+                        ocrConfig={ocrConfig}
+                        ocrStats={ocrStats}
+                        ocrLogs={ocrLogs}
+                        ocrTotal={ocrTotal}
+                        ocrPage={ocrPage}
+                        ocrLimit={ocrLimit}
+                        ocrTotalPages={ocrTotalPages}
+                        ocrSearchFilter={ocrSearchFilter}
+                        ocrStatusFilter={ocrStatusFilter}
+                        ocrLoading={ocrLoading}
+                        privacyMode={privacyMode}
+                        ocrSelectMode={ocrSelectMode}
+                        selectedOcrIds={selectedOcrIds}
+                        copiedKey={copiedKey}
+                        setOcrPage={setOcrPage}
+                        setOcrLimit={setOcrLimit}
+                        setOcrSearchFilter={setOcrSearchFilter}
+                        setOcrStatusFilter={setOcrStatusFilter}
+                        setOcrSelectMode={setOcrSelectMode}
+                        setSelectedOcrIds={setSelectedOcrIds}
+                        copyToClipboard={copyToClipboard}
+                        handleSaveOcrConfig={handleSaveOcrConfig}
+                        handleTestOcrKey={handleTestOcrKey}
+                        handleDeleteOcrLogs={handleDeleteOcrLogs}
+                        handleClearAllOcrLogs={handleClearAllOcrLogs}
+                        exportOcrCsv={exportOcrCsv}
                         startTransition={startTransition}
                     />
                 )}

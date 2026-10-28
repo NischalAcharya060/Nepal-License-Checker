@@ -47,6 +47,18 @@ export interface LicenseFormCopy {
   clipboardEmptyToast: string
   invalidPasteToast: string
   clipboardDeniedToast: string
+  scanLabel?: string
+  scanTitle?: string
+  scanModalSubtitle?: string
+  scanInstructions?: string
+  scanTakePhoto?: string
+  scanUploadFile?: string
+  scanSwitchCamera?: string
+  scanProcessing?: string
+  scanSuccessToast?: string
+  scanFailedToast?: string
+  scanPermissionDenied?: string
+  scanClose?: string
   loadingMessages: string[]
   errors: {
     required: string
