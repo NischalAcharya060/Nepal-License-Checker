@@ -356,7 +356,9 @@ export default function AdminSearches(props: any) {
             )}
 
             {/* Search Logs Container (Mobile Cards + Desktop Table) */}
-            <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-xs">
+            <div className="mt-4 relative overflow-hidden rounded-2xl border border-[var(--border-default)]/80 bg-[var(--surface-primary)] shadow-sm backdrop-blur-md transition-all">
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-[var(--nepal-blue)] to-transparent opacity-70" />
+
                 {/* Mobile Card List (Visible on < md) */}
                 <div className="block md:hidden">
                     {dataLoading && !logs.length ? (
@@ -383,7 +385,7 @@ export default function AdminSearches(props: any) {
                         <div>
                             {/* Mobile Select-All Header if in select mode */}
                             {searchSelectMode && (
-                                <div className="flex items-center justify-between border-b border-[var(--border-default)] bg-[var(--bg-secondary)]/70 px-3.5 py-2.5 text-xs">
+                                <div className="flex items-center justify-between border-b border-[var(--border-default)]/70 bg-[var(--bg-secondary)]/70 px-4 py-3 text-xs">
                                     <label className="flex items-center gap-2 font-semibold text-[var(--text-secondary)] cursor-pointer">
                                         <input
                                             type="checkbox"
@@ -399,13 +401,13 @@ export default function AdminSearches(props: any) {
                                         />
                                         <span>Select All on this page ({logs.length})</span>
                                     </label>
-                                    <span className="text-[11px] text-[var(--text-muted)] font-mono">
+                                    <span className="text-[11px] text-[var(--text-muted)] font-mono font-semibold">
                                         {selectedSearchIds.length} selected
                                     </span>
                                 </div>
                             )}
 
-                            <div className="divide-y divide-[var(--border-default)]/60">
+                            <div className="divide-y divide-[var(--border-default)]/50">
                                 {logs.map((log, idx) => {
                                     const isFound = log.status === 'found'
                                     const isSelected = selectedSearchIds.includes(log.id)
@@ -413,7 +415,7 @@ export default function AdminSearches(props: any) {
                                     return (
                                         <div
                                             key={log.id}
-                                            className={`p-3.5 transition-colors ${isSelected ? 'bg-[var(--nepal-blue-soft)]/25' : 'hover:bg-[var(--bg-secondary)]/30'}`}
+                                            className={`p-4 transition-colors duration-150 space-y-3 ${isSelected ? 'bg-[var(--nepal-blue-soft)]/20' : 'hover:bg-[var(--bg-secondary)]/30'}`}
                                         >
                                             {/* Top Row: Select/SN + Result badge + Time ago */}
                                             <div className="flex items-center justify-between gap-2">
@@ -432,18 +434,18 @@ export default function AdminSearches(props: any) {
                                                             className="h-4 w-4 cursor-pointer rounded border-[var(--border-default)] accent-[var(--nepal-blue)]"
                                                         />
                                                     )}
-                                                    <span className="rounded-md bg-[var(--bg-secondary)] px-1.5 py-0.5 font-mono text-xs font-bold text-[var(--text-muted)]">
+                                                    <span className="rounded-lg bg-[var(--bg-secondary)] px-2 py-0.5 font-mono text-[11px] font-bold text-[var(--text-muted)]">
                                                         #{sn}
                                                     </span>
                                                     {isFound ? (
-                                                        <span className="inline-flex items-center gap-1 rounded-full border border-[var(--success-border)] bg-[var(--success-bg)] px-2 py-0.5 text-xs font-bold text-[var(--success)]">
+                                                        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
                                                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                                                 <polyline points="20 6 9 17 4 12" />
                                                             </svg>
                                                             <span>Found</span>
                                                         </span>
                                                     ) : (
-                                                        <span className="inline-flex items-center gap-1 rounded-full border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2 py-0.5 text-xs font-semibold text-[var(--text-muted)]">
+                                                        <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-default)]/80 bg-[var(--bg-secondary)]/80 px-2.5 py-0.5 text-xs font-semibold text-[var(--text-muted)]">
                                                             <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                                                 <line x1="18" y1="6" x2="6" y2="18" />
                                                                 <line x1="6" y1="6" x2="18" y2="18" />
@@ -461,15 +463,15 @@ export default function AdminSearches(props: any) {
                                             </div>
 
                                             {/* Middle Row: License Number & Holder */}
-                                            <div className="mt-2 flex items-baseline justify-between gap-2">
-                                                <div className="min-w-0">
-                                                    <div className="flex flex-wrap items-center gap-1.5 font-mono text-xs font-bold text-[var(--text-primary)]">
+                                            <div className="flex items-baseline justify-between gap-3">
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex flex-wrap items-center gap-1.5 font-mono text-sm font-bold tracking-tight text-[var(--text-primary)]">
                                                         <span>{maskLicenseNumber(log.license_number, privacyMode)}</span>
                                                         {!privacyMode && (
                                                             <button
                                                                 type="button"
                                                                 onClick={() => copyToClipboard(log.license_number, `m-lic-${log.id}`)}
-                                                                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-muted)] hover:text-[var(--nepal-blue)] transition cursor-pointer"
+                                                                className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-secondary)] hover:text-[var(--nepal-blue)] transition cursor-pointer"
                                                                 title="Copy license number"
                                                             >
                                                                 {copiedKey === `m-lic-${log.id}` ? (
@@ -487,7 +489,7 @@ export default function AdminSearches(props: any) {
                                                         {log.duplicate_count && log.duplicate_count > 1 && (
                                                             log.is_latest ? (
                                                                 <span
-                                                                    className="inline-flex items-center gap-1 rounded-md bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 text-[10px] font-mono font-bold text-emerald-700 dark:text-emerald-300"
+                                                                    className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/30 bg-emerald-500/12 px-2 py-0.5 text-[10px] font-mono font-bold text-emerald-700 dark:text-emerald-300 shadow-2xs"
                                                                     title={`Latest search record by date for this license (kept during cleanup, searched ${log.duplicate_count} times)`}
                                                                 >
                                                                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -497,7 +499,7 @@ export default function AdminSearches(props: any) {
                                                                 </span>
                                                             ) : (
                                                                 <span
-                                                                    className="inline-flex items-center gap-1 rounded-md bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 text-[10px] font-mono font-bold text-amber-700 dark:text-amber-300"
+                                                                    className="inline-flex items-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/12 px-2 py-0.5 text-[10px] font-mono font-bold text-amber-700 dark:text-amber-300 shadow-2xs"
                                                                     title="Older duplicate record - safe to delete"
                                                                 >
                                                                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -510,7 +512,7 @@ export default function AdminSearches(props: any) {
                                                         )}
                                                     </div>
                                                     {log.holder_name && (
-                                                        <p className="mt-0.5 text-xs font-semibold text-[var(--text-secondary)] truncate">
+                                                        <p className="mt-1 text-xs font-semibold text-[var(--text-primary)] truncate">
                                                             {log.holder_name}
                                                         </p>
                                                     )}
@@ -527,7 +529,7 @@ export default function AdminSearches(props: any) {
                                                         <button
                                                             type="button"
                                                             onClick={() => handleDeleteLicenseDuplicates(log.license_number)}
-                                                            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400 transition hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95 cursor-pointer"
+                                                            className="inline-flex h-8.5 w-8.5 items-center justify-center rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400 transition hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95 cursor-pointer shadow-2xs"
                                                             title={`Delete older duplicate searches for license ${log.license_number} (leaves 1 latest record)`}
                                                         >
                                                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -538,7 +540,7 @@ export default function AdminSearches(props: any) {
                                                     <button
                                                         type="button"
                                                         onClick={() => handleDeleteSearchLog(log.id, log.license_number)}
-                                                        className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border-default)] text-[var(--text-muted)] transition hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95 cursor-pointer"
+                                                        className="inline-flex h-8.5 w-8.5 items-center justify-center rounded-xl border border-[var(--border-default)]/80 bg-[var(--surface-primary)] text-[var(--text-muted)] transition hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95 cursor-pointer shadow-2xs"
                                                         title="Delete search log"
                                                     >
                                                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -550,20 +552,22 @@ export default function AdminSearches(props: any) {
                                             </div>
 
                                             {/* Bottom Meta Row: Location & IP */}
-                                            <div className="mt-2 flex items-center justify-between gap-2 border-t border-[var(--border-default)]/40 pt-2 text-[10px] text-[var(--text-muted)]">
+                                            <div className="flex items-center justify-between gap-2 border-t border-[var(--border-default)]/40 pt-2.5 text-[11px] text-[var(--text-muted)]">
                                                 <div className="flex items-center gap-1.5 min-w-0">
-                                                    <span className="text-sm">{getFlag(log.country)}</span>
+                                                    <span className="text-base leading-none">{getFlag(log.country)}</span>
                                                     <span className="truncate font-medium text-[var(--text-secondary)]">
                                                         {log.city || 'Unknown City'}{log.region ? `, ${log.region}` : ''}
                                                     </span>
                                                 </div>
-                                                <div className="flex items-center gap-1 font-mono text-[10px] text-[var(--text-secondary)] shrink-0">
-                                                    <span>{maskIpAddress(log.ip, privacyMode)}</span>
+                                                <div className="flex items-center gap-1 font-mono text-[11px] text-[var(--text-secondary)] shrink-0">
+                                                    <span className="rounded-md bg-[var(--bg-secondary)] px-1.5 py-0.5 border border-[var(--border-default)]/50">
+                                                        {maskIpAddress(log.ip, privacyMode)}
+                                                    </span>
                                                     {!privacyMode && (
                                                         <button
                                                             type="button"
                                                             onClick={() => copyToClipboard(log.ip, `m-ip-${log.id}`)}
-                                                            className="hover:text-[var(--nepal-blue)] transition cursor-pointer"
+                                                            className="hover:text-[var(--nepal-blue)] transition cursor-pointer p-0.5"
                                                             title="Copy IP"
                                                         >
                                                             {copiedKey === `m-ip-${log.id}` ? (
@@ -590,11 +594,11 @@ export default function AdminSearches(props: any) {
 
                 {/* Desktop Spreadsheet Table (Hidden on < md, visible on md+) */}
                 <div className="hidden md:block overflow-x-auto">
-                    <table className="w-full text-left text-xs">
-                        <thead className="border-b border-[var(--border-default)] bg-[var(--bg-secondary)]/80 text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                    <table className="admin-data-table w-full text-left text-xs">
+                        <thead className="border-b border-[var(--border-default)]/80 bg-[var(--bg-secondary)]/60 backdrop-blur-md text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">
                             <tr>
                                 {searchSelectMode && (
-                                    <th scope="col" className="w-9 py-3 pl-4 pr-1">
+                                    <th scope="col" className="w-10 py-3.5 pl-4 pr-1">
                                         <input
                                             type="checkbox"
                                             checked={logs.length > 0 && selectedSearchIds.length === logs.length}
@@ -605,41 +609,41 @@ export default function AdminSearches(props: any) {
                                                     setSelectedSearchIds([])
                                                 }
                                             }}
-                                            className="h-3.5 w-3.5 cursor-pointer rounded border-[var(--border-default)] accent-[var(--nepal-blue)]"
+                                            className="h-4 w-4 cursor-pointer rounded border-[var(--border-default)] accent-[var(--nepal-blue)]"
                                             title="Select all on this page"
                                         />
                                     </th>
                                 )}
-                                <th scope="col" className="w-10 py-3 pl-3 pr-2 text-center">
+                                <th scope="col" className="w-12 py-3.5 pl-3 pr-2 text-center">
                                     SN
                                 </th>
-                                <th scope="col" className="py-3 pl-2 pr-3">
+                                <th scope="col" className="py-3.5 pl-2 pr-4">
                                     Time (NPT)
                                 </th>
-                                <th scope="col" className="px-3 py-3">
+                                <th scope="col" className="px-4 py-3.5">
                                     License Number
                                 </th>
-                                <th scope="col" className="px-3 py-3">
+                                <th scope="col" className="px-4 py-3.5">
                                     Status
                                 </th>
-                                <th scope="col" className="px-3 py-3">
-                                    Holder
+                                <th scope="col" className="px-4 py-3.5">
+                                    Holder / Office
                                 </th>
-                                <th scope="col" className="px-3 py-3">
+                                <th scope="col" className="px-4 py-3.5">
                                     IP Address
                                 </th>
-                                <th scope="col" className="px-3 py-3">
+                                <th scope="col" className="px-4 py-3.5">
                                     Location
                                 </th>
-                                <th scope="col" className="py-3 pl-3 pr-4 text-right">
+                                <th scope="col" className="py-3.5 pl-3 pr-4 text-right">
                                     Actions
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-[var(--border-default)]/60">
+                        <tbody className="divide-y divide-[var(--border-default)]/50">
                             {dataLoading && !logs.length ? (
                                 <tr>
-                                    <td colSpan={searchSelectMode ? 9 : 8} className="py-14 text-center text-xs text-[var(--text-muted)]">
+                                    <td colSpan={searchSelectMode ? 9 : 8} className="py-16 text-center text-xs text-[var(--text-muted)]">
                                         <div className="flex flex-col items-center justify-center gap-2.5">
                                             <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-[var(--nepal-blue)]/30 border-t-[var(--nepal-blue)]" />
                                             <span>Loading search queries...</span>
@@ -648,7 +652,7 @@ export default function AdminSearches(props: any) {
                                 </tr>
                             ) : logs.length === 0 ? (
                                 <tr>
-                                    <td colSpan={searchSelectMode ? 9 : 8} className="py-14 px-4 text-center text-xs text-[var(--text-muted)]">
+                                    <td colSpan={searchSelectMode ? 9 : 8} className="py-16 px-4 text-center text-xs text-[var(--text-muted)]">
                                         <div className="flex flex-col items-center justify-center gap-3">
                                             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)] shadow-xs">
                                                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -669,11 +673,11 @@ export default function AdminSearches(props: any) {
                                     return (
                                         <tr
                                             key={log.id}
-                                            className={`group transition-colors hover:bg-[var(--bg-secondary)]/40 ${isSelected ? 'bg-[var(--nepal-blue-soft)]/30' : ''}`}
+                                            className={`group transition-colors duration-150 hover:bg-[var(--bg-secondary)]/50 ${isSelected ? 'bg-[var(--nepal-blue-soft)]/20 hover:bg-[var(--nepal-blue-soft)]/30' : ''}`}
                                         >
                                             {/* Checkbox (Visible only in Select mode) */}
                                             {searchSelectMode && (
-                                                <td className="w-9 py-3 pl-4 pr-1">
+                                                <td className="w-10 py-3.5 pl-4 pr-1">
                                                     <input
                                                         type="checkbox"
                                                         checked={isSelected}
@@ -684,38 +688,38 @@ export default function AdminSearches(props: any) {
                                                                 setSelectedSearchIds((prev) => prev.filter((id) => id !== log.id))
                                                             }
                                                         }}
-                                                        className="h-3.5 w-3.5 cursor-pointer rounded border-[var(--border-default)] accent-[var(--nepal-blue)]"
+                                                        className="h-4 w-4 cursor-pointer rounded border-[var(--border-default)] accent-[var(--nepal-blue)]"
                                                     />
                                                 </td>
                                             )}
 
                                             {/* SN */}
-                                            <td className="w-10 whitespace-nowrap py-3 pl-3 pr-2 text-center font-mono text-[11px] font-bold text-[var(--text-muted)]">
-                                                {sn}
+                                            <td className="w-12 whitespace-nowrap py-3.5 pl-3 pr-2 text-center font-mono text-[10px] font-semibold tabular-nums text-[var(--text-muted)]">
+                                                #{sn}
                                             </td>
 
                                             {/* Timestamp */}
-                                            <td className="whitespace-nowrap py-3 pl-2 pr-3 font-mono text-[11px]">
-                                                <div className="flex flex-col gap-0.5">
-                                                    <span className="font-semibold text-[var(--text-primary)]" title={`${formatNepalDateTime(log.created_at, 'en', true)} (NPT, UTC+5:45)`}>
+                                            <td className="whitespace-nowrap py-3.5 pl-2 pr-4 font-mono text-[10.5px]">
+                                                <div className="flex flex-col gap-0">
+                                                    <span className="font-semibold leading-tight text-[var(--text-primary)]" title={`${formatNepalDateTime(log.created_at, 'en', true)} (NPT, UTC+5:45)`}>
                                                         {formatNepalDateTime(log.created_at)}
                                                     </span>
-                                                    <span className="text-[10px] text-[var(--text-muted)]">
+                                                    <span className="text-[10px] font-sans leading-tight text-[var(--text-muted)]">
                                                         {formatTimeAgo(log.created_at)}
                                                     </span>
                                                 </div>
                                             </td>
 
                                             {/* License Number & Duplicate Badge */}
-                                            <td className="whitespace-nowrap px-3 py-3">
+                                            <td className="whitespace-nowrap px-4 py-3.5">
                                                 <div className="flex flex-col gap-1">
-                                                    <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-[var(--text-primary)]">
+                                                    <div className="flex items-center gap-1 font-mono text-[12px] font-bold tracking-tight text-[var(--text-primary)]">
                                                         <span>{maskLicenseNumber(log.license_number, privacyMode)}</span>
                                                         {!privacyMode && (
                                                             <button
                                                                 type="button"
                                                                 onClick={() => copyToClipboard(log.license_number, `lic-${log.id}`)}
-                                                                className="text-[var(--text-muted)] opacity-0 transition group-hover:opacity-100 hover:text-[var(--nepal-blue)] cursor-pointer"
+                                                                className="inline-flex h-5 w-5 items-center justify-center rounded-md text-[var(--text-muted)] opacity-0 transition-all duration-150 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-[var(--bg-secondary)] hover:text-[var(--nepal-blue)] active:scale-90 cursor-pointer"
                                                                 title="Copy license number"
                                                             >
                                                                 {copiedKey === `lic-${log.id}` ? (
@@ -734,7 +738,7 @@ export default function AdminSearches(props: any) {
                                                     {log.duplicate_count && log.duplicate_count > 1 && (
                                                         log.is_latest ? (
                                                             <span
-                                                                className="inline-flex w-fit items-center gap-1 rounded-md bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 text-[10px] font-mono font-bold text-emerald-700 dark:text-emerald-300"
+                                                                className="inline-flex w-fit items-center gap-1 rounded-lg border border-emerald-500/30 bg-emerald-500/12 px-2 py-0.5 text-[10px] font-mono font-bold text-emerald-700 dark:text-emerald-300 shadow-2xs"
                                                                 title={`Latest search record by date for this license (kept during cleanup, searched ${log.duplicate_count} times)`}
                                                             >
                                                                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -744,7 +748,7 @@ export default function AdminSearches(props: any) {
                                                             </span>
                                                         ) : (
                                                             <span
-                                                                className="inline-flex w-fit items-center gap-1 rounded-md bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 text-[10px] font-mono font-bold text-amber-700 dark:text-amber-300"
+                                                                className="inline-flex w-fit items-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/12 px-2 py-0.5 text-[10px] font-mono font-bold text-amber-700 dark:text-amber-300 shadow-2xs"
                                                                 title="Older duplicate search record - safe to delete"
                                                             >
                                                                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -759,17 +763,17 @@ export default function AdminSearches(props: any) {
                                             </td>
 
                                             {/* Result Status Badge */}
-                                            <td className="whitespace-nowrap px-3 py-3">
+                                            <td className="whitespace-nowrap px-4 py-3.5">
                                                 {isFound ? (
-                                                    <span className="inline-flex items-center gap-1 rounded-full border border-[var(--success-border)] bg-[var(--success-bg)] px-2.5 py-0.5 text-xs font-bold text-[var(--success)]">
-                                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                    <span className="inline-flex min-w-[86px] items-center justify-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold leading-4 text-emerald-600 dark:text-emerald-400">
+                                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                                             <polyline points="20 6 9 17 4 12" />
                                                         </svg>
                                                         <span>Found</span>
                                                     </span>
                                                 ) : (
-                                                    <span className="inline-flex items-center gap-1 rounded-full border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2.5 py-0.5 text-xs font-semibold text-[var(--text-muted)]">
-                                                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                    <span className="inline-flex min-w-[86px] items-center justify-center gap-1 rounded-full border border-[var(--border-default)]/80 bg-[var(--bg-secondary)]/80 px-2 py-0.5 text-[10px] font-semibold leading-4 text-[var(--text-muted)]">
+                                                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                                             <line x1="18" y1="6" x2="6" y2="18" />
                                                             <line x1="6" y1="6" x2="18" y2="18" />
                                                         </svg>
@@ -778,15 +782,15 @@ export default function AdminSearches(props: any) {
                                                 )}
                                             </td>
 
-                                            {/* Holder Name */}
-                                            <td className="whitespace-nowrap px-3 py-3 text-xs">
+                                            {/* Holder Name / Office */}
+                                            <td className="whitespace-nowrap px-4 py-3.5 text-xs">
                                                 {log.holder_name ? (
                                                     <div>
-                                                        <span className="font-bold text-[var(--text-primary)]">
+                                                        <span className="text-[11.5px] font-semibold leading-tight text-[var(--text-primary)]">
                                                             {log.holder_name}
                                                         </span>
                                                         {log.office && (
-                                                            <p className="text-[11px] text-[var(--text-muted)]">
+                                                            <p className="text-[10px] leading-tight text-[var(--text-muted)]">
                                                                 {log.office}
                                                             </p>
                                                         )}
@@ -797,14 +801,16 @@ export default function AdminSearches(props: any) {
                                             </td>
 
                                             {/* IP Address */}
-                                            <td className="whitespace-nowrap px-3 py-3 font-mono text-xs">
-                                                <div className="flex items-center gap-1.5 text-[var(--text-secondary)]">
-                                                    <span>{maskIpAddress(log.ip, privacyMode)}</span>
+                                            <td className="whitespace-nowrap px-4 py-3.5 font-mono text-xs">
+                                                <div className="flex items-center gap-1 text-[var(--text-secondary)]">
+                                                    <span className="rounded-md border border-[var(--border-default)]/60 bg-[var(--bg-secondary)]/70 px-1.5 py-0.5 text-[10px] leading-4">
+                                                        {maskIpAddress(log.ip, privacyMode)}
+                                                    </span>
                                                     {!privacyMode && (
                                                         <button
                                                             type="button"
                                                             onClick={() => copyToClipboard(log.ip, `ip-${log.id}`)}
-                                                            className="text-[var(--text-muted)] opacity-0 transition group-hover:opacity-100 hover:text-[var(--nepal-blue)] cursor-pointer"
+                                                            className="inline-flex h-5 w-5 items-center justify-center rounded-md text-[var(--text-muted)] opacity-0 transition-all duration-150 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-[var(--bg-secondary)] hover:text-[var(--nepal-blue)] active:scale-90 cursor-pointer"
                                                             title="Copy IP"
                                                         >
                                                             {copiedKey === `ip-${log.id}` ? (
@@ -823,13 +829,13 @@ export default function AdminSearches(props: any) {
                                             </td>
 
                                             {/* Location / Origin */}
-                                            <td className="whitespace-nowrap px-3 py-3 text-xs">
+                                            <td className="whitespace-nowrap px-4 py-3.5 text-xs">
                                                 <div className="flex items-center gap-1.5">
-                                                    <span className="text-base" title={log.country || 'Unknown'}>
+                                                    <span className="text-sm leading-none drop-shadow-2xs" title={log.country || 'Unknown'}>
                                                         {getFlag(log.country)}
                                                     </span>
-                                                    <div>
-                                                        <span className="font-semibold text-[var(--text-primary)]">
+                                                    <div className="leading-tight">
+                                                        <span className="text-[11.5px] font-semibold text-[var(--text-primary)]">
                                                             {log.city || 'Unknown City'}
                                                         </span>
                                                         {log.region && (
@@ -842,16 +848,16 @@ export default function AdminSearches(props: any) {
                                             </td>
 
                                             {/* Actions */}
-                                            <td className="whitespace-nowrap py-3 pl-3 pr-4 text-right">
-                                                <div className="flex items-center justify-end gap-1.5">
+                                            <td className="whitespace-nowrap py-3.5 pl-3 pr-4 text-right">
+                                                <div className="flex items-center justify-end gap-1">
                                                     {log.duplicate_count && log.duplicate_count > 1 && (
                                                         <button
                                                             type="button"
                                                             onClick={() => handleDeleteLicenseDuplicates(log.license_number)}
-                                                            className="inline-flex h-7.5 w-7.5 items-center justify-center rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400 transition hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95 cursor-pointer"
+                                                            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-700 transition-all duration-150 hover:-translate-y-px hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95 cursor-pointer shadow-2xs dark:text-amber-400"
                                                             title={`Delete older duplicate searches for license ${log.license_number} (leaves 1 latest record)`}
                                                         >
-                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                                                 <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4" />
                                                             </svg>
                                                         </button>
@@ -859,7 +865,7 @@ export default function AdminSearches(props: any) {
                                                     <button
                                                         type="button"
                                                         onClick={() => handleDeleteSearchLog(log.id, log.license_number)}
-                                                        className="inline-flex h-7.5 w-7.5 items-center justify-center rounded-lg border border-[var(--border-default)] text-[var(--text-muted)] transition hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95 cursor-pointer"
+                                                        className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--border-default)]/80 bg-[var(--surface-primary)] text-[var(--text-muted)] transition-all duration-150 hover:-translate-y-px hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95 cursor-pointer shadow-2xs"
                                                         title="Delete search log"
                                                     >
                                                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

@@ -368,18 +368,20 @@ export default function AdminFeedback(props: any) {
             </div>
 
             {/* Feedback Container (Mobile Cards + Desktop Table) */}
-            <div className="mt-4 overflow-hidden rounded-2xl dev-glass-card backdrop-blur-md shadow-xs">
+            <div className="mt-4 relative overflow-hidden rounded-2xl border border-[var(--border-default)]/80 bg-[var(--surface-primary)] shadow-sm backdrop-blur-md transition-all">
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-[var(--nepal-blue)] to-transparent opacity-70" />
+
                 {/* Mobile Card List (Visible on < md) */}
                 <div className="block md:hidden">
                     {feedbackLoading ? (
-                        <div className="py-14 text-center text-xs text-[var(--text-muted)]">
+                        <div className="py-16 text-center text-xs text-[var(--text-muted)]">
                             <div className="flex items-center justify-center gap-2.5">
-                                <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-[var(--nepal-blue)]/30 border-t-[var(--nepal-blue)]" />
+                                <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-[var(--nepal-blue)]/30 border-t-[var(--nepal-blue)]" />
                                 <span>Loading feedback records...</span>
                             </div>
                         </div>
                     ) : feedbackLogs.length === 0 ? (
-                        <div className="py-14 px-4 text-center text-xs text-[var(--text-muted)]">
+                        <div className="py-16 px-4 text-center text-xs text-[var(--text-muted)]">
                             <div className="flex flex-col items-center justify-center gap-3">
                                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)] shadow-xs">
                                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -403,7 +405,7 @@ export default function AdminFeedback(props: any) {
                                             setFeedbackCategoryFilter('all')
                                             setFeedbackPage(1)
                                         }}
-                                        className="mt-1 inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3 py-1.5 text-xs font-semibold text-[var(--nepal-blue)] transition hover:border-[var(--nepal-blue)] hover:bg-[var(--surface-primary)] active:scale-95 cursor-pointer"
+                                        className="mt-1 inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3 py-1.5 text-xs font-semibold text-[var(--nepal-blue)] transition hover:border-[var(--nepal-blue)] hover:bg-[var(--surface-primary)] active:scale-95 cursor-pointer shadow-2xs"
                                     >
                                         Clear filters
                                     </button>
@@ -414,7 +416,7 @@ export default function AdminFeedback(props: any) {
                         <div>
                             {/* Mobile Select-All Header if in select mode */}
                             {feedbackSelectMode && (
-                                <div className="flex items-center justify-between border-b border-[var(--border-default)] bg-[var(--bg-secondary)]/70 px-3.5 py-2.5 text-xs">
+                                <div className="flex items-center justify-between border-b border-[var(--border-default)]/70 bg-[var(--bg-secondary)]/70 px-4 py-3 text-xs">
                                     <label className="flex items-center gap-2 font-semibold text-[var(--text-secondary)] cursor-pointer">
                                         <input
                                             type="checkbox"
@@ -430,13 +432,13 @@ export default function AdminFeedback(props: any) {
                                         />
                                         <span>Select All on this page ({feedbackLogs.length})</span>
                                     </label>
-                                    <span className="text-[11px] text-[var(--text-muted)] font-mono">
+                                    <span className="text-[11px] text-[var(--text-muted)] font-mono font-semibold">
                                         {selectedFeedbackIds.length} selected
                                     </span>
                                 </div>
                             )}
 
-                            <div className="divide-y divide-[var(--border-default)]/60">
+                            <div className="divide-y divide-[var(--border-default)]/50">
                                 {feedbackLogs.map((item, idx) => {
                                     const catInfo = getCategoryInfo(item.category)
                                     const isSelected = selectedFeedbackIds.includes(item.id)
@@ -445,7 +447,7 @@ export default function AdminFeedback(props: any) {
                                     return (
                                         <div
                                             key={item.id}
-                                            className={`p-3.5 transition-colors ${isSelected ? 'bg-[var(--nepal-blue-soft)]/25' : 'hover:bg-[var(--bg-secondary)]/30'}`}
+                                            className={`p-4 transition-colors duration-150 space-y-3 ${isSelected ? 'bg-[var(--nepal-blue-soft)]/20' : 'hover:bg-[var(--bg-secondary)]/30'}`}
                                         >
                                             {/* Top Row: Select/SN + Status + Category + Time */}
                                             <div className="flex items-center justify-between gap-2">
@@ -464,28 +466,28 @@ export default function AdminFeedback(props: any) {
                                                             className="h-4 w-4 cursor-pointer rounded border-[var(--border-default)] accent-[var(--nepal-blue)]"
                                                         />
                                                     )}
-                                                    <span className="rounded-md bg-[var(--bg-secondary)] px-1.5 py-0.5 font-mono text-[10px] font-bold text-[var(--text-muted)]">
+                                                    <span className="rounded-lg bg-[var(--bg-secondary)] px-2 py-0.5 font-mono text-[11px] font-bold text-[var(--text-muted)]">
                                                         #{sn}
                                                     </span>
                                                     {item.status === 'new' ? (
-                                                        <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                                                        <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-xs font-bold text-amber-600 dark:text-amber-400">
                                                             <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
                                                             <span>New</span>
                                                         </span>
                                                     ) : (
-                                                        <span className="inline-flex items-center gap-1 rounded-full border border-[var(--success)]/30 bg-[var(--success-bg)] px-2 py-0.5 text-[10px] font-bold text-[var(--success)]">
+                                                        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
                                                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                                                 <polyline points="20 6 9 17 4 12" />
                                                             </svg>
                                                             <span>Resolved</span>
                                                         </span>
                                                     )}
-                                                    <span className={`inline-flex items-center rounded-md border px-1.5 py-0.2 text-[9px] font-bold ${catInfo.cls}`}>
+                                                    <span className={`inline-flex items-center rounded-lg border px-2 py-0.5 text-[10px] font-bold ${catInfo.cls}`}>
                                                         {catInfo.label}
                                                     </span>
                                                 </div>
                                                 <span
-                                                    className="text-[11px] font-medium text-[var(--text-muted)] shrink-0"
+                                                    className="text-xs font-mono text-[var(--text-muted)] shrink-0"
                                                     title={`${formatNepalDateTime(item.created_at, 'en', true)} (NPT, UTC+5:45)`}
                                                 >
                                                     {formatTimeAgo(item.created_at)}
@@ -493,33 +495,33 @@ export default function AdminFeedback(props: any) {
                                             </div>
 
                                             {/* Subject */}
-                                            <h4 className="mt-2 text-sm font-bold text-[var(--text-primary)]">
+                                            <h4 className="text-sm font-bold tracking-tight text-[var(--text-primary)]">
                                                 {item.subject}
                                             </h4>
 
                                             {/* Submitter & License Row */}
-                                            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                                                 <span className="font-semibold text-[var(--text-primary)]">{item.name}</span>
                                                 <a
                                                     href={`mailto:${item.email}?subject=${encodeURIComponent(`Re: [Support] ${item.subject}`)}`}
-                                                    className="font-mono text-[11px] text-[var(--nepal-blue)] hover:underline"
+                                                    className="font-mono text-xs text-[var(--nepal-blue)] hover:underline font-medium"
                                                 >
                                                     {item.email}
                                                 </a>
                                                 {item.license_number && (
-                                                    <span className="font-mono text-[10px] font-bold text-[var(--text-secondary)] bg-[var(--bg-secondary)] px-1.5 py-0.5 rounded border border-[var(--border-default)]">
+                                                    <span className="font-mono text-xs font-bold text-[var(--text-secondary)] bg-[var(--bg-secondary)] px-2 py-0.5 rounded-lg border border-[var(--border-default)]/70">
                                                         Lic: {maskLicenseNumber(item.license_number, privacyMode)}
                                                     </span>
                                                 )}
                                             </div>
 
                                             {/* Message preview snippet */}
-                                            <p className="mt-1.5 line-clamp-2 text-xs text-[var(--text-secondary)] leading-relaxed">
+                                            <p className="line-clamp-2 text-xs text-[var(--text-secondary)] leading-relaxed rounded-xl bg-[var(--bg-secondary)]/30 border border-[var(--border-default)]/40 p-2.5">
                                                 {item.message}
                                             </p>
 
                                             {/* Card Footer: View Full Message + Action Buttons */}
-                                            <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-[var(--border-default)]/40 pt-2">
+                                            <div className="flex items-center justify-between gap-2 border-t border-[var(--border-default)]/40 pt-2.5">
                                                 <button
                                                     type="button"
                                                     onClick={() => setSelectedFeedbackMessage(item)}
@@ -537,10 +539,10 @@ export default function AdminFeedback(props: any) {
                                                     <button
                                                         type="button"
                                                         onClick={() => handleToggleFeedbackStatus(item.id, item.status)}
-                                                        className={`inline-flex h-7.5 items-center gap-1 rounded-lg border px-2 text-[11px] font-bold transition active:scale-95 cursor-pointer ${
+                                                        className={`inline-flex h-8 items-center gap-1.5 rounded-xl border px-2.5 text-xs font-bold transition active:scale-95 cursor-pointer shadow-2xs ${
                                                             item.status === 'new'
-                                                                ? 'border-[var(--success)]/40 bg-[var(--success-bg)] text-[var(--success)]'
-                                                                : 'border-amber-500/30 bg-amber-500/10 text-amber-600'
+                                                                ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20'
+                                                                : 'border-amber-500/30 bg-amber-500/10 text-amber-600 hover:bg-amber-500/20'
                                                         }`}
                                                     >
                                                         {item.status === 'new' ? 'Mark Resolved' : 'Reopen'}
@@ -550,7 +552,7 @@ export default function AdminFeedback(props: any) {
                                                     <button
                                                         type="button"
                                                         onClick={() => handleDeleteFeedback(item.id, item.subject)}
-                                                        className="inline-flex h-7.5 w-7.5 items-center justify-center rounded-lg border border-[var(--border-default)] text-[var(--text-muted)] transition hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95 cursor-pointer"
+                                                        className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[var(--border-default)]/80 bg-[var(--surface-primary)] text-[var(--text-muted)] transition hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95 cursor-pointer shadow-2xs"
                                                         title="Delete feedback entry"
                                                     >
                                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -570,11 +572,11 @@ export default function AdminFeedback(props: any) {
 
                 {/* Desktop Spreadsheet Table (Hidden on < md, visible on md+) */}
                 <div className="hidden md:block overflow-x-auto">
-                    <table className="w-full text-left text-xs">
-                        <thead className="border-b border-[var(--border-default)] bg-[var(--bg-secondary)]/80 text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                    <table className="admin-data-table w-full text-left text-xs">
+                        <thead className="border-b border-[var(--border-default)]/80 bg-[var(--bg-secondary)]/60 backdrop-blur-md text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">
                             <tr>
                                 {feedbackSelectMode && (
-                                    <th scope="col" className="w-9 py-3 pl-4 pr-1">
+                                    <th scope="col" className="w-10 py-3.5 pl-4 pr-1">
                                         <input
                                             type="checkbox"
                                             checked={feedbackLogs.length > 0 && selectedFeedbackIds.length === feedbackLogs.length}
@@ -585,50 +587,50 @@ export default function AdminFeedback(props: any) {
                                                     setSelectedFeedbackIds([])
                                                 }
                                             }}
-                                            className="h-3.5 w-3.5 cursor-pointer rounded border-[var(--border-default)] accent-[var(--nepal-blue)]"
+                                            className="h-4 w-4 cursor-pointer rounded border-[var(--border-default)] accent-[var(--nepal-blue)]"
                                             title="Select all on this page"
                                         />
                                     </th>
                                 )}
-                                <th scope="col" className="w-10 py-3 pl-3 pr-2 text-center">
+                                <th scope="col" className="w-12 py-3.5 pl-3 pr-2 text-center">
                                     SN
                                 </th>
-                                <th scope="col" className="py-3 pl-2 pr-3">
+                                <th scope="col" className="py-3.5 pl-2 pr-4">
                                     Status
                                 </th>
-                                <th scope="col" className="px-3 py-3">
+                                <th scope="col" className="px-4 py-3.5">
                                     Submitter
                                 </th>
-                                <th scope="col" className="px-3 py-3">
+                                <th scope="col" className="px-4 py-3.5">
                                     Category & Subject
                                 </th>
-                                <th scope="col" className="px-3 py-3">
+                                <th scope="col" className="px-4 py-3.5">
                                     License Number
                                 </th>
-                                <th scope="col" className="px-3 py-3">
+                                <th scope="col" className="px-4 py-3.5">
                                     Message Preview
                                 </th>
-                                <th scope="col" className="px-3 py-3">
+                                <th scope="col" className="px-4 py-3.5">
                                     Received (NPT)
                                 </th>
-                                <th scope="col" className="py-3 pl-3 pr-4 text-right">
+                                <th scope="col" className="py-3.5 pl-3 pr-4 text-right">
                                     Actions
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-[var(--border-default)]/60">
+                        <tbody className="divide-y divide-[var(--border-default)]/50">
                             {feedbackLoading ? (
                                 <tr>
-                                    <td colSpan={feedbackSelectMode ? 9 : 8} className="py-14 text-center text-xs text-[var(--text-muted)]">
+                                    <td colSpan={feedbackSelectMode ? 9 : 8} className="py-16 text-center text-xs text-[var(--text-muted)]">
                                         <div className="flex items-center justify-center gap-2.5">
-                                            <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-[var(--nepal-blue)]/30 border-t-[var(--nepal-blue)]" />
+                                            <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-[var(--nepal-blue)]/30 border-t-[var(--nepal-blue)]" />
                                             <span>Loading feedback records...</span>
                                         </div>
                                     </td>
                                 </tr>
                             ) : feedbackLogs.length === 0 ? (
                                 <tr>
-                                    <td colSpan={feedbackSelectMode ? 9 : 8} className="py-14 px-4 text-center text-xs text-[var(--text-muted)]">
+                                    <td colSpan={feedbackSelectMode ? 9 : 8} className="py-16 px-4 text-center text-xs text-[var(--text-muted)]">
                                         <div className="flex flex-col items-center justify-center gap-3">
                                             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)] shadow-xs">
                                                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -655,11 +657,11 @@ export default function AdminFeedback(props: any) {
                                     return (
                                         <tr
                                             key={item.id}
-                                            className={`group transition-colors hover:bg-[var(--bg-secondary)]/40 ${isSelected ? 'bg-[var(--nepal-blue-soft)]/30' : ''}`}
+                                            className={`group transition-colors duration-150 hover:bg-[var(--bg-secondary)]/50 ${isSelected ? 'bg-[var(--nepal-blue-soft)]/20 hover:bg-[var(--nepal-blue-soft)]/30' : ''}`}
                                         >
                                             {/* Checkbox (Visible only in Select mode) */}
                                             {feedbackSelectMode && (
-                                                <td className="w-9 py-3 pl-4 pr-1">
+                                                <td className="w-10 py-3.5 pl-4 pr-1">
                                                     <input
                                                         type="checkbox"
                                                         checked={isSelected}
@@ -670,26 +672,26 @@ export default function AdminFeedback(props: any) {
                                                                 setSelectedFeedbackIds((prev) => prev.filter((id) => id !== item.id))
                                                             }
                                                         }}
-                                                        className="h-3.5 w-3.5 cursor-pointer rounded border-[var(--border-default)] accent-[var(--nepal-blue)]"
+                                                        className="h-4 w-4 cursor-pointer rounded border-[var(--border-default)] accent-[var(--nepal-blue)]"
                                                     />
                                                 </td>
                                             )}
 
                                             {/* SN */}
-                                            <td className="w-10 whitespace-nowrap py-3 pl-3 pr-2 text-center font-mono text-[11px] font-bold text-[var(--text-muted)]">
-                                                {sn}
+                                            <td className="w-12 whitespace-nowrap py-3.5 pl-3 pr-2 text-center font-mono text-[11px] font-semibold text-[var(--text-muted)]">
+                                                #{sn}
                                             </td>
 
                                             {/* Status */}
-                                            <td className="whitespace-nowrap py-3 pl-2 pr-3">
+                                            <td className="whitespace-nowrap py-3.5 pl-2 pr-4">
                                                 {item.status === 'new' ? (
-                                                    <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-bold text-amber-600 dark:text-amber-400">
+                                                    <span className="inline-flex min-w-[88px] items-center justify-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold leading-4 text-amber-600 dark:text-amber-400">
                                                         <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
                                                         <span>New</span>
                                                     </span>
                                                 ) : (
-                                                    <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--success)]/30 bg-[var(--success-bg)] px-2.5 py-1 text-[11px] font-bold text-[var(--success)]">
-                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                    <span className="inline-flex min-w-[88px] items-center justify-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold leading-4 text-emerald-600 dark:text-emerald-400">
+                                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                                             <polyline points="20 6 9 17 4 12" />
                                                         </svg>
                                                         <span>Resolved</span>
@@ -698,20 +700,20 @@ export default function AdminFeedback(props: any) {
                                             </td>
 
                                             {/* Submitter */}
-                                            <td className="whitespace-nowrap px-3 py-3 text-xs">
-                                                <div className="flex flex-col">
-                                                    <span className="font-bold text-[var(--text-primary)]">
+                                            <td className="whitespace-nowrap px-4 py-3.5 text-xs">
+                                                <div className="flex flex-col gap-0 leading-tight">
+                                                    <span className="text-[11.5px] font-semibold text-[var(--text-primary)]">
                                                         {item.name}
                                                     </span>
                                                     <a
                                                         href={`mailto:${item.email}?subject=${encodeURIComponent(`Re: [Support] ${item.subject}`)}`}
-                                                        className="font-mono text-[11px] text-[var(--text-muted)] hover:text-[var(--nepal-blue)] hover:underline"
+                                                        className="font-mono text-[10.5px] font-medium text-[var(--text-muted)] hover:text-[var(--nepal-blue)] hover:underline"
                                                         title="Send email reply"
                                                     >
                                                         {item.email}
                                                     </a>
                                                     {item.ip && (
-                                                        <span className="text-[10px] text-[var(--text-muted)]/80 font-mono">
+                                                        <span className="mt-0.5 font-mono text-[10px] text-[var(--text-muted)]/80">
                                                             IP: {maskIpAddress(item.ip, privacyMode)}
                                                         </span>
                                                     )}
@@ -719,29 +721,29 @@ export default function AdminFeedback(props: any) {
                                             </td>
 
                                             {/* Category & Subject */}
-                                            <td className="px-3 py-3 text-xs max-w-xs">
+                                            <td className="px-4 py-3.5 text-xs max-w-xs">
                                                 <div className="flex flex-col gap-1">
-                                                    <span className={`inline-flex w-fit items-center rounded-md border px-2 py-0.5 text-[10px] font-bold ${catInfo.cls}`}>
+                                                    <span className={`inline-flex w-fit items-center rounded-md border px-1.5 py-0.5 text-[9.5px] font-bold uppercase leading-4 tracking-wide ${catInfo.cls}`}>
                                                         {catInfo.label}
                                                     </span>
-                                                    <span className="font-bold text-[var(--text-primary)] truncate" title={item.subject}>
+                                                    <span className="truncate text-[11.5px] font-semibold text-[var(--text-primary)]" title={item.subject}>
                                                         {item.subject}
                                                     </span>
                                                 </div>
                                             </td>
 
                                             {/* License Number */}
-                                            <td className="whitespace-nowrap px-3 py-3 text-xs">
+                                            <td className="whitespace-nowrap px-4 py-3.5 text-xs">
                                                 {item.license_number ? (
-                                                    <div className="flex items-center gap-1.5">
-                                                        <span className="rounded-md border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2 py-1 font-mono text-xs font-bold text-[var(--text-primary)]">
+                                                    <div className="flex items-center gap-1">
+                                                        <span className="rounded-md border border-[var(--border-default)]/80 bg-[var(--bg-secondary)]/60 px-2 py-0.5 font-mono text-[11.5px] font-bold leading-4 text-[var(--text-primary)]">
                                                             {maskLicenseNumber(item.license_number, privacyMode)}
                                                         </span>
                                                         {!privacyMode && (
                                                             <button
                                                                 type="button"
                                                                 onClick={() => copyToClipboard(item.license_number!, `fb-lic-${item.id}`)}
-                                                                className="rounded p-1 text-[var(--text-muted)] hover:text-[var(--nepal-blue)] transition cursor-pointer"
+                                                                className="inline-flex h-5 w-5 items-center justify-center rounded-md text-[var(--text-muted)] transition-all duration-150 hover:bg-[var(--bg-secondary)] hover:text-[var(--nepal-blue)] active:scale-90 cursor-pointer"
                                                                 title="Copy license number"
                                                             >
                                                                 {copiedKey === `fb-lic-${item.id}` ? (
@@ -763,18 +765,18 @@ export default function AdminFeedback(props: any) {
                                             </td>
 
                                             {/* Message Preview */}
-                                            <td className="px-3 py-3 text-xs max-w-sm">
-                                                <div className="flex flex-col gap-1">
-                                                    <p className="line-clamp-2 text-xs text-[var(--text-secondary)]">
+                                            <td className="px-4 py-3.5 text-xs max-w-sm">
+                                                <div className="flex flex-col gap-0.5">
+                                                    <p className="line-clamp-2 text-[11px] leading-snug text-[var(--text-secondary)]">
                                                         {item.message}
                                                     </p>
                                                     <button
                                                         type="button"
                                                         onClick={() => setSelectedFeedbackMessage(item)}
-                                                        className="w-fit inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--nepal-blue)] hover:underline cursor-pointer"
+                                                        className="w-fit inline-flex items-center gap-1 text-[10.5px] font-bold text-[var(--nepal-blue)] hover:underline cursor-pointer"
                                                     >
                                                         <span>View Full Message</span>
-                                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                                             <line x1="5" y1="12" x2="19" y2="12" />
                                                             <polyline points="12 5 19 12 12 19" />
                                                         </svg>
@@ -783,61 +785,48 @@ export default function AdminFeedback(props: any) {
                                             </td>
 
                                             {/* Received */}
-                                            <td className="whitespace-nowrap px-3 py-3 text-xs" title={`${formatNepalDateTime(item.created_at, 'en', true)} (NPT, UTC+5:45)`}>
-                                                <div className="flex flex-col gap-0.5 font-mono">
-                                                    <span className="font-semibold text-[var(--text-primary)]">
+                                            <td className="whitespace-nowrap px-4 py-3.5 text-xs" title={`${formatNepalDateTime(item.created_at, 'en', true)} (NPT, UTC+5:45)`}>
+                                                <div className="flex flex-col gap-0 font-mono leading-tight">
+                                                    <span className="text-[10.5px] font-semibold text-[var(--text-primary)]">
                                                         {formatNepalDateTime(item.created_at)}
                                                     </span>
-                                                    <span className="text-[10px] text-[var(--text-muted)]">
+                                                    <span className="font-sans text-[10px] text-[var(--text-muted)]">
                                                         {formatTimeAgo(item.created_at)}
                                                     </span>
                                                 </div>
                                             </td>
 
                                             {/* Actions */}
-                                            <td className="whitespace-nowrap py-3 pl-3 pr-4 text-right">
-                                                <div className="inline-flex items-center gap-1.5">
+                                            <td className="whitespace-nowrap py-3.5 pl-3 pr-4 text-right">
+                                                <div className="inline-flex items-center gap-1">
                                                     <button
                                                         type="button"
                                                         onClick={() => handleToggleFeedbackStatus(item.id, item.status)}
-                                                        className={`inline-flex h-8 w-8 items-center justify-center rounded-xl border transition active:scale-95 cursor-pointer ${
+                                                        className={`inline-flex h-7 w-7 items-center justify-center rounded-lg border transition-all duration-150 hover:-translate-y-px active:scale-95 cursor-pointer shadow-2xs ${
                                                             item.status === 'new'
-                                                                ? 'border-[var(--success)]/40 bg-[var(--success-bg)] text-[var(--success)] hover:bg-[var(--success)] hover:text-white'
+                                                                ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-600 hover:text-white'
                                                                 : 'border-amber-500/30 bg-amber-500/10 text-amber-600 hover:bg-amber-500 hover:text-white'
                                                         }`}
                                                         title={item.status === 'new' ? 'Mark as Resolved' : 'Re-open as New'}
                                                     >
                                                         {item.status === 'new' ? (
-                                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                                                 <polyline points="20 6 9 17 4 12" />
                                                             </svg>
                                                         ) : (
-                                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                                                 <path d="M1 4v6h6" />
                                                                 <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
                                                             </svg>
                                                         )}
                                                     </button>
-
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setSelectedFeedbackMessage(item)}
-                                                        className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-muted)] transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] active:scale-95 cursor-pointer"
-                                                        title="Read full inquiry details"
-                                                    >
-                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                                                            <circle cx="12" cy="12" r="3" />
-                                                        </svg>
-                                                    </button>
-
                                                     <button
                                                         type="button"
                                                         onClick={() => handleDeleteFeedback(item.id, item.subject)}
-                                                        className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-muted)] transition hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95 cursor-pointer"
+                                                        className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--border-default)]/80 bg-[var(--surface-primary)] text-[var(--text-muted)] transition-all duration-150 hover:-translate-y-px hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95 cursor-pointer shadow-2xs"
                                                         title="Delete feedback entry"
                                                     >
-                                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                                             <polyline points="3 6 5 6 21 6" />
                                                             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                                                         </svg>

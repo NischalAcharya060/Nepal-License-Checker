@@ -583,47 +583,49 @@ export default function AdminOcr(props: any) {
       </div>
 
       {/* Logs Table */}
-      <div className="mt-3 overflow-hidden rounded-2xl border border-[var(--border-default)] dev-glass-card shadow-xs">
+      <div className="mt-4 relative overflow-hidden rounded-2xl border border-[var(--border-default)]/80 bg-[var(--surface-primary)] shadow-sm backdrop-blur-md transition-all">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-[var(--nepal-blue)] to-transparent opacity-70" />
+
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="border-b border-[var(--border-default)] bg-[var(--bg-secondary)]/70 text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+          <table className="admin-data-table w-full text-left text-xs">
+            <thead className="border-b border-[var(--border-default)]/80 bg-[var(--bg-secondary)]/60 backdrop-blur-md text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">
               <tr>
                 {ocrSelectMode && (
-                  <th className="py-3 px-3 w-8">
+                  <th scope="col" className="py-3.5 pl-4 pr-1 w-10">
                     <input
                       type="checkbox"
                       checked={allSelected}
                       onChange={toggleSelectAll}
-                      className="rounded"
+                      className="h-4 w-4 rounded accent-[var(--nepal-blue)] cursor-pointer"
                     />
                   </th>
                 )}
-                <th className="py-3 px-3.5">Time</th>
-                <th className="py-3 px-3.5">Detected License</th>
-                <th className="py-3 px-3.5">Status</th>
-                <th className="py-3 px-3.5">Latency</th>
-                <th className="py-3 px-3.5">Source Type</th>
-                <th className="py-3 px-3.5">Model Engine</th>
-                <th className="py-3 px-3.5">IP Address</th>
+                <th scope="col" className="py-3.5 px-4">Time (NPT)</th>
+                <th scope="col" className="py-3.5 px-4">Detected License</th>
+                <th scope="col" className="py-3.5 px-4">Status</th>
+                <th scope="col" className="py-3.5 px-4 text-right">Latency</th>
+                <th scope="col" className="py-3.5 px-4">Source Type</th>
+                <th scope="col" className="py-3.5 px-4">Model Engine</th>
+                <th scope="col" className="py-3.5 px-4">IP Address</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--border-default)]/60 font-medium">
+            <tbody className="divide-y divide-[var(--border-default)]/50 font-medium">
               {ocrLoading ? (
                 <tr>
-                  <td colSpan={ocrSelectMode ? 8 : 7} className="py-8 text-center text-[var(--text-muted)]">
-                    <div className="flex items-center justify-center gap-2">
-                      <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-[var(--nepal-blue)] border-t-transparent" />
+                  <td colSpan={ocrSelectMode ? 8 : 7} className="py-16 text-center text-[var(--text-muted)]">
+                    <div className="flex items-center justify-center gap-2.5">
+                      <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-[var(--nepal-blue)]/30 border-t-[var(--nepal-blue)]" />
                       <span>Loading OCR scan records...</span>
                     </div>
                   </td>
                 </tr>
               ) : ocrLogs.length === 0 ? (
                 <tr>
-                  <td colSpan={ocrSelectMode ? 8 : 7} className="py-10 text-center text-[var(--text-muted)]">
-                    <div className="flex flex-col items-center justify-center gap-1.5">
-                      <span className="text-2xl">📸</span>
-                      <p className="font-bold text-[var(--text-primary)]">No OCR scans found</p>
-                      <p className="text-xs">Scan requests will appear here with live latency and detection details.</p>
+                  <td colSpan={ocrSelectMode ? 8 : 7} className="py-16 text-center text-[var(--text-muted)]">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <span className="text-3xl">📸</span>
+                      <p className="font-bold text-sm text-[var(--text-primary)]">No OCR scans found</p>
+                      <p className="text-xs max-w-sm text-[var(--text-muted)]">Scan requests will appear here with live latency, accuracy and detection details.</p>
                     </div>
                   </td>
                 </tr>
@@ -631,77 +633,101 @@ export default function AdminOcr(props: any) {
                 ocrLogs.map((log) => (
                   <tr
                     key={log.id}
-                    className="transition hover:bg-[var(--bg-secondary)]/40"
+                    className={`group transition-colors duration-150 hover:bg-[var(--bg-secondary)]/50 ${selectedOcrIds.includes(log.id) ? 'bg-[var(--nepal-blue-soft)]/20 hover:bg-[var(--nepal-blue-soft)]/30' : ''}`}
                   >
                     {ocrSelectMode && (
-                      <td className="py-3 px-3">
+                      <td className="py-3.5 pl-4 pr-1">
                         <input
                           type="checkbox"
                           checked={selectedOcrIds.includes(log.id)}
                           onChange={() => toggleSelectLog(log.id)}
-                          className="rounded"
+                          className="h-4 w-4 rounded accent-[var(--nepal-blue)] cursor-pointer"
                         />
                       </td>
                     )}
-                    <td className="py-3 px-3.5 whitespace-nowrap text-[var(--text-muted)] font-mono">
-                      <div className="flex flex-col">
-                        <span>{formatTimeAgo(log.created_at)}</span>
-                        <span className="text-[10px] opacity-75">{formatNepalDateTime(log.created_at)}</span>
+                    <td className="py-3.5 px-4 whitespace-nowrap text-[var(--text-muted)] font-mono text-[10.5px]">
+                      <div className="flex flex-col gap-0 leading-tight">
+                        <span className="font-semibold text-[var(--text-primary)]">{formatNepalDateTime(log.created_at)}</span>
+                        <span className="text-[10px] font-sans opacity-75">{formatTimeAgo(log.created_at)}</span>
                       </div>
                     </td>
-                    <td className="py-3 px-3.5 font-mono font-bold text-[var(--text-primary)]">
+                    <td className="py-3.5 px-4 font-mono font-bold text-[12px] tracking-tight text-[var(--text-primary)]">
                       {log.license_number ? (
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1">
                           <span>{maskLicenseNumber(log.license_number, privacyMode)}</span>
                           <button
                             type="button"
                             onClick={() => copyToClipboard(log.license_number!, `ocr-${log.id}`)}
-                            className="text-[var(--text-muted)] hover:text-[var(--nepal-blue)]"
+                            className="inline-flex h-5 w-5 items-center justify-center rounded-md text-[var(--text-muted)] opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-all duration-150 hover:bg-[var(--bg-secondary)] hover:text-[var(--nepal-blue)] active:scale-90 cursor-pointer"
                             title="Copy number"
                           >
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                            </svg>
+                            {copiedKey === `ocr-${log.id}` ? (
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            ) : (
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                              </svg>
+                            )}
                           </button>
                         </div>
                       ) : (
-                        <span className="text-[var(--text-muted)] font-normal italic">None detected</span>
+                        <span className="text-[var(--text-muted)] font-normal italic text-[11px]">None detected</span>
                       )}
                     </td>
-                    <td className="py-3 px-3.5">
+                    <td className="py-3.5 px-4 whitespace-nowrap">
                       <span
-                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+                        className={`inline-flex min-w-[96px] items-center justify-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold leading-4 ${
                           log.status === 'success'
-                            ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+                            ? 'border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                             : log.status === 'not_found'
-                            ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                            ? 'border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400'
                             : log.status === 'timeout'
-                            ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20'
-                            : 'bg-red-500/10 text-red-500 border border-red-500/20'
+                            ? 'border border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                            : 'border border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400'
                         }`}
                       >
-                        {log.status === 'success'
-                          ? '✓ Extracted'
-                          : log.status === 'not_found'
-                          ? 'No DL Found'
-                          : log.status === 'timeout'
-                          ? '⏱ Timeout'
-                          : 'Error'}
+                        {log.status === 'success' ? (
+                          <>
+                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            <span>Extracted</span>
+                          </>
+                        ) : log.status === 'not_found' ? (
+                          <>
+                            <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                            <span>No DL Found</span>
+                          </>
+                        ) : log.status === 'timeout' ? (
+                          <>
+                            <span>⏱</span>
+                            <span>Timeout</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>✕</span>
+                            <span>Error</span>
+                          </>
+                        )}
                       </span>
                     </td>
-                    <td className="py-3 px-3.5 font-mono text-xs">
-                      <span className="rounded-md bg-[var(--bg-secondary)] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--text-secondary)]">
+                    <td className="py-3.5 px-4 font-mono text-[10px] whitespace-nowrap text-right tabular-nums">
+                      <span className="rounded-md bg-[var(--bg-secondary)]/70 border border-[var(--border-default)]/60 px-1.5 py-0.5 leading-4 text-[var(--text-secondary)]">
                         {log.latency_ms} ms
                       </span>
                     </td>
-                    <td className="py-3 px-3.5 capitalize text-[var(--text-secondary)]">
+                    <td className="py-3.5 px-4 capitalize text-[11px] font-semibold text-[var(--text-secondary)] whitespace-nowrap">
                       {log.detected_source ? log.detected_source.replace(/_/g, ' ') : '—'}
                     </td>
-                    <td className="py-3 px-3.5 font-mono text-[11px] text-[var(--text-muted)]">
-                      {log.model_used || 'gemini-3.5-flash-lite'}
+                    <td className="py-3.5 px-4 font-mono text-[10px] text-[var(--text-muted)] whitespace-nowrap">
+                      <span className="rounded-md bg-[var(--surface-primary)] px-1.5 py-0.5 border border-[var(--border-default)]/60 leading-4">
+                        {log.model_used || 'gemini-3.5-flash-lite'}
+                      </span>
                     </td>
-                    <td className="py-3 px-3.5 font-mono text-[11px] text-[var(--text-muted)]">
+                    <td className="py-3.5 px-4 font-mono text-[10.5px] text-[var(--text-secondary)] whitespace-nowrap">
                       {maskIpAddress(log.ip, privacyMode)}
                     </td>
                   </tr>

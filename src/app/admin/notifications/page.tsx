@@ -308,18 +308,20 @@ export default function AdminNotifications(props: any) {
             </div>
 
             {/* Notifications Logs Container (Mobile Cards + Desktop Table) */}
-            <div className="mt-4 overflow-hidden rounded-2xl dev-glass-card backdrop-blur-md shadow-xs">
+            <div className="mt-4 relative overflow-hidden rounded-2xl border border-[var(--border-default)]/80 bg-[var(--surface-primary)] shadow-sm backdrop-blur-md transition-all">
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-[var(--nepal-blue)] to-transparent opacity-70" />
+
                 {/* Mobile Card List (Visible on < md) */}
                 <div className="block md:hidden">
                     {notifLoading && !notificationLogs.length ? (
-                        <div className="py-14 text-center text-xs text-[var(--text-muted)]">
+                        <div className="py-16 text-center text-xs text-[var(--text-muted)]">
                             <div className="flex flex-col items-center justify-center gap-2.5">
                                 <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-[var(--nepal-blue)]/30 border-t-[var(--nepal-blue)]" />
                                 <span>Loading email notifications...</span>
                             </div>
                         </div>
                     ) : notificationLogs.length === 0 ? (
-                        <div className="py-14 px-4 text-center text-xs text-[var(--text-muted)]">
+                        <div className="py-16 px-4 text-center text-xs text-[var(--text-muted)]">
                             <div className="flex flex-col items-center justify-center gap-3">
                                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)] shadow-xs">
                                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -335,7 +337,7 @@ export default function AdminNotifications(props: any) {
                         <div>
                             {/* Mobile Select-All Header if in select mode */}
                             {notifSelectMode && (
-                                <div className="flex items-center justify-between border-b border-[var(--border-default)] bg-[var(--bg-secondary)]/70 px-3.5 py-2.5 text-xs">
+                                <div className="flex items-center justify-between border-b border-[var(--border-default)]/70 bg-[var(--bg-secondary)]/70 px-4 py-3 text-xs">
                                     <label className="flex items-center gap-2 font-semibold text-[var(--text-secondary)] cursor-pointer">
                                         <input
                                             type="checkbox"
@@ -351,20 +353,20 @@ export default function AdminNotifications(props: any) {
                                         />
                                         <span>Select All on this page ({notificationLogs.length})</span>
                                     </label>
-                                    <span className="text-[11px] text-[var(--text-muted)] font-mono">
+                                    <span className="text-[11px] text-[var(--text-muted)] font-mono font-semibold">
                                         {selectedNotifIds.length} selected
                                     </span>
                                 </div>
                             )}
 
-                            <div className="divide-y divide-[var(--border-default)]/60">
+                            <div className="divide-y divide-[var(--border-default)]/50">
                                 {notificationLogs.map((log, idx) => {
                                     const isSelected = selectedNotifIds.includes(log.id)
                                     const sn = (notifPage - 1) * notifLimit + idx + 1
                                     return (
                                         <div
                                             key={log.id}
-                                            className={`p-3.5 transition-colors ${isSelected ? 'bg-[var(--nepal-blue-soft)]/25' : 'hover:bg-[var(--bg-secondary)]/30'}`}
+                                            className={`p-4 transition-colors duration-150 space-y-3 ${isSelected ? 'bg-[var(--nepal-blue-soft)]/20' : 'hover:bg-[var(--bg-secondary)]/30'}`}
                                         >
                                             {/* Top Row: Select/SN + Status Badge + Time ago */}
                                             <div className="flex items-center justify-between gap-2">
@@ -383,23 +385,23 @@ export default function AdminNotifications(props: any) {
                                                             className="h-4 w-4 cursor-pointer rounded border-[var(--border-default)] accent-[var(--nepal-blue)]"
                                                         />
                                                     )}
-                                                    <span className="rounded-md bg-[var(--bg-secondary)] px-1.5 py-0.5 font-mono text-[10px] font-bold text-[var(--text-muted)]">
+                                                    <span className="rounded-lg bg-[var(--bg-secondary)] px-2 py-0.5 font-mono text-[11px] font-bold text-[var(--text-muted)]">
                                                         #{sn}
                                                     </span>
                                                     {log.status === 'sent' ? (
-                                                        <span className="inline-flex items-center gap-1 rounded-full border border-[var(--success-border)] bg-[var(--success-bg)] px-2 py-0.5 text-[10px] font-bold text-[var(--success)]">
+                                                        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
                                                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                                                 <polyline points="20 6 9 17 4 12" />
                                                             </svg>
                                                             <span>Delivered</span>
                                                         </span>
                                                     ) : log.status === 'pending' ? (
-                                                        <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                                                        <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-xs font-bold text-amber-600 dark:text-amber-400">
                                                             <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
                                                             <span>In Queue</span>
                                                         </span>
                                                     ) : log.status === 'cancelled' ? (
-                                                        <span className="inline-flex items-center gap-1 rounded-full border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2 py-0.5 text-[10px] font-semibold text-[var(--text-muted)]">
+                                                        <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-default)]/80 bg-[var(--bg-secondary)]/80 px-2.5 py-0.5 text-xs font-semibold text-[var(--text-muted)]">
                                                             <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                                                 <line x1="18" y1="6" x2="6" y2="18" />
                                                                 <line x1="6" y1="6" x2="18" y2="18" />
@@ -407,7 +409,7 @@ export default function AdminNotifications(props: any) {
                                                             <span>Cancelled</span>
                                                         </span>
                                                     ) : (
-                                                        <span className="inline-flex items-center gap-1 rounded-full border border-purple-500/30 bg-purple-500/10 px-2 py-0.5 text-[10px] font-bold text-purple-600">
+                                                        <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 px-2.5 py-0.5 text-xs font-bold text-purple-600">
                                                             <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true">
                                                                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
                                                             </svg>
@@ -416,7 +418,7 @@ export default function AdminNotifications(props: any) {
                                                     )}
                                                 </div>
                                                 <span
-                                                    className="font-mono text-[10px] text-[var(--text-muted)]"
+                                                    className="font-mono text-xs text-[var(--text-muted)]"
                                                     title={`Subscribed: ${formatNepalDateTime(log.created_at, 'en', true)}`}
                                                 >
                                                     {formatTimeAgo(log.created_at)}
@@ -424,15 +426,15 @@ export default function AdminNotifications(props: any) {
                                             </div>
 
                                             {/* Middle Row: License & Actions */}
-                                            <div className="mt-2 flex items-baseline justify-between gap-2">
-                                                <div className="min-w-0">
-                                                    <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-[var(--text-primary)]">
+                                            <div className="flex items-baseline justify-between gap-3">
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex items-center gap-1.5 font-mono text-sm font-bold tracking-tight text-[var(--text-primary)]">
                                                         <span>{maskLicenseNumber(log.license_number, privacyMode)}</span>
                                                         {!privacyMode && (
                                                             <button
                                                                 type="button"
                                                                 onClick={() => copyToClipboard(log.license_number, `m-nlic-${log.id}`)}
-                                                                className="text-[var(--text-muted)] hover:text-[var(--nepal-blue)] transition cursor-pointer"
+                                                                className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-secondary)] hover:text-[var(--nepal-blue)] transition cursor-pointer"
                                                                 title="Copy license number"
                                                             >
                                                                 {copiedKey === `m-nlic-${log.id}` ? (
@@ -450,17 +452,17 @@ export default function AdminNotifications(props: any) {
                                                     </div>
 
                                                     {/* Email Address */}
-                                                    <div className="mt-0.5 flex items-center gap-1 text-xs">
+                                                    <div className="mt-1 flex items-center gap-1.5 text-xs">
                                                         <a
                                                             href={`mailto:${log.email}`}
-                                                            className="font-mono text-[11px] text-[var(--nepal-blue)] hover:underline truncate"
+                                                            className="font-mono text-xs text-[var(--nepal-blue)] hover:underline truncate font-medium"
                                                         >
                                                             {log.email}
                                                         </a>
                                                         <button
                                                             type="button"
                                                             onClick={() => copyToClipboard(log.email, `m-nemail-${log.id}`)}
-                                                            className="text-[var(--text-muted)] hover:text-[var(--nepal-blue)] shrink-0 transition cursor-pointer"
+                                                            className="text-[var(--text-muted)] hover:text-[var(--nepal-blue)] shrink-0 transition cursor-pointer p-0.5"
                                                             title="Copy email address"
                                                         >
                                                             {copiedKey === `m-nemail-${log.id}` ? (
@@ -468,7 +470,7 @@ export default function AdminNotifications(props: any) {
                                                                     <polyline points="20 6 9 17 4 12" />
                                                                 </svg>
                                                             ) : (
-                                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                                                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                                                                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                                                                 </svg>
@@ -478,13 +480,13 @@ export default function AdminNotifications(props: any) {
 
                                                     {/* DOTM Match */}
                                                     {log.holder_name && (
-                                                        <div className="mt-1 flex items-center gap-1.5 text-[11px] font-semibold text-[var(--text-secondary)]">
+                                                        <div className="mt-1.5 flex items-center gap-1.5 text-xs font-semibold text-[var(--text-primary)]">
                                                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                                                                 <circle cx="12" cy="7" r="4" />
                                                             </svg>
                                                             <span>{log.holder_name}</span>
-                                                            {log.office && <span className="text-[10px] text-[var(--text-muted)]">({log.office})</span>}
+                                                            {log.office && <span className="text-[11px] text-[var(--text-muted)] font-normal">({log.office})</span>}
                                                         </div>
                                                     )}
                                                 </div>
@@ -493,7 +495,7 @@ export default function AdminNotifications(props: any) {
                                                 <button
                                                     type="button"
                                                     onClick={() => handleDeleteNotification(log.id, log.license_number)}
-                                                    className="inline-flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-lg border border-[var(--border-default)] text-[var(--text-muted)] transition hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95 cursor-pointer"
+                                                    className="inline-flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-xl border border-[var(--border-default)]/80 bg-[var(--surface-primary)] text-[var(--text-muted)] transition hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95 cursor-pointer shadow-2xs"
                                                     title="Delete notification record"
                                                 >
                                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -504,10 +506,10 @@ export default function AdminNotifications(props: any) {
                                             </div>
 
                                             {/* Status Details Sub-row */}
-                                            <div className="mt-2 flex items-center justify-between border-t border-[var(--border-default)]/40 pt-2 text-[10px] text-[var(--text-muted)]">
+                                            <div className="flex items-center justify-between border-t border-[var(--border-default)]/40 pt-2.5 text-[11px] text-[var(--text-muted)] font-mono">
                                                 <span>Subscribed: {formatNepalDateTime(log.created_at)}</span>
                                                 {log.sent_at ? (
-                                                    <span className="font-semibold text-[var(--success)]">
+                                                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">
                                                         Sent: {formatNepalDateTime(log.sent_at)}
                                                     </span>
                                                 ) : log.cancelled_at ? (
@@ -530,11 +532,11 @@ export default function AdminNotifications(props: any) {
 
                 {/* Desktop Table View (Hidden on < md, visible on md+) */}
                 <div className="hidden md:block overflow-x-auto">
-                    <table className="w-full text-left text-xs">
-                        <thead className="border-b border-[var(--border-default)] bg-[var(--bg-secondary)]/80 text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                    <table className="admin-data-table w-full text-left text-xs">
+                        <thead className="border-b border-[var(--border-default)]/80 bg-[var(--bg-secondary)]/60 backdrop-blur-md text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">
                             <tr>
                                 {notifSelectMode && (
-                                    <th scope="col" className="w-9 py-3 pl-4 pr-1">
+                                    <th scope="col" className="w-10 py-3.5 pl-4 pr-1">
                                         <input
                                             type="checkbox"
                                             checked={notificationLogs.length > 0 && selectedNotifIds.length === notificationLogs.length}
@@ -545,38 +547,38 @@ export default function AdminNotifications(props: any) {
                                                     setSelectedNotifIds([])
                                                 }
                                             }}
-                                            className="h-3.5 w-3.5 cursor-pointer rounded border-[var(--border-default)] accent-[var(--nepal-blue)]"
+                                            className="h-4 w-4 cursor-pointer rounded border-[var(--border-default)] accent-[var(--nepal-blue)]"
                                             title="Select all on this page"
                                         />
                                     </th>
                                 )}
-                                <th scope="col" className="w-10 py-3 pl-3 pr-2 text-center">
+                                <th scope="col" className="w-12 py-3.5 pl-3 pr-2 text-center">
                                     SN
                                 </th>
-                                <th scope="col" className="py-3 pl-2 pr-3">
+                                <th scope="col" className="py-3.5 pl-2 pr-4">
                                     Subscribed At (NPT)
                                 </th>
-                                <th scope="col" className="px-3 py-3">
+                                <th scope="col" className="px-4 py-3.5">
                                     License Number
                                 </th>
-                                <th scope="col" className="px-3 py-3">
-                                    User Email
+                                <th scope="col" className="px-4 py-3.5">
+                                    Subscriber Email
                                 </th>
-                                <th scope="col" className="px-3 py-3">
+                                <th scope="col" className="px-4 py-3.5">
                                     Delivery Status
                                 </th>
-                                <th scope="col" className="px-3 py-3">
+                                <th scope="col" className="px-4 py-3.5">
                                     DoTM Match / Holder
                                 </th>
-                                <th scope="col" className="py-3 pl-3 pr-4 text-right">
+                                <th scope="col" className="py-3.5 pl-3 pr-4 text-right">
                                     Actions
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-[var(--border-default)]/60">
+                        <tbody className="divide-y divide-[var(--border-default)]/50">
                             {notifLoading && !notificationLogs.length ? (
                                 <tr>
-                                    <td colSpan={notifSelectMode ? 8 : 7} className="py-14 text-center text-xs text-[var(--text-muted)]">
+                                    <td colSpan={notifSelectMode ? 8 : 7} className="py-16 text-center text-xs text-[var(--text-muted)]">
                                         <div className="flex flex-col items-center justify-center gap-2.5">
                                             <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-[var(--nepal-blue)]/30 border-t-[var(--nepal-blue)]" />
                                             <span>Loading email notifications...</span>
@@ -585,7 +587,7 @@ export default function AdminNotifications(props: any) {
                                 </tr>
                             ) : notificationLogs.length === 0 ? (
                                 <tr>
-                                    <td colSpan={notifSelectMode ? 8 : 7} className="py-14 px-4 text-center text-xs text-[var(--text-muted)]">
+                                    <td colSpan={notifSelectMode ? 8 : 7} className="py-16 px-4 text-center text-xs text-[var(--text-muted)]">
                                         <div className="flex flex-col items-center justify-center gap-3">
                                             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)] shadow-xs">
                                                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -605,11 +607,11 @@ export default function AdminNotifications(props: any) {
                                     return (
                                         <tr
                                             key={log.id}
-                                            className={`group transition-colors hover:bg-[var(--bg-secondary)]/40 ${isSelected ? 'bg-[var(--nepal-blue-soft)]/30' : ''}`}
+                                            className={`group transition-colors duration-150 hover:bg-[var(--bg-secondary)]/50 ${isSelected ? 'bg-[var(--nepal-blue-soft)]/20 hover:bg-[var(--nepal-blue-soft)]/30' : ''}`}
                                         >
                                             {/* Checkbox (Visible only in Select mode) */}
                                             {notifSelectMode && (
-                                                <td className="w-9 py-3 pl-4 pr-1">
+                                                <td className="w-10 py-3.5 pl-4 pr-1">
                                                     <input
                                                         type="checkbox"
                                                         checked={isSelected}
@@ -620,37 +622,37 @@ export default function AdminNotifications(props: any) {
                                                                 setSelectedNotifIds((prev) => prev.filter((id) => id !== log.id))
                                                             }
                                                         }}
-                                                        className="h-3.5 w-3.5 cursor-pointer rounded border-[var(--border-default)] accent-[var(--nepal-blue)]"
+                                                        className="h-4 w-4 cursor-pointer rounded border-[var(--border-default)] accent-[var(--nepal-blue)]"
                                                     />
                                                 </td>
                                             )}
 
                                             {/* SN */}
-                                            <td className="w-10 whitespace-nowrap py-3 pl-3 pr-2 text-center font-mono text-[11px] font-bold text-[var(--text-muted)]">
-                                                {sn}
+                                            <td className="w-12 whitespace-nowrap py-3.5 pl-3 pr-2 text-center font-mono text-[10px] font-semibold tabular-nums text-[var(--text-muted)]">
+                                                #{sn}
                                             </td>
 
                                             {/* Timestamp */}
-                                            <td className="whitespace-nowrap py-3 pl-2 pr-3 font-mono text-[11px]">
-                                                <div className="flex flex-col gap-0.5">
+                                            <td className="whitespace-nowrap py-3.5 pl-2 pr-4 font-mono text-[10.5px]">
+                                                <div className="flex flex-col gap-0 leading-tight">
                                                     <span className="font-semibold text-[var(--text-primary)]" title={`Subscribed: ${formatNepalDateTime(log.created_at, 'en', true)} (NPT)`}>
                                                         {formatNepalDateTime(log.created_at)}
                                                     </span>
-                                                    <span className="text-[10px] text-[var(--text-muted)]">
+                                                    <span className="text-[10px] font-sans text-[var(--text-muted)]">
                                                         {formatTimeAgo(log.created_at)}
                                                     </span>
                                                 </div>
                                             </td>
 
                                             {/* License Number */}
-                                            <td className="whitespace-nowrap px-3 py-3">
-                                                <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-[var(--text-primary)]">
+                                            <td className="whitespace-nowrap px-4 py-3.5">
+                                                <div className="flex items-center gap-1 font-mono text-[12px] font-bold tracking-tight text-[var(--text-primary)]">
                                                     <span>{maskLicenseNumber(log.license_number, privacyMode)}</span>
                                                     {!privacyMode && (
                                                         <button
                                                             type="button"
                                                             onClick={() => copyToClipboard(log.license_number, `nlic-${log.id}`)}
-                                                            className="text-[var(--text-muted)] opacity-0 transition group-hover:opacity-100 hover:text-[var(--nepal-blue)] cursor-pointer"
+                                                            className="inline-flex h-5 w-5 items-center justify-center rounded-md text-[var(--text-muted)] opacity-0 transition-all duration-150 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-[var(--bg-secondary)] hover:text-[var(--nepal-blue)] active:scale-90 cursor-pointer"
                                                             title="Copy license number"
                                                         >
                                                             {copiedKey === `nlic-${log.id}` ? (
@@ -669,18 +671,18 @@ export default function AdminNotifications(props: any) {
                                             </td>
 
                                             {/* User Email */}
-                                            <td className="whitespace-nowrap px-3 py-3">
-                                                <div className="flex items-center gap-1.5">
+                                            <td className="whitespace-nowrap px-4 py-3.5">
+                                                <div className="flex items-center gap-1">
                                                     <a
                                                         href={`mailto:${log.email}`}
-                                                        className="font-mono text-xs text-[var(--nepal-blue)] hover:underline"
+                                                        className="font-mono text-[10.5px] font-medium text-[var(--nepal-blue)] hover:underline"
                                                     >
                                                         {log.email}
                                                     </a>
                                                     <button
                                                         type="button"
                                                         onClick={() => copyToClipboard(log.email, `nemail-${log.id}`)}
-                                                        className="text-[var(--text-muted)] opacity-0 transition group-hover:opacity-100 hover:text-[var(--nepal-blue)] cursor-pointer"
+                                                        className="inline-flex h-5 w-5 items-center justify-center rounded-md text-[var(--text-muted)] opacity-0 transition-all duration-150 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-[var(--bg-secondary)] hover:text-[var(--nepal-blue)] active:scale-90 cursor-pointer"
                                                         title="Copy email address"
                                                     >
                                                         {copiedKey === `nemail-${log.id}` ? (
@@ -698,44 +700,44 @@ export default function AdminNotifications(props: any) {
                                             </td>
 
                                             {/* Status / Delivery Badge */}
-                                            <td className="whitespace-nowrap px-3 py-3">
+                                            <td className="whitespace-nowrap px-4 py-3.5">
                                                 {log.status === 'sent' ? (
-                                                    <div className="flex flex-col gap-0.5">
-                                                        <span className="inline-flex w-fit items-center gap-1 rounded-full border border-[var(--success-border)] bg-[var(--success-bg)] px-2 py-0.5 text-[10px] font-bold text-[var(--success)]">
-                                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                    <div className="flex flex-col items-start gap-0 leading-tight">
+                                                        <span className="inline-flex min-w-[92px] items-center justify-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold leading-4 text-emerald-600 dark:text-emerald-400">
+                                                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                                                 <polyline points="20 6 9 17 4 12" />
                                                             </svg>
                                                             <span>Delivered</span>
                                                         </span>
                                                         {log.sent_at && (
-                                                            <span className="font-mono text-[10px] text-[var(--text-muted)]" title={`Delivered: ${formatNepalDateTime(log.sent_at, 'en', true)}`}>
+                                                            <span className="font-mono text-[9.5px] text-[var(--text-muted)]" title={`Delivered: ${formatNepalDateTime(log.sent_at, 'en', true)}`}>
                                                                 {formatNepalDateTime(log.sent_at)}
                                                             </span>
                                                         )}
                                                     </div>
                                                 ) : log.status === 'pending' ? (
-                                                    <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                                                    <span className="inline-flex min-w-[92px] items-center justify-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold leading-4 text-amber-600 dark:text-amber-400">
                                                         <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
                                                         <span>In Queue</span>
                                                     </span>
                                                 ) : log.status === 'cancelled' ? (
-                                                    <div className="flex flex-col gap-0.5">
-                                                        <span className="inline-flex w-fit items-center gap-1 rounded-full border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2 py-0.5 text-[10px] font-semibold text-[var(--text-muted)]">
-                                                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                    <div className="flex flex-col items-start gap-0 leading-tight">
+                                                        <span className="inline-flex min-w-[92px] items-center justify-center gap-1 rounded-full border border-[var(--border-default)]/80 bg-[var(--bg-secondary)]/80 px-2 py-0.5 text-[10px] font-semibold leading-4 text-[var(--text-muted)]">
+                                                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                                                 <line x1="18" y1="6" x2="6" y2="18" />
                                                                 <line x1="6" y1="6" x2="18" y2="18" />
                                                             </svg>
                                                             <span>Cancelled</span>
                                                         </span>
                                                         {log.cancelled_at && (
-                                                            <span className="font-mono text-[10px] text-[var(--text-muted)]">
+                                                            <span className="font-mono text-[9.5px] text-[var(--text-muted)]">
                                                                 {formatNepalDateTime(log.cancelled_at)}
                                                             </span>
                                                         )}
                                                     </div>
                                                 ) : (
-                                                    <span className="inline-flex items-center gap-1 rounded-full border border-purple-500/30 bg-purple-500/10 px-2 py-0.5 text-[10px] font-bold text-purple-600">
-                                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true">
+                                                    <span className="inline-flex min-w-[92px] items-center justify-center gap-1 rounded-full border border-purple-500/30 bg-purple-500/10 px-2 py-0.5 text-[10px] font-bold leading-4 text-purple-600">
+                                                        <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true">
                                                             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
                                                         </svg>
                                                         <span>Processing</span>
@@ -744,10 +746,10 @@ export default function AdminNotifications(props: any) {
                                             </td>
 
                                             {/* License Match / Holder */}
-                                            <td className="whitespace-nowrap px-3 py-3 text-xs">
+                                            <td className="whitespace-nowrap px-4 py-3.5 text-xs">
                                                 {log.holder_name ? (
-                                                    <div>
-                                                        <span className="font-bold text-[var(--text-primary)]">
+                                                    <div className="leading-tight">
+                                                        <span className="text-[11.5px] font-semibold text-[var(--text-primary)]">
                                                             {log.holder_name}
                                                         </span>
                                                         {log.office && (
@@ -757,21 +759,21 @@ export default function AdminNotifications(props: any) {
                                                         )}
                                                     </div>
                                                 ) : (
-                                                    <span className="text-[11px] text-[var(--text-muted)] italic">
+                                                    <span className="text-[10.5px] text-[var(--text-muted)] italic">
                                                         Not in records yet
                                                     </span>
                                                 )}
                                             </td>
 
                                             {/* Actions */}
-                                            <td className="whitespace-nowrap py-3 pl-3 pr-4 text-right">
+                                            <td className="whitespace-nowrap py-3.5 pl-3 pr-4 text-right">
                                                 <button
                                                     type="button"
                                                     onClick={() => handleDeleteNotification(log.id, log.license_number)}
-                                                    className="inline-flex h-7.5 w-7.5 items-center justify-center rounded-lg border border-[var(--border-default)] text-[var(--text-muted)] transition hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95 cursor-pointer"
+                                                    className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--border-default)]/80 bg-[var(--surface-primary)] text-[var(--text-muted)] transition-all duration-150 hover:-translate-y-px hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95 cursor-pointer shadow-2xs"
                                                     title="Delete notification record"
                                                 >
-                                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                                         <polyline points="3 6 5 6 21 6" />
                                                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                                                     </svg>

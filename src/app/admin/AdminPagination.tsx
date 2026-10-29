@@ -64,7 +64,7 @@ export default function AdminPagination({
 
     return (
         <div
-            className={`flex flex-col gap-3.5 border-t border-[var(--border-default)] px-3.5 py-3.5 sm:px-4 sm:flex-row sm:items-center sm:justify-between ${className}`}
+            className={`flex flex-col gap-3.5 border-t border-[var(--border-default)]/80 bg-[var(--surface-primary)]/40 backdrop-blur-xs px-4 py-3.5 sm:px-5 sm:flex-row sm:items-center sm:justify-between ${className}`}
         >
             {/* Left: Summary and Page Size Selector */}
             <div className="flex flex-wrap items-center justify-between sm:justify-start gap-3 text-xs text-[var(--text-muted)]">
@@ -73,9 +73,9 @@ export default function AdminPagination({
                         <span>No {itemLabel} found</span>
                     ) : (
                         <span>
-                            Showing <strong className="font-mono tabular-nums text-[var(--text-primary)]">{startItem.toLocaleString()}</strong> to{' '}
-                            <strong className="font-mono tabular-nums text-[var(--text-primary)]">{endItem.toLocaleString()}</strong> of{' '}
-                            <strong className="font-mono tabular-nums text-[var(--text-primary)]">{totalItems.toLocaleString()}</strong> {itemLabel}
+                            Showing <strong className="font-mono tabular-nums font-semibold text-[var(--text-primary)]">{startItem.toLocaleString()}</strong> to{' '}
+                            <strong className="font-mono tabular-nums font-semibold text-[var(--text-primary)]">{endItem.toLocaleString()}</strong> of{' '}
+                            <strong className="font-mono tabular-nums font-bold text-[var(--text-primary)]">{totalItems.toLocaleString()}</strong> {itemLabel}
                         </span>
                     )}
                     {lastUpdated && (
@@ -86,8 +86,8 @@ export default function AdminPagination({
                 </div>
 
                 {onPageSizeChange && (
-                    <div className="flex items-center gap-1.5 pl-0 sm:pl-2 sm:border-l sm:border-[var(--border-default)]">
-                        <label htmlFor="admin-page-size" className="text-[11px] font-medium text-[var(--text-muted)]">
+                    <div className="flex items-center gap-1.5 pl-0 sm:pl-3 sm:border-l sm:border-[var(--border-default)]/70">
+                        <label htmlFor="admin-page-size" className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                             Rows:
                         </label>
                         <select
@@ -100,7 +100,7 @@ export default function AdminPagination({
                             }}
                             disabled={loading}
                             aria-label={`Rows per page for ${itemLabel}`}
-                            className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2 py-1 text-xs font-semibold text-[var(--text-secondary)] shadow-2xs transition hover:border-[var(--nepal-blue)] focus:border-[var(--nepal-blue)] focus:outline-hidden disabled:opacity-50 cursor-pointer"
+                            className="rounded-xl border border-[var(--border-default)]/80 bg-[var(--surface-primary)] px-2.5 py-1 text-xs font-bold text-[var(--text-secondary)] shadow-2xs transition hover:border-[var(--nepal-blue)] focus:border-[var(--nepal-blue)] focus:outline-hidden disabled:opacity-50 cursor-pointer"
                         >
                             {pageSizeOptions.map((opt) => (
                                 <option key={opt} value={opt}>
@@ -119,7 +119,7 @@ export default function AdminPagination({
                     type="button"
                     onClick={() => onPageChange(1)}
                     disabled={currentPage <= 1 || loading}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] text-xs text-[var(--text-secondary)] shadow-2xs transition active:scale-95 hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
+                    className="inline-flex h-8.5 w-8.5 items-center justify-center rounded-xl border border-[var(--border-default)]/80 bg-[var(--surface-primary)] text-xs text-[var(--text-secondary)] shadow-2xs transition active:scale-95 hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] hover:bg-[var(--bg-secondary)]/60 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
                     title="First page"
                     aria-label="First page"
                 >
@@ -134,7 +134,7 @@ export default function AdminPagination({
                     type="button"
                     onClick={() => onPageChange(Math.max(1, currentPage - 1))}
                     disabled={currentPage <= 1 || loading}
-                    className="inline-flex h-8 items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] shadow-2xs transition active:scale-95 hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
+                    className="inline-flex h-8.5 items-center gap-1 rounded-xl border border-[var(--border-default)]/80 bg-[var(--surface-primary)] px-3 text-xs font-semibold text-[var(--text-secondary)] shadow-2xs transition active:scale-95 hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] hover:bg-[var(--bg-secondary)]/60 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
                     title="Previous page"
                     aria-label="Previous page"
                 >
@@ -151,7 +151,7 @@ export default function AdminPagination({
                             return (
                                 <span
                                     key={`ellipsis-${idx}`}
-                                    className="flex h-8 w-7 items-center justify-center text-xs font-bold text-[var(--text-muted)] select-none"
+                                    className="flex h-8.5 w-7 items-center justify-center text-xs font-bold text-[var(--text-muted)] select-none"
                                 >
                                     …
                                 </span>
@@ -166,10 +166,10 @@ export default function AdminPagination({
                                 onClick={() => onPageChange(num)}
                                 disabled={loading}
                                 aria-current={isActive ? 'page' : undefined}
-                                className={`inline-flex h-8 min-w-[32px] items-center justify-center rounded-lg px-2 text-xs font-bold font-mono tabular-nums transition shadow-2xs active:scale-95 cursor-pointer ${
+                                className={`inline-flex h-8.5 min-w-[34px] items-center justify-center rounded-xl px-2 text-xs font-bold font-mono tabular-nums transition shadow-2xs active:scale-95 cursor-pointer ${
                                     isActive
-                                        ? 'bg-[var(--nepal-blue)] text-white shadow-xs'
-                                        : 'border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-secondary)] hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)]'
+                                        ? 'bg-gradient-to-r from-[var(--nepal-blue)] to-blue-600 text-white shadow-xs shadow-[var(--nepal-blue)]/25'
+                                        : 'border border-[var(--border-default)]/80 bg-[var(--surface-primary)] text-[var(--text-secondary)] hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] hover:bg-[var(--bg-secondary)]/60'
                                 }`}
                             >
                                 {num}
@@ -179,7 +179,7 @@ export default function AdminPagination({
                 </div>
 
                 {/* Compact Page Display on Mobile (< md) */}
-                <div className="md:hidden px-2 font-mono tabular-nums text-xs font-bold text-[var(--text-secondary)]">
+                <div className="md:hidden px-2.5 font-mono tabular-nums text-xs font-bold text-[var(--text-secondary)]">
                     {currentPage} / {safeTotalPages}
                 </div>
 
@@ -188,7 +188,7 @@ export default function AdminPagination({
                     type="button"
                     onClick={() => onPageChange(Math.min(safeTotalPages, currentPage + 1))}
                     disabled={currentPage >= safeTotalPages || loading}
-                    className="inline-flex h-8 items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] shadow-2xs transition active:scale-95 hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
+                    className="inline-flex h-8.5 items-center gap-1 rounded-xl border border-[var(--border-default)]/80 bg-[var(--surface-primary)] px-3 text-xs font-semibold text-[var(--text-secondary)] shadow-2xs transition active:scale-95 hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] hover:bg-[var(--bg-secondary)]/60 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
                     title="Next page"
                     aria-label="Next page"
                 >
@@ -203,7 +203,7 @@ export default function AdminPagination({
                     type="button"
                     onClick={() => onPageChange(safeTotalPages)}
                     disabled={currentPage >= safeTotalPages || loading}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] text-xs text-[var(--text-secondary)] shadow-2xs transition active:scale-95 hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
+                    className="inline-flex h-8.5 w-8.5 items-center justify-center rounded-xl border border-[var(--border-default)]/80 bg-[var(--surface-primary)] text-xs text-[var(--text-secondary)] shadow-2xs transition active:scale-95 hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] hover:bg-[var(--bg-secondary)]/60 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
                     title="Last page"
                     aria-label="Last page"
                 >
@@ -215,8 +215,8 @@ export default function AdminPagination({
 
                 {/* Quick Jump Input when there are multiple pages */}
                 {safeTotalPages > 3 && (
-                    <form onSubmit={handleJumpSubmit} className="hidden lg:flex items-center gap-1.5 pl-2 border-l border-[var(--border-default)] text-xs">
-                        <span className="text-[11px] text-[var(--text-muted)]">Go to:</span>
+                    <form onSubmit={handleJumpSubmit} className="hidden lg:flex items-center gap-1.5 pl-2.5 border-l border-[var(--border-default)]/70 text-xs">
+                        <span className="text-[11px] font-medium text-[var(--text-muted)]">Go to:</span>
                         <input
                             type="number"
                             min={1}
@@ -231,7 +231,7 @@ export default function AdminPagination({
                                 }
                             }}
                             disabled={loading}
-                            className="h-8 w-12 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-1.5 text-center font-mono text-xs font-bold text-[var(--text-primary)] focus:border-[var(--nepal-blue)] focus:outline-hidden"
+                            className="h-8.5 w-13 rounded-xl border border-[var(--border-default)]/80 bg-[var(--surface-primary)] px-2 text-center font-mono text-xs font-bold text-[var(--text-primary)] focus:border-[var(--nepal-blue)] focus:outline-hidden"
                             title={`Jump directly to page 1-${safeTotalPages}`}
                             aria-label="Jump to page"
                         />
