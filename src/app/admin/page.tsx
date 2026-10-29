@@ -70,7 +70,7 @@ export default function AdminPage() {
     const [limit, setLimit] = useState(10)
     const [totalPages, setTotalPages] = useState(1)
     const [searchFilter, setSearchFilter] = useState('')
-    const [statusFilter, setStatusFilter] = useState<'all' | 'found' | 'not_found'>('all')
+    const [statusFilter, setStatusFilter] = useState<'all' | 'found' | 'not_found' | 'duplicates'>('all')
     const [dataLoading, setDataLoading] = useState(false)
     const [autoRefresh, setAutoRefresh] = useState(true)
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
@@ -1048,6 +1048,75 @@ export default function AdminPage() {
                     }
                 } catch {
                     // Error
+                }
+            },
+        })
+    }
+
+    const handleAutoDeleteDuplicates = (keep: 'newest' | 'oldest' = 'newest') => {
+        const redundant = stats?.redundantCount ?? 0
+        setConfirmDialog({
+            title: 'Clean Older Duplicate Searches?',
+            message: `This will leave 1 record (the ${keep === 'newest' ? 'latest' : 'earliest'} search by date) for every duplicate license and permanently delete all older duplicate search records.${
+                redundant > 0 ? ` Approximately ${redundant} older duplicate records will be deleted.` : ''
+            } The newest search record for each license will be preserved.`,
+            confirmLabel: 'Yes, Clean Older Duplicates (Leave 1 Latest)',
+            onConfirm: async () => {
+                try {
+                    const res = await fetch(`/api/admin/logs?duplicates=auto&keep=${keep}`, {
+                        method: 'DELETE',
+                    })
+                    const data = await res.json().catch(() => null)
+                    if (res.ok) {
+                        const count = data?.deletedCount ?? redundant
+                        setSelectedSearchIds([])
+                        setSearchSelectMode(false)
+                        setPage(1)
+                        setRefreshKey((k) => k + 1)
+                        showToast(`Deleted ${count} older duplicate search records! Latest search for each license was preserved.`)
+                    } else {
+                        showToast('Failed to auto-clean duplicate searches', 'error')
+                    }
+                } catch {
+                    showToast('Failed to auto-clean duplicate searches', 'error')
+                }
+            },
+        })
+    }
+
+    const handleDeleteLicenseDuplicates = (license: string) => {
+        const displayLic = maskLicenseNumber(license, privacyMode)
+        setConfirmDialog({
+            title: `Delete older duplicates for ${displayLic}?`,
+            message: `This will leave 1 record (the latest search by date) and permanently delete all older duplicate search records for license ${displayLic}.`,
+            confirmLabel: 'Delete Older Duplicates (Leave 1 Latest)',
+            onConfirm: async () => {
+                try {
+                    const res = await fetch(`/api/admin/logs?duplicates=auto&license=${encodeURIComponent(license)}&keep=newest`, {
+                        method: 'DELETE',
+                    })
+                    const data = await res.json().catch(() => null)
+                    if (res.ok) {
+                        const count = data?.deletedCount ?? 1
+                        setLogs((prev) => {
+                            let keptOne = false
+                            return prev.filter((item) => {
+                                if (item.license_number !== license) return true
+                                if (!keptOne) {
+                                    keptOne = true
+                                    return true // Keep 1 latest record!
+                                }
+                                return false // Remove older duplicate
+                            })
+                        })
+                        setSelectedSearchIds([])
+                        setRefreshKey((k) => k + 1)
+                        showToast(`Deleted ${count} older duplicate search records for ${displayLic} (latest record preserved)`)
+                    } else {
+                        showToast(`Failed to delete older duplicates for ${displayLic}`, 'error')
+                    }
+                } catch {
+                    showToast(`Failed to delete older duplicates for ${displayLic}`, 'error')
                 }
             },
         })
@@ -2220,6 +2289,11 @@ export default function AdminPage() {
                         searchSelectMode={searchSelectMode}
                         selectedSearchIds={selectedSearchIds}
                         copiedKey={copiedKey}
+                        duplicateStats={{
+                            duplicateCount: stats?.duplicateCount || 0,
+                            duplicateLicenses: stats?.duplicateLicenses || 0,
+                            redundantCount: stats?.redundantCount || 0,
+                        }}
                         setPage={setPage}
                         setLimit={setLimit}
                         setSearchFilter={setSearchFilter}
@@ -2231,6 +2305,8 @@ export default function AdminPage() {
                         handleDeleteSelectedSearchLogs={handleDeleteSelectedSearchLogs}
                         handleDeleteSearchLogsOlderThan={handleDeleteSearchLogsOlderThan}
                         handleDeleteAllSearchLogs={handleDeleteAllSearchLogs}
+                        handleAutoDeleteDuplicates={handleAutoDeleteDuplicates}
+                        handleDeleteLicenseDuplicates={handleDeleteLicenseDuplicates}
                         startTransition={startTransition}
                     />
                 ) : activeTab === 'notifications' ? (

@@ -4,7 +4,12 @@ import {
     getAdminSecret,
     verifyAdminSessionToken,
 } from '@/lib/adminAuth'
-import { getSearchLogs, getSearchStats } from '@/lib/searchLogger'
+import {
+    getSearchLogs,
+    getSearchStats,
+    deduplicateSearchLogs,
+    deleteSearchLogsByLicense,
+} from '@/lib/searchLogger'
 import { getNotificationStats } from '@/lib/notifications'
 import { getFeedbackStats } from '@/lib/feedback'
 import { getTurso } from '@/lib/turso'
@@ -91,10 +96,12 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(200, Math.max(10, parseInt(searchParams.get('limit') || '10', 10) || 10))
     const search = searchParams.get('search') || ''
     const statusParam = searchParams.get('status') || 'all'
-    const status =
-        statusParam === 'found' || statusParam === 'not_found' || statusParam === 'error'
-            ? statusParam
-            : 'all'
+    const isDuplicates = searchParams.get('duplicates') === 'true' || statusParam === 'duplicates'
+    const status = isDuplicates
+        ? 'duplicates'
+        : statusParam === 'found' || statusParam === 'not_found' || statusParam === 'error'
+        ? statusParam
+        : 'all'
 
     try {
         const db = getTurso()
@@ -138,13 +145,39 @@ export async function DELETE(request: NextRequest) {
         const id = searchParams.get('id')
         const idsParam = searchParams.get('ids')
         const days = parseInt(searchParams.get('days') || '0', 10)
+        const duplicatesParam = searchParams.get('duplicates')
+        const action = searchParams.get('action')
+        const keep = (searchParams.get('keep') || 'newest') as 'newest' | 'oldest'
+        const license = searchParams.get('license')
         const db = getTurso()
 
-        if (id) {
-            await db.execute({
+        if (duplicatesParam === 'auto' || action === 'deduplicate') {
+            const result = await deduplicateSearchLogs({
+                keep,
+                license: license || undefined,
+                mode: duplicatesParam === 'all' ? 'delete_all' : 'keep_one',
+            })
+            return NextResponse.json({
+                status: 'success',
+                deletedCount: result.deletedCount,
+                message: `Cleaned ${result.deletedCount} older duplicate search records. Latest search record was kept.`,
+            })
+        } else if (license && !id && !idsParam) {
+            const keepLatest = duplicatesParam !== 'all'
+            const result = await deleteSearchLogsByLicense(license, keepLatest)
+            return NextResponse.json({
+                status: 'success',
+                deletedCount: result.deletedCount,
+                message: keepLatest
+                    ? `Deleted ${result.deletedCount} older duplicate search records for license. The latest search record was preserved.`
+                    : `Deleted ${result.deletedCount} search records for license.`,
+            })
+        } else if (id) {
+            const res = await db.execute({
                 sql: 'DELETE FROM search_logs WHERE id = ?',
                 args: [Number(id)],
             })
+            return NextResponse.json({ status: 'success', deletedCount: res.rowsAffected || 1 })
         } else if (idsParam) {
             const ids = idsParam
                 .split(',')
@@ -152,23 +185,25 @@ export async function DELETE(request: NextRequest) {
                 .filter((n) => Number.isFinite(n) && n > 0)
             if (ids.length > 0) {
                 const placeholders = ids.map(() => '?').join(', ')
-                await db.execute({
+                const res = await db.execute({
                     sql: `DELETE FROM search_logs WHERE id IN (${placeholders})`,
                     args: ids,
                 })
+                return NextResponse.json({ status: 'success', deletedCount: res.rowsAffected || ids.length })
             }
+            return NextResponse.json({ status: 'success', deletedCount: 0 })
         } else if (days > 0) {
             const cutoff = Date.now() - days * 24 * 60 * 60 * 1000
-            await db.execute({
+            const res = await db.execute({
                 sql: 'DELETE FROM search_logs WHERE created_at < ?',
                 args: [cutoff],
             })
+            return NextResponse.json({ status: 'success', deletedCount: res.rowsAffected })
         } else {
             // Delete all logs
-            await db.execute('DELETE FROM search_logs')
+            const res = await db.execute('DELETE FROM search_logs')
+            return NextResponse.json({ status: 'success', deletedCount: res.rowsAffected })
         }
-
-        return NextResponse.json({ status: 'success' })
     } catch (err) {
         console.error('Failed to delete search logs:', err)
         return NextResponse.json(

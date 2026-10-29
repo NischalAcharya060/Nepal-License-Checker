@@ -12,17 +12,18 @@ export interface AdminSearchesProps {
     limit?: number
     totalPages?: number
     searchFilter?: string
-    statusFilter?: 'all' | 'found' | 'not_found'
+    statusFilter?: 'all' | 'found' | 'not_found' | 'duplicates'
     dataLoading?: boolean
     lastUpdated?: Date | null
     privacyMode?: boolean
     searchSelectMode?: boolean
     selectedSearchIds?: number[]
     copiedKey?: string | null
+    duplicateStats?: { duplicateCount: number; duplicateLicenses: number; redundantCount: number } | null
     setPage?: (page: number) => void
     setLimit?: (limit: number) => void
     setSearchFilter?: (filter: string) => void
-    setStatusFilter?: (status: 'all' | 'found' | 'not_found') => void
+    setStatusFilter?: (status: 'all' | 'found' | 'not_found' | 'duplicates') => void
     setSearchSelectMode?: (mode: boolean) => void
     setSelectedSearchIds?: React.Dispatch<React.SetStateAction<number[]>>
     copyToClipboard?: (text: string, key: string) => void
@@ -30,6 +31,8 @@ export interface AdminSearchesProps {
     handleDeleteSelectedSearchLogs?: () => void
     handleDeleteSearchLogsOlderThan?: (days: number) => void
     handleDeleteAllSearchLogs?: () => void
+    handleAutoDeleteDuplicates?: (keep?: 'newest' | 'oldest') => void
+    handleDeleteLicenseDuplicates?: (license: string) => void
     startTransition?: (callback: () => void) => void
 }
 
@@ -49,6 +52,7 @@ export default function AdminSearches(props: any) {
         searchSelectMode = false,
         selectedSearchIds = [],
         copiedKey = null,
+        duplicateStats = null,
         setPage = () => {},
         setLimit = () => {},
         setSearchFilter = () => {},
@@ -60,6 +64,8 @@ export default function AdminSearches(props: any) {
         handleDeleteSelectedSearchLogs = () => {},
         handleDeleteSearchLogsOlderThan = () => {},
         handleDeleteAllSearchLogs = () => {},
+        handleAutoDeleteDuplicates = () => {},
+        handleDeleteLicenseDuplicates = () => {},
         startTransition = (cb) => cb(),
     }: AdminSearchesProps = props || {}
 
@@ -113,25 +119,39 @@ export default function AdminSearches(props: any) {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                    {/* Status Filter */}
-                    <div className="inline-flex rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-1 text-xs font-semibold">
-                        {(['all', 'found', 'not_found'] as const).map((st) => (
-                            <button
-                                key={st}
-                                type="button"
-                                onClick={() => {
-                                    setStatusFilter(st)
-                                    setPage(1)
-                                }}
-                                className={`rounded-lg px-2.5 py-1 text-[11px] sm:text-xs capitalize transition cursor-pointer ${
-                                    statusFilter === st
-                                        ? 'bg-[var(--surface-primary)] text-[var(--nepal-blue)] shadow-xs font-bold'
-                                        : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-                                }`}
-                            >
-                                {st === 'not_found' ? 'Not Found' : st}
-                            </button>
-                        ))}
+                    {/* Status & Duplicates Filter */}
+                    <div className="inline-flex flex-wrap rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-1 text-xs font-semibold">
+                        {(['all', 'found', 'not_found', 'duplicates'] as const).map((st) => {
+                            const isDup = st === 'duplicates'
+                            const count = isDup ? duplicateStats?.duplicateCount || 0 : undefined
+                            const isActive = statusFilter === st
+                            return (
+                                <button
+                                    key={st}
+                                    type="button"
+                                    onClick={() => {
+                                        setStatusFilter(st)
+                                        setPage(1)
+                                    }}
+                                    className={`rounded-lg px-2.5 py-1 text-[11px] sm:text-xs capitalize transition cursor-pointer inline-flex items-center gap-1.5 ${
+                                        isActive
+                                            ? isDup
+                                                ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 shadow-xs font-bold'
+                                                : 'bg-[var(--surface-primary)] text-[var(--nepal-blue)] shadow-xs font-bold'
+                                            : isDup && (count ?? 0) > 0
+                                            ? 'text-amber-600 dark:text-amber-400 hover:text-amber-700'
+                                            : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                                    }`}
+                                >
+                                    <span>{st === 'not_found' ? 'Not Found' : st === 'duplicates' ? 'Duplicates' : st}</span>
+                                    {isDup && (count ?? 0) > 0 && (
+                                        <span className="rounded-full bg-amber-500/20 px-1.5 py-0.2 text-[10px] font-mono font-bold text-amber-700 dark:text-amber-300">
+                                            {count}
+                                        </span>
+                                    )}
+                                </button>
+                            )
+                        })}
                     </div>
 
                     {/* Limit Selector */}
@@ -148,6 +168,24 @@ export default function AdminSearches(props: any) {
                         <option value={50}>50 rows</option>
                         <option value={100}>100 rows</option>
                     </select>
+
+                    {/* Auto-Clean Duplicates Button */}
+                    <button
+                        type="button"
+                        disabled={total === 0 || dataLoading || !(duplicateStats?.duplicateCount || statusFilter === 'duplicates')}
+                        onClick={() => handleAutoDeleteDuplicates('newest')}
+                        className={`inline-flex h-8.5 sm:h-9 items-center gap-1.5 rounded-xl border px-2.5 sm:px-3 text-[11px] sm:text-xs font-semibold shadow-xs transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer ${
+                            statusFilter === 'duplicates'
+                                ? 'border-amber-500/60 bg-amber-500/20 text-amber-800 dark:text-amber-300 font-bold hover:bg-amber-500/30'
+                                : 'border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500/20'
+                        }`}
+                        title="Automatically remove redundant duplicate search queries, preserving the latest search for each license"
+                    >
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                        </svg>
+                        <span>Auto-Clean Duplicates{duplicateStats?.redundantCount ? ` (${duplicateStats.redundantCount})` : ''}</span>
+                    </button>
 
                     {/* Toggle Multi-Select Mode Button */}
                     <button
@@ -192,20 +230,28 @@ export default function AdminSearches(props: any) {
                         </button>
                     )}
 
-                    {/* Manual Delete Older Than Selector */}
+                    {/* Manual Delete Older Than / Deduplicate Selector */}
                     <select
                         value=""
                         disabled={total === 0 || dataLoading}
                         onChange={(e) => {
-                            const days = Number(e.target.value)
-                            if (days > 0) handleDeleteSearchLogsOlderThan(days)
+                            const val = e.target.value
+                            if (val === 'dedup-newest') {
+                                handleAutoDeleteDuplicates('newest')
+                            } else if (val === 'dedup-oldest') {
+                                handleAutoDeleteDuplicates('oldest')
+                            } else {
+                                const days = Number(val)
+                                if (days > 0) handleDeleteSearchLogsOlderThan(days)
+                            }
                         }}
                         className="h-8.5 sm:h-9 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2 sm:px-2.5 text-[11px] sm:text-xs font-semibold text-[var(--text-secondary)] transition hover:border-[var(--error-border)] focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
-                        title="Manually delete search logs older than selected days"
+                        title="Prune old logs or deduplicate searches"
                     >
                         <option value="" disabled>
-                            Prune Old...
+                            Prune Old / Clean...
                         </option>
+                        <option value="dedup-newest">Clean Older Duplicates (Leave 1 Latest)</option>
                         <option value={7}>Delete &gt; 7 days old</option>
                         <option value={30}>Delete &gt; 30 days old</option>
                         <option value={90}>Delete &gt; 90 days old</option>
@@ -227,6 +273,87 @@ export default function AdminSearches(props: any) {
                     </button>
                 </div>
             </div>
+
+            {/* Duplicates Filter Active Banner */}
+            {statusFilter === 'duplicates' && (
+                <div className="mt-4 dev-glass-card rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent p-3.5 sm:p-4 backdrop-blur-md shadow-xs">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-start sm:items-center gap-3 min-w-0">
+                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 shadow-2xs">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                </svg>
+                            </span>
+                            <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)]">
+                                        Duplicate License Searches Filter
+                                    </h3>
+                                    <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] sm:text-xs font-mono font-bold text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                                        {total} duplicate {total === 1 ? 'entry' : 'entries'} ({duplicateStats?.duplicateLicenses || 'multiple'} unique licenses)
+                                    </span>
+                                </div>
+                                <p className="mt-0.5 text-[11px] sm:text-xs text-[var(--text-secondary)] leading-relaxed">
+                                    Showing search queries for licenses searched multiple times. Auto-clean or manually delete older duplicate records while preserving the 1 latest search record by date for each license.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2 shrink-0">
+                            <button
+                                type="button"
+                                disabled={dataLoading || total === 0}
+                                onClick={() => handleAutoDeleteDuplicates('newest')}
+                                className="inline-flex h-8 sm:h-8.5 items-center gap-1.5 rounded-xl bg-amber-500 px-3 text-xs font-bold text-white shadow-xs transition hover:bg-amber-600 active:scale-95 disabled:opacity-50 cursor-pointer"
+                                title="Auto-clean all older duplicate search records, keeping the 1 latest search for each license"
+                            >
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                                </svg>
+                                <span>Auto-Clean (Leave 1 Latest)</span>
+                            </button>
+
+                            {logs.length > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const olderIds = logs
+                                            .filter((l) => (l.duplicate_count ?? 1) > 1 && !l.is_latest)
+                                            .map((l) => l.id)
+                                        setSelectedSearchIds(olderIds)
+                                        setSearchSelectMode(true)
+                                    }}
+                                    className="inline-flex h-8 sm:h-8.5 items-center gap-1.5 rounded-xl border border-amber-500/40 bg-amber-500/10 px-2.5 sm:px-3 text-xs font-semibold text-amber-700 dark:text-amber-300 transition hover:bg-amber-500/20 active:scale-95 cursor-pointer shadow-2xs"
+                                    title="Select only older duplicate search records, keeping the 1 latest search record for each license unselected"
+                                >
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                        <polyline points="9 11 12 14 22 4" />
+                                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                                    </svg>
+                                    <span>Select Older (Leave Latest)</span>
+                                </button>
+                            )}
+
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setStatusFilter('all')
+                                    setPage(1)
+                                }}
+                                className="inline-flex h-8 sm:h-8.5 items-center gap-1 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-primary)] transition active:scale-95 cursor-pointer shadow-2xs"
+                                title="Exit duplicates filter and show all searches"
+                            >
+                                <span>View All</span>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Search Logs Container (Mobile Cards + Desktop Table) */}
             <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-xs">
@@ -336,7 +463,7 @@ export default function AdminSearches(props: any) {
                                             {/* Middle Row: License Number & Holder */}
                                             <div className="mt-2 flex items-baseline justify-between gap-2">
                                                 <div className="min-w-0">
-                                                    <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-[var(--text-primary)]">
+                                                    <div className="flex flex-wrap items-center gap-1.5 font-mono text-xs font-bold text-[var(--text-primary)]">
                                                         <span>{maskLicenseNumber(log.license_number, privacyMode)}</span>
                                                         {!privacyMode && (
                                                             <button
@@ -357,6 +484,30 @@ export default function AdminSearches(props: any) {
                                                                 )}
                                                             </button>
                                                         )}
+                                                        {log.duplicate_count && log.duplicate_count > 1 && (
+                                                            log.is_latest ? (
+                                                                <span
+                                                                    className="inline-flex items-center gap-1 rounded-md bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 text-[10px] font-mono font-bold text-emerald-700 dark:text-emerald-300"
+                                                                    title={`Latest search record by date for this license (kept during cleanup, searched ${log.duplicate_count} times)`}
+                                                                >
+                                                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                                        <polyline points="20 6 9 17 4 12" />
+                                                                    </svg>
+                                                                    <span>★ Latest Date ({log.duplicate_count}×)</span>
+                                                                </span>
+                                                            ) : (
+                                                                <span
+                                                                    className="inline-flex items-center gap-1 rounded-md bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 text-[10px] font-mono font-bold text-amber-700 dark:text-amber-300"
+                                                                    title="Older duplicate record - safe to delete"
+                                                                >
+                                                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                                                    </svg>
+                                                                    <span>Older Duplicate</span>
+                                                                </span>
+                                                            )
+                                                        )}
                                                     </div>
                                                     {log.holder_name && (
                                                         <p className="mt-0.5 text-xs font-semibold text-[var(--text-secondary)] truncate">
@@ -370,18 +521,32 @@ export default function AdminSearches(props: any) {
                                                     )}
                                                 </div>
 
-                                                {/* Actions (Delete single) */}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleDeleteSearchLog(log.id, log.license_number)}
-                                                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[var(--border-default)] text-[var(--text-muted)] transition hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95 cursor-pointer"
-                                                    title="Delete search log"
-                                                >
-                                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                                        <polyline points="3 6 5 6 21 6" />
-                                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                                    </svg>
-                                                </button>
+                                                {/* Actions (Delete single & Delete older duplicates for license) */}
+                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                    {log.duplicate_count && log.duplicate_count > 1 && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleDeleteLicenseDuplicates(log.license_number)}
+                                                            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400 transition hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95 cursor-pointer"
+                                                            title={`Delete older duplicate searches for license ${log.license_number} (leaves 1 latest record)`}
+                                                        >
+                                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4" />
+                                                            </svg>
+                                                        </button>
+                                                    )}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDeleteSearchLog(log.id, log.license_number)}
+                                                        className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border-default)] text-[var(--text-muted)] transition hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95 cursor-pointer"
+                                                        title="Delete search log"
+                                                    >
+                                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                            <polyline points="3 6 5 6 21 6" />
+                                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
                                             </div>
 
                                             {/* Bottom Meta Row: Location & IP */}
@@ -541,28 +706,54 @@ export default function AdminSearches(props: any) {
                                                 </div>
                                             </td>
 
-                                            {/* License Number */}
+                                            {/* License Number & Duplicate Badge */}
                                             <td className="whitespace-nowrap px-3 py-3">
-                                                <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-[var(--text-primary)]">
-                                                    <span>{maskLicenseNumber(log.license_number, privacyMode)}</span>
-                                                    {!privacyMode && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => copyToClipboard(log.license_number, `lic-${log.id}`)}
-                                                            className="text-[var(--text-muted)] opacity-0 transition group-hover:opacity-100 hover:text-[var(--nepal-blue)] cursor-pointer"
-                                                            title="Copy license number"
-                                                        >
-                                                            {copiedKey === `lic-${log.id}` ? (
-                                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500" aria-hidden="true">
+                                                <div className="flex flex-col gap-1">
+                                                    <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-[var(--text-primary)]">
+                                                        <span>{maskLicenseNumber(log.license_number, privacyMode)}</span>
+                                                        {!privacyMode && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => copyToClipboard(log.license_number, `lic-${log.id}`)}
+                                                                className="text-[var(--text-muted)] opacity-0 transition group-hover:opacity-100 hover:text-[var(--nepal-blue)] cursor-pointer"
+                                                                title="Copy license number"
+                                                            >
+                                                                {copiedKey === `lic-${log.id}` ? (
+                                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500" aria-hidden="true">
+                                                                        <polyline points="20 6 9 17 4 12" />
+                                                                    </svg>
+                                                                ) : (
+                                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                                                    </svg>
+                                                                )}
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    {log.duplicate_count && log.duplicate_count > 1 && (
+                                                        log.is_latest ? (
+                                                            <span
+                                                                className="inline-flex w-fit items-center gap-1 rounded-md bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 text-[10px] font-mono font-bold text-emerald-700 dark:text-emerald-300"
+                                                                title={`Latest search record by date for this license (kept during cleanup, searched ${log.duplicate_count} times)`}
+                                                            >
+                                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                                                     <polyline points="20 6 9 17 4 12" />
                                                                 </svg>
-                                                            ) : (
-                                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                                <span>★ Latest Date ({log.duplicate_count}×)</span>
+                                                            </span>
+                                                        ) : (
+                                                            <span
+                                                                className="inline-flex w-fit items-center gap-1 rounded-md bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 text-[10px] font-mono font-bold text-amber-700 dark:text-amber-300"
+                                                                title="Older duplicate search record - safe to delete"
+                                                            >
+                                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                                                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                                                                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                                                                 </svg>
-                                                            )}
-                                                        </button>
+                                                                <span>Older Duplicate</span>
+                                                            </span>
+                                                        )
                                                     )}
                                                 </div>
                                             </td>
@@ -652,17 +843,31 @@ export default function AdminSearches(props: any) {
 
                                             {/* Actions */}
                                             <td className="whitespace-nowrap py-3 pl-3 pr-4 text-right">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleDeleteSearchLog(log.id, log.license_number)}
-                                                    className="inline-flex h-7.5 w-7.5 items-center justify-center rounded-lg border border-[var(--border-default)] text-[var(--text-muted)] transition hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95 cursor-pointer"
-                                                    title="Delete search log"
-                                                >
-                                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                                        <polyline points="3 6 5 6 21 6" />
-                                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                                    </svg>
-                                                </button>
+                                                <div className="flex items-center justify-end gap-1.5">
+                                                    {log.duplicate_count && log.duplicate_count > 1 && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleDeleteLicenseDuplicates(log.license_number)}
+                                                            className="inline-flex h-7.5 w-7.5 items-center justify-center rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400 transition hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95 cursor-pointer"
+                                                            title={`Delete older duplicate searches for license ${log.license_number} (leaves 1 latest record)`}
+                                                        >
+                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4" />
+                                                            </svg>
+                                                        </button>
+                                                    )}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDeleteSearchLog(log.id, log.license_number)}
+                                                        className="inline-flex h-7.5 w-7.5 items-center justify-center rounded-lg border border-[var(--border-default)] text-[var(--text-muted)] transition hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95 cursor-pointer"
+                                                        title="Delete search log"
+                                                    >
+                                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                            <polyline points="3 6 5 6 21 6" />
+                                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     )

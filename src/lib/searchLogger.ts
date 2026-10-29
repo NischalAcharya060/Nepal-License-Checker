@@ -14,6 +14,8 @@ export interface SearchLogRecord {
     region?: string | null
     user_agent?: string | null
     created_at: number
+    duplicate_count?: number
+    is_latest?: boolean
 }
 
 let tableChecked = false
@@ -89,7 +91,8 @@ export interface SearchLogsFilter {
     page?: number
     limit?: number
     search?: string
-    status?: 'all' | 'found' | 'not_found' | 'error'
+    status?: 'all' | 'found' | 'not_found' | 'error' | 'duplicates'
+    onlyDuplicates?: boolean
 }
 
 export async function getSearchLogs({
@@ -97,6 +100,7 @@ export async function getSearchLogs({
     limit = 50,
     search = '',
     status = 'all',
+    onlyDuplicates = false,
 }: SearchLogsFilter) {
     await ensureSearchLogsTable()
     const db = getTurso()
@@ -114,7 +118,17 @@ export async function getSearchLogs({
         args.push(pattern, pattern, pattern, pattern, pattern)
     }
 
-    if (status && status !== 'all') {
+    if (status === 'duplicates' || onlyDuplicates) {
+        whereClauses.push(
+            `license_number IN (
+                SELECT license_number 
+                FROM search_logs 
+                WHERE TRIM(license_number) != '' 
+                GROUP BY license_number 
+                HAVING COUNT(*) > 1
+            )`
+        )
+    } else if (status && status !== 'all') {
         whereClauses.push('status = ?')
         args.push(status)
     }
@@ -127,10 +141,22 @@ export async function getSearchLogs({
     })
     const total = Number(countRes.rows[0]?.total || 0)
 
+    const isDupView = status === 'duplicates' || onlyDuplicates
+    const orderSql = isDupView
+        ? 'ORDER BY license_number ASC, created_at DESC'
+        : 'ORDER BY created_at DESC'
+
     const listRes = await db.execute({
-        sql: `SELECT id, license_number, status, holder_name, office, category, ip, country, city, region, user_agent, created_at
+        sql: `SELECT id, license_number, status, holder_name, office, category, ip, country, city, region, user_agent, created_at,
+                     (SELECT COUNT(*) FROM search_logs s2 WHERE s2.license_number = search_logs.license_number) as duplicate_count,
+                     (CASE WHEN id = (
+                         SELECT s3.id FROM search_logs s3 
+                         WHERE s3.license_number = search_logs.license_number 
+                         ORDER BY s3.created_at DESC, s3.id DESC 
+                         LIMIT 1
+                     ) THEN 1 ELSE 0 END) as is_latest
               FROM search_logs ${whereSql}
-              ORDER BY created_at DESC
+              ${orderSql}
               LIMIT ? OFFSET ?`,
         args: [...args, limit, offset],
     })
@@ -148,6 +174,8 @@ export async function getSearchLogs({
         region: row.region ? String(row.region) : null,
         user_agent: row.user_agent ? String(row.user_agent) : null,
         created_at: Number(row.created_at || 0),
+        duplicate_count: Number(row.duplicate_count || 1),
+        is_latest: Number(row.is_latest || 0) === 1,
     }))
 
     return {
@@ -188,6 +216,9 @@ export interface SearchLogsStats {
         country: string
         count: number
     }>
+    duplicateCount: number
+    duplicateLicenses: number
+    redundantCount: number
 }
 
 export async function getSearchStats(): Promise<SearchLogsStats> {
@@ -251,6 +282,17 @@ export async function getSearchStats(): Promise<SearchLogsStats> {
                  GROUP BY ip
                  ORDER BY count DESC
                  LIMIT 5`,
+                `SELECT 
+                    COUNT(*) as total_dup_rows,
+                    COUNT(DISTINCT license_number) as dup_licenses
+                 FROM search_logs
+                 WHERE license_number IN (
+                    SELECT license_number 
+                    FROM search_logs 
+                    WHERE TRIM(license_number) != '' 
+                    GROUP BY license_number 
+                    HAVING COUNT(*) > 1
+                 )`,
             ],
             'read'
         )
@@ -323,6 +365,11 @@ export async function getSearchStats(): Promise<SearchLogsStats> {
             count: Number(r.count || 0),
         }))
 
+        const dupRow = batchResults[9]?.rows[0]
+        const duplicateCount = Number(dupRow?.total_dup_rows || 0)
+        const duplicateLicenses = Number(dupRow?.dup_licenses || 0)
+        const redundantCount = Math.max(0, duplicateCount - duplicateLicenses)
+
         return {
             total,
             today,
@@ -334,6 +381,9 @@ export async function getSearchStats(): Promise<SearchLogsStats> {
             topLicenses,
             topOffices,
             topIps,
+            duplicateCount,
+            duplicateLicenses,
+            redundantCount,
         }
     } catch (err) {
         console.error('Failed to compute search stats:', err)
@@ -348,6 +398,90 @@ export async function getSearchStats(): Promise<SearchLogsStats> {
             topLicenses: [],
             topOffices: [],
             topIps: [],
+            duplicateCount: 0,
+            duplicateLicenses: 0,
+            redundantCount: 0,
         }
     }
+}
+
+export interface DeduplicateOptions {
+    keep?: 'newest' | 'oldest'
+    license?: string
+    mode?: 'keep_one' | 'delete_all'
+}
+
+export async function deduplicateSearchLogs(options: DeduplicateOptions = {}) {
+    await ensureSearchLogsTable()
+    const db = getTurso()
+    const { keep = 'newest', license, mode = 'keep_one' } = options
+
+    if (mode === 'delete_all') {
+        if (license && license.trim()) {
+            const res = await db.execute({
+                sql: 'DELETE FROM search_logs WHERE license_number = ?',
+                args: [license.trim()],
+            })
+            return { deletedCount: Number(res.rowsAffected || 0) }
+        } else {
+            const res = await db.execute(`
+                DELETE FROM search_logs 
+                WHERE license_number IN (
+                    SELECT license_number 
+                    FROM search_logs 
+                    WHERE TRIM(license_number) != '' 
+                    GROUP BY license_number 
+                    HAVING COUNT(*) > 1
+                )
+            `)
+            return { deletedCount: Number(res.rowsAffected || 0) }
+        }
+    }
+
+    // Default mode: 'keep_one' (prunes older duplicate rows, preserving 1 record per license by date)
+    const sortOrder = keep === 'oldest' ? 'ASC' : 'DESC'
+    if (license && license.trim()) {
+        const trimmedLicense = license.trim()
+        const res = await db.execute({
+            sql: `DELETE FROM search_logs 
+                  WHERE license_number = ? 
+                    AND id IN (
+                        SELECT id FROM (
+                            SELECT id, 
+                                   ROW_NUMBER() OVER (ORDER BY created_at ${sortOrder}, id ${sortOrder}) as rn
+                            FROM search_logs 
+                            WHERE license_number = ?
+                        ) WHERE rn > 1
+                    )`,
+            args: [trimmedLicense, trimmedLicense],
+        })
+        return { deletedCount: Number(res.rowsAffected || 0) }
+    } else {
+        const res = await db.execute(`
+            DELETE FROM search_logs 
+            WHERE id IN (
+                SELECT id FROM (
+                    SELECT id, 
+                           ROW_NUMBER() OVER (PARTITION BY license_number ORDER BY created_at ${sortOrder}, id ${sortOrder}) as rn
+                    FROM search_logs 
+                    WHERE TRIM(license_number) != ''
+                ) WHERE rn > 1
+            )
+        `)
+        return { deletedCount: Number(res.rowsAffected || 0) }
+    }
+}
+
+export async function deleteSearchLogsByLicense(license: string, keepLatest: boolean = true) {
+    await ensureSearchLogsTable()
+    const trimmedLicense = license.trim()
+    if (keepLatest) {
+        return deduplicateSearchLogs({ license: trimmedLicense, keep: 'newest', mode: 'keep_one' })
+    }
+    const db = getTurso()
+    const res = await db.execute({
+        sql: 'DELETE FROM search_logs WHERE license_number = ?',
+        args: [trimmedLicense],
+    })
+    return { deletedCount: Number(res.rowsAffected || 0) }
 }

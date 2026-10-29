@@ -33,6 +33,8 @@ export interface SearchLog {
     region?: string | null
     user_agent?: string | null
     created_at: number
+    duplicate_count?: number
+    is_latest?: boolean
 }
 
 export interface SearchStats {
@@ -64,6 +66,9 @@ export interface SearchStats {
         country: string
         count: number
     }>
+    duplicateCount?: number
+    duplicateLicenses?: number
+    redundantCount?: number
 }
 
 export interface NotificationLog {
