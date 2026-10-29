@@ -430,6 +430,61 @@ html.dark .antigravity-glass-pill,
   box-shadow: inset 2px 0 0 color-mix(in srgb, var(--nepal-blue) 72%, transparent);
 }
 
+/* ─── Developer portal: compact key vault table ─── */
+.dev-key-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.dev-key-table > thead > tr > th {
+  height: 2rem;
+  padding: 0.4rem 0.7rem;
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  vertical-align: middle;
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--bg-secondary) 55%, transparent);
+  border-bottom: 1px solid var(--border-default);
+}
+
+.dev-key-table > tbody > tr > td {
+  padding: 0.5rem 0.7rem;
+  vertical-align: middle;
+  border-top: 1px solid color-mix(in srgb, var(--border-default) 45%, transparent);
+}
+
+.dev-key-table > tbody > tr:first-child > td {
+  border-top: 0;
+}
+
+.dev-key-table > tbody > tr {
+  transition: background-color 0.16s ease;
+}
+
+.dev-key-table > tbody > tr:hover {
+  background: color-mix(in srgb, var(--bg-secondary) 45%, transparent);
+}
+
+/* Quiet accent rail follows the hovered / focused key row */
+.dev-key-table > tbody > tr:not(.dev-key-detail-row):hover > td:first-child,
+.dev-key-table > tbody > tr:not(.dev-key-detail-row):focus-within > td:first-child {
+  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--nepal-blue) 72%, transparent);
+}
+
+.dev-key-table > tbody > tr > td.dev-key-detail {
+  padding: 0.65rem 0.9rem 0.8rem;
+  background: color-mix(in srgb, var(--danger) 4%, transparent);
+}
+
+.dev-key-table > tbody > tr.is-suspended:hover {
+  background: color-mix(in srgb, var(--danger) 6%, transparent);
+}
+
 @media (prefers-reduced-motion: reduce) {
   body,
   .animate-slide-up,
@@ -453,6 +508,10 @@ html.dark .antigravity-glass-pill,
 
   .admin-data-table > tbody > tr,
   .admin-data-table > tbody > tr > td {
+    transition: none !important;
+  }
+
+  .dev-key-table > tbody > tr {
     transition: none !important;
   }
 

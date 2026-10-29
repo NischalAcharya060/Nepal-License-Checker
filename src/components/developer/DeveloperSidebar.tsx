@@ -8,6 +8,7 @@ import type { DeveloperProfile, DeveloperApiKey } from '@/lib/developerAuth'
 interface DeveloperSidebarProps {
   profile: DeveloperProfile
   keys: DeveloperApiKey[]
+  maxKeys?: number
   activeSection: string
   onSectionClick: (sectionId: string) => void
   onLogout: () => void
@@ -32,23 +33,23 @@ const NAV_ITEMS = [
     ),
   },
   {
+    id: 'section-keys',
+    label: 'API Keys',
+    description: 'Secret credentials',
+    badge: (keysCount: number, maxKeys: number) => `${keysCount}/${maxKeys}`,
+    icon: (
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m21 2-2 2m-1.5 1.5L14 9l-1.5-1.5L11 9l-1-1-1.5 1.5L7 8l-5 5a4 4 0 0 0 6 6l5-5-1.5-1.5L13 11l1.5 1.5 3.5-3.5" />
+      </svg>
+    ),
+  },
+  {
     id: 'section-analytics',
     label: 'Telemetry & Graphs',
     description: 'Traffic, rate & latency',
     icon: (
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-      </svg>
-    ),
-  },
-  {
-    id: 'section-keys',
-    label: 'API Keys',
-    description: 'Secret credentials',
-    badge: (keysCount: number) => `${keysCount}/3`,
-    icon: (
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="m21 2-2 2m-1.5 1.5L14 9l-1.5-1.5L11 9l-1-1-1.5 1.5L7 8l-5 5a4 4 0 0 0 6 6l5-5-1.5-1.5L13 11l1.5 1.5 3.5-3.5" />
       </svg>
     ),
   },
@@ -93,6 +94,7 @@ const NAV_ITEMS = [
 export default function DeveloperSidebar({
   profile,
   keys,
+  maxKeys = 3,
   activeSection,
   onSectionClick,
   onLogout,
@@ -105,9 +107,9 @@ export default function DeveloperSidebar({
     const isCollapsed = !isMobile && collapsed
 
     return (
-      <div className={`flex h-full flex-col justify-between select-none ${isCollapsed ? 'p-3' : 'p-4 sm:p-5'}`}>
+      <div className={`flex h-full flex-col justify-between select-none ${isCollapsed ? 'p-3' : 'p-3.5 sm:p-4'}`}>
         {/* Top Branding */}
-        <div className="space-y-5">
+        <div className="space-y-4">
           <div className={`flex items-center pb-4 border-b border-[var(--border-default)] ${isCollapsed ? 'flex-col gap-2.5' : 'justify-between'}`}>
             <Link
               href="/"
@@ -190,22 +192,22 @@ export default function DeveloperSidebar({
               </div>
             </div>
           ) : (
-            <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 p-3 space-y-1.5 shadow-2xs">
-              <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--text-primary)]">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  <span>Elevated Tier</span>
+            <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 px-2.5 py-2 space-y-1.5 shadow-2xs">
+              <div className="flex items-center justify-between gap-2">
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[var(--text-primary)]">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  <span>Elevated tier</span>
                 </span>
-                <span className="font-mono text-xs font-bold text-[var(--nepal-blue)]">
+                <span className="font-mono text-[10.5px] font-bold text-[var(--nepal-blue)]">
                   60 req/min
                 </span>
               </div>
-              <div className="h-1.5 w-full rounded-full bg-[var(--border-default)] overflow-hidden">
+              <div className="h-1 w-full rounded-full bg-[var(--border-default)] overflow-hidden">
                 <div className="h-full w-full rounded-full bg-[var(--nepal-blue)]" />
               </div>
-              <div className="flex justify-between text-[11px] text-[var(--text-muted)] font-mono">
-                <span>4x Public Quota</span>
-                <span>Zero Lockout</span>
+              <div className="flex justify-between text-[9.5px] uppercase tracking-wider text-[var(--text-muted)] font-mono">
+                <span>4× public</span>
+                <span>0s lockout</span>
               </div>
             </div>
           )}
@@ -213,7 +215,7 @@ export default function DeveloperSidebar({
           {/* Main Navigation Links */}
           <nav className="space-y-1">
             {!isCollapsed && (
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] px-3 mb-2 block">
+              <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)] px-2.5 mb-1.5 block">
                 Navigation
               </span>
             )}
@@ -228,22 +230,22 @@ export default function DeveloperSidebar({
                     if (isMobile) onCloseMobile()
                   }}
                   title={isCollapsed ? `${item.label} - ${item.description}` : undefined}
-                  className={`group relative flex items-center rounded-xl transition-all duration-150 cursor-pointer ${
+                  className={`group relative flex items-center rounded-lg transition-all duration-150 cursor-pointer ${
                     isCollapsed
-                      ? 'h-10 w-10 mx-auto justify-center'
+                      ? 'h-9 w-9 mx-auto justify-center'
                       : isMobile
-                      ? 'w-full justify-between px-3.5 py-3 text-left text-xs min-h-[44px]'
-                      : 'w-full justify-between px-3 py-2 text-left text-xs'
+                      ? 'w-full justify-between px-3 py-2.5 text-left text-[12px] min-h-[44px]'
+                      : 'w-full justify-between px-2.5 py-1.5 text-left text-[11.5px]'
                   } ${
                     isActive
-                      ? 'bg-[var(--nepal-blue)] text-white font-bold shadow-sm shadow-[var(--nepal-blue)]/20'
+                      ? 'bg-[var(--nepal-blue)]/10 text-[var(--nepal-blue)] font-bold shadow-[inset_2px_0_0_var(--nepal-blue)]'
                       : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] font-medium'
                   }`}
                 >
                   <div className={`flex items-center gap-2.5 min-w-0 ${isCollapsed ? 'justify-center' : ''}`}>
                     <span
                       className={`transition-colors shrink-0 ${
-                        isActive ? 'text-white' : 'text-[var(--text-muted)] group-hover:text-[var(--nepal-blue)]'
+                        isActive ? 'text-[var(--nepal-blue)]' : 'text-[var(--text-muted)] group-hover:text-[var(--nepal-blue)]'
                       }`}
                     >
                       {item.icon}
@@ -284,13 +286,13 @@ export default function DeveloperSidebar({
                         <span
                           className={`rounded-md px-1.5 py-0.5 font-mono text-[10px] font-bold ${
                             isActive
-                              ? 'bg-white/20 text-white'
+                              ? 'bg-[var(--nepal-blue)]/15 text-[var(--nepal-blue)]'
                               : item.id === 'section-keys' && keys.some((k) => !k.is_active)
                               ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
                               : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] border border-[var(--border-default)]'
                           }`}
                         >
-                          {item.badge(keys.length)}
+                          {item.badge(keys.length, maxKeys)}
                         </span>
                       </span>
                     )
@@ -305,10 +307,10 @@ export default function DeveloperSidebar({
             <Link
               href="/developer/docs"
               title={isCollapsed ? 'SDK Documentation' : undefined}
-              className={`flex items-center rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)] transition shadow-2xs group ${
+              className={`flex items-center rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] text-[11.5px] font-semibold text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)] transition shadow-2xs group ${
                 isCollapsed
-                  ? 'h-10 w-10 mx-auto justify-center'
-                  : 'w-full justify-between px-3 py-2'
+                  ? 'h-9 w-9 mx-auto justify-center'
+                  : 'w-full justify-between px-2.5 py-1.5'
               }`}
             >
               <div className="flex items-center gap-2">
@@ -331,7 +333,7 @@ export default function DeveloperSidebar({
         </div>
 
         {/* Sidebar Footer: Developer Account & Sign Out */}
-        <div className={`space-y-3 pt-4 border-t border-[var(--border-default)] ${isCollapsed ? 'flex flex-col items-center' : ''}`}>
+        <div className={`space-y-2 pt-3 border-t border-[var(--border-default)] ${isCollapsed ? 'flex flex-col items-center' : ''}`}>
           {isCollapsed ? (
             <div className="flex flex-col items-center gap-2.5">
               {profile.avatar_url ? (
@@ -378,26 +380,26 @@ export default function DeveloperSidebar({
             </div>
           ) : (
             <>
-              <div className="flex items-center gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-2.5 shadow-2xs">
+              <div className="flex items-center gap-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-2 shadow-2xs">
                 {profile.avatar_url ? (
                   <Image
                     src={profile.avatar_url}
                     alt={profile.username}
                     width={38}
                     height={38}
-                    className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] shrink-0"
+                    className="h-8 w-8 rounded-lg border border-[var(--border-default)] bg-[var(--bg-secondary)] object-cover shrink-0"
                     unoptimized
                   />
                 ) : (
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--nepal-blue)] text-white font-bold text-xs shrink-0">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--nepal-blue)] text-white font-bold text-[11px] shrink-0">
                     {profile.username[0]?.toUpperCase()}
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <span className="font-bold text-xs text-[var(--text-primary)] truncate block leading-tight">
+                  <span className="font-bold text-[11.5px] text-[var(--text-primary)] truncate block leading-tight">
                     {profile.name || profile.username}
                   </span>
-                  <span className="text-[10px] text-[var(--text-muted)] truncate block font-mono">
+                  <span className="text-[9.5px] text-[var(--text-muted)] truncate block font-mono">
                     @{profile.username}
                   </span>
                 </div>
@@ -406,14 +408,18 @@ export default function DeveloperSidebar({
               <div className="flex items-center gap-1.5">
                 <Link
                   href="/"
-                  className="flex-1 text-center rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] min-h-[44px] inline-flex items-center justify-center px-3 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition shadow-2xs"
+                  className={`flex-1 text-center rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] inline-flex items-center justify-center font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition shadow-2xs ${
+                    isMobile ? 'min-h-[44px] px-3 text-xs' : 'h-8 px-2.5 text-[11px]'
+                  }`}
                 >
                   ← Home
                 </Link>
                 <button
                   type="button"
                   onClick={onLogout}
-                  className="min-h-[44px] inline-flex items-center justify-center rounded-xl border border-[var(--danger)]/30 bg-[var(--danger)]/5 px-3 text-xs font-bold text-[var(--danger)] hover:bg-[var(--danger)] hover:text-white transition cursor-pointer"
+                  className={`inline-flex items-center justify-center rounded-lg border border-[var(--danger)]/30 bg-[var(--danger)]/5 font-bold text-[var(--danger)] hover:bg-[var(--danger)] hover:text-white transition cursor-pointer ${
+                    isMobile ? 'min-h-[44px] px-3 text-xs' : 'h-8 px-2.5 text-[11px]'
+                  }`}
                   title="Sign out of developer portal"
                 >
                   Sign Out

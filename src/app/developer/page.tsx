@@ -1,7 +1,7 @@
 // src/app/developer/page.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
+import { Fragment, useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import toast from 'react-hot-toast'
@@ -69,8 +69,8 @@ export default function DeveloperPortalPage() {
 
     const sectionIds = [
       'section-overview',
-      'section-analytics',
       'section-keys',
+      'section-analytics',
       'section-quickstart',
       'section-console',
       'section-specs',
@@ -929,6 +929,7 @@ if ($result['status'] === 'success' && $result['isReady']) {
       <DeveloperSidebar
         profile={profile}
         keys={keys}
+        maxKeys={maxKeys}
         activeSection={activeSection}
         onSectionClick={scrollToSection}
         onLogout={handleLogout}
@@ -941,7 +942,7 @@ if ($result['status'] === 'success' && $result['isReady']) {
       {/* Main Content Viewport (offset on desktop by md:pl-20 or md:pl-64) */}
       <div className={`${sidebarCollapsed ? 'md:pl-20' : 'md:pl-64'} flex flex-col min-h-screen transition-all duration-300 ease-in-out`}>
         {/* Sticky Utility Top Header */}
-        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-[var(--border-default)] bg-[var(--surface-primary)]/85 px-4 sm:px-8 backdrop-blur-md transition-all shadow-2xs">
+        <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-[var(--border-default)] bg-[var(--surface-primary)]/85 px-4 sm:px-6 backdrop-blur-md transition-all shadow-2xs">
           {/* Mobile Toggle & Active Breadcrumb */}
           <div className="flex items-center gap-3 min-w-0">
             <button
@@ -984,7 +985,7 @@ if ($result['status'] === 'success' && $result['isReady']) {
           {/* Quick Actions & Telemetry Controls */}
           <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
             {/* Live Tier Badge */}
-            <div className="hidden lg:flex items-center gap-1.5 rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 font-mono text-[11px] font-bold text-emerald-600 dark:text-emerald-400 shadow-2xs">
+            <div className="hidden lg:flex items-center gap-1.5 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 font-mono text-[10px] font-bold text-emerald-600 dark:text-emerald-400 shadow-2xs">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
               <span>60 req/min Tier</span>
             </div>
@@ -994,7 +995,7 @@ if ($result['status'] === 'success' && $result['isReady']) {
               <button
                 type="button"
                 onClick={() => scrollToSection('section-keys')}
-                className="hidden xl:inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1.5 text-xs font-bold text-[var(--text-primary)] hover:border-[var(--nepal-blue)] transition cursor-pointer shadow-2xs"
+                className="hidden xl:inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2 py-1 text-[11px] font-bold text-[var(--text-primary)] hover:border-[var(--nepal-blue)] transition cursor-pointer shadow-2xs"
                 title="Manage active API keys"
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]" aria-hidden="true">
@@ -1004,7 +1005,7 @@ if ($result['status'] === 'success' && $result['isReady']) {
                   {keys.filter((k) => k.is_active).length} Active
                 </span>
                 {keys.some((k) => !k.is_active) && (
-                  <span className="rounded-md bg-rose-500/15 border border-rose-500/30 px-1.5 py-0.5 text-[10px] text-rose-600 dark:text-rose-400 font-extrabold">
+                  <span className="rounded-md bg-rose-500/15 border border-rose-500/30 px-1.5 py-0.5 text-[9px] text-rose-600 dark:text-rose-400 font-extrabold">
                     {keys.filter((k) => !k.is_active).length} Suspended
                   </span>
                 )}
@@ -1014,7 +1015,7 @@ if ($result['status'] === 'success' && $result['isReady']) {
             {/* SDK Docs Link */}
             <Link
               href="/developer/docs"
-              className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-xs font-bold text-[var(--text-primary)] hover:text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)] transition shadow-2xs shrink-0 flex items-center gap-1.5"
+              className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1.5 text-[11px] font-bold text-[var(--text-primary)] hover:text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)] transition shadow-2xs shrink-0 flex items-center gap-1.5"
             >
               <span>Docs</span>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -1027,7 +1028,7 @@ if ($result['status'] === 'success' && $result['isReady']) {
 
         {/* Global Error Banner */}
         {errorMessage && (
-          <div className="mx-4 sm:mx-8 mt-4 rounded-2xl border border-[var(--danger)]/30 bg-[var(--danger)]/10 p-4 text-xs font-medium text-[var(--danger)] flex items-start justify-between gap-3 animate-fade-in shadow-sm">
+          <div className="mx-4 sm:mx-6 mt-4 rounded-2xl border border-[var(--danger)]/30 bg-[var(--danger)]/10 p-4 text-xs font-medium text-[var(--danger)] flex items-start justify-between gap-3 animate-fade-in shadow-sm">
             <div className="flex items-center gap-2">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10" />
@@ -1052,7 +1053,7 @@ if ($result['status'] === 'success' && $result['isReady']) {
 
         {/* Suspended Keys Notice Banner */}
         {keys.some((k) => !k.is_active) && (
-          <div className="mx-4 sm:mx-8 mt-4 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-xs text-rose-700 dark:text-rose-300 flex items-start gap-3 animate-fade-in shadow-xs">
+          <div className="mx-4 sm:mx-6 mt-4 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-xs text-rose-700 dark:text-rose-300 flex items-start gap-3 animate-fade-in shadow-xs">
             <div className="flex h-6 w-6 items-center justify-center rounded-xl bg-rose-500/20 text-rose-600 dark:text-rose-400 shrink-0 text-sm font-bold">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
@@ -1083,67 +1084,67 @@ if ($result['status'] === 'success' && $result['isReady']) {
         )}
 
         {/* Main Content Area */}
-        <main className="flex-1 px-4 py-6 sm:px-8 sm:py-8 max-w-6xl w-full mx-auto space-y-8 animate-fade-in">
+        <main className="flex-1 px-4 py-5 sm:px-6 sm:py-6 max-w-6xl w-full mx-auto space-y-5 animate-fade-in">
           {/* SECTION 1: OVERVIEW */}
-          <div id="section-overview" className="space-y-6 scroll-mt-24">
+          <div id="section-overview" className="space-y-4 scroll-mt-24">
 
             {/* Quick-Start Onboarding Checklist for New Developers (shown if 0 keys) */}
             {keys.length === 0 && (
-              <div className="rounded-3xl border border-[var(--nepal-blue)]/30 bg-gradient-to-br from-[var(--nepal-blue)]/10 via-[var(--surface-primary)] to-[var(--surface-primary)] p-6 sm:p-7 shadow-sm space-y-4 animate-rise-in dev-glass-card">
+              <div className="rounded-2xl border border-[var(--nepal-blue)]/30 bg-gradient-to-br from-[var(--nepal-blue)]/10 via-[var(--surface-primary)] to-[var(--surface-primary)] p-4 sm:p-5 shadow-sm space-y-3 animate-rise-in dev-glass-card">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--nepal-blue)] text-white text-sm font-bold shadow-xs">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--nepal-blue)] text-white text-sm font-bold shadow-xs">
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                         <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
                         <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
                       </svg>
                     </span>
                     <div>
-                      <h3 className="text-sm font-bold text-[var(--text-primary)]">Quick Setup Checklist</h3>
-                      <p className="text-xs text-[var(--text-secondary)]">Get your first API request running in under 2 minutes.</p>
+                      <h3 className="text-[12px] font-bold text-[var(--text-primary)]">Quick Setup Checklist</h3>
+                      <p className="text-[11px] text-[var(--text-secondary)]">Get your first API request running in under 2 minutes.</p>
                     </div>
                   </div>
-                  <span className="rounded-full bg-[var(--nepal-blue)]/15 px-2.5 py-0.5 font-mono text-[11px] font-bold text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/20">
+                  <span className="rounded-full bg-[var(--nepal-blue)]/15 px-2 py-0.5 font-mono text-[10px] font-bold text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/20">
                     1 of 3 Complete
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                  <div className="flex items-center gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3.5 shadow-2xs">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-0.5">
+                  <div className="flex items-center gap-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-2.5 shadow-2xs">
                     <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--success)] text-white text-xs font-bold">
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                     </span>
                     <div>
-                      <span className="text-xs font-bold text-[var(--text-primary)] block">1. GitHub Connected</span>
-                      <span className="text-[10.5px] text-[var(--text-muted)]">@{profile.username} verified</span>
+                      <span className="text-[11px] font-bold text-[var(--text-primary)] block">1. GitHub Connected</span>
+                      <span className="text-[10px] text-[var(--text-muted)]">@{profile.username} verified</span>
                     </div>
                   </div>
 
                   <a
                     href="#section-keys"
-                    className="flex items-center gap-3 rounded-2xl border border-[var(--nepal-blue)]/40 bg-[var(--nepal-blue)]/5 p-3.5 shadow-2xs hover:border-[var(--nepal-blue)] transition cursor-pointer group"
+                    className="flex items-center gap-2.5 rounded-xl border border-[var(--nepal-blue)]/40 bg-[var(--nepal-blue)]/5 p-2.5 shadow-2xs hover:border-[var(--nepal-blue)] transition cursor-pointer group"
                   >
                     <span className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-[var(--nepal-blue)] text-[var(--nepal-blue)] text-xs font-bold group-hover:bg-[var(--nepal-blue)] group-hover:text-white transition">
                       2
                     </span>
                     <div>
-                      <span className="text-xs font-bold text-[var(--nepal-blue)] block">2. Generate API Key</span>
-                      <span className="text-[10.5px] text-[var(--text-muted)]">Click to create first key →</span>
+                      <span className="text-[11px] font-bold text-[var(--nepal-blue)] block">2. Generate API Key</span>
+                      <span className="text-[10px] text-[var(--text-muted)]">Click to create first key →</span>
                     </div>
                   </a>
 
                   <a
                     href="#section-console"
-                    className="flex items-center gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3.5 shadow-2xs hover:border-[var(--text-secondary)] transition cursor-pointer"
+                    className="flex items-center gap-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-2.5 shadow-2xs hover:border-[var(--text-secondary)] transition cursor-pointer"
                   >
                     <span className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-[var(--border-default)] text-[var(--text-muted)] text-xs font-bold">
                       3
                     </span>
                     <div>
-                      <span className="text-xs font-bold text-[var(--text-primary)] block">3. Run Test Query</span>
-                      <span className="text-[10.5px] text-[var(--text-muted)]">Try Live Console below</span>
+                      <span className="text-[11px] font-bold text-[var(--text-primary)] block">3. Run Test Query</span>
+                      <span className="text-[10px] text-[var(--text-muted)]">Try Live Console below</span>
                     </div>
                   </a>
                 </div>
@@ -1151,38 +1152,38 @@ if ($result['status'] === 'success' && $result['isReady']) {
             )}
 
             {/* Developer Profile Header Card */}
-            <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 sm:p-7 shadow-sm dev-glass-card">
-              <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 shadow-sm dev-glass-card">
+              <div className="flex items-center gap-3">
                 {profile.avatar_url ? (
                   <Image
                     src={profile.avatar_url}
                     alt={profile.username}
                     width={56}
                     height={56}
-                    className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)] shadow-2xs"
+                    className="h-11 w-11 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] object-cover shadow-2xs"
                     unoptimized
                   />
                 ) : (
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--nepal-blue)] text-white font-bold text-xl shadow-sm">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--nepal-blue)] text-white font-bold text-lg shadow-sm">
                     {profile.username[0]?.toUpperCase()}
                   </div>
                 )}
                 <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h1 className="text-lg sm:text-xl font-bold text-[var(--text-primary)]">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <h1 className="text-base font-bold leading-tight text-[var(--text-primary)]">
                       {profile.name || profile.username}
                     </h1>
-                    <span className="rounded-md bg-[var(--bg-secondary)] px-2 py-0.5 font-mono text-xs font-semibold text-[var(--text-secondary)] border border-[var(--border-default)]">
+                    <span className="rounded-md border border-[var(--border-default)] bg-[var(--bg-secondary)] px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[var(--text-secondary)]">
                       @{profile.username}
                     </span>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-[var(--success)]/10 px-2.5 py-0.5 text-[10px] font-bold text-[var(--success)]">
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-[var(--success)]/10 px-2 py-0.5 text-[9.5px] font-bold text-[var(--success)]">
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                       <span>Verified Developer</span>
                     </span>
                   </div>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
+                  <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">
                     {profile.email ? profile.email : 'GitHub Developer Account'} • Member since {new Date(profile.created_at).toLocaleDateString()}
                   </p>
                 </div>
@@ -1192,7 +1193,7 @@ if ($result['status'] === 'success' && $result['isReady']) {
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3.5 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--danger)] hover:border-[var(--danger)]/40 transition cursor-pointer"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3 py-1.5 text-[11px] font-semibold text-[var(--text-secondary)] hover:text-[var(--danger)] hover:border-[var(--danger)]/40 transition cursor-pointer"
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
@@ -1203,103 +1204,556 @@ if ($result['status'] === 'success' && $result['isReady']) {
               </div>
             </div>
 
-            {/* 4 Metric KPI Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 sm:gap-4">
-              <div className="relative overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 space-y-2 shadow-2xs hover-lift transition-all duration-200 hover:border-[var(--nepal-blue)]/40 hover:shadow-sm dev-glass-card">
-                <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-[var(--nepal-blue)] to-transparent opacity-80" />
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Quota Limit</span>
-                  <div className="h-7 w-7 rounded-lg bg-[var(--nepal-blue)]/10 text-[var(--nepal-blue)] flex items-center justify-center">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            {/* 4 Metric KPI Strip */}
+            <div className="dev-glass-card grid grid-cols-2 overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-2xs sm:grid-cols-4">
+              <div className="border-b border-r border-[var(--border-default)] p-3.5 sm:border-b-0 sm:p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">Quota limit</span>
+                  <span className="flex h-5 w-5 items-center justify-center rounded-md bg-[var(--nepal-blue)]/10 text-[var(--nepal-blue)]">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                       <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
                     </svg>
-                  </div>
+                  </span>
                 </div>
-                <p className="text-xl sm:text-2xl font-black text-[var(--text-primary)]">60 <span className="text-xs font-normal text-[var(--text-secondary)]">req/min</span></p>
-                <span className="inline-flex items-center gap-1 rounded bg-[var(--nepal-blue)]/10 px-1.5 py-0.5 text-[10px] font-bold text-[var(--nepal-blue)]">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--nepal-blue)]" />
-                  <span>Elevated Tier</span>
+                <p className="mt-1.5 text-lg font-black leading-none tabular-nums text-[var(--text-primary)]">
+                  60 <span className="text-[10px] font-medium text-[var(--text-secondary)]">req/min</span>
+                </p>
+                <span className="mt-1.5 inline-flex items-center gap-1 rounded bg-[var(--nepal-blue)]/10 px-1.5 py-0.5 text-[9.5px] font-bold text-[var(--nepal-blue)]">
+                  <span className="h-1 w-1 rounded-full bg-[var(--nepal-blue)]" />
+                  Elevated tier
                 </span>
               </div>
 
-              <div className="relative overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 space-y-2 shadow-2xs hover-lift transition-all duration-200 hover:border-[var(--success)]/40 hover:shadow-sm dev-glass-card">
-                <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-[var(--success)] to-transparent opacity-80" />
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Rate Window</span>
-                  <div className="h-7 w-7 rounded-lg bg-[var(--success)]/10 text-[var(--success)] flex items-center justify-center">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <div className="border-b border-[var(--border-default)] p-3.5 sm:border-b-0 sm:border-r sm:p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">Rate window</span>
+                  <span className="flex h-5 w-5 items-center justify-center rounded-md bg-[var(--success)]/10 text-[var(--success)]">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <circle cx="12" cy="12" r="10" />
                       <polyline points="12 6 12 12 16 14" />
                     </svg>
-                  </div>
+                  </span>
                 </div>
-                <p className="text-xl sm:text-2xl font-black text-[var(--text-primary)]">60s <span className="text-xs font-normal text-[var(--text-secondary)]">sliding</span></p>
-                <span className="inline-block rounded bg-[var(--success)]/10 px-1.5 py-0.5 text-[10px] font-bold text-[var(--success)]">
-                  0s Lockout Penalty
+                <p className="mt-1.5 text-lg font-black leading-none tabular-nums text-[var(--text-primary)]">
+                  60s <span className="text-[10px] font-medium text-[var(--text-secondary)]">sliding</span>
+                </p>
+                <span className="mt-1.5 inline-block rounded bg-[var(--success)]/10 px-1.5 py-0.5 text-[9.5px] font-bold text-[var(--success)]">
+                  0s lockout penalty
                 </span>
               </div>
 
-              <div className="relative overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 space-y-2 shadow-2xs hover-lift transition-all duration-200 hover:border-[var(--nepal-blue)]/40 hover:shadow-sm dev-glass-card">
-                <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent opacity-80" />
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Active Keys</span>
-                  <div className="h-7 w-7 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <div className="border-r border-[var(--border-default)] p-3.5 sm:p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">Active keys</span>
+                  <span className="flex h-5 w-5 items-center justify-center rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <path d="m21 2-2 2m-1.5 1.5L14 9l-1.5-1.5L11 9l-1-1-1.5 1.5L7 8l-5 5a4 4 0 0 0 6 6l5-5-1.5-1.5L13 11l1.5 1.5 3.5-3.5" />
                     </svg>
-                  </div>
+                  </span>
                 </div>
-                <p className="text-xl sm:text-2xl font-black text-[var(--text-primary)]">
-                  {keys.filter((k) => k.is_active).length} <span className="text-xs font-normal text-[var(--text-secondary)]">/ {maxKeys} max</span>
+                <p className="mt-1.5 text-lg font-black leading-none tabular-nums text-[var(--text-primary)]">
+                  {keys.filter((k) => k.is_active).length}{' '}
+                  <span className="text-[10px] font-medium text-[var(--text-secondary)]">/ {maxKeys} max</span>
                 </p>
                 {keys.some((k) => !k.is_active) ? (
-                  <span className="inline-block rounded bg-rose-500/15 border border-rose-500/30 px-1.5 py-0.5 text-[10px] font-bold text-rose-600 dark:text-rose-400">
-                    {keys.filter((k) => !k.is_active).length} suspended by admin
+                  <span className="mt-1.5 inline-block rounded border border-rose-500/30 bg-rose-500/15 px-1.5 py-0.5 text-[9.5px] font-bold text-rose-600 dark:text-rose-400">
+                    {keys.filter((k) => !k.is_active).length} suspended
                   </span>
                 ) : (
-                  <span className="inline-block rounded bg-[var(--bg-secondary)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--text-secondary)]">
+                  <span className="mt-1.5 inline-block rounded bg-[var(--bg-secondary)] px-1.5 py-0.5 text-[9.5px] font-semibold text-[var(--text-secondary)]">
                     {maxKeys - keys.length} available
                   </span>
                 )}
               </div>
 
-              <div className="relative overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 sm:p-5 space-y-2 shadow-2xs hover-lift transition-all duration-200 hover:border-purple-500/40 hover:shadow-sm dev-glass-card">
-                <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-purple-500 to-transparent opacity-80" />
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Total Queries</span>
-                  <div className="h-7 w-7 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <div className="p-3.5 sm:p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">Total queries</span>
+                  <span className="flex h-5 w-5 items-center justify-center rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
                     </svg>
-                  </div>
+                  </span>
                 </div>
-                <p className="text-xl sm:text-2xl font-black text-[var(--text-primary)]">
+                <p className="mt-1.5 text-lg font-black leading-none tabular-nums text-[var(--text-primary)]">
                   {keys.reduce((sum, k) => sum + (k.total_requests || 0), 0).toLocaleString()}
                 </p>
-                <span className="inline-block rounded bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-bold text-purple-600 dark:text-purple-400">
-                  Lifetime Calls
+                <span className="mt-1.5 inline-block rounded bg-purple-500/10 px-1.5 py-0.5 text-[9.5px] font-bold text-purple-600 dark:text-purple-400">
+                  Lifetime calls
                 </span>
               </div>
             </div>
           </div>
 
-          {/* API Analytics & Visual Traffic Section */}
-          <div id="section-analytics" className="dev-glass-card rounded-3xl p-6 sm:p-8 shadow-sm space-y-6 scroll-mt-24 transition-all duration-300 relative overflow-hidden">
+            {/* API Keys Management — primary surface */}
+            <div id="section-keys" className="dev-glass-card rounded-2xl p-4 sm:p-6 shadow-sm space-y-4 scroll-mt-24 transition-all duration-300 relative overflow-hidden">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-default)] pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--nepal-blue)]/10 text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/20">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <circle cx="7.5" cy="15.5" r="5.5" />
+                      <path d="m21 2-9.6 9.6" />
+                      <path d="m15.5 7.5 3 3L22 7l-3-3" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <h2 className="text-sm sm:text-[15px] font-bold text-[var(--text-primary)]">API Keys</h2>
+                      <span className="inline-flex items-center gap-1 rounded-full border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2 py-0.5 text-[10px] font-semibold text-[var(--text-muted)]">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                        {keys.filter((k) => k.is_active).length} of {maxKeys} active
+                      </span>
+                      {keys.some((k) => !k.is_active) && (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-rose-500/30 bg-rose-500/10 px-2 py-0.5 text-[10px] font-bold text-rose-600 dark:text-rose-400">
+                          <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+                          {keys.filter((k) => !k.is_active).length} suspended
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-0.5 text-[11px] text-[var(--text-secondary)]">
+                      Authenticate server-side requests, or use the <code className="font-mono text-[var(--nepal-blue)]">nepal-license-checker</code> SDK.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="hidden sm:flex items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-secondary)]/60 px-2 py-1 font-mono text-[10px] text-[var(--text-muted)]">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                  <span>Hashed at rest · shown once</span>
+                </div>
+              </div>
+
+              {/* Create Key toolbar */}
+              {keys.length < maxKeys ? (
+                <div className="space-y-2">
+                  <form onSubmit={handleCreateKey} className="flex flex-wrap items-center gap-2 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 p-1.5 pl-2.5 transition focus-within:border-[var(--nepal-blue)]/60">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-[var(--text-muted)]" aria-hidden="true">
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    <input
+                      type="text"
+                      value={keyName}
+                      onChange={(e) => setKeyName(e.target.value)}
+                      placeholder="Name this key — e.g. Production Web App, Mobile Backend, Discord Bot"
+                      maxLength={50}
+                      aria-label="New API key name"
+                      className="h-8 sm:h-7 flex-1 min-w-[180px] border-0 bg-transparent px-1 text-[12px] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-hidden"
+                    />
+                    <button
+                      type="submit"
+                      disabled={creatingKey}
+                      className="inline-flex h-8 sm:h-7 shrink-0 items-center gap-1.5 rounded-lg bg-[var(--nepal-blue)] px-3 text-[11px] font-bold text-white shadow-xs hover:opacity-90 active:scale-95 disabled:opacity-50 transition cursor-pointer"
+                    >
+                      {creatingKey ? (
+                        <>
+                          <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                          <span>Generating...</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <line x1="12" y1="5" x2="12" y2="19" />
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                          </svg>
+                          <span>Generate key</span>
+                        </>
+                      )}
+                    </button>
+                  </form>
+
+                  {/* Suggestion Chips */}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">Suggestions</span>
+                    {namePresets.map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => {
+                          setKeyName(preset)
+                          setActivePreset(preset)
+                        }}
+                        className={`rounded-md border px-1.5 py-0.5 text-[10px] font-medium transition cursor-pointer ${
+                          activePreset === preset
+                            ? 'border-[var(--nepal-blue)] bg-[var(--nepal-blue)]/10 text-[var(--nepal-blue)]'
+                            : 'border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--nepal-blue)]/30'
+                        }`}
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 px-3 py-2 text-[11px] text-[var(--text-muted)]">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-[var(--nepal-blue)]" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                  </svg>
+                  <span>Key limit reached ({maxKeys}). Revoke an unused key to generate a new one.</span>
+                </div>
+              )}
+
+              {/* Key list */}
+              {keys.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-[var(--border-default)] px-4 py-6 text-center space-y-1">
+                  <p className="text-[12px] font-semibold text-[var(--text-secondary)]">No API keys generated yet.</p>
+                  <p className="text-[11px] text-[var(--text-muted)]">
+                    Create a key above to start querying with elevated 60 req/min limits.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* Desktop: compact key vault */}
+                  <div className="hidden md:block overflow-x-auto rounded-xl border border-[var(--border-default)]">
+                    <table className="dev-key-table">
+                      <thead>
+                        <tr>
+                          <th scope="col" className="w-[24%]">Name</th>
+                          <th scope="col">Prefix</th>
+                          <th scope="col">Status</th>
+                          <th scope="col" className="text-right">Queries</th>
+                          <th scope="col" className="text-right">Rate</th>
+                          <th scope="col">Last used</th>
+                          <th scope="col" className="text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {keys.map((k) => (
+                          <Fragment key={k.id}>
+                            <tr className={k.is_active ? undefined : 'is-suspended'}>
+                              <td>
+                                {editingKeyId === k.id ? (
+                                  <div className="flex items-center gap-1">
+                                    <input
+                                      type="text"
+                                      value={editingName}
+                                      onChange={(e) => setEditingName(e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          e.preventDefault()
+                                          void handleSaveRename(k.id)
+                                        } else if (e.key === 'Escape') {
+                                          e.preventDefault()
+                                          handleCancelRename()
+                                        }
+                                      }}
+                                      maxLength={50}
+                                      className="h-7 w-[140px] rounded-md border border-[var(--nepal-blue)] bg-[var(--surface-primary)] px-2 text-[11px] font-bold text-[var(--text-primary)] focus:outline-hidden"
+                                      autoFocus
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSaveRename(k.id)}
+                                      disabled={savingRename}
+                                      className="h-7 rounded-md bg-[var(--nepal-blue)] px-2 text-[10px] font-bold text-white hover:opacity-90 transition cursor-pointer"
+                                    >
+                                      Save
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={handleCancelRename}
+                                      className="h-7 rounded-md border border-[var(--border-default)] px-2 text-[10px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div className="group/name flex items-center gap-1">
+                                    <span className="max-w-[170px] truncate text-[12px] font-bold text-[var(--text-primary)]" title={k.name}>
+                                      {k.name}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleStartRename(k.id, k.name)}
+                                      className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-[var(--text-muted)] opacity-0 transition hover:text-[var(--nepal-blue)] group-hover/name:opacity-100 focus-visible:opacity-100 cursor-pointer"
+                                      title="Rename this key"
+                                      aria-label={`Rename ${k.name}`}
+                                    >
+                                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                        <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                )}
+                              </td>
+                              <td>
+                                <code className="whitespace-nowrap rounded-md border border-[var(--border-default)] bg-[var(--bg-secondary)] px-1.5 py-0.5 font-mono text-[10.5px] font-bold text-[var(--text-primary)]">
+                                  {k.key_prefix}
+                                </code>
+                              </td>
+                              <td>
+                                {k.is_active ? (
+                                  <span className="inline-flex min-w-[74px] items-center justify-center gap-1 rounded-full border border-[var(--success)]/20 bg-[var(--success)]/10 px-2 py-0.5 text-[10px] font-bold leading-4 text-[var(--success)]">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-[var(--success)] animate-pulse" />
+                                    Active
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex min-w-[96px] items-center justify-center gap-1 rounded-full border border-rose-500/30 bg-rose-500/15 px-2 py-0.5 text-[10px] font-bold leading-4 text-rose-600 dark:text-rose-400">
+                                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                                      <circle cx="12" cy="12" r="10" />
+                                      <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                                    </svg>
+                                    Suspended
+                                  </span>
+                                )}
+                              </td>
+                              <td className="text-right font-mono text-[11px] font-bold tabular-nums text-[var(--nepal-blue)]">
+                                {(k.total_requests || 0).toLocaleString()}
+                              </td>
+                              <td className="text-right font-mono text-[10.5px] tabular-nums text-[var(--text-secondary)]">
+                                {k.rate_limit_per_minute}/m
+                              </td>
+                              <td className="whitespace-nowrap">
+                                <span className="block text-[10.5px] text-[var(--text-secondary)]">
+                                  {k.last_used_at ? new Date(k.last_used_at).toLocaleDateString() : 'Never'}
+                                </span>
+                                <span className="block text-[9.5px] text-[var(--text-muted)]">
+                                  Created {new Date(k.created_at).toLocaleDateString()}
+                                </span>
+                              </td>
+                              <td>
+                                <div className="flex items-center justify-end gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRotateKey(k.id, k.name)}
+                                    disabled={rotatingKeyId === k.id || !k.is_active}
+                                    className={`inline-flex h-7 w-7 items-center justify-center rounded-lg border transition shadow-2xs ${
+                                      !k.is_active
+                                        ? 'border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-muted)] opacity-50 cursor-not-allowed'
+                                        : 'border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:-translate-y-px hover:text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)]/50 active:scale-95 cursor-pointer'
+                                    }`}
+                                    title={!k.is_active ? 'Suspended keys cannot be rotated' : 'Rotate secret — keeps this key configuration'}
+                                    aria-label={`Rotate secret for ${k.name}`}
+                                  >
+                                    <svg
+                                      width="12"
+                                      height="12"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2.2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      className={rotatingKeyId === k.id ? 'animate-spin text-[var(--nepal-blue)]' : ''}
+                                      aria-hidden="true"
+                                    >
+                                      <path d="M21 2v6h-6" />
+                                      <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+                                      <path d="M3 22v-6h6" />
+                                      <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+                                    </svg>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRevokeKey(k.id, k.name)}
+                                    className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--danger)]/30 bg-[var(--danger)]/5 text-[var(--danger)] transition hover:-translate-y-px hover:bg-[var(--danger)] hover:text-white active:scale-95 cursor-pointer shadow-2xs"
+                                    title="Revoke this key permanently"
+                                    aria-label={`Revoke ${k.name}`}
+                                  >
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                      <polyline points="3 6 5 6 21 6" />
+                                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                            {!k.is_active && (
+                              <tr className="dev-key-detail-row">
+                                <td colSpan={7} className="dev-key-detail">
+                                  <p className="text-[11px] leading-relaxed text-rose-700 dark:text-rose-300">
+                                    <span className="font-bold">Suspended by an administrator.</span>{' '}
+                                    Requests with this key fail with{' '}
+                                    <code className="rounded bg-rose-500/20 px-1 py-0.5 font-mono text-[10px] font-bold">403 API_KEY_SUSPENDED</code>. Contact admin support, or revoke it and generate a fresh key.
+                                  </p>
+                                </td>
+                              </tr>
+                            )}
+                          </Fragment>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile: compact key cards */}
+                  <div className="space-y-2 md:hidden">
+                    {keys.map((k) => (
+                      <div
+                        key={k.id}
+                        className={`rounded-xl border p-3 shadow-2xs ${
+                          k.is_active
+                            ? 'border-[var(--border-default)] bg-[var(--surface-primary)]'
+                            : 'border-rose-500/40 bg-rose-500/[0.03]'
+                        }`}
+                      >
+                        {editingKeyId === k.id ? (
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <input
+                              type="text"
+                              value={editingName}
+                              onChange={(e) => setEditingName(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault()
+                                  void handleSaveRename(k.id)
+                                } else if (e.key === 'Escape') {
+                                  e.preventDefault()
+                                  handleCancelRename()
+                                }
+                              }}
+                              maxLength={50}
+                              className="h-8 flex-1 min-w-[140px] rounded-md border border-[var(--nepal-blue)] bg-[var(--surface-primary)] px-2 text-[11px] font-bold text-[var(--text-primary)] focus:outline-hidden"
+                              autoFocus
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleSaveRename(k.id)}
+                              disabled={savingRename}
+                              className="h-8 rounded-md bg-[var(--nepal-blue)] px-2.5 text-[10px] font-bold text-white hover:opacity-90 transition cursor-pointer"
+                            >
+                              Save
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleCancelRename}
+                              className="h-8 rounded-md border border-[var(--border-default)] px-2 text-[10px] text-[var(--text-secondary)] transition cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="text-[12px] font-bold text-[var(--text-primary)]">{k.name}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleStartRename(k.id, k.name)}
+                              className="inline-flex h-6 items-center gap-1 rounded px-1 text-[10px] text-[var(--text-muted)] hover:text-[var(--nepal-blue)] transition cursor-pointer"
+                              aria-label={`Rename ${k.name}`}
+                            >
+                              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                              </svg>
+                              Rename
+                            </button>
+                            {k.is_active ? (
+                              <span className="inline-flex items-center justify-center gap-1 rounded-full border border-[var(--success)]/20 bg-[var(--success)]/10 px-2 py-0.5 text-[10px] font-bold leading-4 text-[var(--success)]">
+                                <span className="h-1.5 w-1.5 rounded-full bg-[var(--success)]" />
+                                Active
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center justify-center gap-1 rounded-full border border-rose-500/30 bg-rose-500/15 px-2 py-0.5 text-[10px] font-bold leading-4 text-rose-600 dark:text-rose-400">
+                                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                                  <circle cx="12" cy="12" r="10" />
+                                  <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                                </svg>
+                                Suspended
+                              </span>
+                            )}
+                            <code className="ml-auto whitespace-nowrap rounded-md border border-[var(--border-default)] bg-[var(--bg-secondary)] px-1.5 py-0.5 font-mono text-[10px] font-bold text-[var(--text-primary)]">
+                              {k.key_prefix}
+                            </code>
+                          </div>
+                        )}
+
+                        <div className="mt-2 grid grid-cols-3 gap-2 border-t border-[var(--border-default)]/60 pt-2">
+                          <div>
+                            <span className="block text-[8.5px] font-bold uppercase tracking-[0.1em] text-[var(--text-muted)]">Queries</span>
+                            <span className="font-mono text-[11px] font-bold tabular-nums text-[var(--nepal-blue)]">
+                              {(k.total_requests || 0).toLocaleString()}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="block text-[8.5px] font-bold uppercase tracking-[0.1em] text-[var(--text-muted)]">Rate limit</span>
+                            <span className="font-mono text-[11px] tabular-nums text-[var(--text-secondary)]">{k.rate_limit_per_minute}/min</span>
+                          </div>
+                          <div>
+                            <span className="block text-[8.5px] font-bold uppercase tracking-[0.1em] text-[var(--text-muted)]">Last used</span>
+                            <span className="block text-[11px] text-[var(--text-secondary)]">
+                              {k.last_used_at ? new Date(k.last_used_at).toLocaleDateString() : 'Never'}
+                            </span>
+                            <span className="block text-[9px] text-[var(--text-muted)]">
+                              Created {new Date(k.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="mt-2 flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleRotateKey(k.id, k.name)}
+                            disabled={rotatingKeyId === k.id || !k.is_active}
+                            className={`inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-lg border text-[10.5px] font-semibold transition ${
+                              !k.is_active
+                                ? 'border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-muted)] opacity-50 cursor-not-allowed'
+                                : 'border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)]/50 active:scale-95 cursor-pointer'
+                            }`}
+                          >
+                            <svg
+                              width="11"
+                              height="11"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2.2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className={rotatingKeyId === k.id ? 'animate-spin text-[var(--nepal-blue)]' : ''}
+                              aria-hidden="true"
+                            >
+                              <path d="M21 2v6h-6" />
+                              <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+                              <path d="M3 22v-6h6" />
+                              <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+                            </svg>
+                            {rotatingKeyId === k.id ? 'Rotating...' : 'Rotate'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRevokeKey(k.id, k.name)}
+                            className="inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-lg border border-[var(--danger)]/30 bg-[var(--danger)]/5 text-[10.5px] font-bold text-[var(--danger)] transition hover:bg-[var(--danger)] hover:text-white active:scale-95 cursor-pointer"
+                          >
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                            </svg>
+                            Revoke
+                          </button>
+                        </div>
+
+                        {!k.is_active && (
+                          <p className="mt-2 rounded-lg border border-rose-500/30 bg-rose-500/10 px-2 py-1.5 text-[10.5px] leading-relaxed text-rose-700 dark:text-rose-300">
+                            <span className="font-bold">Suspended by admin.</span> Requests fail with{' '}
+                            <code className="rounded bg-rose-500/20 px-1 font-mono text-[10px] font-bold">403 API_KEY_SUSPENDED</code>.
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* API Analytics & Visual Traffic Section */}
+          <div id="section-analytics" className="dev-glass-card rounded-2xl p-4 sm:p-6 shadow-sm space-y-4 scroll-mt-24 transition-all duration-300 relative overflow-hidden">
             {/* Ambient decorative backdrop blur */}
             <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-[var(--nepal-blue)]/5 blur-3xl" />
 
-            <div className="relative flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border-default)] pb-4">
+            <div className="relative flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-default)] pb-3">
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">
+                  <h2 className="text-sm sm:text-[15px] font-bold text-[var(--text-primary)]">
                     API Analytics & Traffic Visualizer
                   </h2>
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--nepal-blue)]/10 px-2.5 py-0.5 text-[10px] font-bold text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/20">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--nepal-blue)]/10 px-2 py-0.5 text-[9.5px] font-bold text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/20">
                     <span className="h-1.5 w-1.5 rounded-full bg-[var(--nepal-blue)] animate-pulse" />
                     Live Telemetry
                   </span>
                 </div>
-                <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">
                   Monitor request throughput, rate limits, status distribution, and edge response latency.
                 </p>
               </div>
@@ -1371,7 +1825,7 @@ if ($result['status'] === 'success' && $result['isReady']) {
             </div>
 
               {/* Responsive Grid: Main Chart (left) and Gauges/Breakdown (right) */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
                 {/* Traffic Volume & Status Chart (2 cols) */}
                 <div className="lg:col-span-2">
                   <DeveloperTrafficChart
@@ -1384,7 +1838,7 @@ if ($result['status'] === 'success' && $result['isReady']) {
                 </div>
 
                 {/* Quota Gauge and Key Distribution (1 col) */}
-                <div className="space-y-6">
+                <div className="space-y-4">
                   <DeveloperQuotaGauge
                     limit={analyticsData?.quota.limit ?? 60}
                     used={analyticsData?.quota.used ?? 0}
@@ -1399,306 +1853,31 @@ if ($result['status'] === 'success' && $result['isReady']) {
               </div>
             </div>
 
-            {/* API Keys Management Card */}
-            <div id="section-keys" className="dev-glass-card rounded-3xl p-6 sm:p-8 shadow-sm space-y-6 scroll-mt-24 transition-all duration-300 relative overflow-hidden">
-              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border-default)] pb-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--nepal-blue)]/10 text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/20 mt-0.5">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <circle cx="7.5" cy="15.5" r="5.5" />
-                      <path d="m21 2-9.6 9.6" />
-                      <path d="m15.5 7.5 3 3L22 7l-3-3" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">API Keys</h2>
-                    <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-                      Keys authenticate requests from your servers or via the <code className="font-mono text-[var(--nepal-blue)]">nepal-license-checker</code> SDK.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3 py-1 text-xs font-semibold text-[var(--text-muted)]">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>{keys.filter((k) => k.is_active).length} of {maxKeys} active</span>
-                  </span>
-                  {keys.some((k) => !k.is_active) && (
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-500/30 bg-rose-500/10 px-2.5 py-1 text-xs font-bold text-rose-600 dark:text-rose-400">
-                      <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
-                      <span>{keys.filter((k) => !k.is_active).length} suspended</span>
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Create Key Form */}
-              {keys.length < maxKeys ? (
-                <div className="space-y-3 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 p-4 sm:p-5">
-                  <span className="text-xs font-bold text-[var(--text-primary)] block">Generate New Key</span>
-                  <form onSubmit={handleCreateKey} className="flex flex-wrap gap-2.5 items-center">
-                    <input
-                      type="text"
-                      value={keyName}
-                      onChange={(e) => setKeyName(e.target.value)}
-                      placeholder="e.g. Production Web App, Mobile Backend, Discord Bot"
-                      maxLength={50}
-                      className="flex-1 min-w-[240px] rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3.5 py-2.5 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--nepal-blue)] focus:outline-hidden transition shadow-2xs"
-                    />
-                    <button
-                      type="submit"
-                      disabled={creatingKey}
-                      className="inline-flex items-center gap-2 rounded-xl bg-[var(--nepal-blue)] px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:opacity-90 active:scale-95 disabled:opacity-50 transition cursor-pointer shrink-0"
-                    >
-                      {creatingKey ? (
-                        <>
-                          <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                          <span>Generating...</span>
-                        </>
-                      ) : (
-                        <>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                            <line x1="12" y1="5" x2="12" y2="19" />
-                            <line x1="5" y1="12" x2="19" y2="12" />
-                          </svg>
-                          <span>Generate API Key</span>
-                        </>
-                      )}
-                    </button>
-                  </form>
-
-                  {/* Suggestion Chips */}
-                  <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                    <span className="text-[10.5px] text-[var(--text-muted)]">Suggestions:</span>
-                    {namePresets.map((preset) => (
-                      <button
-                        key={preset}
-                        type="button"
-                        onClick={() => {
-                          setKeyName(preset)
-                          setActivePreset(preset)
-                        }}
-                        className={`rounded-lg border px-2 py-0.5 text-[10px] font-medium transition cursor-pointer ${
-                          activePreset === preset
-                            ? 'border-[var(--nepal-blue)] bg-[var(--nepal-blue)]/10 text-[var(--nepal-blue)]'
-                            : 'border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--nepal-blue)]/30'
-                        }`}
-                      >
-                        {preset}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-4 text-xs text-[var(--text-muted)] flex items-center gap-2.5">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)] shrink-0" aria-hidden="true">
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="16" x2="12" y2="12" />
-                    <line x1="12" y1="8" x2="12.01" y2="8" />
-                  </svg>
-                  <span>You have reached the maximum quota of {maxKeys} active API keys. Revoke an unused key below to generate a new one.</span>
-                </div>
-              )}
-
-              {/* Active Keys List */}
-              {keys.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-[var(--border-default)] p-8 text-center space-y-2">
-                  <p className="text-xs font-semibold text-[var(--text-secondary)]">No API keys generated yet.</p>
-                  <p className="text-[11px] text-[var(--text-muted)]">
-                    Generate an API key above to start querying with elevated 60 req/min limits.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {keys.map((k) => (
-                    <div
-                      key={k.id}
-                      className={`hover-lift flex flex-col gap-3.5 rounded-2xl border p-4 sm:p-5 shadow-2xs transition-all duration-300 ${
-                        k.is_active
-                          ? 'border-[var(--border-default)] bg-[var(--surface-primary)] hover:border-[var(--nepal-blue)]/50'
-                          : 'border-rose-500/40 bg-rose-500/[0.03] hover:border-rose-500/60'
-                      }`}
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-3.5">
-                        <div className="space-y-2 flex-1 min-w-[260px]">
-                          {editingKeyId === k.id ? (
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="text"
-                                value={editingName}
-                                onChange={(e) => setEditingName(e.target.value)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    e.preventDefault()
-                                    void handleSaveRename(k.id)
-                                  } else if (e.key === 'Escape') {
-                                    e.preventDefault()
-                                    handleCancelRename()
-                                  }
-                                }}
-                                maxLength={50}
-                                className="rounded-lg border border-[var(--nepal-blue)] bg-[var(--surface-primary)] px-2.5 py-1 text-xs font-bold text-[var(--text-primary)] focus:outline-hidden"
-                                autoFocus
-                              />
-                              <button
-                                type="button"
-                                onClick={() => handleSaveRename(k.id)}
-                                disabled={savingRename}
-                                className="rounded-lg bg-[var(--nepal-blue)] px-2.5 py-1 text-[11px] font-bold text-white hover:opacity-90 transition cursor-pointer"
-                              >
-                                Save
-                              </button>
-                              <button
-                                type="button"
-                                onClick={handleCancelRename}
-                                className="rounded-lg border border-[var(--border-default)] px-2 py-1 text-[11px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2.5 flex-wrap">
-                              <span className="font-bold text-sm text-[var(--text-primary)]">{k.name}</span>
-                              <button
-                                type="button"
-                                onClick={() => handleStartRename(k.id, k.name)}
-                                className="inline-flex min-h-[36px] items-center gap-1 rounded-lg px-2 text-xs text-[var(--text-muted)] hover:text-[var(--nepal-blue)] transition cursor-pointer"
-                                title="Rename this key"
-                              >
-                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                                </svg>
-                                <span>Rename</span>
-                              </button>
-                              {k.is_active ? (
-                                <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--success)]/10 px-2.5 py-0.5 text-xs font-bold text-[var(--success)] border border-[var(--success)]/20">
-                                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--success)] animate-pulse" />
-                                  Active
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-500/15 border border-rose-500/30 px-2.5 py-0.5 text-xs font-bold text-rose-600 dark:text-rose-400">
-                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
-                                    <circle cx="12" cy="12" r="10" />
-                                    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
-                                  </svg>
-                                  Suspended by Admin
-                                </span>
-                              )}
-                            </div>
-                          )}
-
-                          <div className="flex flex-wrap items-center gap-2.5 text-xs text-[var(--text-secondary)] font-mono">
-                            <span className="rounded-lg bg-[var(--bg-secondary)] px-2.5 py-1 border border-[var(--border-default)] font-bold text-[var(--text-primary)]">
-                              {k.key_prefix}
-                            </span>
-                            <span className="text-[var(--border-default)]">•</span>
-                            <span className="text-[var(--nepal-blue)] font-bold tabular-nums">
-                              {(k.total_requests || 0).toLocaleString()} queries
-                            </span>
-                            <span className="text-[var(--border-default)]">•</span>
-                            <span className="tabular-nums">{k.rate_limit_per_minute} req/min</span>
-                            <span className="text-[var(--border-default)]">•</span>
-                            <span className="text-[var(--text-muted)] text-[11px]">
-                              Created: {new Date(k.created_at).toLocaleDateString()}
-                            </span>
-                            <span className="text-[var(--border-default)]">•</span>
-                            <span className="text-[var(--text-muted)] text-[11px]">
-                              {k.last_used_at ? `Last used: ${new Date(k.last_used_at).toLocaleDateString()}` : 'Never used yet'}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-2 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => handleRotateKey(k.id, k.name)}
-                            disabled={rotatingKeyId === k.id || !k.is_active}
-                            className={`min-h-[44px] inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-semibold transition shadow-2xs ${
-                              !k.is_active
-                                ? 'border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-muted)] opacity-50 cursor-not-allowed'
-                                : 'border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)]/50 cursor-pointer active:scale-95'
-                            }`}
-                            title={!k.is_active ? 'Suspended keys cannot be rotated' : 'Generate a fresh secret key while keeping this key configuration'}
-                          >
-                            <svg
-                              width="12"
-                              height="12"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2.2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className={rotatingKeyId === k.id ? 'animate-spin text-[var(--nepal-blue)]' : ''}
-                              aria-hidden="true"
-                            >
-                              <path d="M21 2v6h-6" />
-                              <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
-                              <path d="M3 22v-6h6" />
-                              <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
-                            </svg>
-                            <span>{rotatingKeyId === k.id ? 'Rotating...' : 'Rotate Secret'}</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleRevokeKey(k.id, k.name)}
-                            className="min-h-[44px] inline-flex items-center gap-1.5 rounded-xl border border-[var(--danger)]/30 bg-[var(--danger)]/5 px-3.5 py-2 text-xs font-bold text-[var(--danger)] hover:bg-[var(--danger)] hover:text-white transition active:scale-95 cursor-pointer shadow-2xs"
-                          >
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                              <polyline points="3 6 5 6 21 6" />
-                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                            </svg>
-                            <span>Revoke Key</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Suspended Alert Banner inside Key Card */}
-                      {!k.is_active && (
-                        <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-700 dark:text-rose-300 flex items-start gap-2.5">
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-rose-500 shrink-0 mt-0.5" aria-hidden="true">
-                            <circle cx="12" cy="12" r="10" />
-                            <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
-                          </svg>
-                          <div className="space-y-0.5">
-                            <p className="font-bold">This API key was suspended by an administrator.</p>
-                            <p className="text-[11px] opacity-90 leading-relaxed">
-                              All API requests attempting to authorize with this key will fail with <code className="font-mono font-bold bg-rose-500/20 px-1 py-0.5 rounded text-[11px]">HTTP 403 (API_KEY_SUSPENDED)</code>. If you need reactivation or believe this was done in error, please reach out to admin support or revoke this key and generate a fresh one.
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
             {/* Quickstart Integration Code Card */}
-            <div id="section-quickstart" className="dev-glass-card rounded-3xl p-6 sm:p-8 shadow-sm space-y-5 scroll-mt-24 transition-all duration-300 relative overflow-hidden">
+            <div id="section-quickstart" className="dev-glass-card rounded-2xl p-4 sm:p-6 shadow-sm space-y-4 scroll-mt-24 transition-all duration-300 relative overflow-hidden">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 mt-0.5">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <div className="flex items-start gap-2.5">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <polyline points="16 18 22 12 16 6" />
                       <polyline points="8 6 2 12 8 18" />
                     </svg>
                   </div>
                   <div>
-                    <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">Quick Integration Guide</h2>
-                    <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                    <h2 className="text-sm sm:text-[15px] font-bold text-[var(--text-primary)]">Quick Integration Guide</h2>
+                    <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">
                       Pre-populated with your active API key. Send via <code className="font-mono text-[var(--nepal-blue)]">apiKey</code> in SDK or <code className="font-mono text-[var(--nepal-blue)]">x-api-key</code> HTTP header.
                     </p>
                   </div>
                 </div>
 
-                <div className="flex rounded-xl border border-[var(--border-default)] p-1 bg-[var(--bg-secondary)] shadow-2xs">
+                <div className="flex flex-wrap gap-0.5 rounded-lg border border-[var(--border-default)] p-0.5 bg-[var(--bg-secondary)] shadow-2xs">
                   {(['sdk', 'php', 'python', 'curl', 'fetch'] as const).map((tab) => (
                     <button
                       key={tab}
                       type="button"
                       onClick={() => setCodeTab(tab)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                      className={`px-2 py-1 rounded-md text-[10.5px] font-bold transition cursor-pointer ${
                         codeTab === tab
                           ? 'bg-[var(--surface-primary)] text-[var(--nepal-blue)] shadow-xs'
                           : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
@@ -1711,8 +1890,8 @@ if ($result['status'] === 'success' && $result['isReady']) {
               </div>
 
               {/* Code Display with Terminal Chrome */}
-              <div className="relative rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)] overflow-hidden shadow-sm">
-                <div className="flex items-center justify-between border-b border-[var(--border-default)] bg-[var(--surface-primary)]/80 px-4 py-2.5 backdrop-blur-xs">
+              <div className="relative rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] overflow-hidden shadow-sm">
+                <div className="flex items-center justify-between border-b border-[var(--border-default)] bg-[var(--surface-primary)]/80 px-3 py-2 backdrop-blur-xs">
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-1.5">
                       <div className="h-3 w-3 rounded-full bg-[#ff5f56] border border-black/10" />
@@ -1748,35 +1927,35 @@ if ($result['status'] === 'success' && $result['isReady']) {
                   </button>
                 </div>
 
-                <pre className="overflow-x-auto p-4 sm:p-5 font-mono text-xs leading-relaxed text-[var(--text-primary)]">
+                <pre className="max-h-[420px] overflow-x-auto overflow-y-auto p-3 sm:p-4 font-mono text-[11.5px] leading-relaxed text-[var(--text-primary)]">
                   <code>{getCodeSnippet()}</code>
                 </pre>
               </div>
             </div>
 
             {/* Live Interactive API Tester & Console */}
-            <div id="section-console" className="dev-glass-card rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm scroll-mt-24 transition-all duration-300 relative overflow-hidden">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-default)] pb-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 mt-0.5">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <div id="section-console" className="dev-glass-card rounded-2xl p-4 sm:p-6 space-y-4 shadow-sm scroll-mt-24 transition-all duration-300 relative overflow-hidden">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-default)] pb-3">
+                <div className="flex items-start gap-2.5">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <polygon points="5 3 19 12 5 21 5 3" />
                     </svg>
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">Live API Tester & Console</h2>
-                      <span className="rounded-full bg-[var(--nepal-blue)]/10 px-2.5 py-0.5 text-[10px] font-bold text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/20">
+                      <h2 className="text-sm sm:text-[15px] font-bold text-[var(--text-primary)]">Live API Tester & Console</h2>
+                      <span className="rounded-full bg-[var(--nepal-blue)]/10 px-2 py-0.5 text-[9.5px] font-bold text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/20">
                         Interactive Sandbox
                       </span>
                     </div>
-                    <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                    <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">
                       Execute live test queries against the mirrored DOTM database with your active API key and inspect RFC rate-limit headers in real-time.
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3 py-1.5 shadow-2xs font-mono text-xs">
+                <div className="flex items-center gap-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2.5 py-1 shadow-2xs font-mono text-[10.5px]">
                   <span className="inline-flex items-center gap-1.5 font-bold text-emerald-600 dark:text-emerald-400">
                     <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                     GET
@@ -1785,11 +1964,11 @@ if ($result['status'] === 'success' && $result['isReady']) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Left Column: Request Form */}
-                <div className="space-y-4 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 p-4 sm:p-5">
+                <div className="space-y-3 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 p-3.5 sm:p-4">
                   <div>
-                    <label className="text-xs font-bold text-[var(--text-primary)] block mb-1">
+                    <label className="text-[11px] font-bold text-[var(--text-primary)] block mb-1">
                       Authorization Key:
                     </label>
                     <div className="flex gap-2">
@@ -1804,13 +1983,13 @@ if ($result['status'] === 'success' && $result['isReady']) {
                           }
                         }}
                         placeholder={newKeyModal?.rawKey || 'Paste raw nlc_live_... key (or leave empty for public search)'}
-                        className="flex-1 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-xs font-mono text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--nepal-blue)] focus:outline-hidden transition shadow-2xs"
+                        className="flex-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1.5 text-[11.5px] font-mono text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--nepal-blue)] focus:outline-hidden transition shadow-2xs"
                       />
                       {newKeyModal && (
                         <button
                           type="button"
                           onClick={() => setTestApiKey(newKeyModal.rawKey)}
-                          className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1.5 text-[11px] font-bold text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)] transition shrink-0 cursor-pointer shadow-2xs active:scale-95"
+                          className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1.5 text-[10.5px] font-bold text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)] transition shrink-0 cursor-pointer shadow-2xs active:scale-95"
                         >
                           Use Fresh Key
                         </button>
@@ -1832,7 +2011,7 @@ if ($result['status'] === 'success' && $result['isReady']) {
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-[var(--text-primary)] block mb-1">
+                    <label className="text-[11px] font-bold text-[var(--text-primary)] block mb-1">
                       Driving License Number:
                     </label>
                     <input
@@ -1846,7 +2025,7 @@ if ($result['status'] === 'success' && $result['isReady']) {
                         }
                       }}
                       placeholder="e.g. 01-01-12345678 or ०१-०१-१२३४५६७८"
-                      className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-xs font-mono text-[var(--text-primary)] focus:border-[var(--nepal-blue)] focus:outline-hidden transition shadow-2xs"
+                      className="w-full rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1.5 text-[11.5px] font-mono text-[var(--text-primary)] focus:border-[var(--nepal-blue)] focus:outline-hidden transition shadow-2xs"
                     />
 
                     {/* Pre-filled Sample Chips */}
@@ -2005,68 +2184,68 @@ if ($result['status'] === 'success' && $result['isReady']) {
             </div>
 
             {/* HTTP API Reference Table */}
-            <div id="section-specs" className="dev-glass-card rounded-3xl p-6 sm:p-8 space-y-5 shadow-sm text-xs scroll-mt-24 transition-all duration-300 relative overflow-hidden">
-              <div className="flex items-start gap-3 border-b border-[var(--border-default)] pb-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--nepal-blue)]/10 text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/20 mt-0.5">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <div id="section-specs" className="dev-glass-card rounded-2xl p-4 sm:p-6 space-y-4 shadow-sm text-[11px] scroll-mt-24 transition-all duration-300 relative overflow-hidden">
+              <div className="flex items-start gap-2.5 border-b border-[var(--border-default)] pb-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--nepal-blue)]/10 text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/20">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z" />
                     <path d="M6 6h10" />
                     <path d="M6 10h10" />
                   </svg>
                 </div>
                 <div>
-                  <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">HTTP Response Headers Specification</h2>
-                  <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                  <h2 className="text-sm sm:text-[15px] font-bold text-[var(--text-primary)]">HTTP Response Headers Specification</h2>
+                  <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">
                     The license API mirrors all standard RFC rate-limiting headers with each request:
                   </p>
                 </div>
               </div>
 
-              <div className="overflow-x-auto rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40">
-                <table className="w-full text-left font-mono border-collapse">
+              <div className="overflow-x-auto rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40">
+                <table className="dev-key-table font-mono">
                   <thead>
-                    <tr className="border-b border-[var(--border-default)] bg-[var(--surface-primary)]/80 text-[var(--text-secondary)]">
-                      <th className="py-3 px-4 font-bold">Header</th>
-                      <th className="py-3 px-4 font-bold">Description</th>
-                      <th className="py-3 px-4 font-bold">Example Value</th>
+                    <tr className="text-[var(--text-secondary)]">
+                      <th scope="col" className="font-bold">Header</th>
+                      <th scope="col" className="font-bold">Description</th>
+                      <th scope="col" className="font-bold">Example Value</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[var(--border-default)] text-[var(--text-primary)]">
-                    <tr className="hover:bg-[var(--surface-primary)]/40 transition">
-                      <td className="py-3 px-4 font-semibold text-[var(--nepal-blue)]">
-                        <span className="rounded-md bg-[var(--nepal-blue)]/10 px-2 py-0.5 border border-[var(--nepal-blue)]/20">
+                  <tbody className="text-[var(--text-primary)]">
+                    <tr>
+                      <td className="font-semibold text-[var(--nepal-blue)]">
+                        <span className="rounded-md border border-[var(--nepal-blue)]/20 bg-[var(--nepal-blue)]/10 px-1.5 py-0.5">
                           X-RateLimit-Limit
                         </span>
                       </td>
-                      <td className="py-3 px-4 font-sans text-[var(--text-secondary)]">Total requests allowed within the 60s sliding window</td>
-                      <td className="py-3 px-4 text-[var(--text-primary)] font-bold">60</td>
+                      <td className="font-sans text-[var(--text-secondary)]">Total requests allowed within the 60s sliding window</td>
+                      <td className="font-bold tabular-nums text-[var(--text-primary)]">60</td>
                     </tr>
-                    <tr className="hover:bg-[var(--surface-primary)]/40 transition">
-                      <td className="py-3 px-4 font-semibold text-[var(--nepal-blue)]">
-                        <span className="rounded-md bg-[var(--nepal-blue)]/10 px-2 py-0.5 border border-[var(--nepal-blue)]/20">
+                    <tr>
+                      <td className="font-semibold text-[var(--nepal-blue)]">
+                        <span className="rounded-md border border-[var(--nepal-blue)]/20 bg-[var(--nepal-blue)]/10 px-1.5 py-0.5">
                           X-RateLimit-Remaining
                         </span>
                       </td>
-                      <td className="py-3 px-4 font-sans text-[var(--text-secondary)]">Remaining requests before hitting the 429 rate threshold</td>
-                      <td className="py-3 px-4 text-emerald-600 dark:text-emerald-400 font-bold">58</td>
+                      <td className="font-sans text-[var(--text-secondary)]">Remaining requests before hitting the 429 rate threshold</td>
+                      <td className="font-bold tabular-nums text-emerald-600 dark:text-emerald-400">58</td>
                     </tr>
-                    <tr className="hover:bg-[var(--surface-primary)]/40 transition">
-                      <td className="py-3 px-4 font-semibold text-[var(--nepal-blue)]">
-                        <span className="rounded-md bg-[var(--nepal-blue)]/10 px-2 py-0.5 border border-[var(--nepal-blue)]/20">
+                    <tr>
+                      <td className="font-semibold text-[var(--nepal-blue)]">
+                        <span className="rounded-md border border-[var(--nepal-blue)]/20 bg-[var(--nepal-blue)]/10 px-1.5 py-0.5">
                           X-RateLimit-Reset
                         </span>
                       </td>
-                      <td className="py-3 px-4 font-sans text-[var(--text-secondary)]">Unix epoch timestamp when current rate limit window resets</td>
-                      <td className="py-3 px-4 text-[var(--text-muted)]">1760688000</td>
+                      <td className="font-sans text-[var(--text-secondary)]">Unix epoch timestamp when current rate limit window resets</td>
+                      <td className="tabular-nums text-[var(--text-muted)]">1760688000</td>
                     </tr>
-                    <tr className="hover:bg-[var(--surface-primary)]/40 transition">
-                      <td className="py-3 px-4 font-semibold text-[var(--nepal-red)]">
-                        <span className="rounded-md bg-rose-500/10 px-2 py-0.5 border border-rose-500/20 text-rose-600 dark:text-rose-400">
+                    <tr>
+                      <td className="font-semibold text-[var(--nepal-red)]">
+                        <span className="rounded-md border border-rose-500/20 bg-rose-500/10 px-1.5 py-0.5 text-rose-600 dark:text-rose-400">
                           Retry-After
                         </span>
                       </td>
-                      <td className="py-3 px-4 font-sans text-[var(--text-secondary)]">Returned on HTTP 429 indicating seconds to wait before retry</td>
-                      <td className="py-3 px-4 text-rose-600 dark:text-rose-400 font-bold">35</td>
+                      <td className="font-sans text-[var(--text-secondary)]">Returned on HTTP 429 indicating seconds to wait before retry</td>
+                      <td className="font-bold tabular-nums text-rose-600 dark:text-rose-400">35</td>
                     </tr>
                   </tbody>
                 </table>
@@ -2074,7 +2253,7 @@ if ($result['status'] === 'success' && $result['isReady']) {
             </div>
 
             {/* Developer Dashboard Footer */}
-            <footer className="pt-8 mt-12 border-t border-[var(--border-default)] flex flex-wrap items-center justify-between gap-4 text-xs text-[var(--text-secondary)]">
+            <footer className="pt-5 mt-2 border-t border-[var(--border-default)] flex flex-wrap items-center justify-between gap-3 text-[11px] text-[var(--text-secondary)]">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                 <span className="font-semibold text-[var(--text-primary)]">
                   © {new Date().getFullYear()} Nepal License Checker
@@ -2114,7 +2293,7 @@ if ($result['status'] === 'success' && $result['isReady']) {
             role="dialog"
             aria-modal="true"
           >
-            <div className="dev-glass-card relative w-full max-w-lg rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 animate-rise-in border border-[var(--border-default)] overflow-hidden">
+            <div className="dev-glass-card relative w-full max-w-lg rounded-2xl p-5 sm:p-6 shadow-2xl space-y-4 animate-rise-in border border-[var(--border-default)] overflow-hidden">
               {/* Top ambient highlight */}
               <div className="pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full bg-emerald-500/10 blur-2xl" />
 
