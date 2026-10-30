@@ -7,6 +7,10 @@ export interface OcrConfig {
   maskedApiKey: string
   hasKey: boolean
   keySource: 'database' | 'environment' | 'none'
+  secondaryApiKey: string
+  maskedSecondaryApiKey: string
+  hasSecondaryKey: boolean
+  secondaryKeySource: 'database' | 'environment' | 'none'
   model: string
   enabled: boolean
 }
@@ -75,18 +79,21 @@ export async function ensureOcrLogsTable(): Promise<void> {
 export async function getActiveOcrConfig(): Promise<OcrConfig> {
   const db = getTurso()
   let dbKey = ''
+  let dbSecondaryKey = ''
   let dbModel = ''
   let dbEnabled: boolean | null = null
 
   try {
     const res = await db.execute(
-      "SELECT key, value FROM site_stats WHERE key IN ('gemini_api_key', 'gemini_model', 'ocr_enabled')"
+      "SELECT key, value FROM site_stats WHERE key IN ('gemini_api_key', 'gemini_api_key_secondary', 'gemini_model', 'ocr_enabled')"
     )
     for (const row of res.rows) {
       const k = String(row.key)
       const v = String(row.value)
       if (k === 'gemini_api_key' && v.trim()) {
         dbKey = v.trim()
+      } else if (k === 'gemini_api_key_secondary' && v.trim()) {
+        dbSecondaryKey = v.trim()
       } else if (k === 'gemini_model' && v.trim()) {
         dbModel = v.trim()
       } else if (k === 'ocr_enabled') {
@@ -105,11 +112,28 @@ export async function getActiveOcrConfig(): Promise<OcrConfig> {
     ? 'environment'
     : 'none'
 
+  const envSecondaryKey = (
+    process.env.GEMINI_API_KEY_SECONDARY ||
+    process.env.GEMINI_SECONDARY_API_KEY ||
+    process.env.GEMINI_API_KEY_BACKUP ||
+    ''
+  ).trim()
+  const activeSecondaryKey = dbSecondaryKey || envSecondaryKey
+  const secondaryKeySource: 'database' | 'environment' | 'none' = dbSecondaryKey
+    ? 'database'
+    : envSecondaryKey
+    ? 'environment'
+    : 'none'
+
   return {
     apiKey: activeKey,
     maskedApiKey: maskApiKey(activeKey),
     hasKey: Boolean(activeKey),
     keySource,
+    secondaryApiKey: activeSecondaryKey,
+    maskedSecondaryApiKey: maskApiKey(activeSecondaryKey),
+    hasSecondaryKey: Boolean(activeSecondaryKey),
+    secondaryKeySource,
     model: dbModel || process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
     enabled: dbEnabled !== null ? dbEnabled : true,
   }
@@ -117,6 +141,7 @@ export async function getActiveOcrConfig(): Promise<OcrConfig> {
 
 export async function saveOcrConfig(params: {
   apiKey?: string
+  secondaryApiKey?: string
   model?: string
   enabled?: boolean
 }): Promise<void> {
@@ -130,6 +155,15 @@ export async function saveOcrConfig(params: {
             VALUES ('gemini_api_key', ?, ?) 
             ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
       args: [params.apiKey.trim(), now],
+    })
+  }
+
+  if (params.secondaryApiKey !== undefined) {
+    statements.push({
+      sql: `INSERT INTO site_stats (key, value, updated_at) 
+            VALUES ('gemini_api_key_secondary', ?, ?) 
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+      args: [params.secondaryApiKey.trim(), now],
     })
   }
 

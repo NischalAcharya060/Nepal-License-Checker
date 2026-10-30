@@ -32,7 +32,7 @@ export interface AdminOcrProps {
   setOcrSelectMode?: (mode: boolean) => void
   setSelectedOcrIds?: React.Dispatch<React.SetStateAction<number[]>>
   copyToClipboard?: (text: string, key: string) => void
-  handleSaveOcrConfig?: (params: { apiKey?: string; model?: string; enabled?: boolean }) => Promise<void>
+  handleSaveOcrConfig?: (params: { apiKey?: string; secondaryApiKey?: string; model?: string; enabled?: boolean }) => Promise<void>
   handleTestOcrKey?: (keyToTest?: string, modelToTest?: string) => Promise<{ success: boolean; latencyMs: number; modelVersion?: string; error?: string }>
   handleDeleteOcrLogs?: (ids: number[]) => Promise<void>
   handleClearAllOcrLogs?: () => Promise<void>
@@ -86,6 +86,18 @@ export default function AdminOcr(props: any) {
   } | null>(null)
   const [savingConfig, setSavingConfig] = useState(false)
 
+  // Secondary / Backup Key states
+  const [editingSecondaryKey, setEditingSecondaryKey] = useState(false)
+  const [secondaryApiKeyInput, setSecondaryApiKeyInput] = useState('')
+  const [showSecondaryKeySecret, setShowSecondaryKeySecret] = useState(false)
+  const [testingSecondaryKey, setTestingSecondaryKey] = useState(false)
+  const [secondaryTestResult, setSecondaryTestResult] = useState<{
+    success: boolean
+    latencyMs: number
+    modelVersion?: string
+    error?: string
+  } | null>(null)
+
   const selectedModel = modelOverride ?? ocrConfig?.model ?? 'gemini-3.5-flash-lite'
 
   const activeKey = ocrConfig?.apiKey || ''
@@ -94,6 +106,13 @@ export default function AdminOcr(props: any) {
     (activeKey && activeKey.length >= 8
       ? `${activeKey.slice(0, 6)}••••••••${activeKey.slice(-4)}`
       : activeKey || '••••••••')
+
+  const activeSecondaryKey = ocrConfig?.secondaryApiKey || ''
+  const maskedSecondaryKey =
+    ocrConfig?.maskedSecondaryApiKey ||
+    (activeSecondaryKey && activeSecondaryKey.length >= 8
+      ? `${activeSecondaryKey.slice(0, 6)}••••••••${activeSecondaryKey.slice(-4)}`
+      : activeSecondaryKey || '••••••••')
 
   const onStartEditKey = () => {
     setApiKeyInput(activeKey)
@@ -135,6 +154,39 @@ export default function AdminOcr(props: any) {
       setTestResult(res)
     } finally {
       setTestingKey(false)
+    }
+  }
+
+  const onStartEditSecondaryKey = () => {
+    setSecondaryApiKeyInput(activeSecondaryKey)
+    setEditingSecondaryKey(true)
+    setSecondaryTestResult(null)
+  }
+
+  const onCancelEditSecondaryKey = () => {
+    setEditingSecondaryKey(false)
+    setSecondaryApiKeyInput('')
+  }
+
+  const onSaveSecondaryKey = async () => {
+    setSavingConfig(true)
+    try {
+      await handleSaveOcrConfig({ secondaryApiKey: secondaryApiKeyInput, model: selectedModel })
+      setEditingSecondaryKey(false)
+    } finally {
+      setSavingConfig(false)
+    }
+  }
+
+  const onTestSecondaryConnection = async () => {
+    setTestingSecondaryKey(true)
+    setSecondaryTestResult(null)
+    try {
+      const keyToUse = editingSecondaryKey ? secondaryApiKeyInput : activeSecondaryKey
+      const res = await handleTestOcrKey(keyToUse, selectedModel)
+      setSecondaryTestResult(res)
+    } finally {
+      setTestingSecondaryKey(false)
     }
   }
 
@@ -471,6 +523,166 @@ export default function AdminOcr(props: any) {
               <span>Cost Estimate: <strong>$0.00 / month</strong></span>
               <span>Timeout Limit: <strong>10.0 seconds max</strong></span>
             </div>
+          </div>
+        </div>
+
+        {/* Secondary / Backup Key Fallback Section */}
+        <div className="mt-4 pt-4 border-t border-[var(--border-default)]/60">
+          <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/30 p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-1.5">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-500">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  </svg>
+                  Secondary / Backup API Key (Automatic 429 Failover)
+                </span>
+                <span
+                  className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase rounded-md px-2 py-0.5 border ${
+                    activeSecondaryKey
+                      ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-500'
+                      : 'border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-muted)]'
+                  }`}
+                >
+                  <span className={`h-1.5 w-1.5 rounded-full ${activeSecondaryKey ? 'bg-emerald-500' : 'bg-zinc-400'}`} />
+                  {activeSecondaryKey ? 'Failover Ready' : 'Not Configured'}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={testingSecondaryKey || (!activeSecondaryKey && !secondaryApiKeyInput)}
+                  onClick={onTestSecondaryConnection}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 py-1 text-xs font-bold text-[var(--text-primary)] shadow-xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] active:scale-97 disabled:opacity-50 cursor-pointer"
+                >
+                  {testingSecondaryKey ? (
+                    <>
+                      <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                      <span>Testing Backup...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                      </svg>
+                      <span>Test Backup Key</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <p className="mt-1 text-xs text-[var(--text-muted)]">
+              When Google returns HTTP 429 (quota or rate-limit exceeded) on the primary key, scans automatically fail over to this key seamlessly.
+            </p>
+
+            {/* Backup Key Test Status Banner */}
+            {secondaryTestResult && (
+              <div
+                className={`mt-3 rounded-xl p-3 border text-xs font-medium animate-fade-in flex items-center justify-between ${
+                  secondaryTestResult.success
+                    ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                    : 'border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-base">{secondaryTestResult.success ? '✅' : '❌'}</span>
+                  <span>
+                    {secondaryTestResult.success
+                      ? `Backup Key verified successfully in ${secondaryTestResult.latencyMs} ms! (Active Model: ${secondaryTestResult.modelVersion})`
+                      : `Backup Key Test Failed: ${secondaryTestResult.error}`}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSecondaryTestResult(null)}
+                  className="text-xs font-bold hover:underline"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
+
+            {/* Backup Key Input / Display */}
+            {editingSecondaryKey ? (
+              <div className="mt-3 space-y-2">
+                <input
+                  type="text"
+                  value={secondaryApiKeyInput}
+                  onChange={(e) => setSecondaryApiKeyInput(e.target.value)}
+                  placeholder="Paste your Secondary Gemini API Key (AQ... or AIza...)"
+                  className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-xs font-mono font-semibold text-[var(--text-primary)] outline-none focus:border-[var(--nepal-blue)]"
+                />
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={savingConfig || !secondaryApiKeyInput.trim()}
+                    onClick={onSaveSecondaryKey}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--nepal-blue)] px-3 py-1.5 text-xs font-bold text-white shadow-xs transition hover:brightness-110 active:scale-97 disabled:opacity-50 cursor-pointer"
+                  >
+                    {savingConfig ? 'Saving...' : 'Save Backup Key'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onCancelEditSecondaryKey}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-default)] px-3 py-1.5 text-xs font-bold text-[var(--text-secondary)] transition hover:bg-[var(--surface-primary)] cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-3 flex items-center justify-between gap-2 rounded-xl border border-[var(--border-default)]/60 bg-[var(--surface-primary)] px-3 py-2">
+                <span className="font-mono text-xs font-bold text-[var(--text-primary)] truncate">
+                  {showSecondaryKeySecret ? activeSecondaryKey : maskedSecondaryKey}
+                </span>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setShowSecondaryKeySecret((prev) => !prev)}
+                    className="p-1 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition"
+                    title={showSecondaryKeySecret ? 'Hide Key' : 'Reveal Key'}
+                  >
+                    {showSecondaryKeySecret ? (
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                        <line x1="1" y1="1" x2="23" y2="23" />
+                      </svg>
+                    ) : (
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(activeSecondaryKey, 'ocr-backup-key')}
+                    className="p-1 rounded-md text-[var(--text-muted)] hover:text-[var(--nepal-blue)] hover:bg-[var(--bg-secondary)] transition"
+                    title="Copy Key"
+                  >
+                    {copiedKey === 'ocr-backup-key' ? (
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    ) : (
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                      </svg>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onStartEditSecondaryKey}
+                    className="ml-1 inline-flex items-center gap-1 rounded-md bg-[var(--nepal-blue-soft)] px-2 py-1 text-xs font-bold text-[var(--nepal-blue)] transition hover:bg-[var(--nepal-blue)] hover:text-white cursor-pointer"
+                  >
+                    Change Backup Key
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -10,6 +10,7 @@ export interface OcrResult {
   detectedSource?: string
   rawDetected?: string
   modelUsed?: string
+  keyUsed?: 'primary' | 'secondary'
   error?: string
   message?: string
 }
@@ -52,8 +53,20 @@ export async function extractLicenseFromImage(params: {
     }
   }
 
-  const apiKey = config.apiKey
-  if (!apiKey) {
+  // Build list of keys to attempt: primary first, then secondary backup key on 429/quota error
+  const keysToAttempt: Array<{ key: string; label: 'primary' | 'secondary' }> = []
+  if (config.apiKey && config.apiKey.trim()) {
+    keysToAttempt.push({ key: config.apiKey.trim(), label: 'primary' })
+  }
+  if (
+    config.secondaryApiKey &&
+    config.secondaryApiKey.trim() &&
+    config.secondaryApiKey.trim() !== config.apiKey?.trim()
+  ) {
+    keysToAttempt.push({ key: config.secondaryApiKey.trim(), label: 'secondary' })
+  }
+
+  if (keysToAttempt.length === 0) {
     return {
       success: false,
       error: 'GEMINI_API_KEY_MISSING',
@@ -85,140 +98,162 @@ export async function extractLicenseFromImage(params: {
 
   let lastError: Error | null = null
 
-  for (const model of uniqueModels) {
-    try {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`
+  // Outer loop: iterate over available API keys (primary -> secondary fallback)
+  for (let keyIdx = 0; keyIdx < keysToAttempt.length; keyIdx++) {
+    const { key, label: keyLabel } = keysToAttempt[keyIdx]
+    const hasNextKey = keyIdx < keysToAttempt.length - 1
 
-      const payload = {
-        contents: [
-          {
-            parts: [
-              { text: SYSTEM_INSTRUCTION },
-              {
-                inline_data: {
-                  mime_type: resolvedMimeType,
-                  data: cleanBase64,
-                },
-              },
-            ],
-          },
-        ],
-        generationConfig: {
-          response_mime_type: 'application/json',
-          temperature: 0.1,
-        },
-      }
-
-      // Hard timeout at 9.5 seconds per model to keep total time strictly under 10 seconds
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-goog-api-key': apiKey,
-        },
-        body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(9500),
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        // If model not found (404), try the next model
-        if (response.status === 404 && model !== uniqueModels[uniqueModels.length - 1]) {
-          continue
-        }
-        throw new Error(`Gemini API error (${response.status}): ${errorText}`)
-      }
-
-      const data = await response.json()
-      const textOutput =
-        data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || ''
-
-      if (!textOutput) {
-        return {
-          success: false,
-          modelUsed: model,
-          error: 'EMPTY_RESPONSE',
-          message: 'Could not extract text from the provided image.',
-        }
-      }
-
-      let parsed: {
-        found?: boolean
-        license_number?: string | null
-        confidence?: 'high' | 'medium' | 'low'
-        detected_source?: string
-        notes?: string
-      }
-
+    for (const model of uniqueModels) {
       try {
-        parsed = JSON.parse(textOutput)
-      } catch {
-        // Fallback: extract pattern via regex if JSON parse fails
-        const ascii = devanagariToAsciiDigits(textOutput)
-        const match = ascii.match(/\d{2}[-\s/]?\d{2}[-\s/]?\d{8}/)
-        if (match) {
-          const formatted = formatLicenseNumber(match[0])
-          if (validateLicenseNumber(formatted)) {
-            return {
-              success: true,
-              licenseNumber: formatted,
-              confidence: 'medium',
-              detectedSource: 'regex_fallback',
-              modelUsed: model,
-            }
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`
+
+        const payload = {
+          contents: [
+            {
+              parts: [
+                { text: SYSTEM_INSTRUCTION },
+                {
+                  inline_data: {
+                    mime_type: resolvedMimeType,
+                    data: cleanBase64,
+                  },
+                },
+              ],
+            },
+          ],
+          generationConfig: {
+            response_mime_type: 'application/json',
+            temperature: 0.1,
+          },
+        }
+
+        // Hard timeout at 8.5 seconds per model to keep total time strictly under 10 seconds
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-goog-api-key': key,
+          },
+          body: JSON.stringify(payload),
+          signal: AbortSignal.timeout(8500),
+        })
+
+        if (!response.ok) {
+          const errorText = await response.text()
+
+          // If rate limited or quota exceeded (429) or key forbidden (403), switch immediately to the next API key!
+          if ((response.status === 429 || response.status === 403) && hasNextKey) {
+            lastError = new Error(`Gemini key (${keyLabel}) quota exceeded (${response.status}). Failing over to backup key.`)
+            break // Break inner model loop to immediately switch to the backup key
+          }
+
+          // If model not found (404), try the next model
+          if (response.status === 404 && model !== uniqueModels[uniqueModels.length - 1]) {
+            continue
+          }
+
+          throw new Error(`Gemini API error (${response.status}): ${errorText}`)
+        }
+
+        const data = await response.json()
+        const textOutput =
+          data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || ''
+
+        const resolvedModelName = keyLabel === 'secondary' ? `${model} (backup key)` : model
+
+        if (!textOutput) {
+          return {
+            success: false,
+            modelUsed: resolvedModelName,
+            keyUsed: keyLabel,
+            error: 'EMPTY_RESPONSE',
+            message: 'Could not extract text from the provided image.',
           }
         }
-        return {
-          success: false,
-          modelUsed: model,
-          error: 'PARSE_ERROR',
-          message: 'Unable to parse AI response.',
+
+        let parsed: {
+          found?: boolean
+          license_number?: string | null
+          confidence?: 'high' | 'medium' | 'low'
+          detected_source?: string
+          notes?: string
         }
-      }
 
-      if (!parsed.found || !parsed.license_number) {
+        try {
+          parsed = JSON.parse(textOutput)
+        } catch {
+          // Fallback: extract pattern via regex if JSON parse fails
+          const ascii = devanagariToAsciiDigits(textOutput)
+          const match = ascii.match(/\d{2}[-\s/]?\d{2}[-\s/]?\d{8}/)
+          if (match) {
+            const formatted = formatLicenseNumber(match[0])
+            if (validateLicenseNumber(formatted)) {
+              return {
+                success: true,
+                licenseNumber: formatted,
+                confidence: 'medium',
+                detectedSource: 'regex_fallback',
+                modelUsed: resolvedModelName,
+                keyUsed: keyLabel,
+              }
+            }
+          }
+          return {
+            success: false,
+            modelUsed: resolvedModelName,
+            keyUsed: keyLabel,
+            error: 'PARSE_ERROR',
+            message: 'Unable to parse AI response.',
+          }
+        }
+
+        if (!parsed.found || !parsed.license_number) {
+          return {
+            success: false,
+            modelUsed: resolvedModelName,
+            keyUsed: keyLabel,
+            error: 'NOT_FOUND',
+            message:
+              'No valid 12-digit Nepal driving license number found in this image. Please ensure the number or receipt is clear and readable.',
+            notes: parsed.notes,
+          } as OcrResult
+        }
+
+        // Sanitize Devanagari numerals -> ASCII digits and format to XX-XX-XXXXXXXX
+        const ascii = devanagariToAsciiDigits(parsed.license_number)
+        const formatted = formatLicenseNumber(ascii)
+
+        if (!validateLicenseNumber(formatted)) {
+          return {
+            success: false,
+            modelUsed: resolvedModelName,
+            keyUsed: keyLabel,
+            error: 'INVALID_FORMAT',
+            rawDetected: parsed.license_number,
+            message: `Detected number "${parsed.license_number}" does not match standard 12-digit format (XX-XX-XXXXXXXX).`,
+          }
+        }
+
         return {
-          success: false,
-          modelUsed: model,
-          error: 'NOT_FOUND',
-          message:
-            'No valid 12-digit Nepal driving license number found in this image. Please ensure the number or receipt is clear and readable.',
-          notes: parsed.notes,
-        } as OcrResult
-      }
-
-      // Sanitize Devanagari numerals -> ASCII digits and format to XX-XX-XXXXXXXX
-      const ascii = devanagariToAsciiDigits(parsed.license_number)
-      const formatted = formatLicenseNumber(ascii)
-
-      if (!validateLicenseNumber(formatted)) {
-        return {
-          success: false,
-          modelUsed: model,
-          error: 'INVALID_FORMAT',
+          success: true,
+          licenseNumber: formatted,
+          confidence: parsed.confidence || 'high',
+          detectedSource: parsed.detected_source || 'unknown',
           rawDetected: parsed.license_number,
-          message: `Detected number "${parsed.license_number}" does not match standard 12-digit format (XX-XX-XXXXXXXX).`,
+          modelUsed: resolvedModelName,
+          keyUsed: keyLabel,
         }
-      }
-
-      return {
-        success: true,
-        licenseNumber: formatted,
-        confidence: parsed.confidence || 'high',
-        detectedSource: parsed.detected_source || 'unknown',
-        rawDetected: parsed.license_number,
-        modelUsed: model,
-      }
-    } catch (err: unknown) {
-      if (err instanceof Error && (err.name === 'TimeoutError' || err.name === 'AbortError')) {
-        return {
-          success: false,
-          error: 'TIMEOUT',
-          message: 'AI recognition timed out (10s limit). Please ensure good lighting and try again.',
+      } catch (err: unknown) {
+        if (err instanceof Error && (err.name === 'TimeoutError' || err.name === 'AbortError')) {
+          return {
+            success: false,
+            error: 'TIMEOUT',
+            message: 'AI recognition timed out (10s limit). Please ensure good lighting and try again.',
+          }
         }
+        lastError = err instanceof Error ? err : new Error(String(err))
+        // Continue to next model if available
       }
-      lastError = err instanceof Error ? err : new Error(String(err))
-      // Continue to next model if available
     }
   }
 

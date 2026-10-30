@@ -199,6 +199,10 @@ export interface AdminOcrConfig {
     maskedApiKey: string
     hasKey: boolean
     keySource: 'database' | 'environment' | 'none'
+    secondaryApiKey?: string
+    maskedSecondaryApiKey?: string
+    hasSecondaryKey?: boolean
+    secondaryKeySource?: 'database' | 'environment' | 'none'
     model: string
     enabled: boolean
 }

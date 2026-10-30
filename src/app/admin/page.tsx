@@ -1810,7 +1810,7 @@ export default function AdminPage() {
         )
     }
 
-    const handleSaveOcrConfig = async (params: { apiKey?: string; model?: string; enabled?: boolean }) => {
+    const handleSaveOcrConfig = async (params: { apiKey?: string; secondaryApiKey?: string; model?: string; enabled?: boolean }) => {
         try {
             const res = await fetch('/api/admin/ocr', {
                 method: 'POST',

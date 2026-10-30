@@ -6,7 +6,7 @@ const { validateLicenseNumber, formatLicenseNumber } = require('../src/utils/val
 
 async function run() {
   console.log('========================================================')
-  console.log('🧪 Testing Nepal Driving License OCR & Option B Pipeline')
+  console.log('🧪 Testing Nepal Driving License OCR & Dual-Key Pipeline')
   console.log('========================================================\n')
 
   // Test 1: Devanagari numerals conversion
@@ -48,14 +48,14 @@ async function run() {
     }
   })
 
-  // Test 3: Gemini Vision API Integration Check
-  console.log('\nTest 3: Gemini Vision API Configuration')
+  // Test 3: Primary Gemini Vision API Integration Check
+  console.log('\nTest 3: Primary Gemini Vision API Configuration')
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) {
     console.log('ℹ️  GEMINI_API_KEY is not set in .env yet.')
   } else {
-    console.log('✅ GEMINI_API_KEY detected in environment!')
-    console.log('   Testing ultra-fast models (gemini-3.5-flash-lite / gemini-flash-lite-latest)...')
+    console.log('✅ Primary GEMINI_API_KEY detected in environment!')
+    console.log('   Testing ultra-fast model (gemini-3.5-flash-lite)...')
 
     const t0 = Date.now()
     try {
@@ -76,13 +76,51 @@ async function run() {
       const elapsed = Date.now() - t0
       const data = await res.json()
       if (res.ok && data?.candidates?.[0]) {
-        console.log(`✅ Gemini API connected successfully in ${elapsed} ms!`)
+        console.log(`✅ Primary Gemini API connected successfully in ${elapsed} ms!`)
         console.log(`   Model Engine: ${data.modelVersion || 'gemini-3.5-flash-lite'}`)
       } else {
-        console.log(`⚠️ Gemini API responded with status ${res.status}:`, data)
+        console.log(`⚠️ Primary Gemini API responded with status ${res.status}:`, data?.error?.message || data)
       }
     } catch (err) {
       console.log(`⚠️ Connection test error: ${err.message}`)
+    }
+  }
+
+  // Test 4: Secondary / Backup Gemini Vision API Integration Check
+  console.log('\nTest 4: Secondary / Backup Gemini Vision API Configuration')
+  const secondaryKey = process.env.GEMINI_API_KEY_SECONDARY
+  if (!secondaryKey) {
+    console.log('ℹ️  GEMINI_API_KEY_SECONDARY is not set in .env.')
+  } else {
+    console.log('✅ Secondary GEMINI_API_KEY_SECONDARY detected in environment!')
+    console.log('   Testing fallback model (gemini-3.5-flash-lite)...')
+
+    const t0 = Date.now()
+    try {
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${secondaryKey}`
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-goog-api-key': secondaryKey,
+        },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: 'Return JSON: {"test": "ok"}' }] }],
+          generationConfig: { response_mime_type: 'application/json' },
+        }),
+        signal: AbortSignal.timeout(9500),
+      })
+
+      const elapsed = Date.now() - t0
+      const data = await res.json()
+      if (res.ok && data?.candidates?.[0]) {
+        console.log(`✅ Secondary Gemini API connected successfully in ${elapsed} ms!`)
+        console.log(`   Model Engine: ${data.modelVersion || 'gemini-3.5-flash-lite'}`)
+      } else {
+        console.log(`⚠️ Secondary Gemini API responded with status ${res.status}:`, data?.error?.message || data)
+      }
+    } catch (err) {
+      console.log(`⚠️ Secondary connection test error: ${err.message}`)
     }
   }
 

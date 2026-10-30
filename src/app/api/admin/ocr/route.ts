@@ -85,8 +85,8 @@ export async function POST(request: NextRequest) {
     const { action } = body
 
     if (action === 'update_config') {
-      const { apiKey, model, enabled } = body
-      await saveOcrConfig({ apiKey, model, enabled })
+      const { apiKey, secondaryApiKey, model, enabled } = body
+      await saveOcrConfig({ apiKey, secondaryApiKey, model, enabled })
       const updatedConfig = await getActiveOcrConfig()
       return NextResponse.json({
         status: 'success',
