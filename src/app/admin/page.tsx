@@ -26,6 +26,8 @@ import {
     AdminOcrConfig,
     AdminOcrLog,
     AdminOcrStatsData,
+    AdminUpdateEntry,
+    AdminUpdatesStatsData,
 } from './types'
 import {
     INACTIVITY_TIMEOUT_MS,
@@ -45,6 +47,7 @@ import AdminFeedback from './feedback/page'
 import AdminTestimonials from './testimonials/page'
 import AdminDevelopers from './developers/page'
 import AdminOcr from './ocr/page'
+import AdminUpdates from './updates/page'
 import AdminLogin from './login/page'
 import AdminModals from './modals/page'
 
@@ -58,8 +61,8 @@ export default function AdminPage() {
     const [showPassword, setShowPassword] = useState(false)
     const [privacyMode, setPrivacyMode] = useState(true)
 
-    // View Tabs: 'searches' | 'notifications' | 'feedback' | 'testimonials' | 'developers' | 'ocr'
-    const [activeTab, setActiveTab] = useState<'searches' | 'notifications' | 'feedback' | 'testimonials' | 'developers' | 'ocr'>('searches')
+    // View Tabs: 'searches' | 'notifications' | 'feedback' | 'testimonials' | 'developers' | 'ocr' | 'updates'
+    const [activeTab, setActiveTab] = useState<'searches' | 'notifications' | 'feedback' | 'testimonials' | 'developers' | 'ocr' | 'updates'>('searches')
 
     // Dashboard State - Searches
     const [logs, setLogs] = useState<SearchLog[]>([])
@@ -143,6 +146,11 @@ export default function AdminPage() {
     const [ocrLoading, setOcrLoading] = useState(false)
     const [ocrSelectMode, setOcrSelectMode] = useState(false)
     const [selectedOcrIds, setSelectedOcrIds] = useState<number[]>([])
+
+    // Dashboard State - Timeline Updates
+    const [updatesLogs, setUpdatesLogs] = useState<AdminUpdateEntry[]>([])
+    const [updatesStats, setUpdatesStats] = useState<AdminUpdatesStatsData | null>(null)
+    const [updatesLoading, setUpdatesLoading] = useState(false)
 
     const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null)
     const [confirmSubmitting] = useState(false)
@@ -497,6 +505,36 @@ export default function AdminPage() {
         }
     }, [isAuthenticated, ocrPage, ocrLimit, ocrSearchFilter, ocrStatusFilter, refreshKey])
 
+    // 2g. Fetch Timeline Updates
+    useEffect(() => {
+        if (!isAuthenticated) return
+        let cancelled = false
+
+        fetch('/api/admin/updates', { cache: 'no-store' })
+            .then((res) => {
+                if (res.status === 401) {
+                    if (!cancelled) setIsAuthenticated(false)
+                    return null
+                }
+                return res.json()
+            })
+            .then((json) => {
+                if (cancelled || !json) return
+                if (json.status === 'success' && json.data) {
+                    setUpdatesLogs(json.data.updates || [])
+                    setUpdatesStats(json.data.stats || null)
+                }
+                setUpdatesLoading(false)
+            })
+            .catch(() => {
+                if (!cancelled) setUpdatesLoading(false)
+            })
+
+        return () => {
+            cancelled = true
+        }
+    }, [isAuthenticated, refreshKey])
+
     // 3. Auto-refresh polling every 12 seconds (pauses when browser tab is hidden/inactive)
     useEffect(() => {
         if (!isAuthenticated || !autoRefresh) return
@@ -516,6 +554,7 @@ export default function AdminPage() {
         setTestimonialLoading(true)
         setDevLoading(true)
         setOcrLoading(true)
+        setUpdatesLoading(true)
         setRefreshKey((k) => k + 1)
     }
 
@@ -1931,6 +1970,108 @@ export default function AdminPage() {
         })
     }
 
+    // Updates Management Handlers
+    const handleToggleUpdateDate = async (item: AdminUpdateEntry, hidden: boolean) => {
+        try {
+            const res = await fetch('/api/admin/updates', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'toggle',
+                    id: item.id,
+                    dateStr: item.dateStr,
+                    hidden,
+                }),
+            })
+            const result = await res.json()
+            if (!res.ok || result.status !== 'success') {
+                throw new Error(result.error || 'Failed to toggle update date visibility')
+            }
+            if (result.data) {
+                setUpdatesLogs(result.data.updates || [])
+                setUpdatesStats(result.data.stats || null)
+            }
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : String(err)
+            showToast(`Error: ${msg}`, 'error')
+            throw err
+        }
+    }
+
+    const handleSaveUpdate = async (entry: Partial<AdminUpdateEntry>) => {
+        try {
+            const res = await fetch('/api/admin/updates', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'save',
+                    entry,
+                }),
+            })
+            const result = await res.json()
+            if (!res.ok || result.status !== 'success') {
+                throw new Error(result.error || 'Failed to save update record')
+            }
+            if (result.data) {
+                setUpdatesLogs(result.data.updates || [])
+                setUpdatesStats(result.data.stats || null)
+            }
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : String(err)
+            showToast(`Error: ${msg}`, 'error')
+            throw err
+        }
+    }
+
+    const handleDeleteUpdate = async (item: AdminUpdateEntry) => {
+        try {
+            const res = await fetch('/api/admin/updates', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'delete',
+                    id: item.id,
+                    dateStr: item.dateStr,
+                }),
+            })
+            const result = await res.json()
+            if (!res.ok || result.status !== 'success') {
+                throw new Error(result.error || 'Failed to delete update record')
+            }
+            if (result.data) {
+                setUpdatesLogs(result.data.updates || [])
+                setUpdatesStats(result.data.stats || null)
+            }
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : String(err)
+            showToast(`Error: ${msg}`, 'error')
+            throw err
+        }
+    }
+
+    const handleResetUpdates = async () => {
+        try {
+            const res = await fetch('/api/admin/updates', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'reset' }),
+            })
+            const result = await res.json()
+            if (!res.ok || result.status !== 'success') {
+                throw new Error(result.error || 'Failed to reset updates')
+            }
+            if (result.data) {
+                setUpdatesLogs(result.data.updates || [])
+                setUpdatesStats(result.data.stats || null)
+            }
+            showToast('Timeline updates reset to default baseline', 'success')
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : String(err)
+            showToast(`Error: ${msg}`, 'error')
+            throw err
+        }
+    }
+
     // ----------------------------------------------------
     // Loading Screen
     // ----------------------------------------------------
@@ -2169,7 +2310,51 @@ export default function AdminPage() {
                                 {ocrTotal.toLocaleString()}
                             </span>
                         </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('updates')}
+                            className={`inline-flex min-h-[44px] flex-1 sm:flex-initial items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-3 sm:px-4 py-2 text-xs font-bold transition-all duration-200 whitespace-nowrap active:scale-95 cursor-pointer ${
+                                activeTab === 'updates'
+                                    ? 'bg-[var(--nepal-blue)] text-white shadow-md shadow-[var(--nepal-blue)]/25'
+                                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]/60'
+                            }`}
+                        >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-hidden="true">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                <line x1="16" y1="2" x2="16" y2="6" />
+                                <line x1="8" y1="2" x2="8" y2="6" />
+                                <line x1="3" y1="10" x2="21" y2="10" />
+                            </svg>
+                            <span className="hidden sm:inline">Timeline Updates</span>
+                            <span className="sm:hidden">Updates</span>
+                            <span className={`rounded-full px-2 py-0.5 font-mono tabular-nums text-xs font-semibold transition ${
+                                activeTab === 'updates' ? 'bg-white/20 text-white' : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'
+                            }`}>
+                                {updatesLogs.length}
+                            </span>
+                            {updatesStats && updatesStats.hiddenUpdates > 0 && (
+                                <span className="inline-flex items-center justify-center rounded-full bg-amber-500/90 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-xs" title={`${updatesStats.hiddenUpdates} dates hidden from /updates`}>
+                                    {updatesStats.hiddenUpdates} hidden
+                                </span>
+                            )}
+                        </button>
                     </div>
+
+                    {activeTab === 'updates' && updatesStats && (
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-muted)]">
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-emerald-700 dark:text-emerald-400 backdrop-blur-md shadow-2xs font-bold">
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                <span>Visible: {updatesStats.visibleUpdates}</span>
+                            </span>
+                            {updatesStats.hiddenUpdates > 0 && (
+                                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-amber-700 dark:text-amber-400 backdrop-blur-md shadow-2xs font-bold">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                                    <span>Hidden: {updatesStats.hiddenUpdates}</span>
+                                </span>
+                            )}
+                        </div>
+                    )}
 
                     {activeTab === 'notifications' && notificationStats && (
                         <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-muted)]">
@@ -2424,7 +2609,7 @@ export default function AdminPage() {
                         exportDevelopersCsv={exportDevelopersCsv}
                         startTransition={startTransition}
                     />
-                ) : (
+                ) : activeTab === 'ocr' ? (
                     <AdminOcr
                         ocrConfig={ocrConfig}
                         ocrStats={ocrStats}
@@ -2453,6 +2638,18 @@ export default function AdminPage() {
                         handleClearAllOcrLogs={handleClearAllOcrLogs}
                         exportOcrCsv={exportOcrCsv}
                         startTransition={startTransition}
+                    />
+                ) : (
+                    <AdminUpdates
+                        updatesLogs={updatesLogs}
+                        updatesStats={updatesStats}
+                        updatesLoading={updatesLoading}
+                        onToggleVisibility={handleToggleUpdateDate}
+                        onSaveUpdate={handleSaveUpdate}
+                        onDeleteUpdate={handleDeleteUpdate}
+                        onResetDefaults={handleResetUpdates}
+                        onRefresh={() => setRefreshKey((k) => k + 1)}
+                        showToast={showToast}
                     />
                 )}
 

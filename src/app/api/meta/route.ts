@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getTurso } from '@/lib/turso'
 import { DEFAULT_CRON_SCHEDULE, getNextCronRun } from '@/lib/cronHelper'
+import { getCachedMetadata, setCachedMetadata } from '@/lib/metaCache'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -40,6 +41,7 @@ export interface SyncHistoryEntry {
   durationSeconds?: number
   trigger?: string
   officeBreakdown?: Record<string, number>
+  hidden?: boolean
 }
 
 export interface ScraperMeta {
@@ -140,20 +142,12 @@ const DEFAULT_SYNC_HISTORY: SyncHistoryEntry[] = [
   },
 ]
 
-// In-memory cache to prevent repeated database queries across serverless invocations
-let cachedMetadata: {
-  data: AppMetadata
-  cachedAt: number
-} | null = null
-
-const CACHE_TTL_MS = 30 * 1000 // 30 seconds cache
-
 export async function GET() {
   try {
-    const now = Date.now()
-    if (cachedMetadata && now - cachedMetadata.cachedAt < CACHE_TTL_MS) {
+    const cached = getCachedMetadata<AppMetadata>()
+    if (cached) {
       return NextResponse.json(
-        { status: 'success', data: cachedMetadata.data },
+        { status: 'success', data: cached },
         {
           headers: {
             'Cache-Control': 'public, max-age=0, s-maxage=30, must-revalidate',
@@ -161,6 +155,8 @@ export async function GET() {
         }
       )
     }
+
+    const now = Date.now()
 
     const db = getTurso()
 
@@ -300,6 +296,9 @@ export async function GET() {
       }
     }
 
+    // Filter out hidden entries for public /updates page
+    const publicSyncHistory = syncHistory.filter((entry) => !entry.hidden)
+
     const payload: AppMetadata = {
       lastUpdated:
         Number.isFinite(lastUpdatedMs) && lastUpdatedMs > 0
@@ -318,10 +317,10 @@ export async function GET() {
         },
         schedule: scraperSchedule,
       },
-      syncHistory,
+      syncHistory: publicSyncHistory,
     }
 
-    cachedMetadata = { data: payload, cachedAt: now }
+    setCachedMetadata(payload)
 
     return NextResponse.json(
       { status: 'success', data: payload },

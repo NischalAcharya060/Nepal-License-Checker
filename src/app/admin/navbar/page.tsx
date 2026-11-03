@@ -10,7 +10,7 @@ export interface AdminNavbarProps {
     setAutoRefresh?: (val: boolean) => void
     dataLoading?: boolean
     handleManualRefresh?: () => void
-    activeTab?: 'searches' | 'notifications' | 'feedback' | 'testimonials' | 'developers' | 'ocr'
+    activeTab?: 'searches' | 'notifications' | 'feedback' | 'testimonials' | 'developers' | 'ocr' | 'updates'
     exportCsv?: () => void
     exportNotificationCsv?: () => void
     exportFeedbackCsv?: () => void

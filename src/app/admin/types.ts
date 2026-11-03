@@ -235,3 +235,27 @@ export interface AdminOcrStatsData {
     rpmLimit: number
 }
 
+export interface AdminUpdateEntry {
+    id: number
+    timestamp: number
+    iso: string
+    dateStr: string
+    status: 'success' | 'partial' | 'circuit_breaker' | 'empty' | 'failed'
+    saved: number
+    newPdfsCount?: number
+    totalPdfsCount?: number
+    durationSeconds?: number
+    trigger?: string
+    officeBreakdown?: Record<string, number>
+    hidden?: boolean
+}
+
+export interface AdminUpdatesStatsData {
+    totalUpdates: number
+    visibleUpdates: number
+    hiddenUpdates: number
+    totalSavedRecords: number
+    latestDateStr: string | null
+}
+
+

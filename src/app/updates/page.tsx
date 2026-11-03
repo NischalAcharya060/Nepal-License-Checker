@@ -170,12 +170,13 @@ export default function UpdatesPage() {
   const officeCounts = useMemo(() => aggregateOfficeStats(meta?.officeTotals), [meta?.officeTotals])
   const totalRecords = meta?.totalRecords || Object.values(officeCounts).reduce((a, b) => a + b, 0) || 1185710
 
+  const rawSyncHistory = meta?.syncHistory
   const syncHistory: SyncHistoryEntry[] = useMemo(() => {
-    if (meta?.syncHistory && meta.syncHistory.length > 0) {
-      return meta.syncHistory
+    if (rawSyncHistory && rawSyncHistory.length > 0) {
+      return rawSyncHistory.filter((item) => !item.hidden)
     }
     return []
-  }, [meta?.syncHistory])
+  }, [rawSyncHistory])
 
   const provinces = useMemo(() => {
     const set = new Set<string>()
