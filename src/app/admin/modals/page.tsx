@@ -75,14 +75,54 @@ function ConfirmDeleteModal({ dialog, onClose, isSubmitting }: ConfirmDeleteModa
                         </svg>
                     </div>
                     <div className="min-w-0 flex-1">
-                        <h3 className="text-base font-black text-[var(--text-primary)]">
-                            {dialog.title}
-                        </h3>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="text-base font-black text-[var(--text-primary)]">
+                                {dialog.title}
+                            </h3>
+                            {dialog.badge && (
+                                <span className="rounded-full bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[10px] font-mono font-bold text-amber-700 dark:text-amber-300">
+                                    {dialog.badge}
+                                </span>
+                            )}
+                        </div>
                         <p className="mt-1.5 text-xs leading-relaxed text-[var(--text-secondary)]">
                             {dialog.message}
                         </p>
                     </div>
                 </div>
+
+                {/* Structured Details Breakdown */}
+                {dialog.details && dialog.details.length > 0 && (
+                    <div className="mt-4 rounded-2xl border border-[var(--border-default)]/80 bg-[var(--bg-secondary)]/50 p-3.5 space-y-2.5">
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                            {dialog.details.map((item, idx) => (
+                                <div key={idx} className="rounded-xl border border-[var(--border-default)]/60 bg-[var(--surface-primary)] px-2.5 py-2 shadow-2xs">
+                                    <span className="text-[10px] font-semibold text-[var(--text-muted)] block uppercase tracking-wider">
+                                        {item.label}
+                                    </span>
+                                    <span className={`font-mono text-xs font-bold tabular-nums block mt-0.5 ${
+                                        item.highlight === 'error'
+                                            ? 'text-[var(--error)]'
+                                            : item.highlight === 'success'
+                                                ? 'text-[var(--success)]'
+                                                : item.highlight === 'amber'
+                                                    ? 'text-amber-600 dark:text-amber-400'
+                                                    : item.highlight === 'blue'
+                                                        ? 'text-[var(--nepal-blue)]'
+                                                        : 'text-[var(--text-primary)]'
+                                    }`}>
+                                        {item.value}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                        {dialog.note && (
+                            <p className="text-[11px] text-[var(--text-muted)] leading-relaxed border-t border-[var(--border-default)]/50 pt-2">
+                                💡 {dialog.note}
+                            </p>
+                        )}
+                    </div>
+                )}
 
                 {dialog.requiredPhrase && (
                     <div className="mt-4 rounded-2xl border border-[var(--error-border)]/60 bg-[var(--error-bg)]/30 p-3.5">

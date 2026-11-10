@@ -175,7 +175,7 @@ export default function AdminSearches(props: any) {
                         disabled={total === 0 || dataLoading || !(duplicateStats?.duplicateCount || statusFilter === 'duplicates')}
                         onClick={() => handleAutoDeleteDuplicates('newest')}
                         className={`inline-flex h-8.5 sm:h-9 items-center gap-1.5 rounded-xl border px-2.5 sm:px-3 text-[11px] sm:text-xs font-semibold shadow-xs transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer ${
-                            statusFilter === 'duplicates'
+                            statusFilter === 'duplicates' || (duplicateStats?.redundantCount ?? 0) > 0
                                 ? 'border-amber-500/60 bg-amber-500/20 text-amber-800 dark:text-amber-300 font-bold hover:bg-amber-500/30'
                                 : 'border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500/20'
                         }`}
@@ -252,6 +252,7 @@ export default function AdminSearches(props: any) {
                             Prune Old / Clean...
                         </option>
                         <option value="dedup-newest">Clean Older Duplicates (Leave 1 Latest)</option>
+                        <option value="dedup-oldest">Clean Newer Duplicates (Leave 1 Oldest)</option>
                         <option value={7}>Delete &gt; 7 days old</option>
                         <option value={30}>Delete &gt; 30 days old</option>
                         <option value={90}>Delete &gt; 90 days old</option>
@@ -311,7 +312,7 @@ export default function AdminSearches(props: any) {
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                     <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
                                 </svg>
-                                <span>Auto-Clean (Leave 1 Latest)</span>
+                                <span>Auto-Clean (Leave 1 Latest){duplicateStats?.redundantCount ? ` (${duplicateStats.redundantCount})` : ''}</span>
                             </button>
 
                             {logs.length > 0 && (

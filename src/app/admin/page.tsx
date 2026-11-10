@@ -1045,9 +1045,22 @@ export default function AdminPage() {
 
     const handleDeleteSearchLogsOlderThan = (days: number) => {
         if (total === 0) return
+        const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+        })
         setConfirmDialog({
-            title: `Delete logs older than ${days} days?`,
-            message: `Are you sure you want to permanently delete all search logs older than ${days} days? Recent logs from the last ${days} days will be kept.`,
+            title: `Prune Logs Older Than ${days} Days?`,
+            badge: `Older than ${days}d`,
+            message: `Are you sure you want to permanently delete search logs older than ${days} days? Recent logs will remain intact.`,
+            details: [
+                { label: 'Age Threshold', value: `> ${days} days old`, highlight: 'amber' },
+                { label: 'Cutoff Date', value: `Before ${cutoffDate}`, highlight: 'default' },
+                { label: 'Recent Logs Kept', value: `Last ${days} days`, highlight: 'success' },
+                { label: 'Total Current Logs', value: `${total.toLocaleString()} records`, highlight: 'blue' },
+            ],
+            note: 'Search queries logged after this cutoff date will be completely unaffected.',
             confirmLabel: `Yes, Delete Older Than ${days}d`,
             onConfirm: async () => {
                 try {
@@ -1069,8 +1082,14 @@ export default function AdminPage() {
     const handleDeleteAllSearchLogs = () => {
         if (!logs.length && total === 0) return
         setConfirmDialog({
-            title: 'Are you sure you want to delete all logs?',
+            title: 'Delete All Search Logs?',
+            badge: `${total.toLocaleString()} records`,
             message: `This will permanently delete ALL ${total.toLocaleString()} search logs. This action cannot be undone.`,
+            details: [
+                { label: 'Records To Purge', value: `${total.toLocaleString()} logs`, highlight: 'error' },
+                { label: 'Scope', value: 'Entire search_logs table', highlight: 'default' },
+            ],
+            note: 'All historical IP addresses, locations, and search timestamps will be erased.',
             confirmLabel: `Yes, Delete All (${total.toLocaleString()})`,
             requiredPhrase: 'delete all',
             onConfirm: async () => {
@@ -1094,12 +1113,27 @@ export default function AdminPage() {
 
     const handleAutoDeleteDuplicates = (keep: 'newest' | 'oldest' = 'newest') => {
         const redundant = stats?.redundantCount ?? 0
+        const dupLicenses = stats?.duplicateLicenses ?? 0
+        const dupTotal = stats?.duplicateCount ?? 0
+        const strategyLabel = keep === 'newest' ? 'Keep Latest (Recommended)' : 'Keep Earliest'
+        const strategyDesc = keep === 'newest'
+            ? 'The most recent search timestamp and IP for each license will be preserved.'
+            : 'The earliest discovery search for each license will be preserved.'
+
         setConfirmDialog({
-            title: 'Clean Older Duplicate Searches?',
-            message: `This will leave 1 record (the ${keep === 'newest' ? 'latest' : 'earliest'} search by date) for every duplicate license and permanently delete all older duplicate search records.${
-                redundant > 0 ? ` Approximately ${redundant} older duplicate records will be deleted.` : ''
-            } The newest search record for each license will be preserved.`,
-            confirmLabel: 'Yes, Clean Older Duplicates (Leave 1 Latest)',
+            title: 'Auto-Clean Duplicate Searches?',
+            badge: `${redundant.toLocaleString()} redundant records to clean`,
+            message: `This will scan all search logs, group duplicate queries by license number, and automatically delete older duplicate entries while preserving 1 search record for each license.`,
+            details: [
+                { label: 'Total Duplicates Found', value: `${dupTotal.toLocaleString()} records`, highlight: 'default' },
+                { label: 'Unique Licenses', value: `${dupLicenses.toLocaleString()} licenses`, highlight: 'blue' },
+                { label: 'Redundant To Clean', value: `${redundant.toLocaleString()} records`, highlight: 'error' },
+                { label: 'Records Preserved', value: `${dupLicenses.toLocaleString()} (1 per license)`, highlight: 'success' },
+                { label: 'Preservation Rule', value: strategyLabel, highlight: 'amber' },
+                { label: 'Est. Storage Freed', value: `~${Math.round((redundant * 280) / 1024)} KB`, highlight: 'default' },
+            ],
+            note: `${strategyDesc} Deleted duplicate records cannot be recovered.`,
+            confirmLabel: `Yes, Clean Older Duplicates (${redundant.toLocaleString()})`,
             onConfirm: async () => {
                 try {
                     const res = await fetch(`/api/admin/logs?duplicates=auto&keep=${keep}`, {
@@ -1112,7 +1146,7 @@ export default function AdminPage() {
                         setSearchSelectMode(false)
                         setPage(1)
                         setRefreshKey((k) => k + 1)
-                        showToast(`Deleted ${count} older duplicate search records! Latest search for each license was preserved.`)
+                        showToast(`Deleted ${count} older duplicate search records. 1 latest record for each license was preserved.`)
                     } else {
                         showToast('Failed to auto-clean duplicate searches', 'error')
                     }
@@ -1125,9 +1159,19 @@ export default function AdminPage() {
 
     const handleDeleteLicenseDuplicates = (license: string) => {
         const displayLic = maskLicenseNumber(license, privacyMode)
+        const logItem = logs.find((l) => l.license_number === license)
+        const totalCount = logItem?.duplicate_count ?? 2
         setConfirmDialog({
-            title: `Delete older duplicates for ${displayLic}?`,
-            message: `This will leave 1 record (the latest search by date) and permanently delete all older duplicate search records for license ${displayLic}.`,
+            title: `Clean Duplicates for ${displayLic}?`,
+            badge: `${totalCount} entries found`,
+            message: `This will leave 1 record (the latest search by date) and permanently delete older duplicate search records for license ${displayLic}.`,
+            details: [
+                { label: 'License Number', value: displayLic, highlight: 'blue' },
+                { label: 'Total Queries', value: `${totalCount} records`, highlight: 'default' },
+                { label: 'Older Duplicates Deleted', value: `${Math.max(1, totalCount - 1)} records`, highlight: 'error' },
+                { label: 'Preserved Record', value: '1 Latest Search', highlight: 'success' },
+            ],
+            note: 'The most recent search record and result will be safely retained.',
             confirmLabel: 'Delete Older Duplicates (Leave 1 Latest)',
             onConfirm: async () => {
                 try {

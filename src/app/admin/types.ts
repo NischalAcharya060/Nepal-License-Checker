@@ -149,12 +149,21 @@ export interface AdminPasskey {
     last_used_at: number | null
 }
 
+export interface ConfirmDialogDetailItem {
+    label: string
+    value: string | number
+    highlight?: 'default' | 'error' | 'success' | 'amber' | 'blue'
+}
+
 export interface ConfirmDialogState {
     title: string
     message: string
     confirmLabel: string
     onConfirm: () => Promise<void>
     requiredPhrase?: string
+    badge?: string
+    details?: ConfirmDialogDetailItem[]
+    note?: string
 }
 
 export interface ToastState {
@@ -257,5 +266,7 @@ export interface AdminUpdatesStatsData {
     totalSavedRecords: number
     latestDateStr: string | null
 }
+
+
 
 
