@@ -79,6 +79,7 @@ export default function Home() {
   const [nextScraperRun, setNextScraperRun] = useState<string | null>(null)
   const [indexedRecords, setIndexedRecords] = useState<number | null>(null)
   const [viewCount, setViewCount] = useState<number | null>(null)
+  const [degradedNotice, setDegradedNotice] = useState<{ isDegraded: boolean; message?: string } | null>(null)
   const [isSampleModalOpen, setIsSampleModalOpen] = useState(false)
   // Modal deep-links from PWA shortcuts (/?view=offices|sms).
   const [isOfficesModalOpen, setIsOfficesModalOpen] = useState(() => readViewParam() === 'offices')
@@ -197,6 +198,14 @@ export default function Home() {
             )
             if (typeof metaPayload.data.totalViews === 'number') {
               setViewCount(metaPayload.data.totalViews)
+            }
+            if (metaPayload.data.systemMode?.mode === 'degraded') {
+              setDegradedNotice({
+                isDegraded: true,
+                message: metaPayload.data.systemMode.message || undefined,
+              })
+            } else {
+              setDegradedNotice(null)
             }
           }
         }
@@ -403,6 +412,41 @@ export default function Home() {
       />
 
       <div className="relative z-10 mx-auto w-full max-w-7xl lg:max-w-[1440px] px-4 pb-16 pt-6 sm:px-6 lg:px-8 sm:pt-10 print:p-0 print:m-0 print:max-w-none">
+        {/* Degraded Performance / Slow Mode Informational Banner */}
+        {degradedNotice && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="mx-auto mb-4 w-full max-w-3xl lg:max-w-4xl rounded-2xl border border-amber-500/40 bg-amber-500/10 p-3 sm:p-3.5 text-xs shadow-md shadow-amber-500/5 backdrop-blur-md animate-fade-in"
+          >
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-500/20 text-amber-700 dark:text-amber-400">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-amber-900 dark:text-amber-300">
+                    {language === 'ne' ? 'सूचना: प्रणाली सुस्त हुन सक्छ' : 'System Notice: High Latency Advisory'}
+                  </span>
+                  <span className="rounded-full bg-amber-500/20 border border-amber-500/30 px-2 py-0.2 text-[10px] font-bold text-amber-800 dark:text-amber-300 font-mono uppercase">
+                    Degraded
+                  </span>
+                </div>
+                <p className="mt-0.5 text-amber-900/90 dark:text-amber-200/90 leading-relaxed text-[11px]">
+                  {degradedNotice.message ||
+                    (language === 'ne'
+                      ? 'यातायात व्यवस्था विभाग (DOTM) को सर्भरमा प्राविधिक ढिलाइ भइरहेको छ। खोज जारी छ तर केही सेकेन्ड लाग्न सक्छ।'
+                      : 'Department of Transport Management (DOTM) servers are experiencing latency. Searches remain fully operational but may take a few moments.')}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Top Hero & Search Section - Fills the initial viewport cleanly so subsequent sections start below the fold */}
         <div className="flex min-h-[calc(100vh-5rem)] flex-col justify-center pb-8 pt-2 sm:pb-12">
           {/* Modular Hero Header */}

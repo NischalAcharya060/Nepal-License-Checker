@@ -31,7 +31,7 @@ export interface AdminSearchesProps {
     handleDeleteSelectedSearchLogs?: () => void
     handleDeleteSearchLogsOlderThan?: (days: number) => void
     handleDeleteAllSearchLogs?: () => void
-    handleAutoDeleteDuplicates?: (keep?: 'newest' | 'oldest') => void
+    handleAutoDeleteDuplicates?: (keep?: 'newest' | 'oldest', targetLicense?: string) => void
     handleDeleteLicenseDuplicates?: (license: string) => void
     startTransition?: (callback: () => void) => void
 }
@@ -253,9 +253,9 @@ export default function AdminSearches(props: any) {
                         </option>
                         <option value="dedup-newest">Clean Older Duplicates (Leave 1 Latest)</option>
                         <option value="dedup-oldest">Clean Newer Duplicates (Leave 1 Oldest)</option>
-                        <option value={7}>Delete &gt; 7 days old</option>
-                        <option value={30}>Delete &gt; 30 days old</option>
-                        <option value={90}>Delete &gt; 90 days old</option>
+                        <option value={7}>Prune &gt; 7 days old...</option>
+                        <option value={30}>Prune &gt; 30 days old...</option>
+                        <option value={90}>Prune &gt; 90 days old...</option>
                     </select>
 
                     {/* Delete All Logs Button */}

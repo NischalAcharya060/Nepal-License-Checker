@@ -485,3 +485,215 @@ export async function deleteSearchLogsByLicense(license: string, keepLatest: boo
     })
     return { deletedCount: Number(res.rowsAffected || 0) }
 }
+
+export interface DuplicateLogEntry {
+    id: number
+    created_at: number
+    ip: string
+    city?: string | null
+    country?: string | null
+    region?: string | null
+    status: 'found' | 'not_found' | 'error'
+    user_agent?: string | null
+    is_latest?: boolean
+}
+
+export interface DuplicateLicenseGroup {
+    license_number: string
+    total_count: number
+    redundant_count: number
+    holder_name?: string | null
+    office?: string | null
+    category?: string | null
+    status: 'found' | 'not_found' | 'error'
+    latest_created_at: number
+    earliest_created_at: number
+    latest_ip: string
+    latest_city?: string | null
+    latest_country?: string | null
+    entries: DuplicateLogEntry[]
+}
+
+export interface DuplicateSummaryResult {
+    groups: DuplicateLicenseGroup[]
+    stats: {
+        duplicateCount: number
+        duplicateLicenses: number
+        redundantCount: number
+    }
+}
+
+export async function getDuplicateLicenseSummary(limit: number = 200): Promise<DuplicateSummaryResult> {
+    await ensureSearchLogsTable()
+    const db = getTurso()
+
+    const res = await db.execute({
+        sql: `SELECT id, license_number, status, holder_name, office, category, ip, country, city, region, user_agent, created_at
+              FROM search_logs
+              WHERE license_number IN (
+                  SELECT license_number 
+                  FROM search_logs 
+                  WHERE TRIM(license_number) != '' 
+                  GROUP BY license_number 
+                  HAVING COUNT(*) > 1
+              )
+              ORDER BY license_number ASC, created_at DESC`,
+        args: [],
+    })
+
+    const groupMap = new Map<string, {
+        license_number: string
+        holder_name?: string | null
+        office?: string | null
+        category?: string | null
+        status: 'found' | 'not_found' | 'error'
+        entries: DuplicateLogEntry[]
+    }>()
+
+    for (const row of res.rows) {
+        const lic = String(row.license_number || '').trim()
+        if (!lic) continue
+
+        let group = groupMap.get(lic)
+        if (!group) {
+            group = {
+                license_number: lic,
+                holder_name: row.holder_name ? String(row.holder_name) : null,
+                office: row.office ? String(row.office) : null,
+                category: row.category ? String(row.category) : null,
+                status: String(row.status || 'not_found') as 'found' | 'not_found' | 'error',
+                entries: [],
+            }
+            groupMap.set(lic, group)
+        } else {
+            if (!group.holder_name && row.holder_name) {
+                group.holder_name = String(row.holder_name)
+            }
+            if (!group.office && row.office) {
+                group.office = String(row.office)
+            }
+            if (!group.category && row.category) {
+                group.category = String(row.category)
+            }
+            if (row.status === 'found') {
+                group.status = 'found'
+            }
+        }
+
+        const isLatest = group.entries.length === 0
+        group.entries.push({
+            id: Number(row.id),
+            created_at: Number(row.created_at || 0),
+            ip: String(row.ip || ''),
+            city: row.city ? String(row.city) : null,
+            country: row.country ? String(row.country) : null,
+            region: row.region ? String(row.region) : null,
+            status: String(row.status || 'not_found') as 'found' | 'not_found' | 'error',
+            user_agent: row.user_agent ? String(row.user_agent) : null,
+            is_latest: isLatest,
+        })
+    }
+
+    const groups: DuplicateLicenseGroup[] = []
+    let totalDuplicateRows = 0
+
+    for (const group of groupMap.values()) {
+        totalDuplicateRows += group.entries.length
+        const latestEntry = group.entries[0]
+        const earliestEntry = group.entries[group.entries.length - 1]
+
+        groups.push({
+            license_number: group.license_number,
+            total_count: group.entries.length,
+            redundant_count: Math.max(0, group.entries.length - 1),
+            holder_name: group.holder_name,
+            office: group.office,
+            category: group.category,
+            status: group.status,
+            latest_created_at: latestEntry?.created_at || 0,
+            earliest_created_at: earliestEntry?.created_at || 0,
+            latest_ip: latestEntry?.ip || '',
+            latest_city: latestEntry?.city,
+            latest_country: latestEntry?.country,
+            entries: group.entries,
+        })
+    }
+
+    // Sort groups so that the license searched most recently comes first
+    groups.sort((a, b) => b.latest_created_at - a.latest_created_at)
+
+    const duplicateLicenses = groups.length
+    const redundantCount = Math.max(0, totalDuplicateRows - duplicateLicenses)
+
+    return {
+        groups: groups.slice(0, limit),
+        stats: {
+            duplicateCount: totalDuplicateRows,
+            duplicateLicenses,
+            redundantCount,
+        },
+    }
+}
+
+export interface PruneLogsPreviewResult {
+    days: number
+    cutoff: number
+    matchingCount: number
+    keptCount: number
+    totalCount: number
+    logs: SearchLogRecord[]
+}
+
+export async function getPruneLogsPreview(days: number, limit: number = 100): Promise<PruneLogsPreviewResult> {
+    await ensureSearchLogsTable()
+    const db = getTurso()
+    const safeDays = Math.max(1, Math.min(3650, days))
+    const cutoff = Date.now() - safeDays * 24 * 60 * 60 * 1000
+
+    const [matchingRes, totalRes, listRes] = await Promise.all([
+        db.execute({
+            sql: 'SELECT COUNT(*) as count FROM search_logs WHERE created_at < ?',
+            args: [cutoff],
+        }),
+        db.execute({
+            sql: 'SELECT COUNT(*) as count FROM search_logs',
+            args: [],
+        }),
+        db.execute({
+            sql: `SELECT id, license_number, status, holder_name, office, category, ip, country, city, region, user_agent, created_at
+                  FROM search_logs
+                  WHERE created_at < ?
+                  ORDER BY created_at DESC
+                  LIMIT ?`,
+            args: [cutoff, limit],
+        }),
+    ])
+
+    const matchingCount = Number(matchingRes.rows[0]?.count || 0)
+    const totalCount = Number(totalRes.rows[0]?.count || 0)
+    const keptCount = Math.max(0, totalCount - matchingCount)
+
+    const logs: SearchLogRecord[] = listRes.rows.map((row) => ({
+        id: Number(row.id),
+        license_number: String(row.license_number || ''),
+        status: String(row.status || 'not_found') as 'found' | 'not_found' | 'error',
+        holder_name: row.holder_name ? String(row.holder_name) : null,
+        office: row.office ? String(row.office) : null,
+        category: row.category ? String(row.category) : null,
+        ip: String(row.ip || ''),
+        country: row.country ? String(row.country) : null,
+        city: row.city ? String(row.city) : null,
+        region: row.region ? String(row.region) : null,
+        user_agent: row.user_agent ? String(row.user_agent) : null,
+        created_at: Number(row.created_at || 0),
+    }))
+
+    return {
+        days: safeDays,
+        cutoff,
+        matchingCount,
+        keptCount,
+        totalCount,
+        logs,
+    }
+}

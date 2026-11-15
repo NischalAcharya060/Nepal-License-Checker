@@ -2,10 +2,13 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
+import { SystemModeConfig } from '../types'
 
 export interface AdminNavbarProps {
     privacyMode?: boolean
     setPrivacyMode?: (val: boolean) => void
+    systemModeConfig?: SystemModeConfig | null
+    onOpenSystemModeModal?: () => void
     autoRefresh?: boolean
     setAutoRefresh?: (val: boolean) => void
     dataLoading?: boolean
@@ -35,6 +38,8 @@ export default function AdminNavbar(props: any) {
     const {
         privacyMode = true,
         setPrivacyMode = () => {},
+        systemModeConfig = null,
+        onOpenSystemModeModal = () => {},
         autoRefresh = true,
         setAutoRefresh = () => {},
         dataLoading = false,
@@ -132,6 +137,45 @@ export default function AdminNavbar(props: any) {
                         )}
                         <span className="hidden sm:inline">Privacy</span>
                         <span className="text-xs font-mono font-bold uppercase">{privacyMode ? 'ON' : 'OFF'}</span>
+                    </button>
+
+                    {/* Live System Mode Controller (Normal / Degraded / Maintenance) */}
+                    <button
+                        type="button"
+                        onClick={onOpenSystemModeModal}
+                        className={`inline-flex min-h-[38px] sm:h-9 items-center gap-1.5 rounded-xl border px-2.5 sm:px-3 text-xs font-bold shadow-2xs transition active:scale-95 cursor-pointer ${
+                            systemModeConfig?.mode === 'maintenance'
+                                ? 'border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-400 animate-pulse'
+                                : systemModeConfig?.mode === 'degraded'
+                                ? 'border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400'
+                                : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                        }`}
+                        title={`System Mode: ${systemModeConfig?.mode || 'normal'}. Click to toggle between Normal, Degraded, and Maintenance mode in real-time.`}
+                        aria-label="Toggle Live System Mode"
+                    >
+                        <span className="relative flex h-2 w-2">
+                            {systemModeConfig?.mode === 'maintenance' ? (
+                                <>
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-75" />
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-600" />
+                                </>
+                            ) : systemModeConfig?.mode === 'degraded' ? (
+                                <>
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+                                </>
+                            ) : (
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                            )}
+                        </span>
+                        <span className="hidden sm:inline">Mode:</span>
+                        <span className="capitalize font-mono">
+                            {systemModeConfig?.mode === 'maintenance'
+                                ? 'Maint'
+                                : systemModeConfig?.mode === 'degraded'
+                                ? 'Degraded'
+                                : 'Normal'}
+                        </span>
                     </button>
 
                     {/* Auto-refresh toggle */}

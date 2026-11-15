@@ -71,6 +71,61 @@ export interface SearchStats {
     redundantCount?: number
 }
 
+export interface DuplicateLogEntry {
+    id: number
+    created_at: number
+    ip: string
+    city?: string | null
+    country?: string | null
+    region?: string | null
+    status: 'found' | 'not_found' | 'error'
+    user_agent?: string | null
+    is_latest?: boolean
+}
+
+export interface DuplicateLicenseGroup {
+    license_number: string
+    total_count: number
+    redundant_count: number
+    holder_name?: string | null
+    office?: string | null
+    category?: string | null
+    status: 'found' | 'not_found' | 'error'
+    latest_created_at: number
+    earliest_created_at: number
+    latest_ip: string
+    latest_city?: string | null
+    latest_country?: string | null
+    entries: DuplicateLogEntry[]
+}
+
+export interface DuplicateSummaryResult {
+    groups: DuplicateLicenseGroup[]
+    stats: {
+        duplicateCount: number
+        duplicateLicenses: number
+        redundantCount: number
+    }
+}
+
+export interface PruneLogsPreviewResult {
+    days: number
+    cutoff: number
+    matchingCount: number
+    keptCount: number
+    totalCount: number
+    logs: SearchLog[]
+}
+
+export type SystemMode = 'normal' | 'maintenance' | 'degraded'
+
+export interface SystemModeConfig {
+    mode: SystemMode
+    message: string
+    updated_at: number
+    updated_by: string
+}
+
 export interface NotificationLog {
     id: string
     license_number: string

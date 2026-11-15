@@ -28,6 +28,7 @@ import {
     AdminOcrStatsData,
     AdminUpdateEntry,
     AdminUpdatesStatsData,
+    SystemModeConfig,
 } from './types'
 import {
     INACTIVITY_TIMEOUT_MS,
@@ -155,6 +156,19 @@ export default function AdminPage() {
     const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null)
     const [confirmSubmitting] = useState(false)
     const [toast, setToast] = useState<ToastState | null>(null)
+
+    // Auto Delete Duplicates Modal State
+    const [autoDeleteModalOpen, setAutoDeleteModalOpen] = useState(false)
+    const [autoDeleteInitialKeep, setAutoDeleteInitialKeep] = useState<'newest' | 'oldest'>('newest')
+    const [autoDeleteInitialLicense, setAutoDeleteInitialLicense] = useState('')
+
+    // Prune Historical Search Logs Modal State (> 7d, > 30d, > 90d, custom)
+    const [pruneModalOpen, setPruneModalOpen] = useState(false)
+    const [pruneInitialDays, setPruneInitialDays] = useState(7)
+
+    // Live System Mode Controller State (Normal / Degraded / Maintenance)
+    const [systemModeConfig, setSystemModeConfig] = useState<SystemModeConfig | null>(null)
+    const [systemModeModalOpen, setSystemModeModalOpen] = useState(false)
 
     // Inactivity Auto-Logout State
     const [inactivityWarningOpen, setInactivityWarningOpen] = useState(false)
@@ -297,6 +311,32 @@ export default function AdminPage() {
             cancelled = true
         }
     }, [isAuthenticated, page, limit, searchFilter, statusFilter, refreshKey])
+
+    // 2a. Fetch Live System Mode (Normal / Degraded / Maintenance)
+    useEffect(() => {
+        if (!isAuthenticated) return
+        let cancelled = false
+
+        fetch('/api/admin/system-mode', { cache: 'no-store' })
+            .then((res) => {
+                if (res.status === 401) {
+                    if (!cancelled) setIsAuthenticated(false)
+                    return null
+                }
+                return res.json()
+            })
+            .then((json) => {
+                if (cancelled || !json) return
+                if (json.status === 'success' && json.data) {
+                    setSystemModeConfig(json.data)
+                }
+            })
+            .catch(() => {})
+
+        return () => {
+            cancelled = true
+        }
+    }, [isAuthenticated, refreshKey])
 
     // 2b. Fetch Notification Logs & Subscriber Stats
     useEffect(() => {
@@ -1044,39 +1084,8 @@ export default function AdminPage() {
     }
 
     const handleDeleteSearchLogsOlderThan = (days: number) => {
-        if (total === 0) return
-        const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-        })
-        setConfirmDialog({
-            title: `Prune Logs Older Than ${days} Days?`,
-            badge: `Older than ${days}d`,
-            message: `Are you sure you want to permanently delete search logs older than ${days} days? Recent logs will remain intact.`,
-            details: [
-                { label: 'Age Threshold', value: `> ${days} days old`, highlight: 'amber' },
-                { label: 'Cutoff Date', value: `Before ${cutoffDate}`, highlight: 'default' },
-                { label: 'Recent Logs Kept', value: `Last ${days} days`, highlight: 'success' },
-                { label: 'Total Current Logs', value: `${total.toLocaleString()} records`, highlight: 'blue' },
-            ],
-            note: 'Search queries logged after this cutoff date will be completely unaffected.',
-            confirmLabel: `Yes, Delete Older Than ${days}d`,
-            onConfirm: async () => {
-                try {
-                    const res = await fetch(`/api/admin/logs?days=${days}`, { method: 'DELETE' })
-                    if (res.ok) {
-                        setSelectedSearchIds([])
-                        setSearchSelectMode(false)
-                        setPage(1)
-                        setRefreshKey((k) => k + 1)
-                        showToast(`Deleted search logs older than ${days} days`)
-                    }
-                } catch {
-                    // Error
-                }
-            },
-        })
+        setPruneInitialDays(days || 7)
+        setPruneModalOpen(true)
     }
 
     const handleDeleteAllSearchLogs = () => {
@@ -1111,98 +1120,14 @@ export default function AdminPage() {
         })
     }
 
-    const handleAutoDeleteDuplicates = (keep: 'newest' | 'oldest' = 'newest') => {
-        const redundant = stats?.redundantCount ?? 0
-        const dupLicenses = stats?.duplicateLicenses ?? 0
-        const dupTotal = stats?.duplicateCount ?? 0
-        const strategyLabel = keep === 'newest' ? 'Keep Latest (Recommended)' : 'Keep Earliest'
-        const strategyDesc = keep === 'newest'
-            ? 'The most recent search timestamp and IP for each license will be preserved.'
-            : 'The earliest discovery search for each license will be preserved.'
-
-        setConfirmDialog({
-            title: 'Auto-Clean Duplicate Searches?',
-            badge: `${redundant.toLocaleString()} redundant records to clean`,
-            message: `This will scan all search logs, group duplicate queries by license number, and automatically delete older duplicate entries while preserving 1 search record for each license.`,
-            details: [
-                { label: 'Total Duplicates Found', value: `${dupTotal.toLocaleString()} records`, highlight: 'default' },
-                { label: 'Unique Licenses', value: `${dupLicenses.toLocaleString()} licenses`, highlight: 'blue' },
-                { label: 'Redundant To Clean', value: `${redundant.toLocaleString()} records`, highlight: 'error' },
-                { label: 'Records Preserved', value: `${dupLicenses.toLocaleString()} (1 per license)`, highlight: 'success' },
-                { label: 'Preservation Rule', value: strategyLabel, highlight: 'amber' },
-                { label: 'Est. Storage Freed', value: `~${Math.round((redundant * 280) / 1024)} KB`, highlight: 'default' },
-            ],
-            note: `${strategyDesc} Deleted duplicate records cannot be recovered.`,
-            confirmLabel: `Yes, Clean Older Duplicates (${redundant.toLocaleString()})`,
-            onConfirm: async () => {
-                try {
-                    const res = await fetch(`/api/admin/logs?duplicates=auto&keep=${keep}`, {
-                        method: 'DELETE',
-                    })
-                    const data = await res.json().catch(() => null)
-                    if (res.ok) {
-                        const count = data?.deletedCount ?? redundant
-                        setSelectedSearchIds([])
-                        setSearchSelectMode(false)
-                        setPage(1)
-                        setRefreshKey((k) => k + 1)
-                        showToast(`Deleted ${count} older duplicate search records. 1 latest record for each license was preserved.`)
-                    } else {
-                        showToast('Failed to auto-clean duplicate searches', 'error')
-                    }
-                } catch {
-                    showToast('Failed to auto-clean duplicate searches', 'error')
-                }
-            },
-        })
+    const handleAutoDeleteDuplicates = (keep: 'newest' | 'oldest' = 'newest', targetLicense?: string) => {
+        setAutoDeleteInitialKeep(keep)
+        setAutoDeleteInitialLicense(targetLicense || '')
+        setAutoDeleteModalOpen(true)
     }
 
     const handleDeleteLicenseDuplicates = (license: string) => {
-        const displayLic = maskLicenseNumber(license, privacyMode)
-        const logItem = logs.find((l) => l.license_number === license)
-        const totalCount = logItem?.duplicate_count ?? 2
-        setConfirmDialog({
-            title: `Clean Duplicates for ${displayLic}?`,
-            badge: `${totalCount} entries found`,
-            message: `This will leave 1 record (the latest search by date) and permanently delete older duplicate search records for license ${displayLic}.`,
-            details: [
-                { label: 'License Number', value: displayLic, highlight: 'blue' },
-                { label: 'Total Queries', value: `${totalCount} records`, highlight: 'default' },
-                { label: 'Older Duplicates Deleted', value: `${Math.max(1, totalCount - 1)} records`, highlight: 'error' },
-                { label: 'Preserved Record', value: '1 Latest Search', highlight: 'success' },
-            ],
-            note: 'The most recent search record and result will be safely retained.',
-            confirmLabel: 'Delete Older Duplicates (Leave 1 Latest)',
-            onConfirm: async () => {
-                try {
-                    const res = await fetch(`/api/admin/logs?duplicates=auto&license=${encodeURIComponent(license)}&keep=newest`, {
-                        method: 'DELETE',
-                    })
-                    const data = await res.json().catch(() => null)
-                    if (res.ok) {
-                        const count = data?.deletedCount ?? 1
-                        setLogs((prev) => {
-                            let keptOne = false
-                            return prev.filter((item) => {
-                                if (item.license_number !== license) return true
-                                if (!keptOne) {
-                                    keptOne = true
-                                    return true // Keep 1 latest record!
-                                }
-                                return false // Remove older duplicate
-                            })
-                        })
-                        setSelectedSearchIds([])
-                        setRefreshKey((k) => k + 1)
-                        showToast(`Deleted ${count} older duplicate search records for ${displayLic} (latest record preserved)`)
-                    } else {
-                        showToast(`Failed to delete older duplicates for ${displayLic}`, 'error')
-                    }
-                } catch {
-                    showToast(`Failed to delete older duplicates for ${displayLic}`, 'error')
-                }
-            },
-        })
+        handleAutoDeleteDuplicates('newest', license)
     }
 
     // 9. Notification Deletion Handlers (Single, Selected, By Status, All)
@@ -2174,6 +2099,8 @@ export default function AdminPage() {
             <AdminNavbar
                 privacyMode={privacyMode}
                 setPrivacyMode={setPrivacyMode}
+                systemModeConfig={systemModeConfig}
+                onOpenSystemModeModal={() => setSystemModeModalOpen(true)}
                 autoRefresh={autoRefresh}
                 setAutoRefresh={setAutoRefresh}
                 dataLoading={dataLoading}
@@ -2721,6 +2648,32 @@ export default function AdminPage() {
                     stayLoggedIn={stayLoggedIn}
                     toast={toast}
                     setToast={setToast}
+                    autoDeleteModalOpen={autoDeleteModalOpen}
+                    setAutoDeleteModalOpen={setAutoDeleteModalOpen}
+                    autoDeleteInitialKeep={autoDeleteInitialKeep}
+                    autoDeleteInitialLicense={autoDeleteInitialLicense}
+                    onAutoDeleteSuccess={() => {
+                        setSelectedSearchIds([])
+                        setSearchSelectMode(false)
+                        setPage(1)
+                        setRefreshKey((k) => k + 1)
+                    }}
+                    pruneModalOpen={pruneModalOpen}
+                    setPruneModalOpen={setPruneModalOpen}
+                    pruneInitialDays={pruneInitialDays}
+                    onPruneSuccess={() => {
+                        setSelectedSearchIds([])
+                        setSearchSelectMode(false)
+                        setPage(1)
+                        setRefreshKey((k) => k + 1)
+                    }}
+                    systemModeModalOpen={systemModeModalOpen}
+                    setSystemModeModalOpen={setSystemModeModalOpen}
+                    systemModeConfig={systemModeConfig}
+                    onSystemModeUpdated={(updated: SystemModeConfig) => {
+                        setSystemModeConfig(updated)
+                    }}
+                    showToast={showToast}
                 />
             </main>
         </div>

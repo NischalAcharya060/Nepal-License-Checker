@@ -1,9 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { FeedbackLog, AdminPasskey, ConfirmDialogState, ToastState } from '../types'
+import { FeedbackLog, AdminPasskey, ConfirmDialogState, ToastState, SystemModeConfig } from '../types'
 import { formatNepalDateTime } from '@/lib/cronHelper'
 import { formatTimeAgo, maskLicenseNumber, maskIpAddress } from '../helpers'
+import AutoDeleteDuplicatesModal from './AutoDeleteDuplicatesModal'
+import PruneOldLogsModal from './PruneOldLogsModal'
+import SystemModeModal from './SystemModeModal'
 
 export interface AdminModalsProps {
     selectedFeedbackMessage?: FeedbackLog | null
@@ -28,6 +31,20 @@ export interface AdminModalsProps {
     stayLoggedIn?: () => void
     toast?: ToastState | null
     setToast?: (toast: ToastState | null) => void
+    autoDeleteModalOpen?: boolean
+    setAutoDeleteModalOpen?: (open: boolean) => void
+    autoDeleteInitialKeep?: 'newest' | 'oldest'
+    autoDeleteInitialLicense?: string
+    onAutoDeleteSuccess?: (deletedCount: number, message: string) => void
+    showToast?: (message: string, type?: 'success' | 'error' | 'info') => void
+    pruneModalOpen?: boolean
+    setPruneModalOpen?: (open: boolean) => void
+    pruneInitialDays?: number
+    onPruneSuccess?: (deletedCount: number, message: string) => void
+    systemModeModalOpen?: boolean
+    setSystemModeModalOpen?: (open: boolean) => void
+    systemModeConfig?: SystemModeConfig | null
+    onSystemModeUpdated?: (config: SystemModeConfig) => void
 }
 
 interface ConfirmDeleteModalProps {
@@ -219,6 +236,20 @@ export default function AdminModals(props: any) {
         stayLoggedIn = () => {},
         toast = null,
         setToast = () => {},
+        autoDeleteModalOpen = false,
+        setAutoDeleteModalOpen = () => {},
+        autoDeleteInitialKeep = 'newest',
+        autoDeleteInitialLicense = '',
+        onAutoDeleteSuccess = () => {},
+        showToast = () => {},
+        pruneModalOpen = false,
+        setPruneModalOpen = () => {},
+        pruneInitialDays = 7,
+        onPruneSuccess = () => {},
+        systemModeModalOpen = false,
+        setSystemModeModalOpen = () => {},
+        systemModeConfig = null,
+        onSystemModeUpdated = () => {},
     }: AdminModalsProps = props || {}
 
     return (
@@ -571,6 +602,47 @@ export default function AdminModals(props: any) {
                     dialog={confirmDialog}
                     onClose={() => setConfirmDialog(null)}
                     isSubmitting={confirmSubmitting}
+                />
+            )}
+
+            {/* Auto Delete Duplicate Searches Modal */}
+            {autoDeleteModalOpen && (
+                <AutoDeleteDuplicatesModal
+                    key={`autodel-${autoDeleteInitialKeep}-${autoDeleteInitialLicense}`}
+                    isOpen={true}
+                    onClose={() => setAutoDeleteModalOpen(false)}
+                    initialKeep={autoDeleteInitialKeep}
+                    initialLicense={autoDeleteInitialLicense}
+                    privacyMode={privacyMode}
+                    onSuccess={onAutoDeleteSuccess}
+                    showToast={showToast}
+                />
+            )}
+
+            {/* Prune Historical Search Logs Modal (> 7d, > 30d, > 90d, custom) */}
+            {pruneModalOpen && (
+                <PruneOldLogsModal
+                    key={`prune-${pruneInitialDays}`}
+                    isOpen={true}
+                    onClose={() => setPruneModalOpen(false)}
+                    initialDays={pruneInitialDays}
+                    privacyMode={privacyMode}
+                    onSuccess={onPruneSuccess}
+                    showToast={showToast}
+                />
+            )}
+
+            {/* Live System Mode (Normal / Degraded / Maintenance) Controller Modal */}
+            {systemModeModalOpen && (
+                <SystemModeModal
+                    key={`sysmode-${systemModeConfig?.mode || 'normal'}-${systemModeConfig?.updated_at || 0}`}
+                    isOpen={true}
+                    onClose={() => setSystemModeModalOpen(false)}
+                    currentConfig={systemModeConfig}
+                    onSaveSuccess={(updated) => {
+                        onSystemModeUpdated(updated)
+                    }}
+                    showToast={showToast}
                 />
             )}
 

@@ -4,6 +4,12 @@ import {
     isMaintenanceEnabled,
     verifySessionToken,
 } from '@/lib/maintenanceAuth'
+import {
+    ADMIN_COOKIE,
+    getAdminSecret,
+    verifyAdminSessionToken,
+} from '@/lib/adminAuth'
+import { getSystemMode } from '@/lib/systemMode'
 
 const PUBLIC_PATHS = new Set([
     '/maintenance',
@@ -13,37 +19,68 @@ const PUBLIC_PATHS = new Set([
     '/admin',
     '/api/admin/auth',
     '/api/admin/logs',
+    '/api/admin/system-mode',
 ])
 
 export async function proxy(request: NextRequest) {
-    const maintenanceActive = isMaintenanceEnabled()
     const { pathname } = request.nextUrl
 
-    // If maintenance is inactive and user visits /maintenance, smoothly redirect home
+    // 1. Fetch live system mode (cached for 3s in memory, edge-compatible HTTP fetch)
+    const systemModeConfig = await getSystemMode().catch(() => ({
+        mode: (isMaintenanceEnabled() ? 'maintenance' : 'normal') as 'normal' | 'maintenance' | 'degraded',
+        message: '',
+        updated_at: 0,
+        updated_by: 'system',
+    }))
+
+    const maintenanceActive =
+        systemModeConfig.mode === 'maintenance' || isMaintenanceEnabled()
+
+    // 2. If maintenance is inactive and user visits /maintenance, smoothly redirect home
     if (!maintenanceActive) {
         if (pathname === '/maintenance') {
             return NextResponse.redirect(new URL('/', request.url))
         }
+        const res = NextResponse.next()
+        if (systemModeConfig.mode === 'degraded') {
+            res.headers.set('x-system-mode', 'degraded')
+        }
+        return res
+    }
+
+    // 3. Always allow public maintenance pages, auth endpoints, and admin portal
+    if (
+        PUBLIC_PATHS.has(pathname) ||
+        pathname.startsWith('/admin') ||
+        pathname.startsWith('/api/admin/')
+    ) {
         return NextResponse.next()
     }
 
-    // Always allow public maintenance pages and auth endpoints
-    if (PUBLIC_PATHS.has(pathname) || pathname.startsWith('/api/admin/')) {
+    // 4. Allow authorized administrators with a cryptographically verified cookie (maint or admin session)
+    const maintSecret = process.env.MAINTENANCE_PASSWORD
+    const adminSecret = getAdminSecret()
+
+    const hasMaintAuth =
+        maintSecret &&
+        (await verifySessionToken(request.cookies.get(MAINT_COOKIE)?.value, maintSecret))
+    const hasAdminAuth =
+        adminSecret &&
+        (await verifyAdminSessionToken(request.cookies.get(ADMIN_COOKIE)?.value, adminSecret))
+
+    if (hasMaintAuth || hasAdminAuth) {
         return NextResponse.next()
     }
 
-    // Allow authorized administrators with a cryptographically verified cookie
-    const secret = process.env.MAINTENANCE_PASSWORD
-    if (secret && (await verifySessionToken(request.cookies.get(MAINT_COOKIE)?.value, secret))) {
-        return NextResponse.next()
-    }
-
-    // API callers get a standard RFC 503 response with Retry-After header
+    // 5. API callers get a standard RFC 503 response with Retry-After header
     if (pathname.startsWith('/api/')) {
         return NextResponse.json(
             {
                 status: 'error',
-                error: 'Service is temporarily unavailable while database synchronization is in progress.',
+                error:
+                    systemModeConfig.message ||
+                    'Service is temporarily unavailable while maintenance or database synchronization is in progress.',
+                mode: 'maintenance',
             },
             {
                 status: 503,
@@ -55,7 +92,7 @@ export async function proxy(request: NextRequest) {
         )
     }
 
-    // All page requests rewrite to the maintenance notice with search-engine protection
+    // 6. All page requests rewrite to the maintenance notice with search-engine protection
     const url = request.nextUrl.clone()
     url.pathname = '/maintenance'
     return NextResponse.rewrite(url, {

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getTurso } from '@/lib/turso'
 import { DEFAULT_CRON_SCHEDULE, getNextCronRun } from '@/lib/cronHelper'
 import { getCachedMetadata, setCachedMetadata } from '@/lib/metaCache'
+import { getSystemMode } from '@/lib/systemMode'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -62,6 +63,10 @@ export interface AppMetadata {
   latestBatch?: LatestBatchData | null
   scraper: ScraperMeta
   syncHistory: SyncHistoryEntry[]
+  systemMode?: {
+    mode: 'normal' | 'maintenance' | 'degraded'
+    message?: string
+  }
 }
 
 const DEFAULT_SYNC_HISTORY: SyncHistoryEntry[] = [
@@ -146,11 +151,18 @@ export async function GET() {
   try {
     const cached = getCachedMetadata<AppMetadata>()
     if (cached) {
+      const systemModeConfig = await getSystemMode().catch(() => null)
+      const dataWithMode: AppMetadata = {
+        ...cached,
+        systemMode: systemModeConfig
+          ? { mode: systemModeConfig.mode, message: systemModeConfig.message }
+          : cached.systemMode,
+      }
       return NextResponse.json(
-        { status: 'success', data: cached },
+        { status: 'success', data: dataWithMode },
         {
           headers: {
-            'Cache-Control': 'public, max-age=0, s-maxage=30, must-revalidate',
+            'Cache-Control': 'public, max-age=0, s-maxage=10, must-revalidate',
           },
         }
       )
@@ -299,6 +311,8 @@ export async function GET() {
     // Filter out hidden entries for public /updates page
     const publicSyncHistory = syncHistory.filter((entry) => !entry.hidden)
 
+    const systemModeConfig = await getSystemMode().catch(() => null)
+
     const payload: AppMetadata = {
       lastUpdated:
         Number.isFinite(lastUpdatedMs) && lastUpdatedMs > 0
@@ -318,6 +332,12 @@ export async function GET() {
         schedule: scraperSchedule,
       },
       syncHistory: publicSyncHistory,
+      systemMode: systemModeConfig
+        ? {
+            mode: systemModeConfig.mode,
+            message: systemModeConfig.message,
+          }
+        : undefined,
     }
 
     setCachedMetadata(payload)

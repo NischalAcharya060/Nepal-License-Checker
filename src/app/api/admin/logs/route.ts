@@ -9,6 +9,8 @@ import {
     getSearchStats,
     deduplicateSearchLogs,
     deleteSearchLogsByLicense,
+    getDuplicateLicenseSummary,
+    getPruneLogsPreview,
 } from '@/lib/searchLogger'
 import { getNotificationStats } from '@/lib/notifications'
 import { getFeedbackStats } from '@/lib/feedback'
@@ -92,6 +94,44 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = request.nextUrl
+    const duplicatesParam = searchParams.get('duplicates')
+
+    // Fast preview of duplicate licenses with grouped search entries
+    if (duplicatesParam === 'preview' || duplicatesParam === 'summary') {
+        try {
+            const previewData = await getDuplicateLicenseSummary(200)
+            return NextResponse.json({
+                status: 'success',
+                data: previewData,
+            })
+        } catch (err) {
+            console.error('Failed to retrieve duplicate license summary:', err)
+            return NextResponse.json(
+                { status: 'error', error: 'Failed to retrieve duplicate summary.' },
+                { status: 500 }
+            )
+        }
+    }
+
+    // Fast preview of historical search logs to prune by days
+    const pruneDaysParam = searchParams.get('prune_days')
+    if (pruneDaysParam) {
+        try {
+            const daysNum = Math.max(1, parseInt(pruneDaysParam, 10) || 7)
+            const previewData = await getPruneLogsPreview(daysNum, 100)
+            return NextResponse.json({
+                status: 'success',
+                data: previewData,
+            })
+        } catch (err) {
+            console.error('Failed to retrieve prune preview:', err)
+            return NextResponse.json(
+                { status: 'error', error: 'Failed to retrieve prune preview.' },
+                { status: 500 }
+            )
+        }
+    }
+
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1)
     const limit = Math.min(200, Math.max(10, parseInt(searchParams.get('limit') || '10', 10) || 10))
     const search = searchParams.get('search') || ''
