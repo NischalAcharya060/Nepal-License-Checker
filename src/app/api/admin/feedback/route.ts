@@ -8,10 +8,13 @@ import {
 import {
     getFeedbackLogs,
     getFeedbackStats,
+    getFeedbackById,
     updateFeedbackStatus,
     deleteFeedback,
     ensureFeedbackTable,
+    FeedbackStatus,
 } from '@/lib/feedback'
+import { sendFeedbackStatusEmail, sendFeedbackTrackingEmail } from '@/lib/email'
 import { getTurso } from '@/lib/turso'
 
 export const runtime = 'nodejs'
@@ -68,6 +71,81 @@ export async function GET(request: NextRequest) {
     }
 }
 
+export async function POST(request: NextRequest) {
+    if (!(await checkAuth(request))) {
+        return NextResponse.json(
+            { status: 'error', error: 'Unauthorized' },
+            { status: 401 }
+        )
+    }
+
+    try {
+        const body = await request.json()
+        const { action, id } = body
+
+        if (action === 'send_tracking' || action === 'resend_tracking') {
+            if (!id || typeof id !== 'string') {
+                return NextResponse.json(
+                    { status: 'error', error: 'Feedback ID is required.' },
+                    { status: 400 }
+                )
+            }
+
+            const item = await getFeedbackById(id)
+            if (!item) {
+                return NextResponse.json(
+                    { status: 'error', error: 'Feedback record not found.' },
+                    { status: 404 }
+                )
+            }
+
+            if (!item.email || !item.email.includes('@')) {
+                return NextResponse.json(
+                    { status: 'error', error: 'This inquiry does not have a valid email address.' },
+                    { status: 400 }
+                )
+            }
+
+            const result = await sendFeedbackTrackingEmail({
+                to: item.email,
+                name: item.name,
+                ticketId: item.id,
+                subject: item.subject,
+                category: item.category,
+                status: item.status,
+                licenseNumber: item.license_number,
+                userMessage: item.message,
+                adminNotes: item.admin_notes,
+            })
+
+            if (!result.success) {
+                return NextResponse.json(
+                    { status: 'error', error: result.error || 'Failed to dispatch tracking email.' },
+                    { status: 500 }
+                )
+            }
+
+            return NextResponse.json({
+                status: 'success',
+                message: `Tracking reference number (${item.id}) successfully emailed to ${item.email}!`,
+                delivery: result,
+            })
+        }
+
+        return NextResponse.json(
+            { status: 'error', error: `Unknown action: ${action}` },
+            { status: 400 }
+        )
+    } catch (err: unknown) {
+        console.error('Failed to process admin feedback POST action:', err)
+        const error = err as Error
+        return NextResponse.json(
+            { status: 'error', error: error?.message || 'Internal server error' },
+            { status: 500 }
+        )
+    }
+}
+
 export async function PATCH(request: NextRequest) {
     if (!(await checkAuth(request))) {
         return NextResponse.json(
@@ -78,14 +156,17 @@ export async function PATCH(request: NextRequest) {
 
     try {
         const body = await request.json()
-        const { id, ids, status, adminNotes } = body
+        const { id, ids, status, adminNotes, sendEmail } = body
 
-        if (status !== 'new' && status !== 'resolved') {
+        const validStatuses: FeedbackStatus[] = ['new', 'in_progress', 'resolved']
+        if (status && !validStatuses.includes(status)) {
             return NextResponse.json(
-                { status: 'error', error: "Status must be either 'new' or 'resolved'." },
+                { status: 'error', error: "Status must be 'new', 'in_progress', or 'resolved'." },
                 { status: 400 }
             )
         }
+
+        const effectiveStatus = (status as FeedbackStatus) || 'resolved'
 
         if (Array.isArray(ids) && ids.length > 0) {
             await ensureFeedbackTable()
@@ -95,12 +176,12 @@ export async function PATCH(request: NextRequest) {
                 const placeholders = cleanIds.map(() => '?').join(', ')
                 await db.execute({
                     sql: `UPDATE user_feedbacks SET status = ?, updated_at = ? WHERE id IN (${placeholders})`,
-                    args: [status, Date.now(), ...cleanIds],
+                    args: [effectiveStatus, Date.now(), ...cleanIds],
                 })
             }
             return NextResponse.json({
                 status: 'success',
-                message: `Selected feedback marked as ${status}.`,
+                message: `Selected feedback marked as ${effectiveStatus}.`,
             })
         }
 
@@ -111,17 +192,56 @@ export async function PATCH(request: NextRequest) {
             )
         }
 
-        const success = await updateFeedbackStatus(id, status, adminNotes)
-        if (!success) {
+        const currentItem = await getFeedbackById(id)
+        if (!currentItem) {
             return NextResponse.json(
                 { status: 'error', error: 'Feedback record not found.' },
                 { status: 404 }
             )
         }
 
+        const success = await updateFeedbackStatus(id, effectiveStatus, adminNotes)
+        if (!success) {
+            return NextResponse.json(
+                { status: 'error', error: 'Failed to update feedback record.' },
+                { status: 500 }
+            )
+        }
+
+        let emailSent = false
+        let emailError: string | undefined
+
+        // If requested to send email, or admin supplied reply and sendEmail is true
+        if (sendEmail && currentItem.email) {
+            try {
+                const emailResult = await sendFeedbackStatusEmail({
+                    to: currentItem.email,
+                    name: currentItem.name,
+                    ticketId: currentItem.id,
+                    subject: currentItem.subject,
+                    category: currentItem.category,
+                    licenseNumber: currentItem.license_number,
+                    userMessage: currentItem.message,
+                    status: effectiveStatus,
+                    adminNotes: adminNotes !== undefined ? adminNotes : currentItem.admin_notes,
+                    updatedAt: Date.now(),
+                })
+                emailSent = emailResult.success
+                if (!emailResult.success) {
+                    emailError = emailResult.error
+                }
+            } catch (err) {
+                console.error('[Admin Feedback] Error sending status email:', err)
+                const error = err as Error
+                emailError = error.message
+            }
+        }
+
         return NextResponse.json({
             status: 'success',
-            message: `Feedback marked as ${status}.`,
+            message: `Feedback updated to ${effectiveStatus}${emailSent ? ' and reply email sent to user' : ''}.`,
+            emailSent,
+            emailError,
         })
     } catch (err: unknown) {
         console.error('Failed to update feedback:', err)
@@ -183,7 +303,7 @@ export async function DELETE(request: NextRequest) {
             })
         }
 
-        if (status === 'resolved' || status === 'new') {
+        if (status === 'resolved' || status === 'new' || status === 'in_progress') {
             await db.execute({
                 sql: 'DELETE FROM user_feedbacks WHERE status = ?',
                 args: [status],

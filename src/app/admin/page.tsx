@@ -15,6 +15,7 @@ import {
     NotificationLog,
     NotificationStatsData,
     FeedbackLog,
+    FeedbackStatus,
     FeedbackStatsData,
     TestimonialLog,
     TestimonialStatsData,
@@ -104,7 +105,7 @@ export default function AdminPage() {
     const [feedbackLimit, setFeedbackLimit] = useState(10)
     const [feedbackTotalPages, setFeedbackTotalPages] = useState(1)
     const [feedbackSearchFilter, setFeedbackSearchFilter] = useState('')
-    const [feedbackStatusFilter, setFeedbackStatusFilter] = useState<'all' | 'new' | 'resolved'>('all')
+    const [feedbackStatusFilter, setFeedbackStatusFilter] = useState<'all' | 'new' | 'in_progress' | 'resolved'>('all')
     const [feedbackCategoryFilter, setFeedbackCategoryFilter] = useState<string>('all')
     const [feedbackLoading, setFeedbackLoading] = useState(false)
     const [selectedFeedbackIds, setSelectedFeedbackIds] = useState<string[]>([])
@@ -1236,16 +1237,18 @@ export default function AdminPage() {
     // 10. Feedback CSV Export (Respects Privacy Mode)
     const exportFeedbackCsv = () => {
         if (!feedbackLogs.length) return
-        const headers = ['ID', 'Received At (NPT)', 'Received At (ISO)', 'Name', 'Email', 'Category', 'Subject', 'Message', 'License Number', 'Status', 'IP']
+        const headers = ['Tracking ID', 'Received At (NPT)', 'Updated At (NPT)', 'Received At (ISO)', 'Name', 'Email', 'Category', 'Subject', 'Message', 'Admin Notes', 'License Number', 'Status', 'IP']
         const rows = feedbackLogs.map((l) => [
             `"${l.id}"`,
             `"${formatNepalDateTime(l.created_at, 'en', true)}"`,
+            `"${l.updated_at ? formatNepalDateTime(l.updated_at, 'en', true) : ''}"`,
             new Date(l.created_at).toISOString(),
             `"${(l.name || '').replace(/"/g, '""')}"`,
             `"${(l.email || '').replace(/"/g, '""')}"`,
             `"${(l.category || '').replace(/"/g, '""')}"`,
             `"${(l.subject || '').replace(/"/g, '""')}"`,
             `"${(l.message || '').replace(/"/g, '""')}"`,
+            `"${(l.admin_notes || '').replace(/"/g, '""')}"`,
             `"${l.license_number ? maskLicenseNumber(l.license_number, privacyMode) : ''}"`,
             l.status,
             `"${l.ip ? maskIpAddress(l.ip, privacyMode) : ''}"`,
@@ -1299,9 +1302,8 @@ export default function AdminPage() {
         )
     }
 
-    // 11. Toggle & Bulk Update Feedback Status
-    const handleToggleFeedbackStatus = async (id: string, currentStatus: 'new' | 'resolved') => {
-        const nextStatus = currentStatus === 'new' ? 'resolved' : 'new'
+    // 11. Toggle, Set & Bulk Update Feedback Status
+    const handleSetFeedbackStatus = async (id: string, nextStatus: FeedbackStatus) => {
         try {
             const res = await fetch('/api/admin/feedback', {
                 method: 'PATCH',
@@ -1310,20 +1312,79 @@ export default function AdminPage() {
             })
             if (res.ok) {
                 setFeedbackLogs((prev) =>
-                    prev.map((item) => (item.id === id ? { ...item, status: nextStatus } : item))
+                    prev.map((item) =>
+                        item.id === id ? { ...item, status: nextStatus, updated_at: Date.now() } : item
+                    )
                 )
                 if (selectedFeedbackMessage && selectedFeedbackMessage.id === id) {
-                    setSelectedFeedbackMessage({ ...selectedFeedbackMessage, status: nextStatus })
+                    setSelectedFeedbackMessage({
+                        ...selectedFeedbackMessage,
+                        status: nextStatus,
+                        updated_at: Date.now(),
+                    })
                 }
                 setRefreshKey((k) => k + 1)
-                showToast(`Feedback marked as ${nextStatus}`)
+                const label = nextStatus === 'in_progress' ? 'In Progress' : nextStatus
+                showToast(`Status updated to ${label}`)
             }
         } catch {
-            // Error
+            showToast('Failed to update status.', 'error')
         }
     }
 
-    const handleBulkFeedbackStatus = async (nextStatus: 'new' | 'resolved') => {
+    const handleToggleFeedbackStatus = async (id: string, currentStatus: FeedbackStatus) => {
+        const nextStatus: FeedbackStatus = currentStatus === 'resolved' ? 'new' : 'resolved'
+        await handleSetFeedbackStatus(id, nextStatus)
+    }
+
+    const handleSaveFeedbackReply = async (params: {
+        id: string
+        status: FeedbackStatus
+        adminNotes: string
+        sendEmail: boolean
+    }): Promise<boolean> => {
+        try {
+            const res = await fetch('/api/admin/feedback', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(params),
+            })
+            const data = await res.json()
+            if (res.ok && data.status === 'success') {
+                setFeedbackLogs((prev) =>
+                    prev.map((item) =>
+                        item.id === params.id
+                            ? {
+                                  ...item,
+                                  status: params.status,
+                                  admin_notes: params.adminNotes,
+                                  updated_at: Date.now(),
+                              }
+                            : item
+                    )
+                )
+                if (selectedFeedbackMessage && selectedFeedbackMessage.id === params.id) {
+                    setSelectedFeedbackMessage({
+                        ...selectedFeedbackMessage,
+                        status: params.status,
+                        admin_notes: params.adminNotes,
+                        updated_at: Date.now(),
+                    })
+                }
+                setRefreshKey((k) => k + 1)
+                showToast(data.message || 'Feedback updated successfully!')
+                return true
+            } else {
+                showToast(data.error || 'Failed to update feedback.', 'error')
+                return false
+            }
+        } catch {
+            showToast('Network error while updating feedback.', 'error')
+            return false
+        }
+    }
+
+    const handleBulkFeedbackStatus = async (nextStatus: FeedbackStatus) => {
         if (!selectedFeedbackIds.length) return
         const count = selectedFeedbackIds.length
         try {
@@ -1344,6 +1405,27 @@ export default function AdminPage() {
             }
         } catch {
             // Error
+        }
+    }
+
+    const handleSendTrackingEmail = async (id: string): Promise<boolean> => {
+        try {
+            const res = await fetch('/api/admin/feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'send_tracking', id }),
+            })
+            const data = await res.json()
+            if (res.ok && data.status === 'success') {
+                showToast(data.message || 'Tracking reference emailed to user!')
+                return true
+            } else {
+                showToast(data.error || 'Failed to send tracking email.', 'error')
+                return false
+            }
+        } catch {
+            showToast('Network error while sending tracking email.', 'error')
+            return false
         }
     }
 
@@ -2519,7 +2601,9 @@ export default function AdminPage() {
                         setSelectedFeedbackMessage={setSelectedFeedbackMessage}
                         copyToClipboard={copyToClipboard}
                         handleToggleFeedbackStatus={handleToggleFeedbackStatus}
+                        handleSetFeedbackStatus={handleSetFeedbackStatus}
                         handleBulkFeedbackStatus={handleBulkFeedbackStatus}
+                        handleSendTrackingEmail={handleSendTrackingEmail}
                         handleDeleteFeedback={handleDeleteFeedback}
                         handleDeleteSelectedFeedback={handleDeleteSelectedFeedback}
                         handleDeleteResolvedFeedback={handleDeleteResolvedFeedback}
@@ -2629,6 +2713,9 @@ export default function AdminPage() {
                     selectedFeedbackMessage={selectedFeedbackMessage}
                     setSelectedFeedbackMessage={setSelectedFeedbackMessage}
                     handleToggleFeedbackStatus={handleToggleFeedbackStatus}
+                    handleSetFeedbackStatus={handleSetFeedbackStatus}
+                    handleSendTrackingEmail={handleSendTrackingEmail}
+                    handleSaveFeedbackReply={handleSaveFeedbackReply}
                     privacyMode={privacyMode}
                     passkeyModalOpen={passkeyModalOpen}
                     setPasskeyModalOpen={setPasskeyModalOpen}

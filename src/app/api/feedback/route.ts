@@ -1,6 +1,7 @@
 // src/app/api/feedback/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createFeedback, FEEDBACK_CATEGORIES } from '@/lib/feedback'
+import { sendFeedbackConfirmationEmail } from '@/lib/email'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -90,10 +91,26 @@ export async function POST(request: NextRequest) {
             ip,
         })
 
+        // Send confirmation email asynchronously (never blocks response)
+        const categoryObj = FEEDBACK_CATEGORIES.find((c) => c.id === category)
+        const displaySubject = (subject || categoryObj?.label || category).trim()
+        sendFeedbackConfirmationEmail({
+            to: email.trim().toLowerCase(),
+            name: name.trim(),
+            ticketId: result.id,
+            subject: displaySubject,
+            category,
+            licenseNumber: licenseNumber ? licenseNumber.trim() : null,
+            userMessage: message.trim(),
+        }).catch((err) => {
+            console.error('[Feedback] Failed to send confirmation email:', err)
+        })
+
         return NextResponse.json({
             status: 'success',
             message: 'Thank you! Your feedback has been received. Our team will review it shortly.',
             id: result.id,
+            email: email.trim().toLowerCase(),
         })
     } catch (err: unknown) {
         console.error('Failed to submit feedback:', err)

@@ -1,17 +1,25 @@
 'use client'
 
 import { useState } from 'react'
-import { FeedbackLog, AdminPasskey, ConfirmDialogState, ToastState, SystemModeConfig } from '../types'
-import { formatNepalDateTime } from '@/lib/cronHelper'
-import { formatTimeAgo, maskLicenseNumber, maskIpAddress } from '../helpers'
+import { FeedbackLog, FeedbackStatus, AdminPasskey, ConfirmDialogState, ToastState, SystemModeConfig } from '../types'
+import { formatTimeAgo } from '../helpers'
 import AutoDeleteDuplicatesModal from './AutoDeleteDuplicatesModal'
 import PruneOldLogsModal from './PruneOldLogsModal'
 import SystemModeModal from './SystemModeModal'
+import FeedbackDetailModal from './FeedbackDetailModal'
 
 export interface AdminModalsProps {
     selectedFeedbackMessage?: FeedbackLog | null
     setSelectedFeedbackMessage?: (msg: FeedbackLog | null) => void
-    handleToggleFeedbackStatus?: (id: string, currentStatus: 'new' | 'resolved') => Promise<void>
+    handleToggleFeedbackStatus?: (id: string, currentStatus: FeedbackStatus) => Promise<void>
+    handleSetFeedbackStatus?: (id: string, status: FeedbackStatus) => Promise<void>
+    handleSendTrackingEmail?: (id: string) => Promise<boolean>
+    handleSaveFeedbackReply?: (params: {
+        id: string
+        status: FeedbackStatus
+        adminNotes: string
+        sendEmail: boolean
+    }) => Promise<boolean>
     privacyMode?: boolean
     passkeyModalOpen?: boolean
     setPasskeyModalOpen?: (open: boolean) => void
@@ -217,6 +225,9 @@ export default function AdminModals(props: any) {
         selectedFeedbackMessage = null,
         setSelectedFeedbackMessage = () => {},
         handleToggleFeedbackStatus = async () => {},
+        handleSetFeedbackStatus = async () => {},
+        handleSendTrackingEmail = async () => false,
+        handleSaveFeedbackReply = async () => false,
         privacyMode = true,
         passkeyModalOpen = false,
         setPasskeyModalOpen = () => {},
@@ -256,160 +267,15 @@ export default function AdminModals(props: any) {
         <>
             {/* Detail Message Modal */}
             {selectedFeedbackMessage && (
-                <div
-                    className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 p-0 sm:p-4 backdrop-blur-md animate-fade-in"
-                    onClick={() => setSelectedFeedbackMessage(null)}
-                >
-                    <div
-                        className="relative w-full max-w-xl rounded-t-3xl sm:rounded-3xl border border-[var(--border-strong)] bg-[var(--surface-primary)] p-5 sm:p-6 shadow-2xl animate-in zoom-in-95 duration-150 max-h-[92vh] overflow-y-auto"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {/* Visual grabber bar on mobile */}
-                        <div className="mx-auto -mt-1 mb-3 h-1 w-12 rounded-full bg-[var(--border-strong)] sm:hidden" />
-
-                        {/* Modal Header */}
-                        <div className="flex items-start justify-between gap-3 border-b border-[var(--border-default)] pb-4">
-                            <div>
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-bold ${
-                                        selectedFeedbackMessage.status === 'new'
-                                            ? 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                                            : 'border-[var(--success)]/30 bg-[var(--success-bg)] text-[var(--success)]'
-                                    }`}>
-                                        {selectedFeedbackMessage.status === 'new' ? (
-                                            <>
-                                                <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-                                                <span>New Inquiry</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                                    <polyline points="20 6 9 17 4 12" />
-                                                </svg>
-                                                <span>Resolved</span>
-                                            </>
-                                        )}
-                                    </span>
-                                    <span className="text-xs text-[var(--text-muted)] font-mono" title={`${formatNepalDateTime(selectedFeedbackMessage.created_at, 'en', true)} (NPT, UTC+5:45)`}>
-                                        {formatNepalDateTime(selectedFeedbackMessage.created_at, 'en', true)} (NPT) • {formatTimeAgo(selectedFeedbackMessage.created_at)}
-                                    </span>
-                                </div>
-                                <h3 className="mt-2 text-base sm:text-lg font-black text-[var(--text-primary)]">
-                                    {selectedFeedbackMessage.subject}
-                                </h3>
-                            </div>
-
-                            <button
-                                type="button"
-                                onClick={() => setSelectedFeedbackMessage(null)}
-                                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--border-default)] text-[var(--text-muted)] hover:border-[var(--nepal-blue)] hover:text-[var(--text-primary)] transition cursor-pointer shrink-0"
-                                aria-label="Close modal"
-                            >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                    <line x1="18" y1="6" x2="6" y2="18" />
-                                    <line x1="6" y1="6" x2="18" y2="18" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        {/* Submitter & License Info */}
-                        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-3.5 text-xs">
-                            <div>
-                                <span className="text-[10px] font-bold uppercase text-[var(--text-muted)]">Submitter Name</span>
-                                <p className="font-bold text-[var(--text-primary)] mt-0.5">{selectedFeedbackMessage.name}</p>
-                            </div>
-                            <div>
-                                <span className="text-[10px] font-bold uppercase text-[var(--text-muted)]">Contact Email</span>
-                                <p className="mt-0.5">
-                                    <a
-                                        href={`mailto:${selectedFeedbackMessage.email}?subject=${encodeURIComponent(`Re: [Support] ${selectedFeedbackMessage.subject}`)}`}
-                                        className="font-mono font-semibold text-[var(--nepal-blue)] hover:underline break-all"
-                                    >
-                                        {selectedFeedbackMessage.email}
-                                    </a>
-                                </p>
-                            </div>
-                            <div>
-                                <span className="text-[10px] font-bold uppercase text-[var(--text-muted)]">License Number</span>
-                                <p className="font-mono font-semibold text-[var(--text-primary)] mt-0.5">
-                                    {selectedFeedbackMessage.license_number
-                                        ? maskLicenseNumber(selectedFeedbackMessage.license_number, privacyMode)
-                                        : 'Not provided'}
-                                </p>
-                            </div>
-                            <div>
-                                <span className="text-[10px] font-bold uppercase text-[var(--text-muted)]">IP & Category</span>
-                                <p className="text-[var(--text-secondary)] mt-0.5 font-mono text-[11px]">
-                                    {selectedFeedbackMessage.category} ·{' '}
-                                    {selectedFeedbackMessage.ip
-                                        ? maskIpAddress(selectedFeedbackMessage.ip, privacyMode)
-                                        : 'Unknown IP'}
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Message Body */}
-                        <div className="mt-4">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                                User Message:
-                            </span>
-                            <div className="mt-1.5 max-h-56 sm:max-h-64 overflow-y-auto whitespace-pre-wrap rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-3.5 sm:p-4 font-sans text-xs leading-relaxed text-[var(--text-primary)] select-text">
-                                {selectedFeedbackMessage.message}
-                            </div>
-                        </div>
-
-                        {/* Modal Footer */}
-                        <div className="mt-5 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 border-t border-[var(--border-default)] pt-4">
-                            <button
-                                type="button"
-                                onClick={() => handleToggleFeedbackStatus(selectedFeedbackMessage.id, selectedFeedbackMessage.status)}
-                                className={`min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition active:scale-95 cursor-pointer ${
-                                    selectedFeedbackMessage.status === 'new'
-                                        ? 'bg-[var(--success)] text-white hover:bg-emerald-600'
-                                        : 'border border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-primary)] hover:border-amber-500 hover:text-amber-600'
-                                }`}
-                            >
-                                {selectedFeedbackMessage.status === 'new' ? (
-                                    <>
-                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                            <polyline points="20 6 9 17 4 12" />
-                                        </svg>
-                                        <span>Mark as Resolved</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                            <path d="M1 4v6h6" />
-                                            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-                                        </svg>
-                                        <span>Reopen as New</span>
-                                    </>
-                                )}
-                            </button>
-
-                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                                <a
-                                    href={`mailto:${selectedFeedbackMessage.email}?subject=${encodeURIComponent(`Re: [Support] ${selectedFeedbackMessage.subject}`)}`}
-                                    className="min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--nepal-blue)] px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-[var(--nepal-blue-mid)] active:scale-95"
-                                >
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                        <rect x="2" y="4" width="20" height="16" rx="2" />
-                                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                                    </svg>
-                                    <span>Reply by Email</span>
-                                </a>
-
-                                <button
-                                    type="button"
-                                    onClick={() => setSelectedFeedbackMessage(null)}
-                                    className="min-h-[44px] inline-flex items-center justify-center rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-center transition active:scale-95 cursor-pointer"
-                                >
-                                    Close
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <FeedbackDetailModal
+                    feedback={selectedFeedbackMessage}
+                    onClose={() => setSelectedFeedbackMessage(null)}
+                    privacyMode={privacyMode}
+                    onToggleStatus={handleToggleFeedbackStatus}
+                    onSetStatus={handleSetFeedbackStatus}
+                    onSendTrackingEmail={handleSendTrackingEmail}
+                    onSaveReply={handleSaveFeedbackReply}
+                />
             )}
 
             {/* Passkeys & Biometric Security Modal */}

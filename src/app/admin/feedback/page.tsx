@@ -1,6 +1,7 @@
 'use client'
 
-import { FeedbackLog, FeedbackStatsData } from '../types'
+import { FeedbackLog, FeedbackStatus, FeedbackStatsData } from '../types'
+import { FEEDBACK_CATEGORIES } from '@/lib/feedback'
 import { formatNepalDateTime } from '@/lib/cronHelper'
 import { formatTimeAgo, maskLicenseNumber, maskIpAddress } from '../helpers'
 import AdminPagination from '../AdminPagination'
@@ -13,7 +14,7 @@ export interface AdminFeedbackProps {
     feedbackLimit?: number
     feedbackTotalPages?: number
     feedbackSearchFilter?: string
-    feedbackStatusFilter?: 'all' | 'new' | 'resolved'
+    feedbackStatusFilter?: 'all' | 'new' | 'in_progress' | 'resolved'
     feedbackCategoryFilter?: string
     feedbackLoading?: boolean
     privacyMode?: boolean
@@ -23,14 +24,16 @@ export interface AdminFeedbackProps {
     setFeedbackPage?: (page: number) => void
     setFeedbackLimit?: (limit: number) => void
     setFeedbackSearchFilter?: (filter: string) => void
-    setFeedbackStatusFilter?: (status: 'all' | 'new' | 'resolved') => void
+    setFeedbackStatusFilter?: (status: 'all' | 'new' | 'in_progress' | 'resolved') => void
     setFeedbackCategoryFilter?: (cat: string) => void
     setFeedbackSelectMode?: (mode: boolean) => void
     setSelectedFeedbackIds?: React.Dispatch<React.SetStateAction<string[]>>
     setSelectedFeedbackMessage?: (msg: FeedbackLog | null) => void
     copyToClipboard?: (text: string, key: string) => void
-    handleToggleFeedbackStatus?: (id: string, currentStatus: 'new' | 'resolved') => Promise<void>
-    handleBulkFeedbackStatus?: (status: 'new' | 'resolved') => Promise<void>
+    handleToggleFeedbackStatus?: (id: string, currentStatus: FeedbackStatus) => Promise<void>
+    handleSetFeedbackStatus?: (id: string, status: FeedbackStatus) => Promise<void>
+    handleSendTrackingEmail?: (id: string) => Promise<boolean>
+    handleBulkFeedbackStatus?: (status: FeedbackStatus) => Promise<void>
     handleDeleteFeedback?: (id: string, subject: string) => void
     handleDeleteSelectedFeedback?: () => void
     handleDeleteResolvedFeedback?: () => void
@@ -39,20 +42,33 @@ export interface AdminFeedbackProps {
 }
 
 function getCategoryInfo(category: string) {
+    const found = FEEDBACK_CATEGORIES.find((c) => c.id === category)
+    let cls = 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20'
+    const label = found?.label ? found.label.replace(/^(Problem|Inquiry|Suggestion|Other):\s*/, '') : category || 'Other'
+    const labelNe = found?.labelNe || 'अन्य'
+    const isProblem = found?.isProblem ?? (category.includes('problem') || category.includes('issue'))
+
     switch (category) {
         case 'license_not_found':
-            return { label: 'License Not Found', cls: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20' }
+            cls = 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
+            break
         case 'notification_issue':
-            return { label: 'Email Alerts', cls: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20' }
+            cls = 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
+            break
         case 'incorrect_data':
-            return { label: 'Incorrect Data', cls: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' }
+            cls = 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+            break
         case 'dotm_collection':
-            return { label: 'DoTM Collection', cls: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20' }
+            cls = 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
+            break
         case 'suggestion':
-            return { label: 'Suggestion', cls: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' }
+            cls = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+            break
         default:
-            return { label: 'Other', cls: 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20' }
+            cls = 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20'
     }
+
+    return { label, labelNe, isProblem, cls }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -81,7 +97,8 @@ export default function AdminFeedback(props: any) {
         setSelectedFeedbackIds = () => {},
         setSelectedFeedbackMessage = () => {},
         copyToClipboard = () => {},
-        handleToggleFeedbackStatus = async () => {},
+        handleSetFeedbackStatus = async () => {},
+        handleSendTrackingEmail = async () => false,
         handleBulkFeedbackStatus = async () => {},
         handleDeleteFeedback = () => {},
         handleDeleteSelectedFeedback = () => {},
@@ -93,12 +110,12 @@ export default function AdminFeedback(props: any) {
     return (
         <section aria-label="Feedback & Support">
             {/* User Feedback & Support KPI Metrics */}
-            <div className="mt-4 sm:mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-4">
+            <div className="mt-4 sm:mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5 sm:gap-4">
                 {/* Total Inquiries */}
                 <div className="dev-glass-card hover-lift rounded-2xl p-4 sm:p-5 relative overflow-hidden group">
                     <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[var(--nepal-blue)] to-indigo-500 opacity-60 group-hover:opacity-100 transition-opacity" />
                     <div className="flex items-center justify-between text-[var(--text-muted)]">
-                        <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Total Inquiries</span>
+                        <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Total</span>
                         <span className="rounded-xl bg-[var(--nepal-blue-soft)] p-2 text-[var(--nepal-blue)] shadow-xs">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -108,14 +125,14 @@ export default function AdminFeedback(props: any) {
                     <p className="mt-2.5 text-2xl sm:text-3xl font-black font-mono tabular-nums tracking-tight text-[var(--text-primary)]">
                         {(feedbackStats?.total ?? feedbackTotal ?? 0).toLocaleString()}
                     </p>
-                    <p className="mt-1 text-[10px] sm:text-[11px] text-[var(--text-muted)]">User messages submitted</p>
+                    <p className="mt-1 text-[10px] sm:text-[11px] text-[var(--text-muted)]">All user messages</p>
                 </div>
 
                 {/* New / Action Required */}
                 <div className="dev-glass-card hover-lift rounded-2xl p-4 sm:p-5 relative overflow-hidden group">
                     <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-amber-500 to-amber-400 opacity-80 group-hover:opacity-100 transition-opacity" />
                     <div className="flex items-center justify-between text-amber-600 dark:text-amber-400">
-                        <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">New / Unread</span>
+                        <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">New</span>
                         <span className="rounded-xl bg-amber-500/15 p-2 text-amber-600 dark:text-amber-400 shadow-xs">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                 <circle cx="12" cy="12" r="10" />
@@ -138,6 +155,32 @@ export default function AdminFeedback(props: any) {
                     <p className="mt-1 text-[10px] sm:text-[11px] text-[var(--text-muted)]">Awaiting admin review</p>
                 </div>
 
+                {/* In Progress */}
+                <div className="dev-glass-card hover-lift rounded-2xl p-4 sm:p-5 relative overflow-hidden group">
+                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500 to-indigo-500 opacity-80 group-hover:opacity-100 transition-opacity" />
+                    <div className="flex items-center justify-between text-blue-600 dark:text-blue-400">
+                        <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">In Progress</span>
+                        <span className="rounded-xl bg-blue-500/15 p-2 text-blue-600 dark:text-blue-400 shadow-xs">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <circle cx="12" cy="12" r="10" />
+                                <polyline points="12 6 12 12 16 14" />
+                            </svg>
+                        </span>
+                    </div>
+                    <div className="mt-2.5 flex items-baseline gap-2">
+                        <p className="text-2xl sm:text-3xl font-black font-mono tabular-nums tracking-tight text-blue-600 dark:text-blue-400">
+                            {(feedbackStats?.inProgressCount ?? 0).toLocaleString()}
+                        </p>
+                        {(feedbackStats?.inProgressCount ?? 0) > 0 && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/20 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:text-blue-300">
+                                <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
+                                Active
+                            </span>
+                        )}
+                    </div>
+                    <p className="mt-1 text-[10px] sm:text-[11px] text-[var(--text-muted)]">Being investigated</p>
+                </div>
+
                 {/* Resolved */}
                 <div className="dev-glass-card hover-lift rounded-2xl p-4 sm:p-5 relative overflow-hidden group">
                     <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-emerald-500 to-teal-400 opacity-80 group-hover:opacity-100 transition-opacity" />
@@ -157,7 +200,7 @@ export default function AdminFeedback(props: any) {
                 </div>
 
                 {/* Today's Inquiries */}
-                <div className="dev-glass-card hover-lift rounded-2xl p-4 sm:p-5 relative overflow-hidden group">
+                <div className="dev-glass-card hover-lift rounded-2xl p-4 sm:p-5 relative overflow-hidden group col-span-2 sm:col-span-1">
                     <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-sky-400 to-blue-500 opacity-80 group-hover:opacity-100 transition-opacity" />
                     <div className="flex items-center justify-between text-[var(--text-muted)]">
                         <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Today</span>
@@ -243,21 +286,26 @@ export default function AdminFeedback(props: any) {
 
                     {/* Status Filter */}
                     <div className="inline-flex rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-1 text-xs font-semibold">
-                        {(['all', 'new', 'resolved'] as const).map((st) => (
+                        {([
+                            { id: 'all', label: 'All' },
+                            { id: 'new', label: 'New' },
+                            { id: 'in_progress', label: 'In Progress' },
+                            { id: 'resolved', label: 'Resolved' },
+                        ] as const).map(({ id, label }) => (
                             <button
-                                key={st}
+                                key={id}
                                 type="button"
                                 onClick={() => {
-                                    setFeedbackStatusFilter(st)
+                                    setFeedbackStatusFilter(id)
                                     setFeedbackPage(1)
                                 }}
-                                className={`rounded-lg px-2.5 py-1 text-[11px] sm:text-xs capitalize transition cursor-pointer ${
-                                    feedbackStatusFilter === st
+                                className={`rounded-lg px-2.5 py-1 text-[11px] sm:text-xs transition cursor-pointer ${
+                                    feedbackStatusFilter === id
                                         ? 'bg-[var(--surface-primary)] text-[var(--nepal-blue)] shadow-xs font-bold'
                                         : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
                                 }`}
                             >
-                                {st}
+                                {label}
                             </button>
                         ))}
                     </div>
@@ -303,6 +351,20 @@ export default function AdminFeedback(props: any) {
                         <span>{feedbackSelectMode ? 'Cancel' : 'Select'}</span>
                     </button>
 
+                    {/* Bulk In Progress Selected */}
+                    {feedbackSelectMode && selectedFeedbackIds.length > 0 && (
+                        <button
+                            type="button"
+                            onClick={() => handleBulkFeedbackStatus('in_progress')}
+                            disabled={feedbackLoading}
+                            className="inline-flex h-8.5 sm:h-9 items-center gap-1.5 rounded-xl border border-blue-500/40 bg-blue-600 px-2.5 sm:px-3 text-[11px] sm:text-xs font-bold text-white shadow-xs transition hover:bg-blue-700 active:scale-95 disabled:opacity-50 cursor-pointer"
+                            title="Mark selected feedback as in progress"
+                        >
+                            <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                            <span>In Progress ({selectedFeedbackIds.length})</span>
+                        </button>
+                    )}
+
                     {/* Bulk Resolve Selected */}
                     {feedbackSelectMode && selectedFeedbackIds.length > 0 && (
                         <button
@@ -316,6 +378,19 @@ export default function AdminFeedback(props: any) {
                                 <polyline points="20 6 9 17 4 12" />
                             </svg>
                             <span>Resolve ({selectedFeedbackIds.length})</span>
+                        </button>
+                    )}
+
+                    {/* Bulk Reopen as New */}
+                    {feedbackSelectMode && selectedFeedbackIds.length > 0 && (
+                        <button
+                            type="button"
+                            onClick={() => handleBulkFeedbackStatus('new')}
+                            disabled={feedbackLoading}
+                            className="inline-flex h-8.5 sm:h-9 items-center gap-1.5 rounded-xl border border-amber-500/40 bg-amber-500 px-2.5 sm:px-3 text-[11px] sm:text-xs font-bold text-white shadow-xs transition hover:bg-amber-600 active:scale-95 disabled:opacity-50 cursor-pointer"
+                            title="Reopen selected feedback as new"
+                        >
+                            <span>Reopen ({selectedFeedbackIds.length})</span>
                         </button>
                     )}
 
@@ -449,8 +524,8 @@ export default function AdminFeedback(props: any) {
                                             key={item.id}
                                             className={`p-4 transition-colors duration-150 space-y-3 ${isSelected ? 'bg-[var(--nepal-blue-soft)]/20' : 'hover:bg-[var(--bg-secondary)]/30'}`}
                                         >
-                                            {/* Top Row: Select/SN + Status + Category + Time */}
-                                            <div className="flex items-center justify-between gap-2">
+                                            {/* Top Row: Select/SN + Tracking Ref + Status + Category + Time */}
+                                            <div className="flex items-center justify-between gap-2 flex-wrap">
                                                 <div className="flex flex-wrap items-center gap-1.5 min-w-0">
                                                     {feedbackSelectMode && (
                                                         <input
@@ -469,29 +544,84 @@ export default function AdminFeedback(props: any) {
                                                     <span className="rounded-lg bg-[var(--bg-secondary)] px-2 py-0.5 font-mono text-[11px] font-bold text-[var(--text-muted)]">
                                                         #{sn}
                                                     </span>
+
+                                                    {/* Tracking Ref Badge */}
+                                                    <div className="inline-flex items-center gap-1 rounded-md border border-[var(--border-default)]/80 bg-[var(--surface-primary)] px-2 py-0.5 font-mono text-[10.5px] font-bold text-[var(--nepal-blue)] shadow-2xs">
+                                                        <span>#{item.id}</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => copyToClipboard(item.id, `fb-ref-m-${item.id}`)}
+                                                            className="p-0.5 text-[var(--text-muted)] hover:text-[var(--nepal-blue)] transition cursor-pointer"
+                                                            title="Copy Reference ID"
+                                                        >
+                                                            {copiedKey === `fb-ref-m-${item.id}` ? (
+                                                                <span className="text-emerald-500 font-bold text-[10px]">✓</span>
+                                                            ) : (
+                                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                                                </svg>
+                                                            )}
+                                                        </button>
+                                                    </div>
+
+                                                    {/* Status Pill */}
                                                     {item.status === 'new' ? (
-                                                        <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-xs font-bold text-amber-600 dark:text-amber-400">
+                                                        <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10.5px] font-bold text-amber-600 dark:text-amber-400">
                                                             <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
                                                             <span>New</span>
                                                         </span>
+                                                    ) : item.status === 'in_progress' ? (
+                                                        <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 px-2 py-0.5 text-[10.5px] font-bold text-blue-600 dark:text-blue-400">
+                                                            <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
+                                                            <span>In Progress</span>
+                                                        </span>
                                                     ) : (
-                                                        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                                                        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10.5px] font-bold text-emerald-600 dark:text-emerald-400">
                                                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                                                 <polyline points="20 6 9 17 4 12" />
                                                             </svg>
                                                             <span>Resolved</span>
                                                         </span>
                                                     )}
-                                                    <span className={`inline-flex items-center rounded-lg border px-2 py-0.5 text-[10px] font-bold ${catInfo.cls}`}>
+
+                                                    {item.admin_notes && (
+                                                        <span className="inline-flex items-center gap-1 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-2 py-0.5 text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
+                                                            <span>💬 Replied</span>
+                                                        </span>
+                                                    )}
+
+                                                    <span
+                                                        className={`inline-flex items-center rounded-lg border px-2 py-0.5 text-[10px] font-bold ${catInfo.cls}`}
+                                                        title={catInfo.labelNe ? `${catInfo.label} (${catInfo.labelNe})` : catInfo.label}
+                                                    >
+                                                        {catInfo.isProblem ? '⚠️ ' : '💬 '}
                                                         {catInfo.label}
                                                     </span>
                                                 </div>
-                                                <span
-                                                    className="text-xs font-mono text-[var(--text-muted)] shrink-0"
-                                                    title={`${formatNepalDateTime(item.created_at, 'en', true)} (NPT, UTC+5:45)`}
-                                                >
-                                                    {formatTimeAgo(item.created_at)}
-                                                </span>
+
+                                                <div className="flex items-center gap-2 shrink-0">
+                                                    <a
+                                                        href={`/feedback?email=${encodeURIComponent(item.email)}&id=${encodeURIComponent(item.id)}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-1 text-[10.5px] font-semibold text-[var(--nepal-blue)] hover:underline"
+                                                        title="Track inquiry status online"
+                                                    >
+                                                        <span>Track</span>
+                                                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                                                            <polyline points="15 3 21 3 21 9" />
+                                                            <line x1="10" y1="14" x2="21" y2="3" />
+                                                        </svg>
+                                                    </a>
+                                                    <span
+                                                        className="text-xs font-mono text-[var(--text-muted)]"
+                                                        title={`${formatNepalDateTime(item.created_at, 'en', true)} (NPT, UTC+5:45)`}
+                                                    >
+                                                        {formatTimeAgo(item.created_at)}
+                                                    </span>
+                                                </div>
                                             </div>
 
                                             {/* Subject */}
@@ -499,18 +629,51 @@ export default function AdminFeedback(props: any) {
                                                 {item.subject}
                                             </h4>
 
-                                            {/* Submitter & License Row */}
+                                            {/* Submitter, License & IP Row */}
                                             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                                                 <span className="font-semibold text-[var(--text-primary)]">{item.name}</span>
-                                                <a
-                                                    href={`mailto:${item.email}?subject=${encodeURIComponent(`Re: [Support] ${item.subject}`)}`}
-                                                    className="font-mono text-xs text-[var(--nepal-blue)] hover:underline font-medium"
-                                                >
-                                                    {item.email}
-                                                </a>
+                                                <div className="flex items-center gap-1">
+                                                    <a
+                                                        href={`mailto:${item.email}?subject=${encodeURIComponent(`Re: [Support #${item.id}] ${item.subject}`)}`}
+                                                        className="font-mono text-xs text-[var(--nepal-blue)] hover:underline font-medium"
+                                                    >
+                                                        {item.email}
+                                                    </a>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => copyToClipboard(item.email, `fb-em-m-${item.id}`)}
+                                                        className="text-[10px] text-[var(--text-muted)] hover:text-[var(--nepal-blue)] transition cursor-pointer"
+                                                        title="Copy email"
+                                                    >
+                                                        {copiedKey === `fb-em-m-${item.id}` ? '✓' : (
+                                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                                            </svg>
+                                                        )}
+                                                    </button>
+                                                </div>
                                                 {item.license_number && (
-                                                    <span className="font-mono text-xs font-bold text-[var(--text-secondary)] bg-[var(--bg-secondary)] px-2 py-0.5 rounded-lg border border-[var(--border-default)]/70">
-                                                        Lic: {maskLicenseNumber(item.license_number, privacyMode)}
+                                                    <div className="flex items-center gap-1 font-mono text-xs font-bold text-[var(--text-secondary)] bg-[var(--bg-secondary)] px-2 py-0.5 rounded-lg border border-[var(--border-default)]/70">
+                                                        <span>Lic: {maskLicenseNumber(item.license_number, privacyMode)}</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => copyToClipboard(item.license_number!, `fb-lic-m-${item.id}`)}
+                                                            className="text-[10px] text-[var(--text-muted)] hover:text-[var(--nepal-blue)]"
+                                                            title="Copy license number"
+                                                        >
+                                                            {copiedKey === `fb-lic-m-${item.id}` ? '✓' : (
+                                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                                                </svg>
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                )}
+                                                {item.ip && (
+                                                    <span className="font-mono text-[10.5px] text-[var(--text-muted)]">
+                                                        IP: {maskIpAddress(item.ip, privacyMode)}
                                                     </span>
                                                 )}
                                             </div>
@@ -519,6 +682,28 @@ export default function AdminFeedback(props: any) {
                                             <p className="line-clamp-2 text-xs text-[var(--text-secondary)] leading-relaxed rounded-xl bg-[var(--bg-secondary)]/30 border border-[var(--border-default)]/40 p-2.5">
                                                 {item.message}
                                             </p>
+
+                                            {/* Admin Resolution Note (if present) */}
+                                            {item.admin_notes && (
+                                                <div className="rounded-xl bg-[var(--nepal-blue)]/5 border border-[var(--nepal-blue)]/20 p-2.5 text-xs">
+                                                    <span className="font-bold text-[var(--nepal-blue)] block text-[10.5px] uppercase tracking-wider mb-0.5">
+                                                        Official Admin Resolution:
+                                                    </span>
+                                                    <p className="italic text-[var(--text-secondary)] text-[11px] leading-relaxed">
+                                                        &quot;{item.admin_notes}&quot;
+                                                    </p>
+                                                </div>
+                                            )}
+
+                                            {/* Timeline Info */}
+                                            <div className="flex items-center justify-between text-[10px] text-[var(--text-muted)] font-mono pt-1">
+                                                <span>Received: {formatNepalDateTime(item.created_at)}</span>
+                                                {item.updated_at && item.updated_at > item.created_at + 1000 && (
+                                                    <span className="text-[var(--nepal-blue)] font-semibold">
+                                                        Updated {formatTimeAgo(item.updated_at)}
+                                                    </span>
+                                                )}
+                                            </div>
 
                                             {/* Card Footer: View Full Message + Action Buttons */}
                                             <div className="flex items-center justify-between gap-2 border-t border-[var(--border-default)]/40 pt-2.5">
@@ -534,18 +719,81 @@ export default function AdminFeedback(props: any) {
                                                     </svg>
                                                 </button>
 
-                                                <div className="flex items-center gap-1.5">
-                                                    {/* Status toggle button */}
+                                                <div className="flex flex-wrap items-center gap-1.5">
+                                                    {/* Quick status transitions */}
+                                                    {item.status === 'new' ? (
+                                                        <>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleSetFeedbackStatus(item.id, 'in_progress')}
+                                                                className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-blue-500/40 bg-blue-500/10 px-2.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white transition active:scale-95 cursor-pointer shadow-2xs"
+                                                                title="Set status to In Progress"
+                                                            >
+                                                                <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
+                                                                <span>In Progress</span>
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleSetFeedbackStatus(item.id, 'resolved')}
+                                                                className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-2.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-600 hover:text-white transition active:scale-95 cursor-pointer shadow-2xs"
+                                                                title="Mark as Resolved"
+                                                            >
+                                                                <span>Resolve</span>
+                                                            </button>
+                                                        </>
+                                                    ) : item.status === 'in_progress' ? (
+                                                        <>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleSetFeedbackStatus(item.id, 'resolved')}
+                                                                className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-2.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-600 hover:text-white transition active:scale-95 cursor-pointer shadow-2xs"
+                                                                title="Mark as Resolved"
+                                                            >
+                                                                <span>Resolve</span>
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleSetFeedbackStatus(item.id, 'new')}
+                                                                className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-2.5 text-xs font-bold text-amber-600 dark:text-amber-400 hover:bg-amber-500 hover:text-white transition active:scale-95 cursor-pointer shadow-2xs"
+                                                                title="Reopen as New"
+                                                            >
+                                                                <span>Reopen</span>
+                                                            </button>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleSetFeedbackStatus(item.id, 'in_progress')}
+                                                                className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-blue-500/40 bg-blue-500/10 px-2.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white transition active:scale-95 cursor-pointer shadow-2xs"
+                                                                title="Move back to In Progress"
+                                                            >
+                                                                <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                                                                <span>In Progress</span>
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleSetFeedbackStatus(item.id, 'new')}
+                                                                className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-2.5 text-xs font-bold text-amber-600 dark:text-amber-400 hover:bg-amber-500 hover:text-white transition active:scale-95 cursor-pointer shadow-2xs"
+                                                                title="Reopen as New"
+                                                            >
+                                                                <span>Reopen</span>
+                                                            </button>
+                                                        </>
+                                                    )}
+
+                                                    {/* Send tracking reference email */}
                                                     <button
                                                         type="button"
-                                                        onClick={() => handleToggleFeedbackStatus(item.id, item.status)}
-                                                        className={`inline-flex h-8 items-center gap-1.5 rounded-xl border px-2.5 text-xs font-bold transition active:scale-95 cursor-pointer shadow-2xs ${
-                                                            item.status === 'new'
-                                                                ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20'
-                                                                : 'border-amber-500/30 bg-amber-500/10 text-amber-600 hover:bg-amber-500/20'
-                                                        }`}
+                                                        onClick={() => handleSendTrackingEmail(item.id)}
+                                                        className="inline-flex h-8 items-center gap-1 rounded-xl border border-[var(--border-default)]/80 bg-[var(--surface-primary)] px-2.5 text-xs font-semibold text-[var(--text-secondary)] hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] transition active:scale-95 cursor-pointer shadow-2xs"
+                                                        title="Manually email tracking reference number & portal link to user"
                                                     >
-                                                        {item.status === 'new' ? 'Mark Resolved' : 'Reopen'}
+                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                            <rect x="2" y="4" width="20" height="16" rx="2" />
+                                                            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                                                        </svg>
+                                                        <span>Send Ref</span>
                                                     </button>
 
                                                     {/* Delete single button */}
@@ -592,28 +840,31 @@ export default function AdminFeedback(props: any) {
                                         />
                                     </th>
                                 )}
-                                <th scope="col" className="w-12 py-3.5 pl-3 pr-2 text-center">
+                                <th scope="col" className="w-10 py-3.5 pl-3 pr-2 text-center">
                                     SN
                                 </th>
-                                <th scope="col" className="py-3.5 pl-2 pr-4">
-                                    Status
+                                <th scope="col" className="px-3.5 py-3.5 whitespace-nowrap">
+                                    Tracking Ref
                                 </th>
-                                <th scope="col" className="px-4 py-3.5">
+                                <th scope="col" className="py-3.5 pl-2 pr-3 whitespace-nowrap">
+                                    Status &amp; Reply
+                                </th>
+                                <th scope="col" className="px-3.5 py-3.5">
                                     Submitter
                                 </th>
-                                <th scope="col" className="px-4 py-3.5">
-                                    Category & Subject
+                                <th scope="col" className="px-3.5 py-3.5">
+                                    Category &amp; Subject
                                 </th>
-                                <th scope="col" className="px-4 py-3.5">
+                                <th scope="col" className="px-3.5 py-3.5 whitespace-nowrap">
                                     License Number
                                 </th>
-                                <th scope="col" className="px-4 py-3.5">
-                                    Message Preview
+                                <th scope="col" className="px-3.5 py-3.5 min-w-[220px]">
+                                    Message &amp; Resolution Note
                                 </th>
-                                <th scope="col" className="px-4 py-3.5">
-                                    Received (NPT)
+                                <th scope="col" className="px-3.5 py-3.5 whitespace-nowrap">
+                                    Timeline (NPT)
                                 </th>
-                                <th scope="col" className="py-3.5 pl-3 pr-4 text-right">
+                                <th scope="col" className="py-3.5 pl-3 pr-4 text-right whitespace-nowrap">
                                     Actions
                                 </th>
                             </tr>
@@ -621,7 +872,7 @@ export default function AdminFeedback(props: any) {
                         <tbody className="divide-y divide-[var(--border-default)]/50">
                             {feedbackLoading ? (
                                 <tr>
-                                    <td colSpan={feedbackSelectMode ? 9 : 8} className="py-16 text-center text-xs text-[var(--text-muted)]">
+                                    <td colSpan={feedbackSelectMode ? 10 : 9} className="py-16 text-center text-xs text-[var(--text-muted)]">
                                         <div className="flex items-center justify-center gap-2.5">
                                             <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-[var(--nepal-blue)]/30 border-t-[var(--nepal-blue)]" />
                                             <span>Loading feedback records...</span>
@@ -630,7 +881,7 @@ export default function AdminFeedback(props: any) {
                                 </tr>
                             ) : feedbackLogs.length === 0 ? (
                                 <tr>
-                                    <td colSpan={feedbackSelectMode ? 9 : 8} className="py-16 px-4 text-center text-xs text-[var(--text-muted)]">
+                                    <td colSpan={feedbackSelectMode ? 10 : 9} className="py-16 px-4 text-center text-xs text-[var(--text-muted)]">
                                         <div className="flex flex-col items-center justify-center gap-3">
                                             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)] shadow-xs">
                                                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -678,42 +929,115 @@ export default function AdminFeedback(props: any) {
                                             )}
 
                                             {/* SN */}
-                                            <td className="w-12 whitespace-nowrap py-3.5 pl-3 pr-2 text-center font-mono text-[11px] font-semibold text-[var(--text-muted)]">
+                                            <td className="w-10 whitespace-nowrap py-3.5 pl-3 pr-2 text-center font-mono text-[11px] font-semibold text-[var(--text-muted)]">
                                                 #{sn}
                                             </td>
 
-                                            {/* Status */}
-                                            <td className="whitespace-nowrap py-3.5 pl-2 pr-4">
-                                                {item.status === 'new' ? (
-                                                    <span className="inline-flex min-w-[88px] items-center justify-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold leading-4 text-amber-600 dark:text-amber-400">
-                                                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-                                                        <span>New</span>
-                                                    </span>
-                                                ) : (
-                                                    <span className="inline-flex min-w-[88px] items-center justify-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold leading-4 text-emerald-600 dark:text-emerald-400">
-                                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                                            <polyline points="20 6 9 17 4 12" />
+                                            {/* Tracking Reference ID */}
+                                            <td className="whitespace-nowrap px-3.5 py-3.5 text-xs">
+                                                <div className="flex flex-col gap-1 items-start">
+                                                    <div className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-default)]/80 bg-[var(--surface-primary)] px-2 py-0.5 font-mono text-[11px] font-bold text-[var(--nepal-blue)] shadow-2xs group-hover:border-[var(--nepal-blue)]/50 transition">
+                                                        <span>#{item.id}</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => copyToClipboard(item.id, `fb-ref-${item.id}`)}
+                                                            className="inline-flex h-4 w-4 items-center justify-center text-[var(--text-muted)] hover:text-[var(--nepal-blue)] active:scale-90 transition cursor-pointer"
+                                                            title="Copy Tracking Reference ID"
+                                                        >
+                                                            {copiedKey === `fb-ref-${item.id}` ? (
+                                                                <span className="text-emerald-500 text-[10px] font-sans font-black">✓</span>
+                                                            ) : (
+                                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                                                </svg>
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                    <a
+                                                        href={`/feedback?email=${encodeURIComponent(item.email)}&id=${encodeURIComponent(item.id)}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--text-muted)] hover:text-[var(--nepal-blue)] hover:underline"
+                                                        title="Open live public tracking portal in new tab"
+                                                    >
+                                                        <span>Track Online</span>
+                                                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                                                            <polyline points="15 3 21 3 21 9" />
+                                                            <line x1="10" y1="14" x2="21" y2="3" />
                                                         </svg>
-                                                        <span>Resolved</span>
-                                                    </span>
-                                                )}
+                                                    </a>
+                                                </div>
+                                            </td>
+
+                                            {/* Status & Reply Indicator */}
+                                            <td className="whitespace-nowrap py-3.5 pl-2 pr-3">
+                                                <div className="flex flex-col items-start gap-1">
+                                                    <select
+                                                        value={item.status}
+                                                        onChange={(e) => handleSetFeedbackStatus(item.id, e.target.value as FeedbackStatus)}
+                                                        aria-label="Update inquiry status"
+                                                        className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10.5px] font-bold cursor-pointer transition focus:outline-none focus:ring-2 focus:ring-[var(--nepal-blue)]/30 ${
+                                                            item.status === 'new'
+                                                                ? 'border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                                                                : item.status === 'in_progress'
+                                                                ? 'border-blue-500/40 bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                                                                : 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                                                        }`}
+                                                    >
+                                                        <option value="new" className="bg-[var(--surface-primary)] text-amber-600 font-bold">🟡 Pending</option>
+                                                        <option value="in_progress" className="bg-[var(--surface-primary)] text-blue-600 font-bold">🔵 In Progress</option>
+                                                        <option value="resolved" className="bg-[var(--surface-primary)] text-emerald-600 font-bold">🟢 Resolved</option>
+                                                    </select>
+                                                    {item.admin_notes ? (
+                                                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 border border-blue-500/20 px-2 py-0.2 text-[9.5px] font-bold text-blue-600 dark:text-blue-400" title="Official admin reply sent">
+                                                            <span>💬 Replied</span>
+                                                        </span>
+                                                    ) : item.status === 'new' ? (
+                                                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.2 text-[9.5px] font-semibold text-amber-600 dark:text-amber-400" title="No reply sent yet">
+                                                            <span>⏳ Unanswered</span>
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 border border-blue-500/20 px-2 py-0.2 text-[9.5px] font-semibold text-blue-600 dark:text-blue-400" title="Under active review">
+                                                            <span>🔍 In Review</span>
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </td>
 
                                             {/* Submitter */}
-                                            <td className="whitespace-nowrap px-4 py-3.5 text-xs">
-                                                <div className="flex flex-col gap-0 leading-tight">
-                                                    <span className="text-[11.5px] font-semibold text-[var(--text-primary)]">
+                                            <td className="whitespace-nowrap px-3.5 py-3.5 text-xs">
+                                                <div className="flex flex-col gap-0.5 leading-tight">
+                                                    <span className="text-[11.5px] font-bold text-[var(--text-primary)]">
                                                         {item.name}
                                                     </span>
-                                                    <a
-                                                        href={`mailto:${item.email}?subject=${encodeURIComponent(`Re: [Support] ${item.subject}`)}`}
-                                                        className="font-mono text-[10.5px] font-medium text-[var(--text-muted)] hover:text-[var(--nepal-blue)] hover:underline"
-                                                        title="Send email reply"
-                                                    >
-                                                        {item.email}
-                                                    </a>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <a
+                                                            href={`mailto:${item.email}?subject=${encodeURIComponent(`Re: [Support #${item.id}] ${item.subject}`)}`}
+                                                            className="font-mono text-[10.5px] font-medium text-[var(--nepal-blue)] hover:underline truncate max-w-[150px]"
+                                                            title={`Send email to ${item.email}`}
+                                                        >
+                                                            {item.email}
+                                                        </a>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => copyToClipboard(item.email, `fb-em-${item.id}`)}
+                                                            className="text-[10px] text-[var(--text-muted)] hover:text-[var(--nepal-blue)] transition cursor-pointer"
+                                                            title="Copy email"
+                                                        >
+                                                            {copiedKey === `fb-em-${item.id}` ? (
+                                                                <span className="text-emerald-500 font-bold">✓</span>
+                                                            ) : (
+                                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                                                </svg>
+                                                            )}
+                                                        </button>
+                                                    </div>
                                                     {item.ip && (
-                                                        <span className="mt-0.5 font-mono text-[10px] text-[var(--text-muted)]/80">
+                                                        <span className="font-mono text-[9.5px] text-[var(--text-muted)]">
                                                             IP: {maskIpAddress(item.ip, privacyMode)}
                                                         </span>
                                                     )}
@@ -721,11 +1045,17 @@ export default function AdminFeedback(props: any) {
                                             </td>
 
                                             {/* Category & Subject */}
-                                            <td className="px-4 py-3.5 text-xs max-w-xs">
+                                            <td className="px-3.5 py-3.5 text-xs max-w-xs">
                                                 <div className="flex flex-col gap-1">
-                                                    <span className={`inline-flex w-fit items-center rounded-md border px-1.5 py-0.5 text-[9.5px] font-bold uppercase leading-4 tracking-wide ${catInfo.cls}`}>
-                                                        {catInfo.label}
-                                                    </span>
+                                                    <div className="flex items-center gap-1 flex-wrap">
+                                                        <span
+                                                            className={`inline-flex items-center rounded-md border px-1.5 py-0.5 text-[9.5px] font-bold uppercase leading-4 tracking-wide ${catInfo.cls}`}
+                                                            title={catInfo.labelNe ? `${catInfo.label} (${catInfo.labelNe})` : catInfo.label}
+                                                        >
+                                                            {catInfo.isProblem ? '⚠️ ' : '💬 '}
+                                                            {catInfo.label}
+                                                        </span>
+                                                    </div>
                                                     <span className="truncate text-[11.5px] font-semibold text-[var(--text-primary)]" title={item.subject}>
                                                         {item.subject}
                                                     </span>
@@ -733,49 +1063,53 @@ export default function AdminFeedback(props: any) {
                                             </td>
 
                                             {/* License Number */}
-                                            <td className="whitespace-nowrap px-4 py-3.5 text-xs">
+                                            <td className="whitespace-nowrap px-3.5 py-3.5 text-xs">
                                                 {item.license_number ? (
                                                     <div className="flex items-center gap-1">
                                                         <span className="rounded-md border border-[var(--border-default)]/80 bg-[var(--bg-secondary)]/60 px-2 py-0.5 font-mono text-[11.5px] font-bold leading-4 text-[var(--text-primary)]">
                                                             {maskLicenseNumber(item.license_number, privacyMode)}
                                                         </span>
-                                                        {!privacyMode && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => copyToClipboard(item.license_number!, `fb-lic-${item.id}`)}
-                                                                className="inline-flex h-5 w-5 items-center justify-center rounded-md text-[var(--text-muted)] transition-all duration-150 hover:bg-[var(--bg-secondary)] hover:text-[var(--nepal-blue)] active:scale-90 cursor-pointer"
-                                                                title="Copy license number"
-                                                            >
-                                                                {copiedKey === `fb-lic-${item.id}` ? (
-                                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500" aria-hidden="true">
-                                                                        <polyline points="20 6 9 17 4 12" />
-                                                                    </svg>
-                                                                ) : (
-                                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                                                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                                                                    </svg>
-                                                                )}
-                                                            </button>
-                                                        )}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => copyToClipboard(item.license_number!, `fb-lic-${item.id}`)}
+                                                            className="inline-flex h-5 w-5 items-center justify-center rounded-md text-[var(--text-muted)] transition-all duration-150 hover:bg-[var(--bg-secondary)] hover:text-[var(--nepal-blue)] active:scale-90 cursor-pointer"
+                                                            title="Copy license number"
+                                                        >
+                                                            {copiedKey === `fb-lic-${item.id}` ? (
+                                                                <span className="text-emerald-500 text-[10px] font-bold">✓</span>
+                                                            ) : (
+                                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                                                </svg>
+                                                            )}
+                                                        </button>
                                                     </div>
                                                 ) : (
-                                                    <span className="text-[11px] text-[var(--text-muted)] italic">—</span>
+                                                    <span className="text-[11px] text-[var(--text-muted)] italic">Not provided</span>
                                                 )}
                                             </td>
 
-                                            {/* Message Preview */}
-                                            <td className="px-4 py-3.5 text-xs max-w-sm">
-                                                <div className="flex flex-col gap-0.5">
+                                            {/* Message & Resolution Note */}
+                                            <td className="px-3.5 py-3.5 text-xs max-w-sm">
+                                                <div className="flex flex-col gap-1">
                                                     <p className="line-clamp-2 text-[11px] leading-snug text-[var(--text-secondary)]">
                                                         {item.message}
                                                     </p>
+                                                    {item.admin_notes && (
+                                                        <div className="flex items-start gap-1 rounded-md bg-[var(--nepal-blue)]/5 border border-[var(--nepal-blue)]/15 px-2 py-1 text-[10px] leading-tight">
+                                                            <span className="font-bold text-[var(--nepal-blue)] shrink-0">Admin:</span>
+                                                            <span className="text-[var(--text-secondary)] line-clamp-1 italic font-sans" title={item.admin_notes}>
+                                                                &quot;{item.admin_notes}&quot;
+                                                            </span>
+                                                        </div>
+                                                    )}
                                                     <button
                                                         type="button"
                                                         onClick={() => setSelectedFeedbackMessage(item)}
                                                         className="w-fit inline-flex items-center gap-1 text-[10.5px] font-bold text-[var(--nepal-blue)] hover:underline cursor-pointer"
                                                     >
-                                                        <span>View Full Message</span>
+                                                        <span>View Details / Reply</span>
                                                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                                             <line x1="5" y1="12" x2="19" y2="12" />
                                                             <polyline points="12 5 19 12 12 19" />
@@ -784,8 +1118,8 @@ export default function AdminFeedback(props: any) {
                                                 </div>
                                             </td>
 
-                                            {/* Received */}
-                                            <td className="whitespace-nowrap px-4 py-3.5 text-xs" title={`${formatNepalDateTime(item.created_at, 'en', true)} (NPT, UTC+5:45)`}>
+                                            {/* Received / Updated Timeline */}
+                                            <td className="whitespace-nowrap px-3.5 py-3.5 text-xs" title={`${formatNepalDateTime(item.created_at, 'en', true)} (NPT, UTC+5:45)`}>
                                                 <div className="flex flex-col gap-0 font-mono leading-tight">
                                                     <span className="text-[10.5px] font-semibold text-[var(--text-primary)]">
                                                         {formatNepalDateTime(item.created_at)}
@@ -793,33 +1127,110 @@ export default function AdminFeedback(props: any) {
                                                     <span className="font-sans text-[10px] text-[var(--text-muted)]">
                                                         {formatTimeAgo(item.created_at)}
                                                     </span>
+                                                    {item.updated_at && item.updated_at > item.created_at + 1000 && (
+                                                        <span className="font-sans text-[9px] font-semibold text-[var(--nepal-blue)] mt-0.5">
+                                                            Updated {formatTimeAgo(item.updated_at)}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </td>
 
                                             {/* Actions */}
                                             <td className="whitespace-nowrap py-3.5 pl-3 pr-4 text-right">
-                                                <div className="inline-flex items-center gap-1">
+                                                <div className="inline-flex items-center gap-1.5 justify-end">
+                                                    {item.status === 'new' && (
+                                                        <>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleSetFeedbackStatus(item.id, 'in_progress')}
+                                                                className="inline-flex h-7 items-center gap-1 rounded-lg border border-blue-500/40 bg-blue-500/10 px-2 text-[10.5px] font-bold text-blue-600 dark:text-blue-400 transition-all duration-150 hover:-translate-y-px hover:bg-blue-600 hover:text-white active:scale-95 cursor-pointer shadow-2xs"
+                                                                title="Mark In Progress"
+                                                            >
+                                                                <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
+                                                                <span>In Progress</span>
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleSetFeedbackStatus(item.id, 'resolved')}
+                                                                className="inline-flex h-7 items-center gap-1 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-2 text-[10.5px] font-bold text-emerald-600 dark:text-emerald-400 transition-all duration-150 hover:-translate-y-px hover:bg-emerald-600 hover:text-white active:scale-95 cursor-pointer shadow-2xs"
+                                                                title="Mark Resolved"
+                                                            >
+                                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                                    <polyline points="20 6 9 17 4 12" />
+                                                                </svg>
+                                                                <span>Resolve</span>
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                    {item.status === 'in_progress' && (
+                                                        <>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleSetFeedbackStatus(item.id, 'resolved')}
+                                                                className="inline-flex h-7 items-center gap-1 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-2 text-[10.5px] font-bold text-emerald-600 dark:text-emerald-400 transition-all duration-150 hover:-translate-y-px hover:bg-emerald-600 hover:text-white active:scale-95 cursor-pointer shadow-2xs"
+                                                                title="Mark Resolved"
+                                                            >
+                                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                                    <polyline points="20 6 9 17 4 12" />
+                                                                </svg>
+                                                                <span>Resolve</span>
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleSetFeedbackStatus(item.id, 'new')}
+                                                                className="inline-flex h-7 items-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2 text-[10.5px] font-bold text-amber-600 dark:text-amber-400 transition-all duration-150 hover:-translate-y-px hover:bg-amber-500 hover:text-white active:scale-95 cursor-pointer shadow-2xs"
+                                                                title="Reopen as Pending"
+                                                            >
+                                                                <span>↺ Pending</span>
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                    {item.status === 'resolved' && (
+                                                        <>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleSetFeedbackStatus(item.id, 'in_progress')}
+                                                                className="inline-flex h-7 items-center gap-1 rounded-lg border border-blue-500/40 bg-blue-500/10 px-2 text-[10.5px] font-bold text-blue-600 dark:text-blue-400 transition-all duration-150 hover:-translate-y-px hover:bg-blue-600 hover:text-white active:scale-95 cursor-pointer shadow-2xs"
+                                                                title="Move back to In Progress"
+                                                            >
+                                                                <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                                                                <span>In Progress</span>
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleSetFeedbackStatus(item.id, 'new')}
+                                                                className="inline-flex h-7 items-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2 text-[10.5px] font-bold text-amber-600 dark:text-amber-400 transition-all duration-150 hover:-translate-y-px hover:bg-amber-500 hover:text-white active:scale-95 cursor-pointer shadow-2xs"
+                                                                title="Reopen as Pending"
+                                                            >
+                                                                <span>↺ Reopen</span>
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                    {/* Send tracking reference email */}
                                                     <button
                                                         type="button"
-                                                        onClick={() => handleToggleFeedbackStatus(item.id, item.status)}
-                                                        className={`inline-flex h-7 w-7 items-center justify-center rounded-lg border transition-all duration-150 hover:-translate-y-px active:scale-95 cursor-pointer shadow-2xs ${
-                                                            item.status === 'new'
-                                                                ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-600 hover:text-white'
-                                                                : 'border-amber-500/30 bg-amber-500/10 text-amber-600 hover:bg-amber-500 hover:text-white'
-                                                        }`}
-                                                        title={item.status === 'new' ? 'Mark as Resolved' : 'Re-open as New'}
+                                                        onClick={() => handleSendTrackingEmail(item.id)}
+                                                        className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--border-default)]/80 bg-[var(--surface-primary)] text-[var(--text-muted)] transition-all duration-150 hover:-translate-y-px hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue-soft)] hover:text-[var(--nepal-blue)] active:scale-95 cursor-pointer shadow-2xs"
+                                                        title="Email tracking reference number & portal link to user"
                                                     >
-                                                        {item.status === 'new' ? (
-                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                                                <polyline points="20 6 9 17 4 12" />
-                                                            </svg>
-                                                        ) : (
-                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                                                <path d="M1 4v6h6" />
-                                                                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-                                                            </svg>
-                                                        )}
+                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                            <rect x="2" y="4" width="20" height="16" rx="2" />
+                                                            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                                                        </svg>
                                                     </button>
+                                                    {/* View Details / Open modal */}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setSelectedFeedbackMessage(item)}
+                                                        className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--border-default)]/80 bg-[var(--surface-primary)] text-[var(--text-muted)] transition-all duration-150 hover:-translate-y-px hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue-soft)] hover:text-[var(--nepal-blue)] active:scale-95 cursor-pointer shadow-2xs"
+                                                        title="View full inquiry details and reply"
+                                                    >
+                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                                            <circle cx="12" cy="12" r="3" />
+                                                        </svg>
+                                                    </button>
+                                                    {/* Delete single button */}
                                                     <button
                                                         type="button"
                                                         onClick={() => handleDeleteFeedback(item.id, item.subject)}

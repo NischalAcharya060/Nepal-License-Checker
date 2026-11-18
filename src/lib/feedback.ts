@@ -21,6 +21,8 @@ export const FEEDBACK_CATEGORIES: FeedbackCategoryItem[] = [
 
 export type FeedbackCategory = string
 
+export type FeedbackStatus = 'new' | 'in_progress' | 'resolved'
+
 export interface FeedbackItem {
     id: string
     name: string
@@ -29,7 +31,7 @@ export interface FeedbackItem {
     category: string
     subject: string
     message: string
-    status: 'new' | 'resolved'
+    status: FeedbackStatus
     admin_notes?: string | null
     ip?: string | null
     created_at: number
@@ -39,6 +41,7 @@ export interface FeedbackItem {
 export interface FeedbackStats {
     total: number
     newCount: number
+    inProgressCount: number
     resolvedCount: number
     problemCount: number
     suggestionCount: number
@@ -146,6 +149,7 @@ export async function getFeedbackStats(): Promise<FeedbackStats> {
 
     let total = 0
     let newCount = 0
+    let inProgressCount = 0
     let resolvedCount = 0
     let problemCount = 0
     let suggestionCount = 0
@@ -159,6 +163,7 @@ export async function getFeedbackStats(): Promise<FeedbackStats> {
 
         total += count
         if (status === 'new') newCount += count
+        else if (status === 'in_progress') inProgressCount += count
         else if (status === 'resolved') resolvedCount += count
 
         if (problemIds.has(category as FeedbackCategory) || category.startsWith('problem')) {
@@ -179,6 +184,7 @@ export async function getFeedbackStats(): Promise<FeedbackStats> {
     return {
         total,
         newCount,
+        inProgressCount,
         resolvedCount,
         problemCount,
         suggestionCount,
@@ -247,7 +253,7 @@ export async function getFeedbackLogs(params?: {
         category: String(row.category),
         subject: String(row.subject),
         message: String(row.message),
-        status: (String(row.status) as 'new' | 'resolved') || 'new',
+        status: (String(row.status) as FeedbackStatus) || 'new',
         admin_notes: row.admin_notes ? String(row.admin_notes) : null,
         ip: row.ip ? String(row.ip) : null,
         created_at: Number(row.created_at),
@@ -263,10 +269,76 @@ export async function getFeedbackLogs(params?: {
     }
 }
 
+export async function getFeedbackById(id: string): Promise<FeedbackItem | null> {
+    await ensureFeedbackTable()
+    const db = getTurso()
+
+    const cleanId = id.trim().replace(/^#/, '')
+    if (!cleanId) return null
+
+    const res = await db.execute({
+        sql: `SELECT id, name, email, license_number, category, subject, message, status, admin_notes, ip, created_at, updated_at
+              FROM user_feedbacks
+              WHERE id = ?
+              LIMIT 1`,
+        args: [cleanId],
+    })
+
+    if (!res.rows || res.rows.length === 0) return null
+    const row = res.rows[0]
+
+    return {
+        id: String(row.id),
+        name: String(row.name),
+        email: String(row.email),
+        license_number: row.license_number ? String(row.license_number) : null,
+        category: String(row.category),
+        subject: String(row.subject),
+        message: String(row.message),
+        status: (String(row.status) as FeedbackStatus) || 'new',
+        admin_notes: row.admin_notes ? String(row.admin_notes) : null,
+        ip: row.ip ? String(row.ip) : null,
+        created_at: Number(row.created_at),
+        updated_at: Number(row.updated_at),
+    }
+}
+
+export async function getFeedbackByEmail(email: string): Promise<FeedbackItem[]> {
+    await ensureFeedbackTable()
+    const db = getTurso()
+
+    const cleanEmail = email.trim().toLowerCase()
+    if (!cleanEmail) return []
+
+    const res = await db.execute({
+        sql: `SELECT id, name, email, license_number, category, subject, message, status, admin_notes, ip, created_at, updated_at
+              FROM user_feedbacks
+              WHERE LOWER(email) = LOWER(?)
+              ORDER BY created_at DESC
+              LIMIT 50`,
+        args: [cleanEmail],
+    })
+
+    return (res.rows || []).map((row) => ({
+        id: String(row.id),
+        name: String(row.name),
+        email: String(row.email),
+        license_number: row.license_number ? String(row.license_number) : null,
+        category: String(row.category),
+        subject: String(row.subject),
+        message: String(row.message),
+        status: (String(row.status) as FeedbackStatus) || 'new',
+        admin_notes: row.admin_notes ? String(row.admin_notes) : null,
+        ip: row.ip ? String(row.ip) : null,
+        created_at: Number(row.created_at),
+        updated_at: Number(row.updated_at),
+    }))
+}
+
 export async function updateFeedbackStatus(
     id: string,
-    status: 'new' | 'resolved',
-    adminNotes?: string
+    status: FeedbackStatus,
+    adminNotes?: string | null
 ): Promise<boolean> {
     await ensureFeedbackTable()
     const db = getTurso()
@@ -274,9 +346,9 @@ export async function updateFeedbackStatus(
     const now = Date.now()
     const res = await db.execute({
         sql: `UPDATE user_feedbacks 
-              SET status = ?, admin_notes = COALESCE(?, admin_notes), updated_at = ? 
+              SET status = ?, admin_notes = CASE WHEN ? IS NOT NULL THEN ? ELSE admin_notes END, updated_at = ? 
               WHERE id = ?`,
-        args: [status, adminNotes || null, now, id],
+        args: [status, adminNotes !== undefined ? adminNotes : null, adminNotes !== undefined ? adminNotes : null, now, id],
     })
 
     return res.rowsAffected > 0

@@ -147,6 +147,8 @@ export interface NotificationStatsData {
     deliveryRate: number
 }
 
+export type FeedbackStatus = 'new' | 'in_progress' | 'resolved'
+
 export interface FeedbackLog {
     id: string
     name: string
@@ -155,7 +157,7 @@ export interface FeedbackLog {
     category: string
     subject: string
     message: string
-    status: 'new' | 'resolved'
+    status: FeedbackStatus
     admin_notes?: string | null
     ip?: string | null
     created_at: number
@@ -165,6 +167,7 @@ export interface FeedbackLog {
 export interface FeedbackStatsData {
     total: number
     newCount: number
+    inProgressCount?: number
     resolvedCount: number
     todayCount: number
 }
