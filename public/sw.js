@@ -9,7 +9,7 @@
  *  - never cached     : non-GET requests, cross-origin requests, video/audio
  */
 
-const VERSION = 'v6'
+const VERSION = 'v7'
 const PRECACHE = `nlc-precache-${VERSION}`
 const PAGES = `nlc-pages-${VERSION}`
 const ASSETS = `nlc-assets-${VERSION}`
@@ -38,6 +38,8 @@ const PRECACHE_URLS = [
   '/maskable-icon-dark-512x512.png',
   '/maskable-icon.svg',
   '/apple-touch-icon.png',
+  '/wallet/Esewa_QR.jpg',
+  '/wallet/Khaliti_QR.png',
   '/',
 ]
 

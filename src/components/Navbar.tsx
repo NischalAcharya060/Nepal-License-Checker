@@ -23,6 +23,7 @@ interface NavbarProps {
   onOpenSample: () => void
   onOpenFeedback?: () => void
   onOpenNpm?: () => void
+  onOpenSponsor?: () => void
 }
 
 export default function Navbar({
@@ -37,6 +38,7 @@ export default function Navbar({
   onOpenSample,
   onOpenFeedback,
   onOpenNpm,
+  onOpenSponsor,
 }: NavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   type FontSize = 'normal' | 'lg' | 'xl'
@@ -178,6 +180,21 @@ export default function Navbar({
             >
               <SdkCodeIcon className="h-3.5 w-3.5 text-[var(--nepal-blue)] transition-transform group-hover:scale-110" />
               <span>{language === 'ne' ? 'SDK प्याकेजहरू' : 'SDKs & API'}</span>
+            </button>
+          )}
+
+          {/* Sponsor / Support Button (Desktop) */}
+          {onOpenSponsor && (
+            <button
+              type="button"
+              onClick={onOpenSponsor}
+              className="hidden items-center gap-1.5 rounded-full border border-rose-500/30 bg-rose-500/10 px-3 py-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 transition hover:bg-rose-500/20 active:scale-95 sm:inline-flex cursor-pointer group shadow-2xs"
+              title={language === 'ne' ? 'परियोजनालाई सहयोग गर्नुहोस्' : 'Support / Sponsor Project'}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" className="text-rose-500 transition-transform group-hover:scale-110">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+              </svg>
+              <span>{language === 'ne' ? 'सहयोग' : 'Sponsor'}</span>
             </button>
           )}
 
@@ -539,6 +556,37 @@ export default function Navbar({
                   </div>
                 </div>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-muted)]">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+            )}
+
+            {/* Sponsor / Support (Mobile) */}
+            {onOpenSponsor && (
+              <button
+                type="button"
+                onClick={() => {
+                  onOpenSponsor()
+                  setIsMobileMenuOpen(false)
+                }}
+                className="flex items-center justify-between rounded-xl border border-rose-500/30 bg-rose-500/5 px-3.5 py-2.5 text-left transition hover:border-rose-500 hover:bg-rose-500/10 active:scale-[0.99]"
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500/15 text-rose-500">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                    </svg>
+                  </span>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-[var(--text-primary)]">
+                      {language === 'ne' ? 'परियोजनालाई सहयोग (Sponsor)' : 'Support this Project'}
+                    </span>
+                    <span className="text-[10px] text-[var(--text-secondary)]">
+                      {language === 'ne' ? 'eSewa वा Khalti मार्फत स्वेच्छिक सहयोग' : 'Voluntary donation via eSewa or Khalti'}
+                    </span>
+                  </div>
+                </div>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-rose-500">
                   <polyline points="9 18 15 12 9 6" />
                 </svg>
               </button>

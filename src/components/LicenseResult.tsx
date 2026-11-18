@@ -22,6 +22,7 @@ interface LicenseResultProps {
   notificationsCopy?: NotificationCopy
   onFoundExisting?: (license: LicenseData) => void
   onOpenFeedback?: () => void
+  onOpenSponsor?: () => void
 }
 
 function Field({
@@ -62,6 +63,7 @@ export default function LicenseResult({
   notificationsCopy,
   onFoundExisting,
   onOpenFeedback,
+  onOpenSponsor,
 }: LicenseResultProps) {
   const [copied, setCopied] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
@@ -685,6 +687,41 @@ export default function LicenseResult({
                 <span>{copy.checkAnotherLabel}</span>
               </button>
             </div>
+
+            {/* Optional Community Support / Sponsor Card */}
+            {onOpenSponsor && (
+              <div className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left transition-all">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-rose-500/15 text-rose-500">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                    </svg>
+                  </span>
+                  <div>
+                    <p className="text-xs font-bold text-[var(--text-primary)]">
+                      {language === 'ne'
+                        ? 'यो निःशुल्क सेवाले तपाईंको समय बचायो?'
+                        : 'Did this free civic service save your time?'}
+                    </p>
+                    <p className="text-[11px] text-[var(--text-secondary)]">
+                      {language === 'ne'
+                        ? 'सर्भर तथा डेटाबेस सञ्चालन खर्च धान्न स्वेच्छिक सहयोग गर्न सक्नुहुन्छ।'
+                        : 'Consider supporting this open-source tool via eSewa or Khalti.'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={onOpenSponsor}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white px-3.5 py-1.5 text-xs font-bold transition active:scale-95 shadow-xs cursor-pointer shrink-0"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                  </svg>
+                  <span>{language === 'ne' ? 'सहयोग गर्नुहोस्' : 'Sponsor Project'}</span>
+                </button>
+              </div>
+            )}
 
             {/* Quick non-official advisory */}
             <p className="pt-2 text-center text-xs text-[var(--text-muted)] font-medium flex items-center justify-center gap-1.5 flex-wrap">

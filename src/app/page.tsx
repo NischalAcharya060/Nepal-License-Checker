@@ -20,6 +20,7 @@ import ScrollProgressButton from '@/components/ScrollProgressButton'
 import OfflineBanner from '@/components/OfflineBanner'
 import PwaInstallPopup from '@/components/PwaInstallPopup'
 import NpmModal from '@/components/NpmModal'
+import SponsorModal from '@/components/SponsorModal'
 import { translations } from '@/lib/i18n'
 import type { Language } from '@/lib/i18n'
 
@@ -88,6 +89,10 @@ export default function Home() {
   const [isTestimonialModalOpen, setIsTestimonialModalOpen] = useState(() => readViewParam() === 'testimonial')
   const [testimonialRefreshKey, setTestimonialRefreshKey] = useState(0)
   const [isNpmModalOpen, setIsNpmModalOpen] = useState(() => readViewParam() === 'npm')
+  const [isSponsorModalOpen, setIsSponsorModalOpen] = useState(() => {
+    const v = readViewParam()
+    return v === 'sponsor' || v === 'support' || v === 'donate'
+  })
   const [language, setLanguage] = useState<Language>(() => {
     if (typeof window === 'undefined') return 'en'
     try {
@@ -409,6 +414,7 @@ export default function Home() {
         onOpenSample={() => setIsSampleModalOpen(true)}
         onOpenFeedback={() => setIsFeedbackModalOpen(true)}
         onOpenNpm={() => setIsNpmModalOpen(true)}
+        onOpenSponsor={() => setIsSponsorModalOpen(true)}
       />
 
       <div className="relative z-10 mx-auto w-full max-w-7xl lg:max-w-[1440px] px-4 pb-16 pt-6 sm:px-6 lg:px-8 sm:pt-10 print:p-0 print:m-0 print:max-w-none">
@@ -502,6 +508,7 @@ export default function Home() {
                   setSearchState('found')
                 }}
                 onOpenFeedback={() => setIsFeedbackModalOpen(true)}
+                onOpenSponsor={() => setIsSponsorModalOpen(true)}
               />
             </div>
           )}
@@ -552,6 +559,7 @@ export default function Home() {
         onReset={reset}
         onOpenFeedback={() => setIsFeedbackModalOpen(true)}
         onOpenNpm={() => setIsNpmModalOpen(true)}
+        onOpenSponsor={() => setIsSponsorModalOpen(true)}
       />
 
       {/* Floating Dynamic Scroll Progress & Back-to-Top Button */}
@@ -601,6 +609,13 @@ export default function Home() {
       <NpmModal
         isOpen={isNpmModalOpen}
         onClose={() => setIsNpmModalOpen(false)}
+        language={language}
+      />
+
+      {/* Voluntary Community Sponsorship Modal */}
+      <SponsorModal
+        isOpen={isSponsorModalOpen}
+        onClose={() => setIsSponsorModalOpen(false)}
         language={language}
       />
 

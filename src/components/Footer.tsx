@@ -22,6 +22,7 @@ interface FooterProps {
   onReset?: () => void
   onOpenFeedback?: () => void
   onOpenNpm?: () => void
+  onOpenSponsor?: () => void
 }
 
 export default function Footer({
@@ -39,6 +40,7 @@ export default function Footer({
   onReset,
   onOpenFeedback,
   onOpenNpm,
+  onOpenSponsor,
 }: FooterProps) {
   const [isDocsModalOpen, setIsDocsModalOpen] = useState(false)
   const [isCategoriesModalOpen, setIsCategoriesModalOpen] = useState(false)
@@ -206,6 +208,20 @@ export default function Footer({
               <span>{isNe ? 'गिटहब रिपो' : 'Star on GitHub'}</span>
             </a>
 
+            {onOpenSponsor && (
+              <button
+                type="button"
+                onClick={onOpenSponsor}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 px-3 py-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 transition active:scale-95 shadow-2xs cursor-pointer group"
+                title={isNe ? 'परियोजनालाई सहयोग गर्नुहोस् (eSewa / Khalti)' : 'Support this Project via eSewa or Khalti'}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-rose-500 transition-transform group-hover:scale-125">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+                <span>{isNe ? 'सहयोग (Sponsor)' : 'Sponsor Project'}</span>
+              </button>
+            )}
+
             {onOpenFeedback ? (
               <button
                 type="button"
@@ -337,6 +353,20 @@ export default function Footer({
                   <span>{isNe ? 'सवारी साधनका वर्गहरू (A, B, C...)' : 'Vehicle Categories Breakdown'}</span>
                 </button>
               </li>
+              {onOpenSponsor && (
+                <li>
+                  <button
+                    type="button"
+                    onClick={onOpenSponsor}
+                    className="group flex items-center gap-2 text-left font-medium text-rose-600 dark:text-rose-400 hover:underline transition cursor-pointer w-full"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" className="text-rose-500 shrink-0 transition-transform group-hover:scale-125">
+                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                    </svg>
+                    <span>{isNe ? 'परियोजनालाई सहयोग (eSewa / Khalti)' : 'Support Portal (eSewa / Khalti)'}</span>
+                  </button>
+                </li>
+              )}
             </ul>
           </div>
 
