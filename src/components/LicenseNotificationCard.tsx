@@ -1,10 +1,38 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import toast from 'react-hot-toast'
 import { formatNepalDateTime, formatTimeUntil } from '@/lib/cronHelper'
 import type { NotificationCopy } from '@/lib/i18n'
 import type { LicenseData } from '@/app/page'
+
+const DOMAIN_TYPOS: Record<string, string> = {
+  'gamil.com': 'gmail.com',
+  'gmial.com': 'gmail.com',
+  'gmaill.com': 'gmail.com',
+  'gmai.com': 'gmail.com',
+  'gamil.co': 'gmail.com',
+  'gmail.co': 'gmail.com',
+  'yaho.com': 'yahoo.com',
+  'yahooo.com': 'yahoo.com',
+  'yhoo.com': 'yahoo.com',
+  'hotmial.com': 'hotmail.com',
+  'hotmai.com': 'hotmail.com',
+  'outlok.com': 'outlook.com',
+  'outloo.com': 'outlook.com',
+  'iclod.com': 'icloud.com',
+}
+
+function checkDomainTypo(inputEmail: string): string | null {
+  const parts = inputEmail.split('@')
+  if (parts.length !== 2) return null
+  const [user, domain] = parts
+  const lowerDomain = domain.toLowerCase()
+  if (DOMAIN_TYPOS[lowerDomain]) {
+    return `${user}@${DOMAIN_TYPOS[lowerDomain]}`
+  }
+  return null
+}
 
 interface LicenseNotificationCardProps {
   licenseNumber: string
@@ -22,12 +50,16 @@ export default function LicenseNotificationCard({
   onFoundExisting,
 }: LicenseNotificationCardProps) {
   const [email, setEmail] = useState('')
+  const [isConfirming, setIsConfirming] = useState(false)
+  const [suggestedFix, setSuggestedFix] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [subscribedEmail, setSubscribedEmail] = useState('')
   const [unsubscribeToken, setUnsubscribeToken] = useState<string | null>(null)
   const [isCancelling, setIsCancelling] = useState(false)
   const [isCancelled, setIsCancelled] = useState(false)
+
+  const inputRef = useRef<HTMLInputElement>(null)
 
   // Format next sync date and relative time
   const formattedNextRun = nextScraperRun
@@ -37,13 +69,46 @@ export default function LicenseNotificationCard({
     ? formatTimeUntil(nextScraperRun, language)
     : ''
 
-  const handleSubscribe = async (e: React.FormEvent) => {
+  const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/
+
+  // Step 1: User submits the email input -> Validate & present double-check confirmation
+  const handleInitiateSubscription = (e: React.FormEvent) => {
     e.preventDefault()
     const cleanEmail = email.trim().toLowerCase()
 
-    const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/
     if (!cleanEmail || !emailRegex.test(cleanEmail)) {
       toast.error(copy.invalidEmailError)
+      return
+    }
+
+    const typo = checkDomainTypo(cleanEmail)
+    setSuggestedFix(typo)
+    setIsConfirming(true)
+  }
+
+  // Quick fix for suggested typo
+  const applySuggestedTypo = () => {
+    if (suggestedFix) {
+      setEmail(suggestedFix)
+      setSuggestedFix(null)
+    }
+  }
+
+  // Cancel confirmation and return to editing
+  const handleEditEmail = () => {
+    setIsConfirming(false)
+    setTimeout(() => {
+      inputRef.current?.focus()
+    }, 50)
+  }
+
+  // Step 2: User confirms "Yes, this is my correct email" -> Execute Subscription
+  const handleConfirmSubscription = async () => {
+    const cleanEmail = email.trim().toLowerCase()
+
+    if (!cleanEmail || !emailRegex.test(cleanEmail)) {
+      toast.error(copy.invalidEmailError)
+      setIsConfirming(false)
       return
     }
 
@@ -79,6 +144,7 @@ export default function LicenseNotificationCard({
       }
 
       if (data.status === 'already_subscribed') {
+        setIsConfirming(false)
         setIsSubscribed(true)
         setSubscribedEmail(cleanEmail)
         if (data.unsubscribeToken) {
@@ -89,6 +155,7 @@ export default function LicenseNotificationCard({
       }
 
       // Success
+      setIsConfirming(false)
       setIsSubscribed(true)
       setSubscribedEmail(cleanEmail)
       if (data.data?.unsubscribeToken) {
@@ -121,6 +188,7 @@ export default function LicenseNotificationCard({
       if (res.ok && data.status === 'success') {
         setIsCancelled(true)
         setIsSubscribed(false)
+        setIsConfirming(false)
         toast.success(copy.cancelledSuccessNotice)
       } else {
         toast.error(data.error || data.message || 'Failed to cancel')
@@ -161,7 +229,7 @@ export default function LicenseNotificationCard({
         </div>
       </div>
 
-      {/* Next Scheduled Scrape Date/Time Badge (Requirement 7) */}
+      {/* Next Scheduled Scrape Date/Time Badge */}
       {formattedNextRun && (
         <div className="mt-3.5 flex flex-wrap items-center gap-2 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3.5 py-2 text-xs text-[var(--text-secondary)]">
           <span className="flex items-center gap-1.5 font-semibold text-[var(--nepal-blue)]">
@@ -182,10 +250,10 @@ export default function LicenseNotificationCard({
         </div>
       )}
 
-      {/* Main interactive state: Subscribed vs Form vs Cancelled */}
+      {/* Main interactive state: Subscribed vs Double-Check Confirmation vs Initial Form vs Cancelled */}
       <div className="mt-4">
         {isSubscribed ? (
-          <div className="rounded-xl border border-[var(--success-border)] bg-[var(--success-bg)] p-3.5 sm:p-4">
+          <div className="rounded-xl border border-[var(--success-border)] bg-[var(--success-bg)] p-3.5 sm:p-4 animate-in fade-in duration-200">
             <div className="flex items-start gap-2.5">
               <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[var(--success)] text-white">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -220,12 +288,13 @@ export default function LicenseNotificationCard({
             </div>
           </div>
         ) : isCancelled ? (
-          <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-3.5 text-center text-xs text-[var(--text-secondary)]">
+          <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-3.5 text-center text-xs text-[var(--text-secondary)] animate-in fade-in duration-200">
             <span className="font-semibold">{copy.cancelledSuccessNotice}</span>
             <button
               type="button"
               onClick={() => {
                 setIsCancelled(false)
+                setIsConfirming(false)
                 setEmail('')
               }}
               className="ml-2 font-bold text-[var(--nepal-blue)] hover:underline"
@@ -233,8 +302,111 @@ export default function LicenseNotificationCard({
               {language === 'ne' ? 'पुनः दर्ता गर्नुहोस्' : 'Register again'}
             </button>
           </div>
+        ) : isConfirming ? (
+          /* Step 2: Double-Check Confirmation Step */
+          <div className="rounded-xl border-2 border-[var(--nepal-blue)]/40 bg-[var(--surface-primary)] p-4 shadow-sm animate-in fade-in slide-in-from-bottom-1 duration-200">
+            {/* Header / Attention */}
+            <div className="flex items-center gap-2">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--nepal-blue)]/15 text-[var(--nepal-blue)]">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+              </span>
+              <h4 className="text-sm font-bold text-[var(--text-primary)]">
+                {copy.confirmEmailTitle}
+              </h4>
+              <span className="ml-auto rounded bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                {language === 'ne' ? 'पुष्टि गर्नुहोस्' : 'Verify'}
+              </span>
+            </div>
+
+            <p className="mt-1.5 text-xs text-[var(--text-secondary)]">
+              {copy.confirmEmailSubtitle}
+            </p>
+
+            {/* Email Highlight Box */}
+            <div className="mt-3 flex items-center justify-between rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3.5 py-2.5">
+              <div className="flex min-w-0 items-center gap-2">
+                <svg className="h-4 w-4 flex-shrink-0 text-[var(--nepal-blue)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                  <polyline points="22,6 12,13 2,6" />
+                </svg>
+                <span className="truncate font-mono text-sm font-bold text-[var(--text-primary)] select-all">
+                  {email}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleEditEmail}
+                disabled={isSubmitting}
+                className="ml-2 flex-shrink-0 text-xs font-semibold text-[var(--nepal-blue)] hover:underline"
+              >
+                {copy.confirmEmailEditButton}
+              </button>
+            </div>
+
+            {/* Typo Suggestion Box (e.g. gamil.com -> gmail.com) */}
+            {suggestedFix && (
+              <div className="mt-2.5 flex items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+                <div className="min-w-0 flex-1 truncate">
+                  <span className="font-medium">{copy.typoSuggestionPrefix} </span>
+                  <span className="font-mono font-bold underline">{suggestedFix}</span>?
+                </div>
+                <button
+                  type="button"
+                  onClick={applySuggestedTypo}
+                  className="ml-2 flex-shrink-0 rounded-md bg-amber-600 px-2 py-0.5 text-[11px] font-bold text-white hover:bg-amber-700"
+                >
+                  {copy.typoSuggestionButton} {suggestedFix.split('@')[1]}
+                </button>
+              </div>
+            )}
+
+            {/* Confirmation Question & Action Buttons */}
+            <div className="mt-4 border-t border-[var(--border-default)] pt-3">
+              <p className="text-xs font-medium text-[var(--text-secondary)]">
+                {copy.confirmEmailQuestion}
+              </p>
+
+              <div className="mt-2.5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={handleEditEmail}
+                  disabled={isSubmitting}
+                  className="inline-flex items-center justify-center rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3.5 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] transition disabled:opacity-50"
+                >
+                  {copy.confirmEmailEditButton}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleConfirmSubscription}
+                  disabled={isSubmitting}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--nepal-blue)] px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-[var(--nepal-blue-mid)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <svg className="h-3.5 w-3.5 animate-spin text-white" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                      </svg>
+                      <span>{copy.submittingButton}</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                      <span>{copy.confirmEmailYesButton}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
         ) : (
-          <form onSubmit={handleSubscribe} className="space-y-3">
+          /* Step 1: Initial Email Input Form */
+          <form onSubmit={handleInitiateSubscription} className="space-y-3">
             <div className="flex flex-col gap-2 sm:flex-row">
               <div className="relative flex-1">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-[var(--text-muted)]">
@@ -244,6 +416,7 @@ export default function LicenseNotificationCard({
                   </svg>
                 </div>
                 <input
+                  ref={inputRef}
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -259,23 +432,11 @@ export default function LicenseNotificationCard({
                 disabled={isSubmitting || !email.trim()}
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--nepal-blue)] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[var(--nepal-blue-mid)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isSubmitting ? (
-                  <>
-                    <svg className="h-4 w-4 animate-spin text-white" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                    </svg>
-                    <span>{copy.submittingButton}</span>
-                  </>
-                ) : (
-                  <>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                    </svg>
-                    <span>{copy.submitButton}</span>
-                  </>
-                )}
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>
+                <span>{copy.submitButton}</span>
               </button>
             </div>
 
@@ -288,3 +449,4 @@ export default function LicenseNotificationCard({
     </div>
   )
 }
+

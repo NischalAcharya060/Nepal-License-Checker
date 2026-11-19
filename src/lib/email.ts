@@ -685,3 +685,214 @@ export async function sendFeedbackTrackingEmail(params: {
 
     return res
 }
+
+/**
+ * Send an immediate confirmation email when a user subscribes for license print notifications.
+ * Includes license details, explanation of automated monitoring, and a prominent 1-click unsubscribe button.
+ */
+export async function sendSubscriptionConfirmationEmail(params: {
+    to: string
+    licenseNumber: string
+    unsubscribeToken: string
+    isResend?: boolean
+}): Promise<MailDeliveryResult> {
+    const siteUrl = getSiteUrl()
+    const checkUrl = `${siteUrl}/?number=${encodeURIComponent(params.licenseNumber)}`
+    const unsubscribeUrl = `${siteUrl}/unsubscribe?token=${encodeURIComponent(params.unsubscribeToken)}`
+
+    const emailSubject = params.isResend
+        ? `[Alert Details] License Notification Subscription for ${params.licenseNumber} - Nepal License Checker`
+        : `🇳🇵 Notification Confirmed: Driving License ${params.licenseNumber} - Nepal License Checker`
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${emailSubject}</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background-color: #f1f5f9; color: #1e293b; -webkit-font-smoothing: antialiased; }
+    table { border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    td { vertical-align: top; }
+    .btn-primary:hover { background: #002566 !important; }
+    .btn-unsubscribe:hover { background: #fef2f2 !important; border-color: #ef4444 !important; color: #dc2626 !important; }
+  </style>
+</head>
+<body style="margin: 0; padding: 24px 12px; background-color: #f1f5f9;">
+  <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;">
+    
+    <!-- Top Header -->
+    <div style="background: linear-gradient(180deg, #eff6ff 0%, #f8fafc 100%); border-top: 5px solid #003893; border-bottom: 1px solid #e2e8f0; padding: 32px 24px 26px; text-align: center;">
+      <div style="display: inline-block; background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 20px; padding: 5px 16px; font-size: 11px; font-weight: 800; color: #0369a1; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px;">
+        🇳🇵 Nepal License Verification · आधिकारिक सूचना
+      </div>
+      <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 800; line-height: 1.3; color: #003893;">
+        ${params.isResend ? 'Your License Alert Subscription Details' : 'License Notification Alert Activated'}
+      </h1>
+      <p style="margin: 0; font-size: 13px; color: #475569; line-height: 1.5; font-weight: 500;">
+        तपाईंको लाइसेन्स विभागको सूचीमा छापिएर आउनासाथ तुरुन्त इमेलमा सूचना पठाइनेछ।
+      </p>
+    </div>
+
+    <!-- Main Content -->
+    <div style="padding: 26px 24px;">
+      
+      <!-- Status Box -->
+      <div style="background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 16px 20px; margin-bottom: 22px; text-align: center;">
+        <span style="display: inline-block; background-color: #2563eb; color: #ffffff; font-size: 10px; font-weight: 800; padding: 3px 10px; border-radius: 20px; letter-spacing: 0.05em; margin-bottom: 6px;">
+          MONITORING ACTIVE
+        </span>
+        <div style="color: #1e3a8a; font-size: 17px; font-weight: 800;">
+          ⏳ WAITING FOR DOTM PRINT RECORD
+        </div>
+        <div style="color: #1e40af; font-size: 12px; margin-top: 4px; font-weight: 500;">
+          लाइसेन्स हाल छपाइ प्रक्रियामा छ, प्रणालीले नियमित रूपमा जाँच गरिरहनेछ।
+        </div>
+      </div>
+
+      <!-- Greeting -->
+      <p style="margin: 0 0 14px 0; font-size: 14px; line-height: 1.6; color: #1e293b;">
+        Namaste,
+      </p>
+      <p style="margin: 0 0 18px 0; font-size: 14px; line-height: 1.6; color: #334155;">
+        ${params.isResend
+            ? `You requested the subscription information for driving license <strong>${params.licenseNumber}</strong>.`
+            : `You have successfully subscribed to receive automatic email notifications for Nepal Driving License <strong>${params.licenseNumber}</strong>.`
+        }
+      </p>
+
+      <!-- Subscription Details Table -->
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: separate; border-spacing: 0; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin-bottom: 22px;">
+        <tbody>
+          <tr style="background-color: #f0f7ff;">
+            <td style="padding: 13px 18px; width: 38%; font-size: 13px; font-weight: 700; color: #1e3a8a; border-bottom: 1px solid #e2e8f0; white-space: nowrap;">
+              License Number :
+            </td>
+            <td style="padding: 13px 18px; width: 62%; font-size: 15px; font-weight: 800; color: #003893; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; border-bottom: 1px solid #e2e8f0;">
+              <span style="background-color: #dbeafe; padding: 4px 10px; border-radius: 6px; border: 1px solid #bfdbfe; display: inline-block;">
+                ${params.licenseNumber}
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 18px; font-size: 13px; font-weight: 700; color: #475569; border-bottom: 1px solid #f1f5f9; white-space: nowrap;">
+              Notification Email :
+            </td>
+            <td style="padding: 12px 18px; font-size: 13px; font-weight: 600; color: #0f172a; border-bottom: 1px solid #f1f5f9;">
+              ${params.to}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 18px; font-size: 13px; font-weight: 700; color: #475569; border-bottom: 1px solid #f1f5f9; white-space: nowrap;">
+              Current Status :
+            </td>
+            <td style="padding: 12px 18px; font-size: 13px; font-weight: 700; color: #d97706; border-bottom: 1px solid #f1f5f9;">
+              Not Yet Printed (छपाइ हुन बाँकी)
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 18px; font-size: 13px; font-weight: 700; color: #475569; white-space: nowrap;">
+              Data Source :
+            </td>
+            <td style="padding: 12px 18px; font-size: 13px; font-weight: 600; color: #166534;">
+              Department of Transport Management (DoTM Nepal)
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- What to Expect Next Info Box -->
+      <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 5px solid #003893; padding: 16px 18px; border-radius: 10px; margin-bottom: 22px;">
+        <h4 style="margin: 0 0 8px 0; font-size: 13px; font-weight: 800; color: #003893;">
+          💡 तपाईंले केही गर्नुपर्दैन (What Happens Next):
+        </h4>
+        <p style="margin: 0; font-size: 13px; color: #334155; line-height: 1.6;">
+          You do not need to check the website manually every day. As soon as the Department of Transport Management (DoTM) prints your smart license card and updates the official records, our automated system will send you an immediate collection notification with your holder name, issuing office, and mandatory collection documents checklist.
+        </p>
+      </div>
+
+      <!-- Action Button: Check Status Online -->
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+        <tr>
+          <td align="center">
+            <a href="${checkUrl}" target="_blank" rel="noopener" class="btn-primary" style="display: inline-block; background: #003893; color: #ffffff !important; text-decoration: none; padding: 14px 34px; border-radius: 12px; font-size: 14px; font-weight: 800; letter-spacing: 0.02em; box-shadow: 0 4px 14px rgba(0, 56, 147, 0.3); text-align: center;">
+              Check Current Status Online →
+            </a>
+          </td>
+        </tr>
+      </table>
+
+      <!-- Prominent One-Click Unsubscribe Box -->
+      <div style="background-color: #fffaf0; border: 1px solid #fed7aa; border-radius: 12px; padding: 18px 20px; text-align: center; margin-bottom: 20px;">
+        <div style="font-size: 11px; font-weight: 800; color: #9a3412; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">
+          Wrong Number or No Longer Need This Alert?
+        </div>
+        <p style="margin: 0 0 14px 0; font-size: 13px; color: #7c2d12; line-height: 1.5;">
+          यदि तपाईंले गल्तीले यो इमेल दर्ता गर्नुभएको हो वा अब सूचना चाहिँदैन भने, तलको बटनबाट १-क्लिकमा रद्द गर्न सक्नुहुन्छ:
+        </p>
+        <a href="${unsubscribeUrl}" target="_blank" rel="noopener" class="btn-unsubscribe" style="display: inline-block; background: #ffffff; color: #b91c1c !important; text-decoration: none; padding: 11px 26px; border-radius: 10px; font-size: 13px; font-weight: 800; border: 1px solid #fca5a5; box-shadow: 0 2px 6px rgba(185, 28, 28, 0.08);">
+          ✕ Unsubscribe / Cancel Notification Alert
+        </a>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 22px 24px; font-size: 11px; color: #64748b; text-align: center; line-height: 1.6;">
+      <p style="margin: 0 0 8px 0; font-size: 12px; color: #475569;">
+        Subscription active for license: <strong style="color: #0f172a; font-family: ui-monospace, monospace;">${params.licenseNumber}</strong>
+      </p>
+      <p style="margin: 0 0 12px 0;">
+        <a href="${unsubscribeUrl}" style="color: #dc2626; text-decoration: underline; font-weight: 600;">1-Click Unsubscribe from this alert</a> · <a href="${siteUrl}" style="color: #003893; text-decoration: underline; font-weight: 600;">Visit Nepal License Checker</a>
+      </p>
+      <div style="font-size: 10px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 12px; line-height: 1.5;">
+        ⚠️ <strong>Notice:</strong> Nepal License Checker (license-checker.acharyanischal.com.np) is an independent public utility portal indexing publicly published records from dotm.gov.np. This notification is purely informational and holds no legal authority.
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>`
+
+    const text = `🇳🇵 Nepal Smart Driving License - Notification Alert Confirmed\n\n` +
+        `Namaste,\n\n` +
+        `You have successfully subscribed to receive automatic email notifications for license number ${params.licenseNumber}.\n\n` +
+        `Current Status : NOT YET PRINTED (Monitoring DoTM Records)\n` +
+        `License Number : ${params.licenseNumber}\n` +
+        `Recipient      : ${params.to}\n\n` +
+        `What happens next:\n` +
+        `You do not need to check the website manually every day. As soon as the Department of Transport Management (DoTM) prints your card and updates the official records, our automated system will immediately send you an email alert.\n\n` +
+        `Check current status online: ${checkUrl}\n\n` +
+        `To CANCEL or UNSUBSCRIBE from this alert at any time (1-click):\n` +
+        `${unsubscribeUrl}\n\n` +
+        `---\n` +
+        `Nepal License Checker (license-checker.acharyanischal.com.np)`
+
+    const res = await sendEmail({
+        to: params.to,
+        subject: emailSubject,
+        html,
+        text,
+    })
+
+    // Record email in email_logs table for administrative history
+    await logSentEmail({
+        recipient: params.to,
+        subject: emailSubject,
+        templateType: 'license_subscription',
+        referenceId: params.licenseNumber,
+        status: res.success ? 'sent' : 'failed',
+        provider: res.provider,
+        messageId: res.messageId || res.id,
+        errorMessage: res.error,
+        snippet: `Subscription confirmation email sent for license #${params.licenseNumber}`,
+        metadata: {
+            licenseNumber: params.licenseNumber,
+            unsubscribeToken: params.unsubscribeToken,
+            isResend: Boolean(params.isResend),
+        },
+        createdAt: Date.now(),
+    })
+
+    return res
+}

@@ -96,6 +96,8 @@ export default function AdminPage() {
     const [notifLoading, setNotifLoading] = useState(false)
     const [selectedNotifIds, setSelectedNotifIds] = useState<string[]>([])
     const [notifSelectMode, setNotifSelectMode] = useState(false)
+    const [sendingNotifId, setSendingNotifId] = useState<string | null>(null)
+    const [sendingNotifBulk, setSendingNotifBulk] = useState(false)
 
     // Dashboard State - User Feedback & Inquiries
     const [feedbackStats, setFeedbackStats] = useState<FeedbackStatsData | null>(null)
@@ -1229,6 +1231,118 @@ export default function AdminPage() {
                     }
                 } catch {
                     // Error
+                }
+            },
+        })
+    }
+
+    // 9b. Notification Email Dispatch Handlers (Single, Selected, All Pending)
+    const handleSendNotificationEmail = (id: string, email: string, license: string) => {
+        const displayLic = maskLicenseNumber(license, privacyMode)
+        setConfirmDialog({
+            title: 'Send Confirmation Email?',
+            message: `Send license notification confirmation and unsubscribe link to ${email} for license ${displayLic}?`,
+            confirmLabel: 'Yes, Send Email',
+            onConfirm: async () => {
+                setSendingNotifId(id)
+                try {
+                    const res = await fetch('/api/admin/notifications', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'send_single', id }),
+                    })
+                    const data = await res.json()
+                    if (res.ok && data.status === 'success') {
+                        showToast(`Confirmation email sent to ${email}`)
+                        setNotificationLogs((prev) =>
+                            prev.map((item) =>
+                                item.id === id ? { ...item, confirmation_sent_at: Date.now() } : item
+                            )
+                        )
+                        setRefreshKey((k) => k + 1)
+                    } else {
+                        showToast(data.error || 'Failed to send confirmation email', 'error')
+                    }
+                } catch {
+                    showToast('Network error sending email', 'error')
+                } finally {
+                    setSendingNotifId(null)
+                }
+            },
+        })
+    }
+
+    const handleSendSelectedNotifications = () => {
+        if (!selectedNotifIds.length) return
+        const count = selectedNotifIds.length
+        setConfirmDialog({
+            title: `Send Confirmation Email to ${count} Selected?`,
+            message: `Send subscription confirmation and unsubscribe link to ${count} selected subscriber${count > 1 ? 's' : ''}?`,
+            confirmLabel: `Yes, Send (${count})`,
+            onConfirm: async () => {
+                setSendingNotifBulk(true)
+                try {
+                    const res = await fetch('/api/admin/notifications', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'send_bulk', ids: selectedNotifIds }),
+                    })
+                    const data = await res.json()
+                    if (res.ok && data.status === 'success') {
+                        showToast(data.message || `Sent emails to ${data.data?.sentCount || count} subscribers`)
+                        const selectedSet = new Set(selectedNotifIds)
+                        setNotificationLogs((prev) =>
+                            prev.map((item) =>
+                                selectedSet.has(item.id) ? { ...item, confirmation_sent_at: Date.now() } : item
+                            )
+                        )
+                        setSelectedNotifIds([])
+                        setNotifSelectMode(false)
+                        setRefreshKey((k) => k + 1)
+                    } else {
+                        showToast(data.error || 'Failed to send bulk confirmation emails', 'error')
+                    }
+                } catch {
+                    showToast('Network error sending bulk emails', 'error')
+                } finally {
+                    setSendingNotifBulk(false)
+                }
+            },
+        })
+    }
+
+    const handleSendAllPendingNotifications = () => {
+        const unnotifiedCount = notificationStats?.pendingUnnotified ?? 0
+        if (unnotifiedCount === 0) return
+        setConfirmDialog({
+            title: `Send Confirmation to ${unnotifiedCount.toLocaleString()} Unnotified Subscribers?`,
+            message: `This will dispatch notification status and 1-click unsubscribe links to ${unnotifiedCount.toLocaleString()} pending subscribers who have not received their confirmation email yet. Users who already received their email will be skipped. Proceed?`,
+            confirmLabel: `Yes, Send to All (${unnotifiedCount.toLocaleString()})`,
+            onConfirm: async () => {
+                setSendingNotifBulk(true)
+                try {
+                    const res = await fetch('/api/admin/notifications', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'send_all_pending', allPending: true }),
+                    })
+                    const data = await res.json()
+                    if (res.ok && data.status === 'success') {
+                        showToast(data.message || `Sent confirmation emails to ${data.data?.sentCount || unnotifiedCount} subscribers`)
+                        setNotificationLogs((prev) =>
+                            prev.map((item) =>
+                                item.status === 'pending' ? { ...item, confirmation_sent_at: item.confirmation_sent_at || Date.now() } : item
+                            )
+                        )
+                        setNotificationStats((prev) => (prev ? { ...prev, pendingUnnotified: 0 } : null))
+                        setRefreshKey((k) => k + 1)
+                    } else {
+                        showToast(data.error || 'Failed to send confirmation emails', 'error')
+                    }
+                } catch {
+                    showToast('Network error sending emails', 'error')
+                } finally {
+                    setSendingNotifBulk(false)
                 }
             },
         })
@@ -2562,6 +2676,8 @@ export default function AdminPage() {
                         notifSelectMode={notifSelectMode}
                         selectedNotifIds={selectedNotifIds}
                         copiedKey={copiedKey}
+                        sendingNotifId={sendingNotifId}
+                        sendingNotifBulk={sendingNotifBulk}
                         setNotifPage={setNotifPage}
                         setNotifLimit={setNotifLimit}
                         setNotifSearchFilter={setNotifSearchFilter}
@@ -2573,6 +2689,9 @@ export default function AdminPage() {
                         handleDeleteSelectedNotifications={handleDeleteSelectedNotifications}
                         handleDeleteNotificationsByStatus={handleDeleteNotificationsByStatus}
                         handleDeleteAllNotifications={handleDeleteAllNotifications}
+                        handleSendNotificationEmail={handleSendNotificationEmail}
+                        handleSendSelectedNotifications={handleSendSelectedNotifications}
+                        handleSendAllPendingNotifications={handleSendAllPendingNotifications}
                         startTransition={startTransition}
                     />
                 ) : activeTab === 'feedback' ? (

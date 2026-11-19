@@ -1,6 +1,8 @@
 // src/app/api/notifications/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createNotification } from '@/lib/notifications'
+import { sendSubscriptionConfirmationEmail } from '@/lib/email'
+import { getTurso } from '@/lib/turso'
 import { RateLimiter } from '@/lib/rateLimit'
 import { extractGeo } from '@/lib/geo'
 import { sanitizeInput } from '@/utils/sanitize'
@@ -83,6 +85,32 @@ export async function POST(request: NextRequest) {
         message: result.message,
         unsubscribeToken: result.unsubscribeToken,
       })
+    }
+
+    // Fresh successful subscription: send immediate confirmation email with 1-click unsubscribe link once
+    if (result.unsubscribeToken && result.id) {
+      try {
+        const sendRes = await sendSubscriptionConfirmationEmail({
+          to: email,
+          licenseNumber,
+          unsubscribeToken: result.unsubscribeToken,
+        })
+
+        // Record that confirmation email was sent for this subscription
+        if (sendRes.success) {
+          try {
+            const db = getTurso()
+            await db.execute({
+              sql: `UPDATE license_notifications SET confirmation_sent_at = ? WHERE id = ?`,
+              args: [Date.now(), result.id],
+            })
+          } catch (dbErr) {
+            console.error('Failed to update confirmation_sent_at:', dbErr)
+          }
+        }
+      } catch (emailErr) {
+        console.error('Failed to send subscription confirmation email:', emailErr)
+      }
     }
 
     return NextResponse.json({

@@ -11,6 +11,7 @@ export interface EmailLogEntry {
         | 'feedback_status'
         | 'feedback_tracking'
         | 'license_notification'
+        | 'license_subscription'
         | 'general'
     reference_id?: string | null
     status: 'sent' | 'failed'
@@ -62,6 +63,7 @@ export async function logSentEmail(params: {
         | 'feedback_status'
         | 'feedback_tracking'
         | 'license_notification'
+        | 'license_subscription'
         | 'general'
     referenceId?: string | null
     status: 'sent' | 'failed'

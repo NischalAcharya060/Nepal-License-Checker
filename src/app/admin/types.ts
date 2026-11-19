@@ -135,6 +135,7 @@ export interface NotificationLog {
     updated_at: number
     sent_at?: number | null
     cancelled_at?: number | null
+    confirmation_sent_at?: number | null
     holder_name?: string | null
     office?: string | null
 }
@@ -145,6 +146,7 @@ export interface NotificationStatsData {
     sent: number
     cancelled: number
     deliveryRate: number
+    pendingUnnotified?: number
 }
 
 export type FeedbackStatus = 'new' | 'in_progress' | 'resolved'

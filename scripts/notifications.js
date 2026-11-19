@@ -29,22 +29,31 @@ async function ensureNotificationsTable(db) {
 
     await db.execute(`
         CREATE TABLE IF NOT EXISTS license_notifications (
-            id                TEXT PRIMARY KEY,
-            license_number    TEXT NOT NULL,
-            email             TEXT NOT NULL,
-            status            TEXT NOT NULL DEFAULT 'pending',
-            unsubscribe_token TEXT NOT NULL UNIQUE,
-            created_at        INTEGER NOT NULL,
-            updated_at        INTEGER NOT NULL,
-            sent_at           INTEGER,
-            cancelled_at      INTEGER
+            id                   TEXT PRIMARY KEY,
+            license_number       TEXT NOT NULL,
+            email                TEXT NOT NULL,
+            status               TEXT NOT NULL DEFAULT 'pending',
+            unsubscribe_token    TEXT NOT NULL UNIQUE,
+            created_at           INTEGER NOT NULL,
+            updated_at           INTEGER NOT NULL,
+            sent_at              INTEGER,
+            cancelled_at         INTEGER,
+            confirmation_sent_at INTEGER
         )
     `);
+
+    // Ensure confirmation_sent_at column exists for previously created databases
+    try {
+        await db.execute(`ALTER TABLE license_notifications ADD COLUMN confirmation_sent_at INTEGER`);
+    } catch {
+        // Column already exists
+    }
 
     await db.execute(`CREATE INDEX IF NOT EXISTS idx_notifications_status ON license_notifications(status)`);
     await db.execute(`CREATE INDEX IF NOT EXISTS idx_notifications_lic_status ON license_notifications(license_number, status)`);
     await db.execute(`CREATE INDEX IF NOT EXISTS idx_notifications_email ON license_notifications(email)`);
     await db.execute(`CREATE INDEX IF NOT EXISTS idx_notifications_token ON license_notifications(unsubscribe_token)`);
+    await db.execute(`CREATE INDEX IF NOT EXISTS idx_notifications_conf_sent ON license_notifications(confirmation_sent_at)`);
 
     try {
         await db.execute(`
@@ -643,12 +652,25 @@ async function getNotificationStats(db) {
 
     const deliveryRate = total > 0 ? Math.round((sent / total) * 100) : 0;
 
+    let pendingUnnotified = 0;
+    try {
+        const unnotifiedRes = await db.execute(`
+            SELECT COUNT(*) as count
+            FROM license_notifications
+            WHERE status = 'pending' AND (confirmation_sent_at IS NULL OR confirmation_sent_at = 0)
+        `);
+        pendingUnnotified = Number(unnotifiedRes.rows?.[0]?.count) || 0;
+    } catch {
+        // Fallback
+    }
+
     return {
         total,
         pending,
         sent,
         cancelled,
         deliveryRate,
+        pendingUnnotified,
     };
 }
 
@@ -689,6 +711,7 @@ async function getNotificationLogs(db, { page = 1, limit = 50, search = '', stat
     // Rows
     const dataSql = `
         SELECT n.id, n.license_number, n.email, n.status, n.created_at, n.updated_at, n.sent_at, n.cancelled_at,
+               n.confirmation_sent_at,
                l.holder_name, l.office
         FROM license_notifications n
         LEFT JOIN licenses l ON n.license_number = l.license_number

@@ -19,6 +19,8 @@ export interface AdminNotificationsProps {
     notifSelectMode?: boolean
     selectedNotifIds?: string[]
     copiedKey?: string | null
+    sendingNotifId?: string | null
+    sendingNotifBulk?: boolean
     setNotifPage?: (page: number) => void
     setNotifLimit?: (limit: number) => void
     setNotifSearchFilter?: (filter: string) => void
@@ -30,6 +32,9 @@ export interface AdminNotificationsProps {
     handleDeleteSelectedNotifications?: () => void
     handleDeleteNotificationsByStatus?: (status: 'cancelled' | 'sent') => void
     handleDeleteAllNotifications?: () => void
+    handleSendNotificationEmail?: (id: string, email: string, license: string) => void
+    handleSendSelectedNotifications?: () => void
+    handleSendAllPendingNotifications?: () => void
     startTransition?: (callback: () => void) => void
 }
 
@@ -49,6 +54,8 @@ export default function AdminNotifications(props: any) {
         notifSelectMode = false,
         selectedNotifIds = [],
         copiedKey = null,
+        sendingNotifId = null,
+        sendingNotifBulk = false,
         setNotifPage = () => {},
         setNotifLimit = () => {},
         setNotifSearchFilter = () => {},
@@ -60,6 +67,9 @@ export default function AdminNotifications(props: any) {
         handleDeleteSelectedNotifications = () => {},
         handleDeleteNotificationsByStatus = () => {},
         handleDeleteAllNotifications = () => {},
+        handleSendNotificationEmail = () => {},
+        handleSendSelectedNotifications = () => {},
+        handleSendAllPendingNotifications = () => {},
         startTransition = (cb) => cb(),
     }: AdminNotificationsProps = props || {}
 
@@ -258,6 +268,27 @@ export default function AdminNotifications(props: any) {
                         <span>{notifSelectMode ? 'Cancel' : 'Select'}</span>
                     </button>
 
+                    {/* Send Selected Button */}
+                    {notifSelectMode && selectedNotifIds.length > 0 && (
+                        <button
+                            type="button"
+                            onClick={handleSendSelectedNotifications}
+                            disabled={notifLoading || sendingNotifBulk}
+                            className="inline-flex h-8.5 sm:h-9 items-center gap-1.5 rounded-xl border border-[var(--nepal-blue)] bg-[var(--nepal-blue)] px-2.5 sm:px-3 text-[11px] sm:text-xs font-bold text-white shadow-xs transition hover:opacity-90 active:scale-95 disabled:opacity-50 cursor-pointer"
+                            title="Send confirmation email with unsubscribe link to selected subscribers"
+                        >
+                            {sendingNotifBulk ? (
+                                <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                            ) : (
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                    <rect x="2" y="4" width="20" height="16" rx="2" />
+                                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                                </svg>
+                            )}
+                            <span>Send Email ({selectedNotifIds.length})</span>
+                        </button>
+                    )}
+
                     {/* Delete Selected Button */}
                     {notifSelectMode && selectedNotifIds.length > 0 && (
                         <button
@@ -274,6 +305,34 @@ export default function AdminNotifications(props: any) {
                             <span>Delete Selected ({selectedNotifIds.length})</span>
                         </button>
                     )}
+
+                    {/* Send to All Unnotified Pending Subscribers Button */}
+                    {(() => {
+                        const unnotifiedCount = notificationStats?.pendingUnnotified ?? 0
+                        return (
+                            <button
+                                type="button"
+                                onClick={handleSendAllPendingNotifications}
+                                disabled={unnotifiedCount === 0 || notifLoading || sendingNotifBulk}
+                                className="inline-flex h-8.5 sm:h-9 items-center gap-1.5 rounded-xl border border-[var(--nepal-blue)]/60 bg-[var(--nepal-blue-soft)] px-2.5 sm:px-3 text-[11px] sm:text-xs font-bold text-[var(--nepal-blue)] transition hover:bg-[var(--nepal-blue)] hover:text-white active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer shadow-2xs"
+                                title={
+                                    unnotifiedCount === 0
+                                        ? 'All pending subscribers have already received their confirmation email'
+                                        : `Send confirmation email with unsubscribe link to ${unnotifiedCount} pending subscriber(s) who have not received it yet`
+                                }
+                            >
+                                {sendingNotifBulk ? (
+                                    <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-[var(--nepal-blue)]/30 border-t-[var(--nepal-blue)]" />
+                                ) : (
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                        <rect x="2" y="4" width="20" height="16" rx="2" />
+                                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                                    </svg>
+                                )}
+                                <span>Send to Unnotified ({unnotifiedCount.toLocaleString()})</span>
+                            </button>
+                        )
+                    })()}
 
                     {/* Delete Cancelled Button */}
                     <button
@@ -393,12 +452,12 @@ export default function AdminNotifications(props: any) {
                                                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                                                 <polyline points="20 6 9 17 4 12" />
                                                             </svg>
-                                                            <span>Delivered</span>
+                                                            <span>Card Printed</span>
                                                         </span>
                                                     ) : log.status === 'pending' ? (
                                                         <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-xs font-bold text-amber-600 dark:text-amber-400">
                                                             <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-                                                            <span>In Queue</span>
+                                                            <span>Waiting for Print</span>
                                                         </span>
                                                     ) : log.status === 'cancelled' ? (
                                                         <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-default)]/80 bg-[var(--bg-secondary)]/80 px-2.5 py-0.5 text-xs font-semibold text-[var(--text-muted)]">
@@ -406,7 +465,7 @@ export default function AdminNotifications(props: any) {
                                                                 <line x1="18" y1="6" x2="6" y2="18" />
                                                                 <line x1="6" y1="6" x2="18" y2="18" />
                                                             </svg>
-                                                            <span>Cancelled</span>
+                                                            <span>Unsubscribed</span>
                                                         </span>
                                                     ) : (
                                                         <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 px-2.5 py-0.5 text-xs font-bold text-purple-600">
@@ -491,36 +550,82 @@ export default function AdminNotifications(props: any) {
                                                     )}
                                                 </div>
 
-                                                {/* Delete Single Action */}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleDeleteNotification(log.id, log.license_number)}
-                                                    className="inline-flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-xl border border-[var(--border-default)]/80 bg-[var(--surface-primary)] text-[var(--text-muted)] transition hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95 cursor-pointer shadow-2xs"
-                                                    title="Delete notification record"
-                                                >
-                                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                                        <polyline points="3 6 5 6 21 6" />
-                                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                                    </svg>
-                                                </button>
+                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                    {/* Email Confirmation Status or Send Button */}
+                                                    {log.confirmation_sent_at ? (
+                                                        <span
+                                                            className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400"
+                                                            title={`Confirmation email sent: ${formatNepalDateTime(log.confirmation_sent_at, 'en', true)}`}
+                                                        >
+                                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                                <polyline points="20 6 9 17 4 12" />
+                                                            </svg>
+                                                            <span>Email Sent</span>
+                                                        </span>
+                                                    ) : log.status === 'pending' ? (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleSendNotificationEmail(log.id, log.email, log.license_number)}
+                                                            disabled={sendingNotifId === log.id || sendingNotifBulk}
+                                                            className="inline-flex h-8.5 w-8.5 items-center justify-center rounded-xl border border-[var(--border-default)]/80 bg-[var(--surface-primary)] text-[var(--nepal-blue)] transition hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue-soft)] active:scale-95 cursor-pointer shadow-2xs disabled:opacity-50"
+                                                            title="Send confirmation email with unsubscribe link"
+                                                        >
+                                                            {sendingNotifId === log.id ? (
+                                                                <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-[var(--nepal-blue)]/30 border-t-[var(--nepal-blue)]" />
+                                                            ) : (
+                                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                                    <rect x="2" y="4" width="20" height="16" rx="2" />
+                                                                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                                                                </svg>
+                                                            )}
+                                                        </button>
+                                                    ) : null}
+
+                                                    {/* Delete Single Action */}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDeleteNotification(log.id, log.license_number)}
+                                                        className="inline-flex h-8.5 w-8.5 items-center justify-center rounded-xl border border-[var(--border-default)]/80 bg-[var(--surface-primary)] text-[var(--text-muted)] transition hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95 cursor-pointer shadow-2xs"
+                                                        title="Delete notification record"
+                                                    >
+                                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                            <polyline points="3 6 5 6 21 6" />
+                                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
                                             </div>
 
                                             {/* Status Details Sub-row */}
-                                            <div className="flex items-center justify-between border-t border-[var(--border-default)]/40 pt-2.5 text-[11px] text-[var(--text-muted)] font-mono">
-                                                <span>Subscribed: {formatNepalDateTime(log.created_at)}</span>
-                                                {log.sent_at ? (
-                                                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                                                        Sent: {formatNepalDateTime(log.sent_at)}
-                                                    </span>
-                                                ) : log.cancelled_at ? (
-                                                    <span className="font-semibold text-[var(--text-muted)]">
-                                                        Unsubscribed: {formatNepalDateTime(log.cancelled_at)}
-                                                    </span>
-                                                ) : (
-                                                    <span className="font-semibold text-amber-600 dark:text-amber-400">
-                                                        Waiting for print
-                                                    </span>
-                                                )}
+                                            <div className="flex flex-col gap-1.5 border-t border-[var(--border-default)]/40 pt-2.5 text-[11px] text-[var(--text-muted)] font-mono">
+                                                <div className="flex items-center justify-between">
+                                                    <span>Subscribed: {formatNepalDateTime(log.created_at)}</span>
+                                                    {log.confirmation_sent_at ? (
+                                                        <span className="font-semibold text-emerald-600 dark:text-emerald-400" title={`Welcome email sent: ${formatNepalDateTime(log.confirmation_sent_at, 'en', true)}`}>
+                                                            ✓ Welcome Sent ({formatTimeAgo(log.confirmation_sent_at)})
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-[var(--text-muted)]">
+                                                            Welcome: Not Sent
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="flex items-center justify-between">
+                                                    <span>DoTM Print Alert:</span>
+                                                    {log.sent_at ? (
+                                                        <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                                                            Delivered ({formatNepalDateTime(log.sent_at)})
+                                                        </span>
+                                                    ) : log.cancelled_at ? (
+                                                        <span className="font-semibold text-[var(--text-muted)]">
+                                                            Cancelled ({formatNepalDateTime(log.cancelled_at)})
+                                                        </span>
+                                                    ) : (
+                                                        <span className="font-semibold text-amber-600 dark:text-amber-400">
+                                                            In Queue (Waiting for DoTM)
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     )
@@ -699,50 +804,77 @@ export default function AdminNotifications(props: any) {
                                                 </div>
                                             </td>
 
-                                            {/* Status / Delivery Badge */}
+                                            {/* Status / Delivery Badge (DoTM Print Status + Welcome Email Status) */}
                                             <td className="whitespace-nowrap px-4 py-3.5">
-                                                {log.status === 'sent' ? (
-                                                    <div className="flex flex-col items-start gap-0 leading-tight">
-                                                        <span className="inline-flex min-w-[92px] items-center justify-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold leading-4 text-emerald-600 dark:text-emerald-400">
-                                                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                                                <polyline points="20 6 9 17 4 12" />
-                                                            </svg>
-                                                            <span>Delivered</span>
+                                                <div className="flex flex-col items-start gap-1">
+                                                    {/* 1. DoTM License Card Print Alert Status */}
+                                                    {log.status === 'sent' ? (
+                                                        <div className="flex flex-col items-start gap-0.5 leading-tight">
+                                                            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                                                                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                                    <polyline points="20 6 9 17 4 12" />
+                                                                </svg>
+                                                                <span>Card Printed &amp; Alert Sent</span>
+                                                            </span>
+                                                            {log.sent_at && (
+                                                                <span className="font-mono text-[9px] text-[var(--text-muted)]" title={`Delivered: ${formatNepalDateTime(log.sent_at, 'en', true)}`}>
+                                                                    Sent: {formatNepalDateTime(log.sent_at)}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    ) : log.status === 'pending' ? (
+                                                        <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400" title="License not yet printed by DoTM; automated scraper monitors regularly">
+                                                            <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                                            <span>Waiting for Print (In Queue)</span>
                                                         </span>
-                                                        {log.sent_at && (
-                                                            <span className="font-mono text-[9.5px] text-[var(--text-muted)]" title={`Delivered: ${formatNepalDateTime(log.sent_at, 'en', true)}`}>
-                                                                {formatNepalDateTime(log.sent_at)}
+                                                    ) : log.status === 'cancelled' ? (
+                                                        <div className="flex flex-col items-start gap-0.5 leading-tight">
+                                                            <span className="inline-flex items-center gap-1 rounded-full border border-[var(--border-default)]/80 bg-[var(--bg-secondary)]/80 px-2.5 py-0.5 text-[10px] font-semibold text-[var(--text-muted)]">
+                                                                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                                                </svg>
+                                                                <span>Cancelled / Unsubscribed</span>
+                                                            </span>
+                                                            {log.cancelled_at && (
+                                                                <span className="font-mono text-[9px] text-[var(--text-muted)]">
+                                                                    {formatNepalDateTime(log.cancelled_at)}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-1 rounded-full border border-purple-500/30 bg-purple-500/10 px-2.5 py-0.5 text-[10px] font-bold text-purple-600">
+                                                            <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true">
+                                                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                                                            </svg>
+                                                            <span>Processing Print Alert</span>
+                                                        </span>
+                                                    )}
+
+                                                    {/* 2. Welcome / Confirmation Email Status */}
+                                                    <div className="flex items-center gap-1 font-mono text-[9.5px]">
+                                                        {log.confirmation_sent_at ? (
+                                                            <span
+                                                                className="inline-flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400"
+                                                                title={`Welcome email sent: ${formatNepalDateTime(log.confirmation_sent_at, 'en', true)}`}
+                                                            >
+                                                                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                                    <polyline points="20 6 9 17 4 12" />
+                                                                </svg>
+                                                                <span>Welcome Email: Sent</span>
+                                                            </span>
+                                                        ) : (
+                                                            <span className="inline-flex items-center gap-1 text-[var(--text-muted)]">
+                                                                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                                    <circle cx="12" cy="12" r="10" />
+                                                                    <line x1="12" y1="8" x2="12" y2="12" />
+                                                                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                                                                </svg>
+                                                                <span>Welcome Email: Not Sent</span>
                                                             </span>
                                                         )}
                                                     </div>
-                                                ) : log.status === 'pending' ? (
-                                                    <span className="inline-flex min-w-[92px] items-center justify-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold leading-4 text-amber-600 dark:text-amber-400">
-                                                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-                                                        <span>In Queue</span>
-                                                    </span>
-                                                ) : log.status === 'cancelled' ? (
-                                                    <div className="flex flex-col items-start gap-0 leading-tight">
-                                                        <span className="inline-flex min-w-[92px] items-center justify-center gap-1 rounded-full border border-[var(--border-default)]/80 bg-[var(--bg-secondary)]/80 px-2 py-0.5 text-[10px] font-semibold leading-4 text-[var(--text-muted)]">
-                                                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                                                <line x1="18" y1="6" x2="6" y2="18" />
-                                                                <line x1="6" y1="6" x2="18" y2="18" />
-                                                            </svg>
-                                                            <span>Cancelled</span>
-                                                        </span>
-                                                        {log.cancelled_at && (
-                                                            <span className="font-mono text-[9.5px] text-[var(--text-muted)]">
-                                                                {formatNepalDateTime(log.cancelled_at)}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                ) : (
-                                                    <span className="inline-flex min-w-[92px] items-center justify-center gap-1 rounded-full border border-purple-500/30 bg-purple-500/10 px-2 py-0.5 text-[10px] font-bold leading-4 text-purple-600">
-                                                        <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true">
-                                                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                                                        </svg>
-                                                        <span>Processing</span>
-                                                    </span>
-                                                )}
+                                                </div>
                                             </td>
 
                                             {/* License Match / Holder */}
@@ -767,17 +899,50 @@ export default function AdminNotifications(props: any) {
 
                                             {/* Actions */}
                                             <td className="whitespace-nowrap py-3.5 pl-3 pr-4 text-right">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleDeleteNotification(log.id, log.license_number)}
-                                                    className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--border-default)]/80 bg-[var(--surface-primary)] text-[var(--text-muted)] transition-all duration-150 hover:-translate-y-px hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95 cursor-pointer shadow-2xs"
-                                                    title="Delete notification record"
-                                                >
-                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                                        <polyline points="3 6 5 6 21 6" />
-                                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                                    </svg>
-                                                </button>
+                                                <div className="flex items-center justify-end gap-1.5">
+                                                    {/* Email Confirmation Status or Send Button */}
+                                                    {log.confirmation_sent_at ? (
+                                                        <span
+                                                            className="inline-flex items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[9.5px] font-bold text-emerald-600 dark:text-emerald-400"
+                                                            title={`Confirmation email sent: ${formatNepalDateTime(log.confirmation_sent_at, 'en', true)}`}
+                                                        >
+                                                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                                <polyline points="20 6 9 17 4 12" />
+                                                            </svg>
+                                                            <span>Email Sent</span>
+                                                        </span>
+                                                    ) : log.status === 'pending' ? (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleSendNotificationEmail(log.id, log.email, log.license_number)}
+                                                            disabled={sendingNotifId === log.id || sendingNotifBulk}
+                                                            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--border-default)]/80 bg-[var(--surface-primary)] text-[var(--nepal-blue)] transition-all duration-150 hover:-translate-y-px hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue-soft)] active:scale-95 cursor-pointer shadow-2xs disabled:opacity-50"
+                                                            title="Send confirmation email with unsubscribe link"
+                                                        >
+                                                            {sendingNotifId === log.id ? (
+                                                                <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-[var(--nepal-blue)]/30 border-t-[var(--nepal-blue)]" />
+                                                            ) : (
+                                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                                    <rect x="2" y="4" width="20" height="16" rx="2" />
+                                                                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                                                                </svg>
+                                                            )}
+                                                        </button>
+                                                    ) : null}
+
+                                                    {/* Delete Single Action */}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDeleteNotification(log.id, log.license_number)}
+                                                        className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--border-default)]/80 bg-[var(--surface-primary)] text-[var(--text-muted)] transition-all duration-150 hover:-translate-y-px hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95 cursor-pointer shadow-2xs"
+                                                        title="Delete notification record"
+                                                    >
+                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                            <polyline points="3 6 5 6 21 6" />
+                                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     )

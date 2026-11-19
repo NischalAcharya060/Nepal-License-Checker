@@ -176,6 +176,13 @@ export interface NotificationCopy {
   invalidEmailError: string
   rateLimitError: string
   cancelledSuccessNotice: string
+  confirmEmailTitle: string
+  confirmEmailSubtitle: string
+  confirmEmailQuestion: string
+  confirmEmailYesButton: string
+  confirmEmailEditButton: string
+  typoSuggestionPrefix: string
+  typoSuggestionButton: string
 }
 
 export interface UnsubscribeCopy {

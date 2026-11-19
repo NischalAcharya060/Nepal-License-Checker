@@ -15,6 +15,7 @@ export interface NotificationRecord {
   updated_at: number
   sent_at?: number | null
   cancelled_at?: number | null
+  confirmation_sent_at?: number | null
 }
 
 export interface CreateNotificationResult {
@@ -78,6 +79,7 @@ export interface NotificationStats {
   sent: number
   cancelled: number
   deliveryRate: number
+  pendingUnnotified?: number
 }
 
 export interface NotificationLogItem {
@@ -89,6 +91,7 @@ export interface NotificationLogItem {
   updated_at: number
   sent_at?: number | null
   cancelled_at?: number | null
+  confirmation_sent_at?: number | null
   holder_name?: string | null
   office?: string | null
 }
