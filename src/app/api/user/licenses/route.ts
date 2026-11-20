@@ -3,7 +3,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser, ensureUserTables, type UserSavedLicense } from '@/lib/userAuth'
 import { getTurso, type LicenseRow } from '@/lib/turso'
 import { sanitizeInput } from '@/utils/sanitize'
-import { createNotification } from '@/lib/notifications'
+import { createNotification, cancelNotification } from '@/lib/notifications'
+import { sendSubscriptionConfirmationEmail } from '@/lib/email'
+import { logSearch } from '@/lib/searchLogger'
+import { extractGeo } from '@/lib/geo'
 import crypto from 'crypto'
 
 export const dynamic = 'force-dynamic'
@@ -131,13 +134,48 @@ export async function POST(request: NextRequest) {
 
         const matched = printedCheck.rows.length > 0 ? (printedCheck.rows[0] as unknown as LicenseRow) : null
 
-        // If not printed yet and notifyEmail is true, subscribe to notification automatically
+        // If not printed yet and notifyEmail is true, subscribe to notification and send welcome confirmation email
         if (!matched && notifyEmail) {
             createNotification({
                 licenseNumber: rawNumber,
                 email: user.email,
+            }).then(async (notifResult) => {
+                if (notifResult && notifResult.unsubscribeToken) {
+                    try {
+                        const sendRes = await sendSubscriptionConfirmationEmail({
+                            to: user.email,
+                            licenseNumber: rawNumber,
+                            unsubscribeToken: notifResult.unsubscribeToken,
+                            isResend: notifResult.status === 'already_subscribed',
+                        })
+                        if (sendRes.success && notifResult.id) {
+                            await db.execute({
+                                sql: `UPDATE license_notifications SET confirmation_sent_at = ? WHERE id = ?`,
+                                args: [Date.now(), notifResult.id],
+                            }).catch(() => {})
+                        }
+                    } catch (emailErr) {
+                        console.error('[UserLicenses] Error sending welcome subscription email:', emailErr)
+                    }
+                }
             }).catch((err) => console.error('[UserLicenses] Error creating notification alert:', err))
         }
+
+        // Log this search into admin search queries
+        const geo = extractGeo(request)
+        logSearch({
+            license_number: rawNumber,
+            status: matched ? 'found' : 'not_found',
+            holder_name: matched ? matched.holder_name : undefined,
+            office: matched ? matched.office : undefined,
+            category: matched ? matched.category : undefined,
+            ip: geo.ip,
+            country: geo.country,
+            city: geo.city,
+            region: geo.region,
+            user_agent: request.headers.get('user-agent'),
+            source: 'dashboard',
+        }).catch(() => {})
 
         const createdItem: UserSavedLicense = {
             id,
@@ -186,6 +224,20 @@ export async function DELETE(request: NextRequest) {
         await ensureUserTables()
         const db = getTurso()
 
+        // Fetch license_number before deletion to cancel any active alerts
+        const toDeleteRes = await db.execute({
+            sql: `SELECT license_number FROM user_saved_licenses WHERE id = ? AND user_id = ? LIMIT 1`,
+            args: [id, user.id],
+        })
+
+        if (toDeleteRes.rows.length > 0) {
+            const targetLic = toDeleteRes.rows[0] as unknown as { license_number: string }
+            cancelNotification({
+                licenseNumber: targetLic.license_number,
+                email: user.email,
+            }).catch(() => {})
+        }
+
         await db.execute({
             sql: `DELETE FROM user_saved_licenses WHERE id = ? AND user_id = ?`,
             args: [id, user.id],
@@ -216,6 +268,19 @@ export async function PATCH(request: NextRequest) {
         const db = getTurso()
         const now = Date.now()
 
+        // Fetch license to verify ownership and obtain license_number
+        const existingRes = await db.execute({
+            sql: `SELECT license_number, notify_email FROM user_saved_licenses WHERE id = ? AND user_id = ? LIMIT 1`,
+            args: [id, user.id],
+        })
+
+        if (existingRes.rows.length === 0) {
+            return NextResponse.json({ error: 'License not found in your vault.' }, { status: 404 })
+        }
+
+        const existingRecord = existingRes.rows[0] as unknown as { license_number: string; notify_email: number }
+        const licNum = existingRecord.license_number
+
         const updates: string[] = ['updated_at = ?']
         const args: (string | number)[] = [now]
 
@@ -236,7 +301,49 @@ export async function PATCH(request: NextRequest) {
             args,
         })
 
-        return NextResponse.json({ success: true, message: 'License updated successfully.' })
+        // Synchronize with license_notifications and send confirmation email if subscribing
+        if (typeof notify_email === 'boolean') {
+            if (notify_email) {
+                // Subscribe & send welcome confirmation email
+                createNotification({
+                    licenseNumber: licNum,
+                    email: user.email,
+                }).then(async (notifResult) => {
+                    if (notifResult && notifResult.unsubscribeToken) {
+                        try {
+                            const sendRes = await sendSubscriptionConfirmationEmail({
+                                to: user.email,
+                                licenseNumber: licNum,
+                                unsubscribeToken: notifResult.unsubscribeToken,
+                                isResend: notifResult.status === 'already_subscribed',
+                            })
+                            if (sendRes.success && notifResult.id) {
+                                await db.execute({
+                                    sql: `UPDATE license_notifications SET confirmation_sent_at = ? WHERE id = ?`,
+                                    args: [Date.now(), notifResult.id],
+                                }).catch(() => {})
+                            }
+                        } catch (emailErr) {
+                            console.error('[UserLicenses PATCH] Email error:', emailErr)
+                        }
+                    }
+                }).catch((err) => console.error('[UserLicenses PATCH] Notification error:', err))
+            } else {
+                // Unsubscribe: cancel pending notification alert
+                await cancelNotification({
+                    licenseNumber: licNum,
+                    email: user.email,
+                }).catch((err) => console.error('[UserLicenses PATCH] Cancel notification error:', err))
+            }
+        }
+
+        return NextResponse.json({
+            success: true,
+            subscribed: Boolean(notify_email),
+            message: notify_email
+                ? 'Subscribed to alerts. A welcome confirmation email has been sent.'
+                : 'Unsubscribed from automated email alerts.',
+        })
     } catch (err: unknown) {
         console.error('[API user/licenses PATCH] Error:', err)
         return NextResponse.json({ error: 'Failed to update license.' }, { status: 500 })

@@ -119,7 +119,8 @@ export async function GET(request: NextRequest) {
         const searchParams = request.nextUrl.searchParams
         let licenseNumber = searchParams.get('number')
         const rawSource = searchParams.get('source')
-        const searchSource: 'scanner' | 'manual' = rawSource === 'scanner' ? 'scanner' : 'manual'
+        const searchSource: string =
+            rawSource === 'scanner' ? 'scanner' : rawSource === 'dashboard' ? 'dashboard' : 'manual'
 
         if (!licenseNumber) {
             logDevMetric(400)

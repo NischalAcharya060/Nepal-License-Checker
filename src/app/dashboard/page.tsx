@@ -1,7 +1,7 @@
 // src/app/dashboard/page.tsx
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -32,13 +32,43 @@ export default function UserDashboardPage() {
     const [user, setUser] = useState<UserProfile | null>(null)
     const [language, setLanguage] = useState<'en' | 'ne'>('en')
 
-    // Active Tab
+    // Active Tab: 'licenses' | 'support' | 'security'
     const [activeTab, setActiveTab] = useState<'licenses' | 'support' | 'security'>('licenses')
 
     // Licenses State
     const [licenses, setLicenses] = useState<UserSavedLicense[]>([])
     const [loadingLicenses, setLoadingLicenses] = useState(false)
     const [refreshingLicenseId, setRefreshingLicenseId] = useState<string | null>(null)
+    const [refreshingAll, setRefreshingAll] = useState(false)
+    const [copiedLicenseId, setCopiedLicenseId] = useState<string | null>(null)
+
+    // License Filter & Search
+    const [licenseFilter, setLicenseFilter] = useState<'all' | 'ready' | 'pending'>('all')
+    const [licenseSearch, setLicenseSearch] = useState('')
+
+    // Delete License Confirmation Modal
+    const [deleteTarget, setDeleteTarget] = useState<UserSavedLicense | null>(null)
+    const [deletingLicense, setDeletingLicense] = useState(false)
+
+    // Unsubscribe from Alerts Confirmation Modal
+    const [unsubscribeTarget, setUnsubscribeTarget] = useState<UserSavedLicense | null>(null)
+    const [togglingNotification, setTogglingNotification] = useState(false)
+
+    // Global Toast Feedback State
+    const [toast, setToast] = useState<{
+        type: 'success' | 'error' | 'info'
+        message: string
+    } | null>(null)
+
+    const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
+        setToast({ type, message })
+    }, [])
+
+    useEffect(() => {
+        if (!toast) return
+        const timer = setTimeout(() => setToast(null), 3500)
+        return () => clearTimeout(timer)
+    }, [toast])
 
     // Add License Modal
     const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -67,7 +97,34 @@ export default function UserDashboardPage() {
     const [savingPassword, setSavingPassword] = useState(false)
     const [passwordFeedback, setPasswordFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
-    // Detect language
+    // Keyboard Escape listener to dismiss any active modal
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                if (deleteTarget && !deletingLicense) setDeleteTarget(null)
+                if (unsubscribeTarget && !togglingNotification) setUnsubscribeTarget(null)
+                if (isAddModalOpen && !addingLicense) setIsAddModalOpen(false)
+                if (isNewTicketModalOpen && !submittingTicket) setIsNewTicketModalOpen(false)
+            }
+        }
+        window.addEventListener('keydown', handleKeyDown)
+        return () => window.removeEventListener('keydown', handleKeyDown)
+    }, [deleteTarget, deletingLicense, unsubscribeTarget, togglingNotification, isAddModalOpen, addingLicense, isNewTicketModalOpen, submittingTicket])
+
+    // Body scroll lock when any modal is open
+    useEffect(() => {
+        const isModalOpen = Boolean(deleteTarget || unsubscribeTarget || isAddModalOpen || isNewTicketModalOpen)
+        if (typeof document !== 'undefined') {
+            document.body.style.overflow = isModalOpen ? 'hidden' : ''
+        }
+        return () => {
+            if (typeof document !== 'undefined') {
+                document.body.style.overflow = ''
+            }
+        }
+    }, [deleteTarget, unsubscribeTarget, isAddModalOpen, isNewTicketModalOpen])
+
+    // Detect language from URL or local storage
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const urlLang = new URLSearchParams(window.location.search).get('lang')
@@ -80,7 +137,7 @@ export default function UserDashboardPage() {
         }
     }, [])
 
-    // Load User
+    // Load Authenticated User
     const fetchUser = useCallback(async () => {
         try {
             const res = await fetch('/api/user/auth/me')
@@ -97,7 +154,7 @@ export default function UserDashboardPage() {
         }
     }, [router])
 
-    // Load Licenses
+    // Load User Licenses
     const fetchLicenses = useCallback(async () => {
         setLoadingLicenses(true)
         try {
@@ -113,7 +170,7 @@ export default function UserDashboardPage() {
         }
     }, [])
 
-    // Load Support Tickets
+    // Load User Support Tickets
     const fetchTickets = useCallback(async () => {
         setLoadingTickets(true)
         try {
@@ -140,6 +197,18 @@ export default function UserDashboardPage() {
         }
     }, [user, fetchLicenses, fetchTickets])
 
+    // Close modal on Escape key
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                setIsAddModalOpen(false)
+                setIsNewTicketModalOpen(false)
+            }
+        }
+        window.addEventListener('keydown', handleKeyDown)
+        return () => window.removeEventListener('keydown', handleKeyDown)
+    }, [])
+
     // Handle Logout
     const handleLogout = async () => {
         try {
@@ -153,7 +222,7 @@ export default function UserDashboardPage() {
     const handleRefreshStatus = async (item: UserSavedLicense) => {
         setRefreshingLicenseId(item.id)
         try {
-            const res = await fetch(`/api/license?number=${encodeURIComponent(item.license_number)}`)
+            const res = await fetch(`/api/license?number=${encodeURIComponent(item.license_number)}&source=dashboard`)
             const data = await res.json()
             if (res.ok && data?.status === 'success' && data?.data) {
                 setLicenses((prev) =>
@@ -169,6 +238,12 @@ export default function UserDashboardPage() {
                             : lic
                     )
                 )
+                showToast(
+                    language === 'ne'
+                        ? `#${item.license_number} को स्थिति अद्यावधिक गरियो।`
+                        : `Status updated for #${item.license_number}`,
+                    'success'
+                )
             } else {
                 setLicenses((prev) =>
                     prev.map((lic) => (lic.id === item.id ? { ...lic, status: 'not_printed' } : lic))
@@ -176,45 +251,158 @@ export default function UserDashboardPage() {
             }
         } catch (err) {
             console.error('Error refreshing license:', err)
+            showToast(
+                language === 'ne' ? 'स्थिति जाँच गर्न असफल भयो।' : 'Failed to refresh status.',
+                'error'
+            )
         } finally {
             setRefreshingLicenseId(null)
         }
     }
 
-    // Delete single license
-    const handleDeleteLicense = async (id: string, num: string) => {
-        const confirmMsg =
-            language === 'ne'
-                ? `के तपाईं साँच्चै #${num} लाइसेन्स सूचीबाट हटाउन चाहनुहुन्छ?`
-                : `Are you sure you want to remove license #${num} from your saved list?`
-        if (!confirm(confirmMsg)) return
-
+    // Refresh all licenses in batch
+    const handleRefreshAll = async () => {
+        if (licenses.length === 0 || refreshingAll) return
+        setRefreshingAll(true)
         try {
-            const res = await fetch(`/api/user/licenses?id=${encodeURIComponent(id)}`, {
-                method: 'DELETE',
-            })
-            if (res.ok) {
-                setLicenses((prev) => prev.filter((l) => l.id !== id))
-            }
-        } catch (err) {
-            console.error('Failed to delete license:', err)
+            await Promise.all(licenses.map((lic) => handleRefreshStatus(lic)))
+            showToast(
+                language === 'ne' ? 'सबै लाइसेन्स स्थिति अद्यावधिक गरियो।' : 'All licenses refreshed successfully.',
+                'success'
+            )
+        } finally {
+            setRefreshingAll(false)
         }
     }
 
-    // Toggle notification for license
-    const handleToggleNotification = async (item: UserSavedLicense) => {
-        const nextState = !item.notify_email
+    // Copy license number to clipboard
+    const handleCopyNumber = (item: UserSavedLicense) => {
+        navigator.clipboard.writeText(item.license_number)
+        setCopiedLicenseId(item.id)
+        showToast(
+            language === 'ne' ? 'लाइसेन्स नम्बर कपी गरियो!' : 'License number copied to clipboard!',
+            'success'
+        )
+        setTimeout(() => setCopiedLicenseId(null), 2000)
+    }
+
+    // Confirm and Delete single license from vault (Proper Modal Handler)
+    const handleConfirmDelete = async () => {
+        if (!deleteTarget) return
+        const target = deleteTarget
+        setDeletingLicense(true)
+
+        try {
+            const res = await fetch(`/api/user/licenses?id=${encodeURIComponent(target.id)}`, {
+                method: 'DELETE',
+            })
+            if (res.ok) {
+                setLicenses((prev) => prev.filter((l) => l.id !== target.id))
+                showToast(
+                    language === 'ne'
+                        ? `लाइसेन्स #${target.license_number} भल्टबाट हटाइयो।`
+                        : `License #${target.license_number} removed from vault.`,
+                    'info'
+                )
+                setDeleteTarget(null)
+            } else {
+                showToast(
+                    language === 'ne' ? 'लाइसेन्स हटाउन असफल भयो।' : 'Failed to remove license.',
+                    'error'
+                )
+            }
+        } catch (err) {
+            console.error('Failed to delete license:', err)
+            showToast(
+                language === 'ne' ? 'प्राविधिक समस्या भयो।' : 'Network error occurred.',
+                'error'
+            )
+        } finally {
+            setDeletingLicense(false)
+        }
+    }
+
+    // Handle click on the card's alert subscription switch
+    const handleAlertClick = (item: UserSavedLicense) => {
+        if (item.notify_email) {
+            // Currently subscribed: open Unsubscribe confirmation modal
+            setUnsubscribeTarget(item)
+        } else {
+            // Currently unsubscribed: subscribe & send welcome email
+            handleSubscribe(item)
+        }
+    }
+
+    // Subscribe to automated email alerts for a license
+    const handleSubscribe = async (item: UserSavedLicense) => {
+        setTogglingNotification(true)
+        // Optimistic UI update
         setLicenses((prev) =>
-            prev.map((l) => (l.id === item.id ? { ...l, notify_email: nextState } : l))
+            prev.map((l) => (l.id === item.id ? { ...l, notify_email: true } : l))
         )
         try {
-            await fetch('/api/user/licenses', {
+            const res = await fetch('/api/user/licenses', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: item.id, notify_email: nextState }),
+                body: JSON.stringify({ id: item.id, notify_email: true }),
             })
+            const data = await res.json()
+            if (res.ok) {
+                showToast(
+                    language === 'ne'
+                        ? 'इमेल अलर्ट सक्रिय भयो! स्वागत इमेल पठाइएको छ।'
+                        : 'Subscribed to alerts! Welcome confirmation email sent.',
+                    'success'
+                )
+            } else {
+                setLicenses((prev) =>
+                    prev.map((l) => (l.id === item.id ? { ...l, notify_email: false } : l))
+                )
+                showToast(data.error || 'Failed to subscribe.', 'error')
+            }
         } catch (err) {
-            console.error('Failed to toggle notification:', err)
+            console.error('Failed to subscribe to alerts:', err)
+            setLicenses((prev) =>
+                prev.map((l) => (l.id === item.id ? { ...l, notify_email: false } : l))
+            )
+            showToast(language === 'ne' ? 'प्राविधिक समस्या भयो।' : 'Network error.', 'error')
+        } finally {
+            setTogglingNotification(false)
+        }
+    }
+
+    // Confirm and Unsubscribe from alerts (from confirmation modal)
+    const handleConfirmUnsubscribe = async () => {
+        if (!unsubscribeTarget) return
+        const target = unsubscribeTarget
+        setTogglingNotification(true)
+
+        try {
+            const res = await fetch('/api/user/licenses', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: target.id, notify_email: false }),
+            })
+            const data = await res.json()
+            if (res.ok) {
+                setLicenses((prev) =>
+                    prev.map((l) => (l.id === target.id ? { ...l, notify_email: false } : l))
+                )
+                showToast(
+                    language === 'ne'
+                        ? `लाइसेन्स #${target.license_number} का लागि इमेल अलर्ट बन्द (Unsubscribed) गरियो।`
+                        : `Unsubscribed from email alerts for #${target.license_number}`,
+                    'info'
+                )
+                setUnsubscribeTarget(null)
+            } else {
+                showToast(data.error || 'Failed to unsubscribe.', 'error')
+            }
+        } catch (err) {
+            console.error('Failed to unsubscribe:', err)
+            showToast(language === 'ne' ? 'प्राविधिक समस्या भयो।' : 'Network error.', 'error')
+        } finally {
+            setTogglingNotification(false)
         }
     }
 
@@ -253,6 +441,12 @@ export default function UserDashboardPage() {
                 setIsAddModalOpen(false)
                 setNewNumber('')
                 setNewLabel('Mine')
+                showToast(
+                    language === 'ne'
+                        ? 'लाइसेन्स सफलतापूर्वक भल्टमा थपियो!'
+                        : 'License added to vault successfully!',
+                    'success'
+                )
             }
         } catch {
             setAddModalError('Server error while saving.')
@@ -293,9 +487,9 @@ export default function UserDashboardPage() {
             if (!res.ok) {
                 setTicketModalError(data.error || 'Failed to submit.')
             } else {
-                setTicketModalSuccess(
-                    language === 'ne' ? 'उजुरी/सोधपुछ सफलतापूर्वक पठाइयो!' : 'Inquiry submitted successfully!'
-                )
+                const successMsg = language === 'ne' ? 'उजुरी/सोधपुछ सफलतापूर्वक पठाइयो!' : 'Inquiry submitted successfully!'
+                setTicketModalSuccess(successMsg)
+                showToast(successMsg, 'success')
                 setTicketMessage('')
                 setTicketSubject('')
                 setTicketLicense('')
@@ -351,10 +545,12 @@ export default function UserDashboardPage() {
                     message: data.error || (language === 'ne' ? 'पासवर्ड सुरक्षित गर्न सकिएन।' : 'Failed to update password.'),
                 })
             } else {
+                const passMsg = language === 'ne' ? 'पासवर्ड सफलतापूर्वक सुरक्षित भयो!' : 'Password updated successfully!'
                 setPasswordFeedback({
                     type: 'success',
-                    message: language === 'ne' ? 'पासवर्ड सफलतापूर्वक सुरक्षित भयो!' : 'Password updated successfully!',
+                    message: passMsg,
                 })
+                showToast(passMsg, 'success')
                 setCurrentPassword('')
                 setNewPassword('')
                 setConfirmPassword('')
@@ -370,13 +566,37 @@ export default function UserDashboardPage() {
         }
     }
 
+    // Filtered Licenses
+    const filteredLicenses = useMemo(() => {
+        return licenses.filter((item) => {
+            const matchesFilter =
+                licenseFilter === 'all'
+                    ? true
+                    : licenseFilter === 'ready'
+                    ? item.status === 'ready'
+                    : item.status !== 'ready'
+
+            if (!matchesFilter) return false
+
+            if (!licenseSearch.trim()) return true
+            const query = licenseSearch.toLowerCase().trim()
+            return (
+                item.license_number.toLowerCase().includes(query) ||
+                item.label.toLowerCase().includes(query) ||
+                (item.holder_name && item.holder_name.toLowerCase().includes(query)) ||
+                (item.office && item.office.toLowerCase().includes(query)) ||
+                (item.category && item.category.toLowerCase().includes(query))
+            )
+        })
+    }, [licenses, licenseFilter, licenseSearch])
+
     if (loadingUser) {
         return (
             <main className="flex min-h-screen items-center justify-center bg-[var(--bg-primary)] text-[var(--text-primary)]">
                 <div className="flex flex-col items-center gap-3">
                     <div className="h-8 w-8 animate-spin rounded-full border-3 border-[var(--nepal-blue)] border-t-transparent" />
                     <span className="text-xs font-semibold text-[var(--text-secondary)]">
-                        {language === 'ne' ? 'लोड हुँदैछ...' : 'Loading dashboard...'}
+                        {language === 'ne' ? 'लोड हुँदैछ...' : 'Loading citizen portal...'}
                     </span>
                 </div>
             </main>
@@ -385,43 +605,48 @@ export default function UserDashboardPage() {
 
     if (!user) return null
 
-    // Compute stats
+    const isNe = language === 'ne'
     const readyCount = licenses.filter((l) => l.status === 'ready').length
-    const pendingCount = licenses.filter((l) => l.status === 'not_printed').length
+    const pendingCount = licenses.filter((l) => l.status !== 'ready').length
 
     return (
-        <main className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors pb-16">
-            {/* Top Navbar */}
-            <header className="sticky top-0 z-30 border-b border-[var(--border-default)] bg-[var(--surface-primary)]/80 backdrop-blur-xl">
+        <main className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors pb-20 selection:bg-[var(--nepal-blue)]/20">
+            {/* Top Navigation Bar */}
+            <header className="sticky top-0 z-30 border-b border-[var(--border-default)] bg-[var(--surface-primary)]/85 backdrop-blur-xl transition-all">
                 <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
+                    {/* Brand */}
                     <div className="flex items-center gap-3">
-                        <Link href="/" className="flex items-center gap-2 group">
-                            <Image
-                                src="/License-Checker-Nepal-logo.png"
-                                alt="Logo"
-                                width={36}
-                                height={36}
-                                className="rounded-xl object-contain transition-transform group-hover:scale-105"
-                            />
-                            <div className="hidden min-[420px]:block">
-                                <span className="text-xs font-extrabold tracking-tight text-[var(--text-primary)] block leading-tight">
-                                    Nepal License Checker 🇳🇵
+                        <Link href="/" className="flex items-center gap-2.5 group">
+                            <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--surface-primary)] p-1.5 border border-[var(--border-default)] shadow-xs transition-transform group-hover:scale-105">
+                                <Image
+                                    src="/License-Checker-Nepal-logo.png"
+                                    alt="Nepal License Checker"
+                                    width={32}
+                                    height={32}
+                                    className="rounded-lg object-contain"
+                                    priority
+                                />
+                            </div>
+                            <div>
+                                <span className="text-xs sm:text-sm font-extrabold tracking-tight text-[var(--text-primary)] block leading-tight">
+                                    Nepal License Checker
                                 </span>
-                                <span className="text-[10px] font-semibold text-[var(--text-secondary)] block">
-                                    {language === 'ne' ? 'नागरिक ड्यासबोर्ड' : 'Citizen Dashboard'}
+                                <span className="text-[10px] font-semibold text-[var(--nepal-blue)] block">
+                                    {isNe ? 'नागरिक भल्ट पोर्टल' : 'Citizen Family Vault'}
                                 </span>
                             </div>
                         </Link>
                     </div>
 
+                    {/* Actions */}
                     <div className="flex items-center gap-2 sm:gap-3">
                         {/* Language Switch */}
-                        <div className="inline-flex items-center rounded-full border border-[var(--border-default)] bg-[var(--bg-secondary)] p-0.5 text-xs">
+                        <div className="inline-flex items-center rounded-full border border-[var(--border-default)] bg-[var(--bg-secondary)] p-0.5 text-xs shadow-2xs">
                             <button
                                 type="button"
                                 onClick={() => setLanguage('en')}
-                                className={`rounded-full px-2 py-0.5 text-[10px] font-bold transition ${
-                                    language === 'en' ? 'bg-[var(--nepal-blue)] text-white' : 'text-[var(--text-secondary)]'
+                                className={`rounded-full px-2.5 py-1 text-[10px] font-bold transition cursor-pointer ${
+                                    language === 'en' ? 'bg-[var(--nepal-blue)] text-white shadow-2xs' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                                 }`}
                             >
                                 EN
@@ -429,209 +654,372 @@ export default function UserDashboardPage() {
                             <button
                                 type="button"
                                 onClick={() => setLanguage('ne')}
-                                className={`rounded-full px-2 py-0.5 text-[10px] font-bold transition ${
-                                    language === 'ne' ? 'bg-[var(--nepal-blue)] text-white' : 'text-[var(--text-secondary)]'
+                                className={`rounded-full px-2.5 py-1 text-[10px] font-bold transition cursor-pointer ${
+                                    language === 'ne' ? 'bg-[var(--nepal-blue)] text-white shadow-2xs' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                                 }`}
                             >
                                 नेपाली
                             </button>
                         </div>
 
-                        {/* Home Button */}
-                        <Link
-                            href="/"
-                            className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--nepal-blue)] transition cursor-pointer"
-                        >
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                                <polyline points="9 22 9 12 15 12 15 22" />
-                            </svg>
-                            <span>{language === 'ne' ? 'नयाँ खोजी' : 'Lookup'}</span>
-                        </Link>
-
-                        {/* Logout Button */}
+                        {/* Sign Out */}
                         <button
                             type="button"
                             onClick={handleLogout}
-                            className="inline-flex items-center gap-1.5 rounded-full border border-rose-500/20 bg-rose-500/10 px-3 py-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 transition cursor-pointer"
+                            className="inline-flex items-center gap-1.5 rounded-full border border-rose-500/25 bg-rose-500/10 px-3 py-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 active:scale-95 transition shadow-2xs cursor-pointer"
+                            title={isNe ? 'खाताबाट बाहिरिनुहोस्' : 'Sign Out'}
                         >
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                                 <polyline points="16 17 21 12 16 7" />
                                 <line x1="21" y1="12" x2="9" y2="12" />
                             </svg>
-                            <span>{language === 'ne' ? 'बाहिरिनुहोस्' : 'Sign Out'}</span>
+                            <span className="hidden min-[380px]:inline">{isNe ? 'बाहिरिनुहोस्' : 'Sign Out'}</span>
                         </button>
                     </div>
                 </div>
             </header>
 
-            {/* Main Content Area */}
-            <div className="mx-auto max-w-6xl px-4 pt-6 sm:px-6 sm:pt-8 space-y-6">
-                {/* User Greeting & Stats Banner */}
-                <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-5 sm:p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-5">
-                    <div className="flex items-center gap-3 sm:gap-4">
-                        <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-[var(--nepal-blue)] text-white font-extrabold text-xl shadow-xs shrink-0">
-                            {user.email.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="min-w-0">
-                            <div className="flex items-center gap-2">
-                                <h1 className="text-lg sm:text-xl font-extrabold text-[var(--text-primary)] truncate">
-                                    {language === 'ne' ? 'नमस्ते,' : 'Namaste,'} {user.email.split('@')[0]}
-                                </h1>
-                                <span className="inline-block rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                                    {language === 'ne' ? 'सत्यापित खाता' : 'Verified'}
-                                </span>
-                            </div>
-                            <p className="text-xs text-[var(--text-secondary)] truncate">{user.email}</p>
-                        </div>
-                    </div>
-
-                    {/* Stats Tiles */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 shrink-0">
-                        <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 p-2.5 text-center min-w-[75px] sm:min-w-[100px]">
-                            <span className="block text-[11px] font-semibold text-[var(--text-secondary)]">
-                                {language === 'ne' ? 'कुल सेभ' : 'Total Saved'}
-                            </span>
-                            <span className="text-lg sm:text-xl font-extrabold text-[var(--text-primary)]">
-                                {licenses.length}
-                            </span>
-                        </div>
-
-                        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-2.5 text-center min-w-[75px] sm:min-w-[100px]">
-                            <span className="block text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                                {language === 'ne' ? 'छापिएको' : 'Ready'}
-                            </span>
-                            <span className="text-lg sm:text-xl font-extrabold text-emerald-600 dark:text-emerald-400">
-                                {readyCount}
-                            </span>
-                        </div>
-
-                        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-2.5 text-center min-w-[75px] sm:min-w-[100px]">
-                            <span className="block text-[11px] font-semibold text-amber-600 dark:text-amber-400">
-                                {language === 'ne' ? 'बाँकी' : 'Pending'}
-                            </span>
-                            <span className="text-lg sm:text-xl font-extrabold text-amber-600 dark:text-amber-400">
-                                {pendingCount}
-                            </span>
-                        </div>
-
-                        <button
-                            type="button"
-                            onClick={() => setActiveTab('support')}
-                            className="rounded-xl border border-[var(--nepal-blue)]/20 bg-[var(--nepal-blue)]/5 p-2.5 text-center min-w-[75px] sm:min-w-[100px] transition hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue)]/10 cursor-pointer"
-                            title="View all sent support messages"
-                        >
-                            <span className="block text-[11px] font-semibold text-[var(--nepal-blue)]">
-                                {language === 'ne' ? 'मेरो सन्देशहरू' : 'Sent Messages'}
-                            </span>
-                            <span className="text-lg sm:text-xl font-extrabold text-[var(--nepal-blue)]">
-                                {tickets.length}
-                            </span>
-                        </button>
-                    </div>
-                </div>
-
-                {/* Tabs Bar */}
-                <div className="flex border-b border-[var(--border-default)] gap-2 sm:gap-6 overflow-x-auto scrollbar-none">
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab('licenses')}
-                        className={`flex items-center gap-2 pb-3 px-1 text-xs sm:text-sm font-bold border-b-2 transition cursor-pointer whitespace-nowrap ${
-                            activeTab === 'licenses'
-                                ? 'border-[var(--nepal-blue)] text-[var(--nepal-blue)]'
-                                : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                        }`}
-                    >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            {/* Main Container */}
+            <div className="mx-auto max-w-6xl px-4 pt-6 sm:px-6 sm:pt-8 space-y-6 sm:space-y-7">
+                {/* Hero Greeting & Stats Banner */}
+                <div className="relative rounded-2xl sm:rounded-3xl border border-[var(--border-default)] bg-gradient-to-br from-[var(--nepal-blue)]/10 via-[var(--surface-primary)] to-[var(--bg-secondary)]/40 p-5 sm:p-7 shadow-xl overflow-hidden">
+                    {/* Background subtle watermark icon */}
+                    <div className="pointer-events-none absolute -right-6 -bottom-6 text-[var(--nepal-blue)]/5 dark:text-[var(--nepal-blue)]/10">
+                        <svg width="180" height="180" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
                             <rect x="3" y="4" width="18" height="16" rx="3" />
                             <circle cx="9" cy="10" r="2" />
                             <line x1="15" y1="8" x2="17" y2="8" />
                             <line x1="15" y1="12" x2="17" y2="12" />
                             <line x1="7" y1="16" x2="17" y2="16" />
                         </svg>
-                        <span>{language === 'ne' ? 'मेरो र परिवारका लाइसेन्सहरू' : 'Family Licenses'}</span>
-                        <span className="ml-0.5 rounded-full bg-[var(--bg-secondary)] px-2 py-0.2 text-[10px] font-bold">
-                            {licenses.length}
-                        </span>
-                    </button>
+                    </div>
 
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab('support')}
-                        className={`flex items-center gap-2 pb-3 px-1 text-xs sm:text-sm font-bold border-b-2 transition cursor-pointer whitespace-nowrap ${
-                            activeTab === 'support'
-                                ? 'border-[var(--nepal-blue)] text-[var(--nepal-blue)]'
-                                : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                        }`}
-                    >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                        </svg>
-                        <span>{language === 'ne' ? 'मेरो सन्देश तथा सोधपुछ' : 'My Sent Messages'}</span>
-                        {tickets.length > 0 && (
-                            <span className="ml-0.5 rounded-full bg-[var(--nepal-blue)]/10 text-[var(--nepal-blue)] px-2 py-0.2 text-[10px] font-extrabold border border-[var(--nepal-blue)]/25">
-                                {tickets.length}
-                            </span>
-                        )}
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab('security')}
-                        className={`flex items-center gap-2 pb-3 px-1 text-xs sm:text-sm font-bold border-b-2 transition cursor-pointer whitespace-nowrap ${
-                            activeTab === 'security'
-                                ? 'border-[var(--nepal-blue)] text-[var(--nepal-blue)]'
-                                : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                        }`}
-                    >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                        </svg>
-                        <span>{language === 'ne' ? 'सुरक्षा तथा पासवर्ड' : 'Account & Security'}</span>
-                    </button>
-                </div>
-
-                {/* TAB 1: SAVED FAMILY LICENSES */}
-                {activeTab === 'licenses' && (
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h2 className="text-base font-extrabold text-[var(--text-primary)]">
-                                    {language === 'ne' ? 'परिवारका सुरक्षित लाइसेन्सहरू' : 'Saved Family Licenses'}
-                                </h2>
-                                <p className="text-xs text-[var(--text-secondary)]">
-                                    {language === 'ne'
-                                        ? 'आफ्नो र परिवारका लाइसेन्सहरू यहाँ सुरक्षित राख्नुहोस् र अवस्था एकै ठाउँबाट जाँच्नुहोस्।'
-                                        : 'Monitor license printing status for your entire family in one unified place.'}
-                                </p>
+                    <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                        {/* User Identity & Info */}
+                        <div className="flex items-center gap-3.5 sm:gap-4.5">
+                            <div className="relative flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-[var(--surface-primary)] border border-[var(--border-default)] p-1.5 shadow-sm shrink-0 overflow-hidden">
+                                <Image
+                                    src="/user_icon.png"
+                                    alt="User Avatar"
+                                    width={64}
+                                    height={64}
+                                    className="h-full w-full object-contain"
+                                    priority
+                                />
                             </div>
 
+                            <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <h1 className="text-lg sm:text-2xl font-extrabold text-[var(--text-primary)] tracking-tight truncate">
+                                        {isNe ? 'नमस्ते,' : 'Namaste,'} {user.email.split('@')[0]}
+                                    </h1>
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="20 6 9 17 4 12" />
+                                        </svg>
+                                        <span>{isNe ? 'सत्यापित नागरिक' : 'Verified Citizen'}</span>
+                                    </span>
+                                </div>
+                                <p className="text-xs text-[var(--text-secondary)] font-medium truncate mt-0.5">
+                                    {user.email} • {isNe ? 'पारिवारिक स्मार्ट कार्ड भल्ट' : 'Family Driving License Vault'}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Interactive Metric Tiles */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 shrink-0">
+                            {/* Metric 1: Total Saved */}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setActiveTab('licenses')
+                                    setLicenseFilter('all')
+                                }}
+                                className={`rounded-xl border p-3 text-left transition cursor-pointer ${
+                                    activeTab === 'licenses' && licenseFilter === 'all'
+                                        ? 'border-[var(--nepal-blue)] bg-[var(--surface-primary)] shadow-sm'
+                                        : 'border-[var(--border-default)] bg-[var(--surface-primary)]/70 hover:border-[var(--nepal-blue)]/50'
+                                }`}
+                            >
+                                <span className="block text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">
+                                    {isNe ? 'कुल सेभ' : 'Total Saved'}
+                                </span>
+                                <span className="text-xl sm:text-2xl font-extrabold text-[var(--text-primary)] mt-0.5 block">
+                                    {licenses.length}
+                                </span>
+                            </button>
+
+                            {/* Metric 2: Ready */}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setActiveTab('licenses')
+                                    setLicenseFilter('ready')
+                                }}
+                                className={`rounded-xl border p-3 text-left transition cursor-pointer ${
+                                    activeTab === 'licenses' && licenseFilter === 'ready'
+                                        ? 'border-emerald-500 bg-emerald-500/10 shadow-sm'
+                                        : 'border-emerald-500/30 bg-emerald-500/5 hover:border-emerald-500/60'
+                                }`}
+                            >
+                                <div className="flex items-center justify-between">
+                                    <span className="block text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                                        {isNe ? 'छापिएको' : 'Ready'}
+                                    </span>
+                                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                                </div>
+                                <span className="text-xl sm:text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5 block">
+                                    {readyCount}
+                                </span>
+                            </button>
+
+                            {/* Metric 3: In Print Queue */}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setActiveTab('licenses')
+                                    setLicenseFilter('pending')
+                                }}
+                                className={`rounded-xl border p-3 text-left transition cursor-pointer ${
+                                    activeTab === 'licenses' && licenseFilter === 'pending'
+                                        ? 'border-amber-500 bg-amber-500/10 shadow-sm'
+                                        : 'border-amber-500/30 bg-amber-500/5 hover:border-amber-500/60'
+                                }`}
+                            >
+                                <span className="block text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+                                    {isNe ? 'बाँकी' : 'In Queue'}
+                                </span>
+                                <span className="text-xl sm:text-2xl font-extrabold text-amber-600 dark:text-amber-400 mt-0.5 block">
+                                    {pendingCount}
+                                </span>
+                            </button>
+
+                            {/* Metric 4: Messages */}
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab('support')}
+                                className={`rounded-xl border p-3 text-left transition cursor-pointer ${
+                                    activeTab === 'support'
+                                        ? 'border-[var(--nepal-blue)] bg-[var(--nepal-blue)]/10 shadow-sm'
+                                        : 'border-[var(--nepal-blue)]/30 bg-[var(--nepal-blue)]/5 hover:border-[var(--nepal-blue)]/60'
+                                }`}
+                            >
+                                <span className="block text-[11px] font-bold text-[var(--nepal-blue)] uppercase tracking-wider">
+                                    {isNe ? 'सन्देशहरू' : 'Inquiries'}
+                                </span>
+                                <span className="text-xl sm:text-2xl font-extrabold text-[var(--nepal-blue)] mt-0.5 block">
+                                    {tickets.length}
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Dashboard Tabs Bar */}
+                <div className="flex items-center justify-between border-b border-[var(--border-default)] gap-2 sm:gap-4 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pb-1">
+                    <div className="flex items-center gap-1.5 sm:gap-2">
+                        {/* Tab 1: Licenses */}
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('licenses')}
+                            className={`flex items-center gap-2 rounded-xl py-2 px-3 sm:px-4 text-xs sm:text-sm font-bold transition cursor-pointer whitespace-nowrap ${
+                                activeTab === 'licenses'
+                                    ? 'bg-[var(--nepal-blue)] text-white shadow-xs'
+                                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-primary)]'
+                            }`}
+                        >
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="3" y="4" width="18" height="16" rx="3" />
+                                <circle cx="9" cy="10" r="2" />
+                                <line x1="15" y1="8" x2="17" y2="8" />
+                                <line x1="15" y1="12" x2="17" y2="12" />
+                                <line x1="7" y1="16" x2="17" y2="16" />
+                            </svg>
+                            <span>{isNe ? 'पारिवारिक लाइसेन्सहरू' : 'Family Licenses'}</span>
+                            <span className={`rounded-full px-2 py-0.2 text-[10px] font-extrabold ${
+                                activeTab === 'licenses' ? 'bg-white/20 text-white' : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)]'
+                            }`}>
+                                {licenses.length}
+                            </span>
+                        </button>
+
+                        {/* Tab 2: Sent Messages & Support */}
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('support')}
+                            className={`flex items-center gap-2 rounded-xl py-2 px-3 sm:px-4 text-xs sm:text-sm font-bold transition cursor-pointer whitespace-nowrap ${
+                                activeTab === 'support'
+                                    ? 'bg-[var(--nepal-blue)] text-white shadow-xs'
+                                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-primary)]'
+                            }`}
+                        >
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                            </svg>
+                            <span>{isNe ? 'मेरो सन्देश तथा सोधपुछ' : 'Sent Inquiries'}</span>
+                            {tickets.length > 0 && (
+                                <span className={`rounded-full px-2 py-0.2 text-[10px] font-extrabold ${
+                                    activeTab === 'support' ? 'bg-white/20 text-white' : 'bg-[var(--nepal-blue)]/10 text-[var(--nepal-blue)]'
+                                }`}>
+                                    {tickets.length}
+                                </span>
+                            )}
+                        </button>
+
+                        {/* Tab 3: Security & Password */}
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('security')}
+                            className={`flex items-center gap-2 rounded-xl py-2 px-3 sm:px-4 text-xs sm:text-sm font-bold transition cursor-pointer whitespace-nowrap ${
+                                activeTab === 'security'
+                                    ? 'bg-[var(--nepal-blue)] text-white shadow-xs'
+                                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-primary)]'
+                            }`}
+                        >
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                            </svg>
+                            <span>{isNe ? 'सुरक्षा तथा खाता' : 'Account & Security'}</span>
+                        </button>
+                    </div>
+
+                    {/* Quick Add CTA on Tabs Bar */}
+                    {activeTab === 'licenses' && licenses.length > 0 && (
+                        <div className="flex items-center gap-2 shrink-0">
+                            {/* Refresh All */}
+                            <button
+                                type="button"
+                                onClick={handleRefreshAll}
+                                disabled={refreshingAll}
+                                className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--nepal-blue)] transition cursor-pointer disabled:opacity-50"
+                                title="Check status for all saved licenses"
+                            >
+                                <svg
+                                    width="13"
+                                    height="13"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2.2"
+                                    className={refreshingAll ? 'animate-spin text-[var(--nepal-blue)]' : ''}
+                                >
+                                    <polyline points="23 4 23 10 17 10" />
+                                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                                </svg>
+                                <span>{refreshingAll ? (isNe ? 'जाँच्दै...' : 'Checking...') : (isNe ? 'सबै ताजा गर्नुहोस्' : 'Refresh All')}</span>
+                            </button>
+
+                            {/* Add Button */}
                             <button
                                 type="button"
                                 onClick={() => {
                                     setIsAddModalOpen(true)
                                     setAddModalError(null)
                                 }}
-                                className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--nepal-blue)] px-3.5 py-2 text-xs font-bold text-white shadow-sm transition hover:opacity-95 active:scale-95 cursor-pointer"
+                                className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--nepal-blue)] px-3.5 py-1.5 text-xs font-bold text-white shadow-xs transition hover:opacity-95 active:scale-95 cursor-pointer"
                             >
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                     <line x1="12" y1="5" x2="12" y2="19" />
                                     <line x1="5" y1="12" x2="19" y2="12" />
                                 </svg>
-                                <span>{language === 'ne' ? 'नयाँ लाइसेन्स थप्नुहोस्' : 'Add License'}</span>
+                                <span>{isNe ? 'लाइसेन्स थप्नुहोस्' : 'Add License'}</span>
                             </button>
                         </div>
+                    )}
+                </div>
+
+                {/* TAB 1: SAVED FAMILY LICENSES */}
+                {activeTab === 'licenses' && (
+                    <div className="space-y-5">
+                        {/* Search & Filter Toolbar */}
+                        {licenses.length > 0 && (
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[var(--surface-primary)] p-3 rounded-2xl border border-[var(--border-default)]">
+                                {/* Search input */}
+                                <div className="relative flex-1">
+                                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[var(--text-muted)]">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                            <circle cx="11" cy="11" r="8" />
+                                            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                                        </svg>
+                                    </div>
+                                    <input
+                                        type="text"
+                                        value={licenseSearch}
+                                        onChange={(e) => setLicenseSearch(e.target.value)}
+                                        placeholder={isNe ? 'नम्बर, नाम वा लेबलबाट खोज्नुहोस्...' : 'Filter by number, name, or label...'}
+                                        className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] pl-9 pr-3 py-1.5 text-xs text-[var(--text-primary)] placeholder-[var(--text-secondary)]/50 focus:border-[var(--nepal-blue)] focus:outline-none transition"
+                                    />
+                                    {licenseSearch && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setLicenseSearch('')}
+                                            className="absolute inset-y-0 right-0 flex items-center pr-2.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer"
+                                        >
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <line x1="18" y1="6" x2="6" y2="18" />
+                                                <line x1="6" y1="6" x2="18" y2="18" />
+                                            </svg>
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Filter status chips */}
+                                <div className="flex items-center gap-1.5 text-xs">
+                                    <button
+                                        type="button"
+                                        onClick={() => setLicenseFilter('all')}
+                                        className={`rounded-xl px-3 py-1.5 font-bold transition cursor-pointer ${
+                                            licenseFilter === 'all'
+                                                ? 'bg-[var(--nepal-blue)] text-white shadow-2xs'
+                                                : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                                        }`}
+                                    >
+                                        {isNe ? 'सबै' : 'All'} ({licenses.length})
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setLicenseFilter('ready')}
+                                        className={`rounded-xl px-3 py-1.5 font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                                            licenseFilter === 'ready'
+                                                ? 'bg-emerald-600 text-white shadow-2xs'
+                                                : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20'
+                                        }`}
+                                    >
+                                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                                        <span>{isNe ? 'छापिएको' : 'Ready'}</span>
+                                        <span>({readyCount})</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setLicenseFilter('pending')}
+                                        className={`rounded-xl px-3 py-1.5 font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                                            licenseFilter === 'pending'
+                                                ? 'bg-amber-600 text-white shadow-2xs'
+                                                : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20'
+                                        }`}
+                                    >
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                                            <circle cx="12" cy="12" r="10" />
+                                            <polyline points="12 6 12 12 16 14" />
+                                        </svg>
+                                        <span>{isNe ? 'बाँकी' : 'In Queue'}</span>
+                                        <span>({pendingCount})</span>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
 
                         {loadingLicenses ? (
-                            <div className="flex justify-center py-12">
-                                <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--nepal-blue)] border-t-transparent" />
+                            <div className="flex justify-center py-16">
+                                <div className="h-8 w-8 animate-spin rounded-full border-3 border-[var(--nepal-blue)] border-t-transparent" />
                             </div>
                         ) : licenses.length === 0 ? (
-                            <div className="rounded-2xl border border-dashed border-[var(--border-default)] bg-[var(--surface-primary)] p-8 text-center space-y-3">
-                                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--bg-secondary)] text-[var(--nepal-blue)]">
-                                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            /* Empty State Onboarding */
+                            <div className="rounded-2xl sm:rounded-3xl border border-dashed border-[var(--border-default)] bg-[var(--surface-primary)] p-8 sm:p-12 text-center space-y-4">
+                                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--nepal-blue)]/10 text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/20 shadow-xs">
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                         <rect x="3" y="4" width="18" height="16" rx="3" />
                                         <circle cx="9" cy="10" r="2" />
                                         <line x1="15" y1="8" x2="17" y2="8" />
@@ -639,42 +1027,77 @@ export default function UserDashboardPage() {
                                         <line x1="7" y1="16" x2="17" y2="16" />
                                     </svg>
                                 </div>
-                                <h3 className="text-sm font-bold text-[var(--text-primary)]">
-                                    {language === 'ne' ? 'कुनै लाइसेन्स सेभ गरिएको छैन' : 'No Saved Licenses Yet'}
-                                </h3>
-                                <p className="text-xs text-[var(--text-secondary)] max-w-sm mx-auto">
-                                    {language === 'ne'
-                                        ? 'तपाईं वा तपाईंको परिवार (बुबा, आमा, भाइ, दिदी) को लाइसेन्स नम्बर थप्नुहोस् र सधैं ताजा स्थिति हेर्नुहोस्।'
-                                        : 'Add your driving license or family members (father, mother, siblings) to track printing progress.'}
+                                <div className="max-w-md mx-auto space-y-1.5">
+                                    <h3 className="text-base sm:text-lg font-extrabold text-[var(--text-primary)]">
+                                        {isNe ? 'पारिवारिक भल्ट खाली छ' : 'Your Family License Vault is Empty'}
+                                    </h3>
+                                    <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                                        {isNe
+                                            ? 'तपाईं वा परिवारका सदस्यहरू (बुबा, आमा, दाजुभाइ, दिदीबहिनी) को लाइसेन्स नम्बर सेभ गर्नुहोस्। कार्ड छापिने बित्तिकै तपाईंलाई इमेलमा सूचना आउनेछ।'
+                                            : 'Save your own or family members’ driving licenses (Father, Mother, Siblings) to track official print status and get notified as soon as DOTM finishes printing.'}
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsAddModalOpen(true)
+                                        setAddModalError(null)
+                                    }}
+                                    className="inline-flex items-center gap-2 rounded-xl bg-[var(--nepal-blue)] px-5 py-2.5 text-xs font-bold text-white shadow-md transition hover:opacity-95 active:scale-95 cursor-pointer"
+                                >
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="12" y1="5" x2="12" y2="19" />
+                                        <line x1="5" y1="12" x2="19" y2="12" />
+                                    </svg>
+                                    <span>{isNe ? 'पहिलो लाइसेन्स थप्नुहोस्' : 'Add First License to Vault'}</span>
+                                </button>
+                            </div>
+                        ) : filteredLicenses.length === 0 ? (
+                            /* No search results */
+                            <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-8 text-center space-y-2">
+                                <p className="text-xs font-bold text-[var(--text-primary)]">
+                                    {isNe ? 'कुनै लाइसेन्स फेला परेन' : 'No matching licenses found'}
+                                </p>
+                                <p className="text-xs text-[var(--text-secondary)]">
+                                    {isNe ? 'कृपया फरक शब्द वा नम्बर खोज्नुहोस्।' : 'Try adjusting your search query or filter.'}
                                 </p>
                                 <button
                                     type="button"
-                                    onClick={() => setIsAddModalOpen(true)}
-                                    className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--nepal-blue)] px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:opacity-95 active:scale-95 cursor-pointer"
+                                    onClick={() => {
+                                        setLicenseSearch('')
+                                        setLicenseFilter('all')
+                                    }}
+                                    className="text-xs font-bold text-[var(--nepal-blue)] hover:underline pt-2 block mx-auto cursor-pointer"
                                 >
-                                    <span>{language === 'ne' ? '+ पहिलो लाइसेन्स थप्नुहोस्' : '+ Add First License'}</span>
+                                    {isNe ? 'सबै देखाउनुहोस्' : 'Reset filters'}
                                 </button>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {licenses.map((item) => {
+                            /* Authentic Smart Card Grid */
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+                                {filteredLicenses.map((item) => {
                                     const isReady = item.status === 'ready'
                                     const isRefreshing = refreshingLicenseId === item.id
+                                    const isCopied = copiedLicenseId === item.id
 
                                     return (
                                         <div
                                             key={item.id}
-                                            className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-5 shadow-xs transition hover:shadow-md flex flex-col justify-between space-y-4"
+                                            className="group relative rounded-2xl sm:rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] dev-glass-card p-5 sm:p-6 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between space-y-5"
                                         >
                                             <div>
-                                                {/* Header row: Label & Status */}
-                                                <div className="flex items-start justify-between gap-2 mb-2">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="inline-flex items-center rounded-lg bg-[var(--nepal-blue)]/10 px-2.5 py-1 text-xs font-extrabold text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/20">
-                                                            🏷️ {item.label}
+                                                {/* Card Header: Relationship Pill & Live Status */}
+                                                <div className="flex items-start justify-between gap-3 mb-3">
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <span className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--nepal-blue)]/10 px-2.5 py-1 text-xs font-extrabold text-[var(--nepal-blue)] border border-[var(--nepal-blue)]/20 shadow-2xs">
+                                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                                                                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                                                                <line x1="7" y1="7" x2="7.01" y2="7" />
+                                                            </svg>
+                                                            <span>{item.label}</span>
                                                         </span>
                                                         {item.holder_name && (
-                                                            <span className="text-xs font-bold text-[var(--text-primary)] truncate max-w-[150px]">
+                                                            <span className="text-xs font-bold text-[var(--text-primary)] truncate max-w-[160px]">
                                                                 {item.holder_name}
                                                             </span>
                                                         )}
@@ -682,75 +1105,135 @@ export default function UserDashboardPage() {
 
                                                     {/* Status Badge */}
                                                     <span
-                                                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-extrabold shrink-0 ${
+                                                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-extrabold shrink-0 shadow-2xs ${
                                                             isReady
                                                                 ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
                                                                 : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30'
                                                         }`}
                                                     >
                                                         <span
-                                                            className={`h-1.5 w-1.5 rounded-full ${
-                                                                isReady ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
+                                                            className={`h-2 w-2 rounded-full ${
+                                                                isReady ? 'bg-emerald-500' : 'bg-amber-500'
                                                             }`}
                                                         />
-                                                        {isReady
-                                                            ? language === 'ne'
-                                                                ? 'छपाइ भइसकेको (Ready)'
-                                                                : 'Ready to Collect'
-                                                            : language === 'ne'
-                                                            ? 'छपाइ हुन बाँकी (Pending)'
-                                                            : 'Not Printed Yet'}
+                                                        <span>
+                                                            {isReady
+                                                                ? isNe
+                                                                    ? 'छपाइ भइसकेको (Ready)'
+                                                                    : 'Ready to Collect'
+                                                                : isNe
+                                                                ? 'छपाइ हुन बाँकी (In Queue)'
+                                                                : 'In Printing Queue'}
+                                                        </span>
                                                     </span>
                                                 </div>
 
-                                                {/* License Number in Monospace */}
-                                                <div className="font-mono text-lg font-extrabold text-[var(--text-primary)] tracking-wide">
-                                                    {item.license_number}
+                                                {/* License Number with Quick Copy */}
+                                                <div className="flex items-center justify-between gap-2 bg-[var(--bg-secondary)]/50 rounded-xl p-3 border border-[var(--border-default)]">
+                                                    <div>
+                                                        <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider block">
+                                                            {isNe ? 'स्मार्ट लाइसेन्स नम्बर' : 'Smart License Number'}
+                                                        </span>
+                                                        <span className="font-mono text-base sm:text-lg font-extrabold text-[var(--text-primary)] tracking-wider">
+                                                            {item.license_number}
+                                                        </span>
+                                                    </div>
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleCopyNumber(item)}
+                                                        className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-primary)] border border-[var(--border-default)] transition cursor-pointer shadow-2xs"
+                                                        title="Copy license number"
+                                                    >
+                                                        {isCopied ? (
+                                                            <>
+                                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-emerald-500">
+                                                                    <polyline points="20 6 9 17 4 12" />
+                                                                </svg>
+                                                                <span className="text-emerald-600 dark:text-emerald-400 font-bold">{isNe ? 'कपी भयो' : 'Copied'}</span>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                                                </svg>
+                                                                <span>{isNe ? 'कपी' : 'Copy'}</span>
+                                                            </>
+                                                        )}
+                                                    </button>
                                                 </div>
 
-                                                {/* Office & Category meta */}
-                                                <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-[var(--text-secondary)]">
-                                                    {item.office && (
-                                                        <span className="rounded-md bg-[var(--bg-secondary)] px-2 py-0.5 font-medium">
-                                                            🏢 {item.office}
+                                                {/* Transport Office & Vehicle Category Meta */}
+                                                <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-[var(--text-secondary)]">
+                                                    {item.office ? (
+                                                        <span className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--bg-secondary)] px-2.5 py-1 font-semibold border border-[var(--border-default)]/60">
+                                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                                                                <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h1m4 0h1m-6 4h1m4 0h1m-6 4h1m4 0h1" />
+                                                            </svg>
+                                                            <span className="truncate max-w-[200px]">{item.office}</span>
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-1 rounded-lg bg-[var(--bg-secondary)] px-2.5 py-1 text-[var(--text-muted)] italic border border-[var(--border-default)]/50">
+                                                            {isNe ? 'कार्यालय विवरण जाँच गर्नुहोस्' : 'Office info updates on check'}
                                                         </span>
                                                     )}
+
                                                     {item.category && (
-                                                        <span className="rounded-md bg-[var(--bg-secondary)] px-2 py-0.5 font-bold text-[var(--nepal-blue)]">
+                                                        <span className="inline-flex items-center gap-1 rounded-lg bg-[var(--nepal-blue)]/10 text-[var(--nepal-blue)] px-2.5 py-1 font-extrabold border border-[var(--nepal-blue)]/20">
                                                             Category: {item.category}
                                                         </span>
                                                     )}
                                                 </div>
                                             </div>
 
-                                            {/* Action Bar */}
-                                            <div className="pt-3 border-t border-[var(--border-default)] flex items-center justify-between gap-2 text-xs">
-                                                {/* Notification Toggle */}
+                                            {/* Action & Toggle Toolbar */}
+                                            <div className="pt-3.5 border-t border-[var(--border-default)] flex items-center justify-between gap-2 text-xs">
+                                                {/* Smart Alert Subscribe / Unsubscribe Switch Button */}
                                                 <button
                                                     type="button"
-                                                    onClick={() => handleToggleNotification(item)}
-                                                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer ${
+                                                    disabled={togglingNotification}
+                                                    onClick={() => handleAlertClick(item)}
+                                                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition cursor-pointer disabled:opacity-50 shadow-2xs ${
                                                         item.notify_email
-                                                            ? 'text-[var(--nepal-blue)] bg-[var(--nepal-blue)]/10'
-                                                            : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'
+                                                            ? 'text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20'
+                                                            : 'text-[var(--text-secondary)] bg-[var(--bg-secondary)] border border-[var(--border-default)] hover:text-[var(--nepal-blue)] hover:border-[var(--nepal-blue)]/50'
                                                     }`}
-                                                    title="Toggle automatic email alerts"
+                                                    title={
+                                                        item.notify_email
+                                                            ? (isNe ? 'इमेल अलर्ट सक्रिय छ (क्लिक गरी Unsubscribe गर्नुहोस्)' : 'Email alerts active (Click to unsubscribe)')
+                                                            : (isNe ? 'इमेल अलर्ट बन्द छ (क्लिक गरी Subscribe गर्नुहोस्)' : 'Email alerts paused (Click to subscribe)')
+                                                    }
                                                 >
-                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill={item.notify_email ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
-                                                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                                                        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                                                    </svg>
-                                                    <span>{item.notify_email ? (language === 'ne' ? 'अलर्ट चालु' : 'Alert On') : (language === 'ne' ? 'अलर्ट बन्द' : 'Alert Off')}</span>
+                                                    {item.notify_email ? (
+                                                        <>
+                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-emerald-600 dark:text-emerald-400">
+                                                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                                                                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                                                            </svg>
+                                                            <span>{isNe ? 'अलर्ट सक्रिय' : 'Alerts Active'}</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="text-[var(--text-muted)]">
+                                                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                                                                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                                                                <line x1="2" y1="2" x2="22" y2="22" />
+                                                            </svg>
+                                                            <span>{isNe ? 'अलर्ट बन्द (Subscribe)' : 'Subscribe Alerts'}</span>
+                                                        </>
+                                                    )}
                                                 </button>
 
-                                                <div className="flex items-center gap-1">
-                                                    {/* Quick Refresh Status */}
+                                                {/* Right Actions: Check Now, Delete */}
+                                                <div className="flex items-center gap-1.5">
+                                                    {/* Check Status Live */}
                                                     <button
                                                         type="button"
                                                         onClick={() => handleRefreshStatus(item)}
                                                         disabled={isRefreshing}
-                                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[var(--border-default)] hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] transition text-[11px] font-semibold cursor-pointer disabled:opacity-50"
-                                                        title="Re-check status now"
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] transition text-[11px] font-bold cursor-pointer disabled:opacity-50 shadow-2xs"
+                                                        title="Live check with DOTM database"
                                                     >
                                                         <svg
                                                             width="12"
@@ -758,37 +1241,23 @@ export default function UserDashboardPage() {
                                                             viewBox="0 0 24 24"
                                                             fill="none"
                                                             stroke="currentColor"
-                                                            strokeWidth="2"
-                                                            className={isRefreshing ? 'animate-spin' : ''}
+                                                            strokeWidth="2.2"
+                                                            className={isRefreshing ? 'animate-spin text-[var(--nepal-blue)]' : ''}
                                                         >
                                                             <polyline points="23 4 23 10 17 10" />
                                                             <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
                                                         </svg>
-                                                        <span>{language === 'ne' ? 'जाँच' : 'Check'}</span>
+                                                        <span>{isRefreshing ? (isNe ? '...' : '...') : (isNe ? 'पुनः जाँच' : 'Check')}</span>
                                                     </button>
 
-                                                    {/* View on Homepage / Slip */}
-                                                    <Link
-                                                        href={`/?number=${encodeURIComponent(item.license_number)}`}
-                                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[var(--border-default)] hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] transition text-[11px] font-semibold cursor-pointer"
-                                                        title="View full lookup details & slip"
-                                                    >
-                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                                                            <polyline points="15 3 21 3 21 9" />
-                                                            <line x1="10" y1="14" x2="21" y2="3" />
-                                                        </svg>
-                                                        <span>{language === 'ne' ? 'स्लिप' : 'Slip'}</span>
-                                                    </Link>
-
-                                                    {/* Delete */}
+                                                    {/* Delete from Vault (Opens Proper Confirmation Modal) */}
                                                     <button
                                                         type="button"
-                                                        onClick={() => handleDeleteLicense(item.id, item.license_number)}
-                                                        className="inline-flex items-center p-1.5 rounded-lg text-[var(--text-secondary)] hover:text-rose-500 hover:bg-rose-500/10 transition cursor-pointer"
-                                                        title="Delete from saved list"
+                                                        onClick={() => setDeleteTarget(item)}
+                                                        className="inline-flex items-center p-2 rounded-xl text-[var(--text-secondary)] hover:text-rose-500 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition cursor-pointer"
+                                                        title={isNe ? 'भल्टबाट हटाउनुहोस्' : 'Remove from saved vault'}
                                                     >
-                                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                                                             <polyline points="3 6 5 6 21 6" />
                                                             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                                                         </svg>
@@ -800,141 +1269,26 @@ export default function UserDashboardPage() {
                                 })}
                             </div>
                         )}
-
-                        {/* Recent Support Messages & Inquiries Widget */}
-                        <div className="mt-8 pt-6 border-t border-[var(--border-default)]">
-                            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                                <div>
-                                    <h3 className="text-sm font-extrabold text-[var(--text-primary)] flex items-center gap-2">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]">
-                                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                                        </svg>
-                                        <span>{language === 'ne' ? 'मेरो पठाइएका सन्देश तथा उजुरीहरू' : 'My Sent Messages & Inquiries'}</span>
-                                        {tickets.length > 0 && (
-                                            <span className="rounded-full bg-[var(--nepal-blue)]/10 text-[var(--nepal-blue)] px-2 py-0.5 text-[10px] font-extrabold border border-[var(--nepal-blue)]/20">
-                                                {tickets.length}
-                                            </span>
-                                        )}
-                                    </h3>
-                                    <p className="text-xs text-[var(--text-secondary)]">
-                                        {language === 'ne'
-                                            ? 'तपाईंले यस इमेलबाट पठाउनुभएका सबै सन्देशहरू र सहायता टोलीको जवाफ यहाँ देखिन्छ।'
-                                            : 'Inquiries sent from your email and resolution updates from our team.'}
-                                    </p>
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setIsNewTicketModalOpen(true)
-                                            setTicketModalError(null)
-                                            setTicketModalSuccess(null)
-                                        }}
-                                        className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-xs font-semibold text-[var(--text-primary)] hover:border-[var(--nepal-blue)] transition cursor-pointer"
-                                    >
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                            <line x1="12" y1="5" x2="12" y2="19" />
-                                            <line x1="5" y1="12" x2="19" y2="12" />
-                                        </svg>
-                                        <span>{language === 'ne' ? 'नयाँ सन्देश' : 'New Message'}</span>
-                                    </button>
-
-                                    {tickets.length > 0 && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setActiveTab('support')}
-                                            className="text-xs font-bold text-[var(--nepal-blue)] hover:underline cursor-pointer flex items-center gap-1 px-1 py-1.5"
-                                        >
-                                            <span>{language === 'ne' ? 'सबै हेर्नुहोस् →' : 'View All →'}</span>
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-
-                            {tickets.length === 0 ? (
-                                <div className="rounded-xl border border-dashed border-[var(--border-default)] bg-[var(--surface-primary)]/60 p-5 text-center space-y-2">
-                                    <p className="text-xs text-[var(--text-secondary)]">
-                                        {language === 'ne'
-                                            ? 'तपाईंले अहिलेसम्म कुनै सहायता सन्देश पठाउनुभएको छैन। लाइसेन्स सम्बन्धी कुनै प्रश्न भए सिधै सोध्न सक्नुहुन्छ।'
-                                            : 'You haven’t submitted any support inquiries yet. Need help with a license? Send our team a message.'}
-                                    </p>
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    {tickets.slice(0, 2).map((t) => {
-                                        const cat = FEEDBACK_CATEGORIES.find((c) => c.id === t.category)
-                                        const catLabel = language === 'ne' && cat?.labelNe ? cat.labelNe : cat?.label || t.category
-                                        const isResolved = t.status === 'resolved'
-                                        const isInProgress = t.status === 'in_progress'
-
-                                        return (
-                                            <div
-                                                key={t.id}
-                                                onClick={() => setActiveTab('support')}
-                                                className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 hover:border-[var(--nepal-blue)]/40 transition cursor-pointer space-y-2.5 shadow-2xs"
-                                            >
-                                                <div className="flex items-center justify-between gap-2">
-                                                    <span
-                                                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
-                                                            isResolved
-                                                                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                                                                : isInProgress
-                                                                ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20'
-                                                                : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
-                                                        }`}
-                                                    >
-                                                        {isResolved
-                                                            ? (language === 'ne' ? '🟢 समाधान भयो' : '🟢 Resolved')
-                                                            : isInProgress
-                                                            ? (language === 'ne' ? '🔵 समीक्षा हुँदैछ' : '🔵 In Review')
-                                                            : (language === 'ne' ? '🟡 प्राप्त भयो' : '🟡 Received')}
-                                                    </span>
-                                                    <span className="text-[11px] text-[var(--text-secondary)]">
-                                                        {new Date(t.created_at).toLocaleDateString(language === 'ne' ? 'ne-NP' : 'en-US', {
-                                                            month: 'short',
-                                                            day: 'numeric',
-                                                        })}
-                                                    </span>
-                                                </div>
-
-                                                <div>
-                                                    <h4 className="text-xs font-bold text-[var(--text-primary)] line-clamp-1">{t.subject}</h4>
-                                                    <p className="text-[11px] text-[var(--text-secondary)] line-clamp-2 mt-0.5">
-                                                        {t.message}
-                                                    </p>
-                                                </div>
-
-                                                {t.admin_notes ? (
-                                                    <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1.5 text-[11px] text-emerald-700 dark:text-emerald-300 font-medium line-clamp-1">
-                                                        💬 {language === 'ne' ? 'जवाफ: ' : 'Reply: '}{t.admin_notes}
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-[10px] text-[var(--text-muted)] italic block">
-                                                        {language === 'ne' ? 'सहायता टोलीको समीक्षा पर्खिँदै...' : 'Awaiting team review...'}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        )
-                                    })}
-                                </div>
-                            )}
-                        </div>
                     </div>
                 )}
 
-                {/* TAB 2: MY SUPPORT & INQUIRIES */}
+                {/* TAB 2: MY SENT INQUIRIES & SUPPORT HISTORY */}
                 {activeTab === 'support' && (
-                    <div className="space-y-4">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="space-y-5">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[var(--surface-primary)] p-5 rounded-2xl border border-[var(--border-default)]">
                             <div>
-                                <h2 className="text-base font-extrabold text-[var(--text-primary)]">
-                                    {language === 'ne' ? 'मेरो पठाइएका सन्देश तथा उजुरीहरू' : 'My Sent Messages & Support History'}
+                                <h2 className="text-base font-extrabold text-[var(--text-primary)] flex items-center gap-2">
+                                    <span>{isNe ? 'मेरो पठाइएका सोधपुछ तथा उजुरी इतिहास' : 'My Sent Inquiries & Support History'}</span>
+                                    {tickets.length > 0 && (
+                                        <span className="rounded-full bg-[var(--nepal-blue)]/10 text-[var(--nepal-blue)] px-2.5 py-0.5 text-[11px] font-extrabold border border-[var(--nepal-blue)]/20">
+                                            {tickets.length}
+                                        </span>
+                                    )}
                                 </h2>
-                                <p className="text-xs text-[var(--text-secondary)]">
-                                    {language === 'ne'
-                                        ? 'यस इमेलबाट सम्पर्क पृष्ठ, सहायता पपअप वा ड्यासबोर्डबाट पठाइएका सबै उजुरी र सन्देशहरू यहाँ स्वतः उपलब्ध हुन्छन्।'
-                                        : 'All inquiries submitted using your email (via contact page, popup, or dashboard) appear here automatically.'}
+                                <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                                    {isNe
+                                        ? 'यस इमेलबाट पठाइएका सबै उजुरी, सोधपुछ र सहायता टोलीको आधिकारिक जवाफ यहाँ स्वतः उपलब्ध हुन्छ।'
+                                        : 'Every inquiry submitted with your account email appears here automatically along with team replies.'}
                                 </p>
                             </div>
 
@@ -945,95 +1299,94 @@ export default function UserDashboardPage() {
                                     setTicketModalError(null)
                                     setTicketModalSuccess(null)
                                 }}
-                                className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--nepal-blue)] px-3.5 py-2 text-xs font-bold text-white shadow-sm transition hover:opacity-95 active:scale-95 cursor-pointer"
+                                className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--nepal-blue)] px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:opacity-95 active:scale-95 cursor-pointer shrink-0"
                             >
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                     <line x1="12" y1="5" x2="12" y2="19" />
                                     <line x1="5" y1="12" x2="19" y2="12" />
                                 </svg>
-                                <span>{language === 'ne' ? 'नयाँ प्रश्न / उजुरी पठाउनुहोस्' : 'New Inquiry'}</span>
+                                <span>{isNe ? 'नयाँ सोधपुछ पठाउनुहोस्' : 'Submit New Inquiry'}</span>
                             </button>
                         </div>
 
                         {loadingTickets ? (
-                            <div className="flex justify-center py-12">
-                                <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--nepal-blue)] border-t-transparent" />
+                            <div className="flex justify-center py-16">
+                                <div className="h-8 w-8 animate-spin rounded-full border-3 border-[var(--nepal-blue)] border-t-transparent" />
                             </div>
                         ) : tickets.length === 0 ? (
-                            <div className="rounded-2xl border border-dashed border-[var(--border-default)] bg-[var(--surface-primary)] p-8 text-center space-y-3">
-                                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--bg-secondary)] text-[var(--nepal-blue)]">
+                            <div className="rounded-2xl sm:rounded-3xl border border-dashed border-[var(--border-default)] bg-[var(--surface-primary)] p-8 sm:p-12 text-center space-y-3">
+                                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--nepal-blue)]/10 text-[var(--nepal-blue)]">
                                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                                     </svg>
                                 </div>
                                 <h3 className="text-sm font-bold text-[var(--text-primary)]">
-                                    {language === 'ne' ? 'कुनै सन्देश फेला परेन' : 'No Inquiries Found'}
+                                    {isNe ? 'कुनै सन्देश वा सोधपुछ फेला परेन' : 'No Inquiries Found'}
                                 </h3>
                                 <p className="text-xs text-[var(--text-secondary)] max-w-sm mx-auto">
-                                    {language === 'ne'
-                                        ? 'लाइसेन्स नभेटिएको वा कुनै समस्या परेमा तपाईं सिधै यहाँबाट सहायता टोलीलाई सन्देश पठाउन सक्नुहुन्छ।'
-                                        : 'If you have questions about your license or face any issue, you can send an inquiry directly to our support team.'}
+                                    {isNe
+                                        ? 'लाइसेन्स नभेटिएको, ढिलाइ भएको वा कुनै समस्या भए सिधै हाम्रो सहायता टोलीलाई सन्देश पठाउनुहोस्।'
+                                        : 'Have questions about your smart license printing or notice an issue? You can submit an inquiry directly here.'}
                                 </p>
                                 <button
                                     type="button"
                                     onClick={() => setIsNewTicketModalOpen(true)}
                                     className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--nepal-blue)] px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:opacity-95 active:scale-95 cursor-pointer"
                                 >
-                                    <span>{language === 'ne' ? '+ सन्देश पठाउनुहोस्' : '+ Submit Inquiry'}</span>
+                                    <span>{isNe ? '+ सन्देश पठाउनुहोस्' : '+ Submit Inquiry'}</span>
                                 </button>
                             </div>
                         ) : (
                             <div className="space-y-4">
                                 {tickets.map((t) => {
                                     const cat = FEEDBACK_CATEGORIES.find((c) => c.id === t.category)
-                                    const catLabel = language === 'ne' && cat?.labelNe ? cat.labelNe : cat?.label || t.category
-
+                                    const catLabel = isNe && cat?.labelNe ? cat.labelNe : cat?.label || t.category
                                     const isResolved = t.status === 'resolved'
                                     const isInProgress = t.status === 'in_progress'
 
                                     return (
                                         <div
                                             key={t.id}
-                                            className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-5 shadow-xs space-y-4"
+                                            className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-5 sm:p-6 shadow-sm space-y-4"
                                         >
-                                            {/* Top Metadata Row */}
-                                            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border-default)]/60 pb-3">
+                                            {/* Top Metadata Header */}
+                                            <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-[var(--border-default)]/60 pb-3">
                                                 <div className="flex flex-wrap items-center gap-2">
                                                     {/* Status Badge */}
                                                     <span
                                                         className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-extrabold ${
                                                             isResolved
-                                                                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                                                                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25'
                                                                 : isInProgress
-                                                                ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20'
-                                                                : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                                                                ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/25'
+                                                                : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/25'
                                                         }`}
                                                     >
                                                         {isResolved
-                                                            ? language === 'ne'
+                                                            ? isNe
                                                                 ? '🟢 समाधान भयो (Resolved)'
                                                                 : '🟢 Resolved'
                                                             : isInProgress
-                                                            ? language === 'ne'
-                                                                ? '🔵 समीक्षा हुँदैछ (In Progress)'
+                                                            ? isNe
+                                                                ? '🔵 समीक्षा हुँदैछ (In Review)'
                                                                 : '🔵 Under Review'
-                                                            : language === 'ne'
-                                                            ? '🟡 प्राप्त भयो (New)'
+                                                            : isNe
+                                                            ? '🟡 प्राप्त भयो (Received)'
                                                             : '🟡 Received'}
                                                     </span>
 
-                                                    <span className="text-[11px] font-semibold text-[var(--text-secondary)]">
+                                                    <span className="text-[11px] font-bold text-[var(--text-secondary)]">
                                                         {catLabel}
                                                     </span>
 
-                                                    <span className="font-mono text-[10px] text-[var(--text-muted)] bg-[var(--bg-secondary)] px-1.5 py-0.5 rounded">
+                                                    <span className="font-mono text-[10px] text-[var(--text-muted)] bg-[var(--bg-secondary)] px-2 py-0.5 rounded-md">
                                                         #{t.id.slice(0, 16)}
                                                     </span>
                                                 </div>
 
                                                 <span className="text-[11px] text-[var(--text-secondary)]">
                                                     {new Date(t.created_at).toLocaleString(
-                                                        language === 'ne' ? 'ne-NP' : 'en-US',
+                                                        isNe ? 'ne-NP' : 'en-US',
                                                         {
                                                             year: 'numeric',
                                                             month: 'short',
@@ -1045,7 +1398,7 @@ export default function UserDashboardPage() {
                                                 </span>
                                             </div>
 
-                                            {/* User's Sent Message Box */}
+                                            {/* User Sent Message Box */}
                                             <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 p-4 space-y-2">
                                                 <div className="flex items-center justify-between">
                                                     <span className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-primary)]">
@@ -1053,11 +1406,11 @@ export default function UserDashboardPage() {
                                                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                                                             <circle cx="12" cy="7" r="4" />
                                                         </svg>
-                                                        <span>{language === 'ne' ? 'तपाईंले पठाउनुभएको सन्देश:' : 'You sent:'}</span>
+                                                        <span>{isNe ? 'तपाईंले पठाउनुभएको सन्देश:' : 'You sent:'}</span>
                                                     </span>
 
                                                     {t.license_number && (
-                                                        <span className="font-mono text-xs font-bold text-[var(--nepal-blue)] bg-[var(--nepal-blue)]/10 px-2 py-0.5 rounded border border-[var(--nepal-blue)]/20">
+                                                        <span className="font-mono text-xs font-bold text-[var(--nepal-blue)] bg-[var(--nepal-blue)]/10 px-2 py-0.5 rounded-md border border-[var(--nepal-blue)]/20">
                                                             License: {t.license_number}
                                                         </span>
                                                     )}
@@ -1072,14 +1425,14 @@ export default function UserDashboardPage() {
                                                 </p>
                                             </div>
 
-                                            {/* Admin Notes / Support Response */}
+                                            {/* Official Team Response */}
                                             {t.admin_notes ? (
                                                 <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/5 p-4 text-xs space-y-1.5">
                                                     <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300">
                                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                                             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                                                         </svg>
-                                                        <span>{language === 'ne' ? 'सहायता टोलीको जवाफ (Support Team Reply):' : 'Support Team Reply:'}</span>
+                                                        <span>{isNe ? 'सहायता टोलीको जवाफ:' : 'Support Team Reply:'}</span>
                                                     </div>
                                                     <p className="text-xs text-[var(--text-primary)] whitespace-pre-wrap leading-relaxed pl-5">
                                                         {t.admin_notes}
@@ -1092,7 +1445,7 @@ export default function UserDashboardPage() {
                                                         <polyline points="12 6 12 12 16 14" />
                                                     </svg>
                                                     <span>
-                                                        {language === 'ne'
+                                                        {isNe
                                                             ? 'तपाईंको सन्देश सहायता टोलीले प्राप्त गरिसकेको छ। समीक्षापछि जवाफ यहाँ देखिनेछ र इमेलमा पनि जानकारी आउनेछ।'
                                                             : 'Your message has been received by our support team. Resolution update will appear here and via email.'}
                                                     </span>
@@ -1108,63 +1461,64 @@ export default function UserDashboardPage() {
 
                 {/* TAB 3: ACCOUNT & SECURITY */}
                 {activeTab === 'security' && (
-                    <div className="max-w-xl space-y-6">
-                        <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 shadow-sm space-y-4">
+                    <div className="max-w-2xl mx-auto space-y-6">
+                        {/* Profile Info Card */}
+                        <div className="rounded-2xl sm:rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 shadow-sm space-y-4">
                             <div>
                                 <h2 className="text-base font-extrabold text-[var(--text-primary)]">
-                                    {language === 'ne' ? 'खाता विवरण' : 'Account Details'}
+                                    {isNe ? 'खाता तथा सुरक्षा विवरण' : 'Account & Security Details'}
                                 </h2>
                                 <p className="text-xs text-[var(--text-secondary)]">
-                                    {language === 'ne' ? 'तपाईंको दर्ता गरिएको इमेल र सुरक्षा विवरण।' : 'Your primary authenticated email.'}
+                                    {isNe ? 'तपाईंको दर्ता गरिएको इमेल, सत्र र सुरक्षा स्थिति।' : 'Your primary authenticated citizen profile.'}
                                 </p>
                             </div>
 
-                            <div className="space-y-3 text-xs">
-                                <div className="flex justify-between py-2 border-b border-[var(--border-default)]">
-                                    <span className="font-semibold text-[var(--text-secondary)]">Email</span>
+                            <div className="space-y-3 text-xs divide-y divide-[var(--border-default)]/60">
+                                <div className="flex items-center justify-between py-2.5">
+                                    <span className="font-semibold text-[var(--text-secondary)]">Email Address</span>
                                     <span className="font-bold text-[var(--text-primary)]">{user.email}</span>
                                 </div>
-                                <div className="flex justify-between py-2 border-b border-[var(--border-default)]">
+                                <div className="flex items-center justify-between py-2.5">
                                     <span className="font-semibold text-[var(--text-secondary)]">
-                                        {language === 'ne' ? 'दर्ता मिति' : 'Member Since'}
+                                        {isNe ? 'दर्ता मिति' : 'Member Since'}
                                     </span>
                                     <span className="font-medium text-[var(--text-primary)]">
                                         {new Date(user.created_at).toLocaleDateString()}
                                     </span>
                                 </div>
-                                <div className="flex justify-between py-2">
+                                <div className="flex items-center justify-between py-2.5">
                                     <span className="font-semibold text-[var(--text-secondary)]">
-                                        {language === 'ne' ? 'पासवर्ड स्थिति' : 'Password Status'}
+                                        {isNe ? 'प्रमाणीकरण विधि' : 'Auth Method'}
                                     </span>
-                                    <span className="font-bold text-[var(--nepal-blue)]">
+                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--nepal-blue)]/10 text-[var(--nepal-blue)] px-2.5 py-0.5 font-bold border border-[var(--nepal-blue)]/20">
                                         {user.has_password
-                                            ? language === 'ne'
-                                                ? 'पासवर्ड सुरक्षित गरिएको छ'
-                                                : 'Permanent Password Active'
-                                            : language === 'ne'
-                                            ? '६-अङ्कको ओटीपी मात्र (पासवर्ड राखिएको छैन)'
-                                            : 'Passwordless OTP Only'}
+                                            ? isNe
+                                                ? 'पासवर्ड + ओटीपी दुवै चालु'
+                                                : 'Password + OTP Active'
+                                            : isNe
+                                            ? '६-अङ्कको ओटीपी मात्र'
+                                            : 'Passwordless OTP'}
                                     </span>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Set / Change Password Form */}
-                        <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 shadow-sm space-y-4">
+                        {/* Set / Change Password Card */}
+                        <div className="rounded-2xl sm:rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 shadow-sm space-y-4">
                             <div>
-                                <h3 className="text-sm font-extrabold text-[var(--text-primary)]">
+                                <h3 className="text-sm sm:text-base font-extrabold text-[var(--text-primary)]">
                                     {user.has_password
-                                        ? language === 'ne'
+                                        ? isNe
                                             ? 'पासवर्ड परिवर्तन गर्नुहोस्'
                                             : 'Change Permanent Password'
-                                        : language === 'ne'
+                                        : isNe
                                         ? 'स्थायी पासवर्ड राख्नुहोस् (ऐच्छिक)'
                                         : 'Set Permanent Password (Optional)'}
                                 </h3>
-                                <p className="text-xs text-[var(--text-secondary)]">
-                                    {language === 'ne'
-                                        ? 'पासवर्ड राखेपछि तपाईं ओटीपी वा पासवर्ड दुवैबाट लगइन गर्न सक्नुहुनेछ।'
-                                        : 'Setting a password lets you sign in using either your password or 6-digit email OTP.'}
+                                <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                                    {isNe
+                                        ? 'पासवर्ड राखेपछि तपाईं पासवर्ड वा ६-अङ्कको ओटीपी दुवैबाट जुनसुकै बेला लगइन गर्न सक्नुहुन्छ।'
+                                        : 'Setting a password lets you sign in using either your permanent password or a 6-digit email OTP.'}
                                 </p>
                             </div>
 
@@ -1172,55 +1526,55 @@ export default function UserDashboardPage() {
                                 <div
                                     className={`rounded-xl p-3 text-xs font-semibold flex items-center gap-2 ${
                                         passwordFeedback.type === 'success'
-                                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                                            : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25'
+                                            : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/25'
                                     }`}
                                 >
                                     <span>{passwordFeedback.message}</span>
                                 </div>
                             )}
 
-                            <form onSubmit={handleSavePassword} className="space-y-3 text-xs">
+                            <form onSubmit={handleSavePassword} className="space-y-4 text-xs">
                                 {user.has_password && (
                                     <div>
-                                        <label className="block font-bold text-[var(--text-secondary)] mb-1">
-                                            {language === 'ne' ? 'हालको पासवर्ड' : 'Current Password'}
+                                        <label className="block font-bold text-[var(--text-secondary)] mb-1.5 uppercase tracking-wider text-[10px]">
+                                            {isNe ? 'हालको पासवर्ड' : 'Current Password'}
                                         </label>
                                         <input
                                             type="password"
                                             required
                                             value={currentPassword}
                                             onChange={(e) => setCurrentPassword(e.target.value)}
-                                            className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3.5 py-2 text-xs text-[var(--text-primary)] focus:border-[var(--nepal-blue)] focus:outline-none"
+                                            className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3.5 py-2.5 text-xs text-[var(--text-primary)] focus:border-[var(--nepal-blue)] focus:outline-none transition"
                                             placeholder="••••••••"
                                         />
                                     </div>
                                 )}
 
                                 <div>
-                                    <label className="block font-bold text-[var(--text-secondary)] mb-1">
-                                        {language === 'ne' ? 'नयाँ पासवर्ड (कम्तिमा ६ अक्षर)' : 'New Password (min 6 characters)'}
+                                    <label className="block font-bold text-[var(--text-secondary)] mb-1.5 uppercase tracking-wider text-[10px]">
+                                        {isNe ? 'नयाँ पासवर्ड (कम्तिमा ६ अक्षर)' : 'New Password (min 6 characters)'}
                                     </label>
                                     <input
                                         type="password"
                                         required
                                         value={newPassword}
                                         onChange={(e) => setNewPassword(e.target.value)}
-                                        className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3.5 py-2 text-xs text-[var(--text-primary)] focus:border-[var(--nepal-blue)] focus:outline-none"
+                                        className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3.5 py-2.5 text-xs text-[var(--text-primary)] focus:border-[var(--nepal-blue)] focus:outline-none transition"
                                         placeholder="••••••••"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block font-bold text-[var(--text-secondary)] mb-1">
-                                        {language === 'ne' ? 'नयाँ पासवर्ड पुनः पुष्टि गर्नुहोस्' : 'Confirm New Password'}
+                                    <label className="block font-bold text-[var(--text-secondary)] mb-1.5 uppercase tracking-wider text-[10px]">
+                                        {isNe ? 'नयाँ पासवर्ड पुनः पुष्टि गर्नुहोस्' : 'Confirm New Password'}
                                     </label>
                                     <input
                                         type="password"
                                         required
                                         value={confirmPassword}
                                         onChange={(e) => setConfirmPassword(e.target.value)}
-                                        className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3.5 py-2 text-xs text-[var(--text-primary)] focus:border-[var(--nepal-blue)] focus:outline-none"
+                                        className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3.5 py-2.5 text-xs text-[var(--text-primary)] focus:border-[var(--nepal-blue)] focus:outline-none transition"
                                         placeholder="••••••••"
                                     />
                                 </div>
@@ -1231,16 +1585,16 @@ export default function UserDashboardPage() {
                                     className="w-full flex items-center justify-center gap-2 rounded-xl bg-[var(--nepal-blue)] py-2.5 px-4 text-xs font-bold text-white shadow-sm transition hover:opacity-95 active:scale-95 disabled:opacity-50 cursor-pointer"
                                 >
                                     {savingPassword ? (
-                                        <span>{language === 'ne' ? 'सुरक्षित गर्दै...' : 'Saving...'}</span>
+                                        <span>{isNe ? 'सुरक्षित गर्दै...' : 'Saving...'}</span>
                                     ) : (
                                         <span>
                                             {user.has_password
-                                                ? language === 'ne'
+                                                ? isNe
                                                     ? 'पासवर्ड अद्यावधिक गर्नुहोस्'
                                                     : 'Update Password'
-                                                : language === 'ne'
+                                                : isNe
                                                 ? 'पासवर्ड सुरक्षित गर्नुहोस्'
-                                                : 'Save Password'}
+                                                : 'Save Permanent Password'}
                                         </span>
                                     )}
                                 </button>
@@ -1250,18 +1604,28 @@ export default function UserDashboardPage() {
                 )}
             </div>
 
-            {/* ADD LICENSE MODAL */}
+            {/* ADD LICENSE MODAL (Elevated Dialog with Backdrop) */}
             {isAddModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fade-in">
-                    <div className="w-full max-w-md rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 shadow-2xl space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-base font-extrabold text-[var(--text-primary)]">
-                                {language === 'ne' ? 'नयाँ लाइसेन्स थप्नुहोस्' : 'Add New License'}
-                            </h3>
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in"
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget) setIsAddModalOpen(false)
+                    }}
+                >
+                    <div className="w-full max-w-md rounded-2xl sm:rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 shadow-2xl space-y-4">
+                        <div className="flex items-center justify-between pb-3 border-b border-[var(--border-default)]">
+                            <div>
+                                <h3 className="text-base font-extrabold text-[var(--text-primary)]">
+                                    {isNe ? 'पारिवारिक लाइसेन्स थप्नुहोस्' : 'Add License to Vault'}
+                                </h3>
+                                <p className="text-[11px] text-[var(--text-secondary)]">
+                                    {isNe ? 'तपाईं वा परिवारका सदस्यको लाइसेन्स नम्बर दर्ता गर्नुहोस्।' : 'Save your personal or family member license.'}
+                                </p>
+                            </div>
                             <button
                                 type="button"
                                 onClick={() => setIsAddModalOpen(false)}
-                                className="rounded-lg p-1 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] cursor-pointer"
+                                className="rounded-xl p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] cursor-pointer transition"
                             >
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                     <line x1="18" y1="6" x2="6" y2="18" />
@@ -1271,27 +1635,27 @@ export default function UserDashboardPage() {
                         </div>
 
                         {addModalError && (
-                            <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 p-2.5 text-xs font-semibold text-rose-600 dark:text-rose-400">
+                            <div className="rounded-xl border border-rose-500/25 bg-rose-500/10 p-3 text-xs font-semibold text-rose-600 dark:text-rose-400">
                                 {addModalError}
                             </div>
                         )}
 
                         <form onSubmit={handleAddLicense} className="space-y-4 text-xs">
-                            {/* Label / Role with quick chips */}
+                            {/* Label / Relationship Chips */}
                             <div>
                                 <label className="block font-bold text-[var(--text-secondary)] mb-1.5 uppercase tracking-wider text-[10px]">
-                                    {language === 'ne' ? 'लाइसेन्स कसको हो? (उपनाम/लेबल)' : 'Who owns this license? (Nickname / Label)'}
+                                    {isNe ? 'लाइसेन्स कसको हो? (उपनाम/लेबल)' : 'Whose License is This? (Label / Nickname)'}
                                 </label>
                                 <input
                                     type="text"
                                     required
                                     value={newLabel}
                                     onChange={(e) => setNewLabel(e.target.value)}
-                                    placeholder="e.g. Father, Mother, My Car"
-                                    className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3.5 py-2.5 text-xs text-[var(--text-primary)] focus:border-[var(--nepal-blue)] focus:outline-none"
+                                    placeholder="e.g. Mine, Father, Mother"
+                                    className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3.5 py-2.5 text-xs text-[var(--text-primary)] focus:border-[var(--nepal-blue)] focus:outline-none transition"
                                 />
 
-                                {/* Suggestion chips */}
+                                {/* Suggestion Chips */}
                                 <div className="mt-2 flex flex-wrap gap-1.5">
                                     {['Mine', 'Father', 'Mother', 'Brother', 'Sister', 'Spouse'].map((chip) => (
                                         <button
@@ -1300,7 +1664,7 @@ export default function UserDashboardPage() {
                                             onClick={() => setNewLabel(chip)}
                                             className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition cursor-pointer ${
                                                 newLabel.toLowerCase() === chip.toLowerCase()
-                                                    ? 'bg-[var(--nepal-blue)] text-white'
+                                                    ? 'bg-[var(--nepal-blue)] text-white shadow-2xs'
                                                     : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--border-default)]'
                                             }`}
                                         >
@@ -1313,7 +1677,7 @@ export default function UserDashboardPage() {
                             {/* License Number Input */}
                             <div>
                                 <label className="block font-bold text-[var(--text-secondary)] mb-1.5 uppercase tracking-wider text-[10px]">
-                                    {language === 'ne' ? 'लाइसेन्स नम्बर (XX-XX-XXXXXXXX)' : 'License Number (XX-XX-XXXXXXXX)'}
+                                    {isNe ? 'लाइसेन्स नम्बर (XX-XX-XXXXXXXX)' : 'License Number (XX-XX-XXXXXXXX)'}
                                 </label>
                                 <input
                                     type="text"
@@ -1322,27 +1686,25 @@ export default function UserDashboardPage() {
                                     value={newNumber}
                                     onChange={(e) => setNewNumber(formatLicenseInput(e.target.value))}
                                     placeholder="01-06-12345678"
-                                    className="w-full font-mono font-bold tracking-wider rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3.5 py-2.5 text-sm text-[var(--text-primary)] focus:border-[var(--nepal-blue)] focus:outline-none"
+                                    className="w-full font-mono font-bold tracking-wider rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3.5 py-2.5 text-sm text-[var(--text-primary)] focus:border-[var(--nepal-blue)] focus:outline-none transition"
                                 />
                                 <p className="mt-1 text-[10px] text-[var(--text-secondary)]">
-                                    {language === 'ne'
-                                        ? 'अंग्रेजी वा नेपाली अङ्क (०-९) दुवै चल्छ।'
-                                        : 'Accepts both English and Nepali numerals.'}
+                                    {isNe ? 'अंग्रेजी वा नेपाली अङ्क (०-९) दुवै चल्छ।' : 'Accepts English or Nepali digits (०-९). Auto-formats.'}
                                 </p>
                             </div>
 
                             {/* Notify Toggle */}
-                            <label className="flex items-center gap-2 cursor-pointer pt-1">
+                            <label className="flex items-start gap-2.5 cursor-pointer pt-1 bg-[var(--bg-secondary)]/50 p-3 rounded-xl border border-[var(--border-default)]">
                                 <input
                                     type="checkbox"
                                     checked={newNotify}
                                     onChange={(e) => setNewNotify(e.target.checked)}
-                                    className="h-4 w-4 rounded accent-[var(--nepal-blue)]"
+                                    className="h-4 w-4 rounded accent-[var(--nepal-blue)] mt-0.5"
                                 />
-                                <span className="text-[11px] font-medium text-[var(--text-primary)]">
-                                    {language === 'ne'
-                                        ? 'लाइसेन्स छापिएपछि मलाई इमेलमा तुरुन्त जानकारी दिनुहोस्'
-                                        : 'Send me an automatic email alert when DoTM prints this license'}
+                                <span className="text-[11px] font-medium text-[var(--text-primary)] leading-snug">
+                                    {isNe
+                                        ? 'लाइसेन्स छापिएपछि मेरो इमेलमा तुरुन्तै स्वतः अलर्ट पठाउनुहोस्'
+                                        : 'Send me an automatic email alert when DOTM prints this license'}
                                 </span>
                             </label>
 
@@ -1352,7 +1714,7 @@ export default function UserDashboardPage() {
                                     onClick={() => setIsAddModalOpen(false)}
                                     className="rounded-xl border border-[var(--border-default)] px-4 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] cursor-pointer"
                                 >
-                                    {language === 'ne' ? 'रद्द गर्नुहोस्' : 'Cancel'}
+                                    {isNe ? 'रद्द' : 'Cancel'}
                                 </button>
 
                                 <button
@@ -1361,9 +1723,9 @@ export default function UserDashboardPage() {
                                     className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--nepal-blue)] px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:opacity-95 active:scale-95 disabled:opacity-50 cursor-pointer"
                                 >
                                     {addingLicense ? (
-                                        <span>{language === 'ne' ? 'सेभ गर्दै...' : 'Saving...'}</span>
+                                        <span>{isNe ? 'सेभ गर्दै...' : 'Saving...'}</span>
                                     ) : (
-                                        <span>{language === 'ne' ? 'सेभ गर्नुहोस्' : 'Save to Dashboard'}</span>
+                                        <span>{isNe ? 'भल्टमा सेभ गर्नुहोस्' : 'Save to Vault'}</span>
                                     )}
                                 </button>
                             </div>
@@ -1374,16 +1736,26 @@ export default function UserDashboardPage() {
 
             {/* NEW SUPPORT INQUIRY MODAL */}
             {isNewTicketModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fade-in">
-                    <div className="w-full max-w-lg rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 shadow-2xl space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-base font-extrabold text-[var(--text-primary)]">
-                                {language === 'ne' ? 'नयाँ सोधपुछ वा उजुरी पठाउनुहोस्' : 'Submit Support Inquiry'}
-                            </h3>
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in"
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget) setIsNewTicketModalOpen(false)
+                    }}
+                >
+                    <div className="w-full max-w-lg rounded-2xl sm:rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 shadow-2xl space-y-4">
+                        <div className="flex items-center justify-between pb-3 border-b border-[var(--border-default)]">
+                            <div>
+                                <h3 className="text-base font-extrabold text-[var(--text-primary)]">
+                                    {isNe ? 'नयाँ सोधपुछ वा उजुरी पठाउनुहोस्' : 'Submit Support Inquiry'}
+                                </h3>
+                                <p className="text-[11px] text-[var(--text-secondary)]">
+                                    {isNe ? 'हाम्रो प्राविधिक टोलीले समीक्षा गरी जवाफ दिनेछ।' : 'Our team will review your inquiry and update you.'}
+                                </p>
+                            </div>
                             <button
                                 type="button"
                                 onClick={() => setIsNewTicketModalOpen(false)}
-                                className="rounded-lg p-1 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] cursor-pointer"
+                                className="rounded-xl p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] cursor-pointer transition"
                             >
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                     <line x1="18" y1="6" x2="6" y2="18" />
@@ -1393,30 +1765,30 @@ export default function UserDashboardPage() {
                         </div>
 
                         {ticketModalError && (
-                            <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 p-2.5 text-xs font-semibold text-rose-600 dark:text-rose-400">
+                            <div className="rounded-xl border border-rose-500/25 bg-rose-500/10 p-3 text-xs font-semibold text-rose-600 dark:text-rose-400">
                                 {ticketModalError}
                             </div>
                         )}
 
                         {ticketModalSuccess && (
-                            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-2.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                            <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-3 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                                 {ticketModalSuccess}
                             </div>
                         )}
 
-                        <form onSubmit={handleSubmitTicket} className="space-y-3.5 text-xs">
+                        <form onSubmit={handleSubmitTicket} className="space-y-4 text-xs">
                             <div>
-                                <label className="block font-bold text-[var(--text-secondary)] mb-1">
-                                    {language === 'ne' ? 'विषयको विधा' : 'Category'}
+                                <label className="block font-bold text-[var(--text-secondary)] mb-1.5 uppercase tracking-wider text-[10px]">
+                                    {isNe ? 'विषयको विधा' : 'Category'}
                                 </label>
                                 <select
                                     value={ticketCategory}
                                     onChange={(e) => setTicketCategory(e.target.value)}
-                                    className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3.5 py-2 text-xs text-[var(--text-primary)] focus:border-[var(--nepal-blue)] focus:outline-none"
+                                    className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3.5 py-2.5 text-xs text-[var(--text-primary)] focus:border-[var(--nepal-blue)] focus:outline-none transition"
                                 >
                                     {FEEDBACK_CATEGORIES.map((c) => (
                                         <option key={c.id} value={c.id}>
-                                            {language === 'ne' && c.labelNe ? c.labelNe : c.label}
+                                            {isNe && c.labelNe ? c.labelNe : c.label}
                                         </option>
                                     ))}
                                 </select>
@@ -1425,15 +1797,15 @@ export default function UserDashboardPage() {
                             {/* Optional Attached License selection from family vault */}
                             {licenses.length > 0 && (
                                 <div>
-                                    <label className="block font-bold text-[var(--text-secondary)] mb-1">
-                                        {language === 'ne' ? 'सम्बन्धित लाइसेन्स (ऐच्छिक)' : 'Related License (Optional)'}
+                                    <label className="block font-bold text-[var(--text-secondary)] mb-1.5 uppercase tracking-wider text-[10px]">
+                                        {isNe ? 'सम्बन्धित लाइसेन्स (ऐच्छिक)' : 'Related License (Optional)'}
                                     </label>
                                     <select
                                         value={ticketLicense}
                                         onChange={(e) => setTicketLicense(e.target.value)}
-                                        className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3.5 py-2 text-xs text-[var(--text-primary)] focus:border-[var(--nepal-blue)] focus:outline-none"
+                                        className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3.5 py-2.5 text-xs text-[var(--text-primary)] focus:border-[var(--nepal-blue)] focus:outline-none transition"
                                     >
-                                        <option value="">{language === 'ne' ? '-- कुनै लाइसेन्स छान्नुहोस् --' : '-- Select a saved license --'}</option>
+                                        <option value="">{isNe ? '-- कुनै लाइसेन्स छान्नुहोस् --' : '-- Select a saved license --'}</option>
                                         {licenses.map((lic) => (
                                             <option key={lic.id} value={lic.license_number}>
                                                 {lic.label} ({lic.license_number})
@@ -1444,22 +1816,22 @@ export default function UserDashboardPage() {
                             )}
 
                             <div>
-                                <label className="block font-bold text-[var(--text-secondary)] mb-1">
-                                    {language === 'ne' ? 'शीर्षक' : 'Subject'}
+                                <label className="block font-bold text-[var(--text-secondary)] mb-1.5 uppercase tracking-wider text-[10px]">
+                                    {isNe ? 'शीर्षक' : 'Subject'}
                                 </label>
                                 <input
                                     type="text"
                                     required
                                     value={ticketSubject}
                                     onChange={(e) => setTicketSubject(e.target.value)}
-                                    placeholder="e.g. License not showing or card collection inquiry"
-                                    className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3.5 py-2 text-xs text-[var(--text-primary)] focus:border-[var(--nepal-blue)] focus:outline-none"
+                                    placeholder={isNe ? 'उदा: लाइसेन्स छपाइ ढिलाइ वा कार्ड संकलन सम्बन्धी' : 'e.g. License not showing or card collection inquiry'}
+                                    className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3.5 py-2.5 text-xs text-[var(--text-primary)] focus:border-[var(--nepal-blue)] focus:outline-none transition"
                                 />
                             </div>
 
                             <div>
-                                <label className="block font-bold text-[var(--text-secondary)] mb-1">
-                                    {language === 'ne' ? 'तपाईंको सन्देश वा समस्याको विवरण' : 'Message / Details'}
+                                <label className="block font-bold text-[var(--text-secondary)] mb-1.5 uppercase tracking-wider text-[10px]">
+                                    {isNe ? 'तपाईंको सन्देश वा समस्याको विवरण' : 'Message / Inquiry Details'}
                                 </label>
                                 <textarea
                                     required
@@ -1467,11 +1839,11 @@ export default function UserDashboardPage() {
                                     value={ticketMessage}
                                     onChange={(e) => setTicketMessage(e.target.value)}
                                     placeholder={
-                                        language === 'ne'
+                                        isNe
                                             ? 'तपाईंको प्रश्न वा समस्या यहाँ विस्तृत रूपमा लेख्नुहोस्...'
                                             : 'Please describe your inquiry or problem in detail...'
                                     }
-                                    className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3.5 py-2 text-xs text-[var(--text-primary)] focus:border-[var(--nepal-blue)] focus:outline-none"
+                                    className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3.5 py-2.5 text-xs text-[var(--text-primary)] focus:border-[var(--nepal-blue)] focus:outline-none transition leading-relaxed"
                                 />
                             </div>
 
@@ -1481,7 +1853,7 @@ export default function UserDashboardPage() {
                                     onClick={() => setIsNewTicketModalOpen(false)}
                                     className="rounded-xl border border-[var(--border-default)] px-4 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] cursor-pointer"
                                 >
-                                    {language === 'ne' ? 'रद्द' : 'Cancel'}
+                                    {isNe ? 'रद्द' : 'Cancel'}
                                 </button>
 
                                 <button
@@ -1490,14 +1862,280 @@ export default function UserDashboardPage() {
                                     className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--nepal-blue)] px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:opacity-95 active:scale-95 disabled:opacity-50 cursor-pointer"
                                 >
                                     {submittingTicket ? (
-                                        <span>{language === 'ne' ? 'पठाउँदै...' : 'Submitting...'}</span>
+                                        <span>{isNe ? 'पठाउँदै...' : 'Submitting...'}</span>
                                     ) : (
-                                        <span>{language === 'ne' ? 'पठाउनुहोस्' : 'Submit Inquiry'}</span>
+                                        <span>{isNe ? 'पठाउनुहोस्' : 'Submit Inquiry'}</span>
                                     )}
                                 </button>
                             </div>
                         </form>
                     </div>
+                </div>
+            )}
+
+            {/* PROPER DELETE LICENSE CONFIRMATION MODAL */}
+            {deleteTarget && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="delete-dialog-title"
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget && !deletingLicense) {
+                            setDeleteTarget(null)
+                        }
+                    }}
+                >
+                    <div
+                        className="w-full max-w-md rounded-2xl sm:rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 shadow-2xl space-y-4 animate-slide-up"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Header: Hazard Icon + Title */}
+                        <div className="flex items-start gap-3.5">
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/25">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="3 6 5 6 21 6" />
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                    <line x1="10" y1="11" x2="10" y2="17" />
+                                    <line x1="14" y1="11" x2="14" y2="17" />
+                                </svg>
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <h3 id="delete-dialog-title" className="text-base font-extrabold text-[var(--text-primary)]">
+                                    {isNe ? 'लाइसेन्स भल्टबाट हटाउने निश्चित हुनुहुन्छ?' : 'Remove License from Vault?'}
+                                </h3>
+                                <p className="text-xs text-[var(--text-secondary)] mt-1 leading-relaxed">
+                                    {isNe
+                                        ? 'यो लाइसेन्स तपाईंको भल्टबाट हटाइनेछ र कार्ड छापिने बित्तिकै आउने स्वचालित इमेल सूचनाहरू बन्द हुनेछन्।'
+                                        : 'This license will be removed from your family vault and automated print readiness alerts will be stopped.'}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Target License Summary Card */}
+                        <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/70 p-3.5 space-y-2 text-xs">
+                            <div className="flex items-center justify-between">
+                                <span className="text-[10px] uppercase font-bold text-[var(--text-secondary)] tracking-wider">
+                                    {isNe ? 'लाइसेन्स नम्बर' : 'License Number'}
+                                </span>
+                                <span className="font-mono font-extrabold text-[var(--text-primary)] tracking-wider">
+                                    {deleteTarget.license_number}
+                                </span>
+                            </div>
+                            {deleteTarget.label && (
+                                <div className="flex items-center justify-between border-t border-[var(--border-default)]/60 pt-2">
+                                    <span className="text-[10px] uppercase font-bold text-[var(--text-secondary)] tracking-wider">
+                                        {isNe ? 'सम्बन्ध / लेबल' : 'Relation / Label'}
+                                    </span>
+                                    <span className="font-semibold text-[var(--text-primary)]">
+                                        {deleteTarget.label}
+                                    </span>
+                                </div>
+                            )}
+                            {deleteTarget.holder_name && (
+                                <div className="flex items-center justify-between border-t border-[var(--border-default)]/60 pt-2">
+                                    <span className="text-[10px] uppercase font-bold text-[var(--text-secondary)] tracking-wider">
+                                        {isNe ? 'नाम' : 'Holder Name'}
+                                    </span>
+                                    <span className="font-semibold text-[var(--text-primary)]">
+                                        {deleteTarget.holder_name}
+                                    </span>
+                                </div>
+                            )}
+                            <div className="flex items-center justify-between border-t border-[var(--border-default)]/60 pt-2">
+                                <span className="text-[10px] uppercase font-bold text-[var(--text-secondary)] tracking-wider">
+                                    {isNe ? 'छपाइ स्थिति' : 'Print Status'}
+                                </span>
+                                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                                    deleteTarget.status === 'ready'
+                                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                                        : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                                }`}>
+                                    {deleteTarget.status === 'ready'
+                                        ? isNe ? 'छापिएको (Ready)' : 'Ready to Collect'
+                                        : isNe ? 'बाँकी (In Queue)' : 'In Printing Queue'}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Dialog Footer Actions */}
+                        <div className="flex items-center justify-end gap-2.5 pt-2">
+                            <button
+                                type="button"
+                                disabled={deletingLicense}
+                                onClick={() => setDeleteTarget(null)}
+                                className="rounded-xl border border-[var(--border-default)] px-4 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer disabled:opacity-50"
+                            >
+                                {isNe ? 'रद्द' : 'Cancel'}
+                            </button>
+                            <button
+                                type="button"
+                                disabled={deletingLicense}
+                                onClick={handleConfirmDelete}
+                                className="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 px-4 py-2 text-xs font-bold text-white shadow-sm transition active:scale-95 disabled:opacity-50 cursor-pointer"
+                            >
+                                {deletingLicense ? (
+                                    <>
+                                        <svg className="animate-spin -ml-0.5 mr-1 h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                                        </svg>
+                                        <span>{isNe ? 'हटाउँदै...' : 'Removing...'}</span>
+                                    </>
+                                ) : (
+                                    <span>{isNe ? 'हो, हटाउनुहोस्' : 'Yes, Remove License'}</span>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* PROPER UNSUBSCRIBE FROM ALERTS CONFIRMATION MODAL */}
+            {unsubscribeTarget && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="unsubscribe-dialog-title"
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget && !togglingNotification) {
+                            setUnsubscribeTarget(null)
+                        }
+                    }}
+                >
+                    <div
+                        className="w-full max-w-md rounded-2xl sm:rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 shadow-2xl space-y-4 animate-slide-up"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Header: Alert Off Icon + Title */}
+                        <div className="flex items-start gap-3.5">
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/25">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                                    <line x1="2" y1="2" x2="22" y2="22" />
+                                </svg>
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <h3 id="unsubscribe-dialog-title" className="text-base font-extrabold text-[var(--text-primary)]">
+                                    {isNe ? 'इमेल सूचनाहरू बन्द (Unsubscribe) गर्ने?' : 'Unsubscribe from Email Alerts?'}
+                                </h3>
+                                <p className="text-xs text-[var(--text-secondary)] mt-1 leading-relaxed">
+                                    {isNe
+                                        ? 'तपाईंले यो लाइसेन्सका लागि स्वचालित इमेल सूचनाहरू बन्द गर्न लाग्नुभएको छ। यातायात व्यवस्था विभाग (DOTM) ले कार्ड छापेपछि तपाईंलाई सूचना आउने छैन।'
+                                        : 'You will no longer receive an automated notification email when DOTM finishes printing this driving license.'}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* License details preview */}
+                        <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/70 p-3.5 space-y-2 text-xs">
+                            <div className="flex items-center justify-between">
+                                <span className="text-[10px] uppercase font-bold text-[var(--text-secondary)] tracking-wider">
+                                    {isNe ? 'लाइसेन्स नम्बर' : 'License Number'}
+                                </span>
+                                <span className="font-mono font-extrabold text-[var(--text-primary)] tracking-wider">
+                                    {unsubscribeTarget.license_number}
+                                </span>
+                            </div>
+                            {unsubscribeTarget.label && (
+                                <div className="flex items-center justify-between border-t border-[var(--border-default)]/60 pt-2">
+                                    <span className="text-[10px] uppercase font-bold text-[var(--text-secondary)] tracking-wider">
+                                        {isNe ? 'सम्बन्ध / लेबल' : 'Relation / Label'}
+                                    </span>
+                                    <span className="font-semibold text-[var(--text-primary)]">
+                                        {unsubscribeTarget.label}
+                                    </span>
+                                </div>
+                            )}
+                            {user?.email && (
+                                <div className="flex items-center justify-between border-t border-[var(--border-default)]/60 pt-2">
+                                    <span className="text-[10px] uppercase font-bold text-[var(--text-secondary)] tracking-wider">
+                                        {isNe ? 'इमेल ठेगाना' : 'Subscribed Email'}
+                                    </span>
+                                    <span className="font-semibold text-[var(--text-primary)] truncate max-w-[200px]">
+                                        {user.email}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center justify-end gap-2.5 pt-2">
+                            <button
+                                type="button"
+                                disabled={togglingNotification}
+                                onClick={() => setUnsubscribeTarget(null)}
+                                className="rounded-xl border border-[var(--border-default)] px-4 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer disabled:opacity-50"
+                            >
+                                {isNe ? 'अलर्ट चालु राख्नुहोस्' : 'Keep Alerts On'}
+                            </button>
+                            <button
+                                type="button"
+                                disabled={togglingNotification}
+                                onClick={handleConfirmUnsubscribe}
+                                className="inline-flex items-center gap-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 px-4 py-2 text-xs font-bold text-white shadow-sm transition active:scale-95 disabled:opacity-50 cursor-pointer"
+                            >
+                                {togglingNotification ? (
+                                    <>
+                                        <svg className="animate-spin -ml-0.5 mr-1 h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                                        </svg>
+                                        <span>{isNe ? 'अनसबस्क्राइब गर्दै...' : 'Unsubscribing...'}</span>
+                                    </>
+                                ) : (
+                                    <span>{isNe ? 'हो, अनसबस्क्राइब गर्नुहोस्' : 'Yes, Unsubscribe'}</span>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* FLOATING TOAST NOTIFICATION */}
+            {toast && (
+                <div
+                    role="status"
+                    aria-live="polite"
+                    className="fixed bottom-6 right-6 z-50 animate-slide-up flex items-center gap-2.5 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-3 text-xs font-semibold shadow-2xl backdrop-blur-md max-w-sm"
+                >
+                    {toast.type === 'success' && (
+                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                        </div>
+                    )}
+                    {toast.type === 'error' && (
+                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                                <line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                        </div>
+                    )}
+                    {toast.type === 'info' && (
+                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--nepal-blue)]/10 text-[var(--nepal-blue)]">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                <circle cx="12" cy="12" r="10" />
+                                <line x1="12" y1="16" x2="12" y2="12" />
+                                <line x1="12" y1="8" x2="12.01" y2="8" />
+                            </svg>
+                        </div>
+                    )}
+                    <span className="text-[var(--text-primary)] leading-normal">{toast.message}</span>
+                    <button
+                        type="button"
+                        onClick={() => setToast(null)}
+                        className="ml-auto text-[var(--text-secondary)] hover:text-[var(--text-primary)] p-0.5 cursor-pointer"
+                    >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                    </button>
                 </div>
             )}
         </main>
