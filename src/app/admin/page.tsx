@@ -524,7 +524,9 @@ export default function AdminPage() {
     useEffect(() => {
         if (!isAuthenticated) return
         let cancelled = false
-        setUserLoading(true)
+        queueMicrotask(() => {
+            if (!cancelled) setUserLoading(true)
+        })
 
         const params = new URLSearchParams({
             page: String(userPage),

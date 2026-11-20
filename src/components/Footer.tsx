@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import { SdkCodeIcon } from '@/components/SdkLogos'
@@ -46,7 +46,11 @@ export default function Footer({
 }: FooterProps) {
   const [isDocsModalOpen, setIsDocsModalOpen] = useState(false)
   const [isCategoriesModalOpen, setIsCategoriesModalOpen] = useState(false)
-  const [mounted, setMounted] = useState(false)
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  )
 
   const docsSwipe = useSwipeDownToClose({
     isOpen: isDocsModalOpen,
@@ -57,10 +61,6 @@ export default function Footer({
     isOpen: isCategoriesModalOpen,
     onClose: () => setIsCategoriesModalOpen(false),
   })
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
 
   // Close modals on Escape key & lock body scroll
   useEffect(() => {

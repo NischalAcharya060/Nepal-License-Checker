@@ -663,7 +663,7 @@ export async function adminGetUserDetail(userId: string): Promise<AdminUserItem 
     })
 
     const numbers = savedRes.rows.map((r) => String(r.license_number))
-    let printedMap = new Map<string, { holder_name: string; office: string; category: string }>()
+    const printedMap = new Map<string, { holder_name: string; office: string; category: string }>()
 
     if (numbers.length > 0) {
         const placeholders = numbers.map(() => '?').join(',')

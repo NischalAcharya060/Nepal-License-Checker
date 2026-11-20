@@ -40,20 +40,22 @@ export default function LoginPage() {
         if (typeof window !== 'undefined') {
             const params = new URLSearchParams(window.location.search)
             const urlLang = params.get('lang')
-            if (urlLang === 'ne' || urlLang === 'en') {
-                setLanguage(urlLang)
-            } else {
-                const saved = localStorage.getItem('nlc_language')
-                if (saved === 'ne' || saved === 'en') setLanguage(saved)
-            }
-
             const urlMode = params.get('mode')
             const urlTab = params.get('tab')
-            if (urlMode === 'otp' || urlTab === 'signup' || urlTab === 'register') {
-                setMode('otp')
-            } else if (urlMode === 'password' || urlTab === 'signin' || urlTab === 'login') {
-                setMode('password')
-            }
+
+            const savedLang = localStorage.getItem('nlc_language')
+            const targetLang = (urlLang === 'ne' || urlLang === 'en')
+                ? urlLang
+                : (savedLang === 'ne' || savedLang === 'en' ? savedLang : null)
+
+            const targetMode = (urlMode === 'otp' || urlTab === 'signup' || urlTab === 'register')
+                ? 'otp'
+                : (urlMode === 'password' || urlTab === 'signin' || urlTab === 'login' ? 'password' : null)
+
+            queueMicrotask(() => {
+                if (targetLang) setLanguage(targetLang)
+                if (targetMode) setMode(targetMode)
+            })
         }
     }, [])
 
@@ -299,7 +301,7 @@ export default function LoginPage() {
 
     return (
         <main className="relative flex min-h-screen flex-col items-center justify-center bg-[var(--bg-primary)] px-3 py-6 sm:px-4 sm:py-10 text-[var(--text-primary)] transition-colors">
-            <div className="w-full max-w-md md:max-w-4xl lg:max-w-5xl space-y-3.5 sm:space-y-4">
+            <div className="w-full max-w-4xl lg:max-w-5xl space-y-3.5 sm:space-y-4">
                 {/* Header Navigation & Language Switch */}
                 <div className="flex items-center justify-between px-1">
                     <Link

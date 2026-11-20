@@ -128,12 +128,14 @@ export default function UserDashboardPage() {
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const urlLang = new URLSearchParams(window.location.search).get('lang')
-            if (urlLang === 'ne' || urlLang === 'en') {
-                setLanguage(urlLang)
-            } else {
-                const saved = localStorage.getItem('nlc_language')
-                if (saved === 'ne' || saved === 'en') setLanguage(saved)
-            }
+            const saved = localStorage.getItem('nlc_language')
+            const targetLang = (urlLang === 'ne' || urlLang === 'en')
+                ? urlLang
+                : (saved === 'ne' || saved === 'en' ? saved : null)
+
+            queueMicrotask(() => {
+                if (targetLang) setLanguage(targetLang)
+            })
         }
     }, [])
 
@@ -156,7 +158,7 @@ export default function UserDashboardPage() {
 
     // Load User Licenses
     const fetchLicenses = useCallback(async () => {
-        setLoadingLicenses(true)
+        queueMicrotask(() => setLoadingLicenses(true))
         try {
             const res = await fetch('/api/user/licenses')
             const data = await res.json()
@@ -172,7 +174,7 @@ export default function UserDashboardPage() {
 
     // Load User Support Tickets
     const fetchTickets = useCallback(async () => {
-        setLoadingTickets(true)
+        queueMicrotask(() => setLoadingTickets(true))
         try {
             const res = await fetch('/api/user/support')
             const data = await res.json()
@@ -187,13 +189,17 @@ export default function UserDashboardPage() {
     }, [])
 
     useEffect(() => {
-        fetchUser()
+        queueMicrotask(() => {
+            fetchUser()
+        })
     }, [fetchUser])
 
     useEffect(() => {
         if (user) {
-            fetchLicenses()
-            fetchTickets()
+            queueMicrotask(() => {
+                fetchLicenses()
+                fetchTickets()
+            })
         }
     }, [user, fetchLicenses, fetchTickets])
 
