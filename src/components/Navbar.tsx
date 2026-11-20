@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import InstallAppButton from '@/components/InstallAppButton'
@@ -41,6 +41,22 @@ export default function Navbar({
   onOpenSponsor,
 }: NavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [currentUser, setCurrentUser] = useState<{ email: string } | null>(null)
+
+  useEffect(() => {
+    let isMounted = true
+    fetch('/api/user/auth/me')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (isMounted && data?.authenticated && data?.user) {
+          setCurrentUser(data.user)
+        }
+      })
+      .catch(() => {})
+    return () => {
+      isMounted = false
+    }
+  }, [])
   type FontSize = 'normal' | 'lg' | 'xl'
   const [fontSize, setFontSize] = useState<FontSize>(() => {
     if (typeof window === 'undefined') return 'normal'
@@ -197,6 +213,30 @@ export default function Navbar({
               <span>{language === 'ne' ? 'सहयोग' : 'Sponsor'}</span>
             </button>
           )}
+
+          {/* Citizen Account / Dashboard Button (Desktop) */}
+          <Link
+            href={currentUser ? '/dashboard' : '/login'}
+            className="hidden items-center gap-1.5 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] active:scale-95 sm:inline-flex cursor-pointer shadow-2xs group"
+            title={currentUser ? (language === 'ne' ? 'नागरिक ड्यासबोर्ड' : 'My Dashboard') : (language === 'ne' ? 'लगइन / दर्ता' : 'Sign In')}
+          >
+            {currentUser ? (
+              <>
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[var(--nepal-blue)] text-[10px] font-bold text-white">
+                  {currentUser.email.charAt(0).toUpperCase()}
+                </span>
+                <span>{language === 'ne' ? 'ड्यासबोर्ड' : 'Dashboard'}</span>
+              </>
+            ) : (
+              <>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)] transition-transform group-hover:scale-110">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                <span>{language === 'ne' ? 'लगइन' : 'Sign In'}</span>
+              </>
+            )}
+          </Link>
 
           {/* Language Switcher - compact, touch-friendly on all mobile screens */}
           <div
@@ -379,6 +419,41 @@ export default function Navbar({
 
             {/* Install App */}
             <InstallAppButton language={language} variant="tile" />
+
+            {/* Citizen Account Link (Mobile) */}
+            <Link
+              href={currentUser ? '/dashboard' : '/login'}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="flex items-center justify-between rounded-xl border border-[var(--nepal-blue)]/30 bg-[var(--nepal-blue)]/5 px-3.5 py-2.5 text-left transition hover:border-[var(--nepal-blue)] hover:bg-[var(--nepal-blue)]/10 active:scale-[0.99]"
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--nepal-blue)] text-white font-bold text-xs">
+                  {currentUser ? (
+                    currentUser.email.charAt(0).toUpperCase()
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                  )}
+                </span>
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-[var(--nepal-blue)]">
+                    {currentUser
+                      ? (language === 'ne' ? 'नागरिक ड्यासबोर्ड (मेरो खाता)' : 'Citizen Dashboard')
+                      : (language === 'ne' ? 'लगइन वा दर्ता गर्नुहोस्' : 'Sign In / Register')}
+                  </span>
+                  <span className="text-[10px] text-[var(--text-secondary)] truncate max-w-[200px]">
+                    {currentUser
+                      ? currentUser.email
+                      : (language === 'ne' ? 'परिवारका सबै लाइसेन्सहरू एकै ठाउँमा ट्र्याक गर्नुहोस्' : 'Save family licenses & track support')}
+                  </span>
+                </div>
+              </div>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)]">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </Link>
 
             {/* Offices */}
             <button

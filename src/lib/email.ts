@@ -896,3 +896,113 @@ export async function sendSubscriptionConfirmationEmail(params: {
 
     return res
 }
+
+/**
+ * Sends a 6-digit one-time password (OTP) email for passwordless user login.
+ */
+export async function sendOtpEmail(params: {
+    to: string
+    otp: string
+    expiryMinutes?: number
+}): Promise<MailDeliveryResult> {
+    const siteUrl = getSiteUrl()
+    const expiryMinutes = params.expiryMinutes || 10
+    const emailSubject = `🔐 Your Nepal License Checker Login Code: ${params.otp}`
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${emailSubject}</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b; -webkit-font-smoothing: antialiased;">
+  <div style="max-width: 540px; margin: 30px auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);">
+    
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #003893 0%, #002666 100%); padding: 28px 24px; text-align: center;">
+      <div style="display: inline-block; background-color: #ffffff; border-radius: 12px; padding: 6px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <img src="${siteUrl}/License-Checker-Nepal-logo.png" alt="Nepal License Checker" width="48" height="48" style="display: block; border-radius: 8px;">
+      </div>
+      <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 800; letter-spacing: -0.01em;">
+        Nepal License Checker 🇳🇵
+      </h1>
+      <p style="margin: 6px 0 0; color: #cbd5e1; font-size: 13px; font-weight: 500;">
+        सुरक्षित लगइन प्रमाणीकरण कोड • Secure Login Verification
+      </p>
+    </div>
+
+    <!-- Body -->
+    <div style="padding: 30px 24px; text-align: center;">
+      <h2 style="margin: 0 0 10px; font-size: 17px; font-weight: 700; color: #0f172a;">
+        Your 6-Digit Verification Code
+      </h2>
+      <p style="margin: 0 0 24px; font-size: 14px; color: #475569; line-height: 1.5;">
+        Use this single-use code to sign in to your Nepal License Checker user dashboard. It will expire in <strong>${expiryMinutes} minutes</strong>.
+      </p>
+
+      <!-- OTP Display Box -->
+      <div style="background-color: #f8fafc; border: 2px dashed #003893; border-radius: 14px; padding: 18px 24px; margin: 0 auto 26px; display: inline-block; min-width: 260px;">
+        <span style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 36px; font-weight: 800; letter-spacing: 0.25em; color: #003893; margin-left: 0.25em; display: block;">
+          ${params.otp}
+        </span>
+      </div>
+
+      <div style="background-color: #fef2f2; border: 1px solid #fee2e2; border-radius: 10px; padding: 12px 16px; margin-bottom: 24px; text-align: left;">
+        <p style="margin: 0; font-size: 12px; color: #991b1b; line-height: 1.5;">
+          ⚠️ <strong>सुरक्षा सुझाव (Security Warning):</strong> Never share this code with anyone. Nepal License Checker team will never ask for your code.
+        </p>
+      </div>
+
+      <p style="margin: 0; font-size: 12px; color: #64748b; line-height: 1.5;">
+        If you did not request this login code, you can safely ignore this email. No changes have been made to your account.
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div style="background-color: #f8fafc; border-top: 1px solid #f1f5f9; padding: 18px 24px; text-align: center; font-size: 11px; color: #94a3b8;">
+      <p style="margin: 0 0 6px;">
+        Nepal License Checker • Department of Transport Management (DoTM) Public Mirror
+      </p>
+      <p style="margin: 0;">
+        <a href="${siteUrl}" style="color: #003893; text-decoration: none; font-weight: 600;">Visit Website</a>
+      </p>
+    </div>
+
+  </div>
+</body>
+</html>`
+
+    const text = `Nepal License Checker - Login Verification Code\n\n` +
+        `Your 6-digit login verification code is: ${params.otp}\n\n` +
+        `This code will expire in ${expiryMinutes} minutes.\n` +
+        `If you did not request this code, please ignore this email.\n\n` +
+        `---\n` +
+        `Nepal License Checker (${siteUrl})`
+
+    const res = await sendEmail({
+        to: params.to,
+        subject: emailSubject,
+        html,
+        text,
+    })
+
+    // Log the OTP email
+    await logSentEmail({
+        recipient: params.to,
+        subject: emailSubject,
+        templateType: 'user_otp',
+        referenceId: params.to,
+        status: res.success ? 'sent' : 'failed',
+        provider: res.provider,
+        messageId: res.messageId || res.id,
+        errorMessage: res.error,
+        snippet: `Login OTP sent to ${params.to}`,
+        metadata: {
+            expiryMinutes,
+        },
+        createdAt: Date.now(),
+    }).catch(() => {})
+
+    return res
+}

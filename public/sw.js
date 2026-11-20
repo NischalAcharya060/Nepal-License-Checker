@@ -9,7 +9,7 @@
  *  - never cached     : non-GET requests, cross-origin requests, video/audio
  */
 
-const VERSION = 'v7'
+const VERSION = 'v8'
 const PRECACHE = `nlc-precache-${VERSION}`
 const PAGES = `nlc-pages-${VERSION}`
 const ASSETS = `nlc-assets-${VERSION}`

@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import { SdkCodeIcon } from '@/components/SdkLogos'
+import { useSwipeDownToClose } from '@/hooks/useSwipeDownToClose'
 import type { Language } from '@/lib/i18n'
 import { VEHICLE_CATEGORIES } from '@/lib/categories'
 import { formatNepalDateTime, formatTimeUntil } from '@/lib/cronHelper'
@@ -44,20 +46,41 @@ export default function Footer({
 }: FooterProps) {
   const [isDocsModalOpen, setIsDocsModalOpen] = useState(false)
   const [isCategoriesModalOpen, setIsCategoriesModalOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
-  // Close modals on Escape key
+  const docsSwipe = useSwipeDownToClose({
+    isOpen: isDocsModalOpen,
+    onClose: () => setIsDocsModalOpen(false),
+  })
+
+  const categoriesSwipe = useSwipeDownToClose({
+    isOpen: isCategoriesModalOpen,
+    onClose: () => setIsCategoriesModalOpen(false),
+  })
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Close modals on Escape key & lock body scroll
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setIsDocsModalOpen(false)
-        setIsCategoriesModalOpen(false)
+        if (isDocsModalOpen) docsSwipe.triggerClose()
+        if (isCategoriesModalOpen) categoriesSwipe.triggerClose()
       }
     }
     if (isDocsModalOpen || isCategoriesModalOpen) {
       window.addEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
     }
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isDocsModalOpen, isCategoriesModalOpen])
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = ''
+    }
+  }, [isDocsModalOpen, isCategoriesModalOpen, docsSwipe, categoriesSwipe])
 
   const scrollToSearch = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -88,7 +111,7 @@ export default function Footer({
   const currentYear = 2026
 
   return (
-    <footer className="w-full border-t border-[var(--border-default)]/80 bg-[var(--bg-primary)]/60 backdrop-blur-xs pt-10 pb-12 print:hidden text-xs text-[var(--text-secondary)]">
+    <footer className="w-full border-t border-[var(--border-default)]/80 bg-[var(--bg-primary)]/95 pt-10 pb-12 print:hidden text-xs text-[var(--text-secondary)]">
       <div className="mx-auto w-full max-w-7xl lg:max-w-[1440px] px-4 sm:px-6 lg:px-8">
         {/* Top Landscape Header: Brand Info + Operational Status + Action Buttons */}
         <div className="pb-8 border-b border-[var(--border-default)]/70 space-y-5">
@@ -644,22 +667,39 @@ export default function Footer({
       </div>
 
       {/* Required Documents Modal */}
-      {isDocsModalOpen && (
+      {mounted && docsSwipe.isRendered && createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-3 sm:p-4 backdrop-blur-md animate-fade-in"
-          onClick={() => setIsDocsModalOpen(false)}
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/65 p-0 sm:p-4 backdrop-blur-md transition-opacity duration-300"
+          style={docsSwipe.backdropStyle}
+          onClick={docsSwipe.triggerClose}
+          role="dialog"
+          aria-modal="true"
+          aria-label={isNe ? 'लाइसेन्स लिन चाहिने कागजात' : 'Required Documents Checklist'}
         >
           <div
-            role="dialog"
-            aria-modal="true"
-            aria-label={isNe ? 'लाइसेन्स लिन चाहिने कागजात' : 'Required Documents Checklist'}
-            className="relative w-full max-w-xl overflow-hidden rounded-3xl bg-[var(--surface-primary)] shadow-2xl animate-rise-in border border-[var(--border-default)] max-h-[90vh] flex flex-col"
+            style={docsSwipe.modalStyle}
+            {...docsSwipe.containerProps}
+            className="relative flex flex-col w-full max-w-xl max-h-[90vh] sm:max-h-[85vh] overflow-hidden rounded-t-[28px] sm:rounded-3xl bg-[var(--surface-primary)] dev-glass-card shadow-2xl border border-[var(--border-default)] pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-0"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Mobile handle indicator & Swipe Down zone */}
+            <div
+              className="w-full pt-3 pb-1 flex flex-col items-center justify-center cursor-grab active:cursor-grabbing touch-none select-none sm:hidden"
+              {...docsSwipe.handleProps}
+            >
+              <div className="w-12 h-1.5 bg-[var(--border-default)] hover:bg-[var(--text-muted)] rounded-full transition-colors" />
+              <span className="text-[10px] text-[var(--text-muted)] mt-1 font-medium opacity-65 tracking-tight">
+                {isNe ? 'बन्द गर्न तल तान्नुहोस्' : 'Swipe down to close'}
+              </span>
+            </div>
+
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-[var(--border-default)] px-6 py-4 bg-[var(--bg-secondary)]/50">
+            <div
+              className="flex items-center justify-between border-b border-[var(--border-default)] px-5 sm:px-6 py-3.5 sm:py-4 bg-[var(--bg-secondary)]/50 select-none cursor-grab active:cursor-grabbing sm:cursor-default"
+              {...docsSwipe.handleProps}
+            >
               <div className="flex items-center gap-2.5">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--nepal-blue)] text-white shadow-xs">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--nepal-blue)] text-white shadow-xs">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                     <polyline points="14 2 14 8 20 8" />
@@ -669,10 +709,10 @@ export default function Footer({
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-[var(--text-primary)]">
+                  <h3 className="text-sm sm:text-base font-extrabold text-[var(--text-primary)] leading-tight">
                     {isNe ? 'लाइसेन्स लिन लैजानुपर्ने कागजातहरू' : 'Documents Required for Collection'}
                   </h3>
-                  <p className="text-[11px] text-[var(--text-secondary)]">
+                  <p className="text-[11px] text-[var(--text-secondary)] line-clamp-1">
                     {isNe ? 'यातायात कार्यालय जानुअघि यी सक्कल कागजातहरू साथमा राख्नुहोस्' : 'Ensure you carry these original documents to the transport office'}
                   </p>
                 </div>
@@ -680,11 +720,11 @@ export default function Footer({
 
               <button
                 type="button"
-                onClick={() => setIsDocsModalOpen(false)}
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--surface-primary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border-default)]/50 transition cursor-pointer border border-[var(--border-default)]"
-                aria-label="Close"
+                onClick={docsSwipe.triggerClose}
+                className="flex min-h-[40px] min-w-[40px] h-9 w-9 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-[var(--surface-primary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border-default)]/50 transition cursor-pointer border border-[var(--border-default)] active:scale-95 shrink-0 ml-2"
+                aria-label={isNe ? 'बन्द गर्नुहोस्' : 'Close'}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
@@ -692,7 +732,7 @@ export default function Footer({
             </div>
 
             {/* Content List */}
-            <div className="p-6 overflow-y-auto space-y-3.5 text-xs">
+            <div className="p-5 sm:p-6 overflow-y-auto space-y-3 sm:space-y-3.5 text-xs flex-1 overscroll-contain">
               <div className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3.5 flex items-start gap-3">
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--nepal-blue)] text-white font-bold text-xs">
                   1
@@ -776,36 +816,54 @@ export default function Footer({
             </div>
 
             {/* Footer */}
-            <div className="border-t border-[var(--border-default)] p-4 bg-[var(--bg-secondary)]/50 flex justify-end">
+            <div className="border-t border-[var(--border-default)] p-3.5 sm:p-4 bg-[var(--bg-secondary)]/50 flex justify-end">
               <button
                 type="button"
-                onClick={() => setIsDocsModalOpen(false)}
-                className="rounded-xl bg-[var(--text-primary)] px-4 py-2 font-semibold text-[var(--surface-primary)] transition hover:opacity-90 active:scale-95 cursor-pointer text-xs"
+                onClick={docsSwipe.triggerClose}
+                className="w-full sm:w-auto rounded-xl bg-[var(--text-primary)] px-4 py-2.5 sm:py-2 font-semibold text-[var(--surface-primary)] transition hover:opacity-90 active:scale-95 cursor-pointer text-xs text-center"
               >
                 {isNe ? 'बुझेँ (बन्द गर्नुहोस्)' : 'Got it (Close)'}
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Vehicle Categories Breakdown Modal */}
-      {isCategoriesModalOpen && (
+      {mounted && categoriesSwipe.isRendered && createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-3 sm:p-4 backdrop-blur-md animate-fade-in"
-          onClick={() => setIsCategoriesModalOpen(false)}
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/65 p-0 sm:p-4 backdrop-blur-md transition-opacity duration-300"
+          style={categoriesSwipe.backdropStyle}
+          onClick={categoriesSwipe.triggerClose}
+          role="dialog"
+          aria-modal="true"
+          aria-label={isNe ? 'सवारी साधनका वर्गहरू' : 'Vehicle Categories Breakdown'}
         >
           <div
-            role="dialog"
-            aria-modal="true"
-            aria-label={isNe ? 'सवारी साधनका वर्गहरू' : 'Vehicle Categories Breakdown'}
-            className="relative w-full max-w-2xl overflow-hidden rounded-3xl bg-[var(--surface-primary)] shadow-2xl animate-rise-in border border-[var(--border-default)] max-h-[90vh] flex flex-col"
+            style={categoriesSwipe.modalStyle}
+            {...categoriesSwipe.containerProps}
+            className="relative flex flex-col w-full max-w-2xl max-h-[90vh] sm:max-h-[85vh] overflow-hidden rounded-t-[28px] sm:rounded-3xl bg-[var(--surface-primary)] dev-glass-card shadow-2xl border border-[var(--border-default)] pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-0"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Mobile handle indicator & Swipe Down zone */}
+            <div
+              className="w-full pt-3 pb-1 flex flex-col items-center justify-center cursor-grab active:cursor-grabbing touch-none select-none sm:hidden"
+              {...categoriesSwipe.handleProps}
+            >
+              <div className="w-12 h-1.5 bg-[var(--border-default)] hover:bg-[var(--text-muted)] rounded-full transition-colors" />
+              <span className="text-[10px] text-[var(--text-muted)] mt-1 font-medium opacity-65 tracking-tight">
+                {isNe ? 'बन्द गर्न तल तान्नुहोस्' : 'Swipe down to close'}
+              </span>
+            </div>
+
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-[var(--border-default)] px-6 py-4 bg-[var(--bg-secondary)]/50">
+            <div
+              className="flex items-center justify-between border-b border-[var(--border-default)] px-5 sm:px-6 py-3.5 sm:py-4 bg-[var(--bg-secondary)]/50 select-none cursor-grab active:cursor-grabbing sm:cursor-default"
+              {...categoriesSwipe.handleProps}
+            >
               <div className="flex items-center gap-2.5">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--nepal-blue)] text-white shadow-xs">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--nepal-blue)] text-white shadow-xs">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="10" />
                     <line x1="12" y1="2" x2="12" y2="22" />
@@ -813,10 +871,10 @@ export default function Footer({
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-[var(--text-primary)]">
+                  <h3 className="text-sm sm:text-base font-extrabold text-[var(--text-primary)] leading-tight">
                     {isNe ? 'नेपाल सवारी चालक अनुमतिपत्र वर्गहरू' : 'Nepal Driving License Categories'}
                   </h3>
-                  <p className="text-[11px] text-[var(--text-secondary)]">
+                  <p className="text-[11px] text-[var(--text-secondary)] line-clamp-1">
                     {isNe ? 'यातायात व्यवस्था विभाग अनुसार सवारी साधनका आधिकारिक वर्गहरू' : 'Official vehicle classifications recognized by DOTM Nepal'}
                   </p>
                 </div>
@@ -824,11 +882,11 @@ export default function Footer({
 
               <button
                 type="button"
-                onClick={() => setIsCategoriesModalOpen(false)}
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--surface-primary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border-default)]/50 transition cursor-pointer border border-[var(--border-default)]"
-                aria-label="Close"
+                onClick={categoriesSwipe.triggerClose}
+                className="flex min-h-[40px] min-w-[40px] h-9 w-9 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-[var(--surface-primary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border-default)]/50 transition cursor-pointer border border-[var(--border-default)] active:scale-95 shrink-0 ml-2"
+                aria-label={isNe ? 'बन्द गर्नुहोस्' : 'Close'}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
@@ -836,15 +894,15 @@ export default function Footer({
             </div>
 
             {/* Grid of Categories */}
-            <div className="p-6 overflow-y-auto">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="p-5 sm:p-6 overflow-y-auto flex-1 overscroll-contain">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
                 {Object.values(VEHICLE_CATEGORIES).map((cat) => (
                   <div
                     key={cat.code}
-                    className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3.5 hover:border-[var(--nepal-blue)]/40 transition"
+                    className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 sm:p-3.5 hover:border-[var(--nepal-blue)]/40 transition"
                   >
                     <div className="flex items-center gap-2.5 mb-1.5">
-                      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--nepal-blue)] text-white font-mono font-extrabold text-xs shadow-2xs">
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--nepal-blue)] text-white font-mono font-extrabold text-xs shadow-2xs">
                         {cat.code}
                       </span>
                       <span className="font-bold text-xs text-[var(--text-primary)]">
@@ -860,17 +918,18 @@ export default function Footer({
             </div>
 
             {/* Footer */}
-            <div className="border-t border-[var(--border-default)] p-4 bg-[var(--bg-secondary)]/50 flex justify-end">
+            <div className="border-t border-[var(--border-default)] p-3.5 sm:p-4 bg-[var(--bg-secondary)]/50 flex justify-end">
               <button
                 type="button"
-                onClick={() => setIsCategoriesModalOpen(false)}
-                className="rounded-xl bg-[var(--text-primary)] px-4 py-2 font-semibold text-[var(--surface-primary)] transition hover:opacity-90 active:scale-95 cursor-pointer text-xs"
+                onClick={categoriesSwipe.triggerClose}
+                className="w-full sm:w-auto rounded-xl bg-[var(--text-primary)] px-4 py-2.5 sm:py-2 font-semibold text-[var(--surface-primary)] transition hover:opacity-90 active:scale-95 cursor-pointer text-xs text-center"
               >
                 {isNe ? 'बन्द गर्नुहोस्' : 'Close Guide'}
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </footer>
   )
