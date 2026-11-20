@@ -118,6 +118,8 @@ export async function GET(request: NextRequest) {
         // Parse & validate input
         const searchParams = request.nextUrl.searchParams
         let licenseNumber = searchParams.get('number')
+        const rawSource = searchParams.get('source')
+        const searchSource: 'scanner' | 'manual' = rawSource === 'scanner' ? 'scanner' : 'manual'
 
         if (!licenseNumber) {
             logDevMetric(400)
@@ -168,6 +170,7 @@ export async function GET(request: NextRequest) {
                 city: geo.city,
                 region: geo.region,
                 user_agent: request.headers.get('user-agent'),
+                source: searchSource,
             }).catch(() => {})
 
             return NextResponse.json(
@@ -205,6 +208,7 @@ export async function GET(request: NextRequest) {
             city: geo.city,
             region: geo.region,
             user_agent: request.headers.get('user-agent'),
+            source: searchSource,
         }).catch(() => {})
 
         return NextResponse.json(

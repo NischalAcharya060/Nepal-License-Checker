@@ -32,6 +32,7 @@ export interface SearchLog {
     city?: string | null
     region?: string | null
     user_agent?: string | null
+    source?: 'manual' | 'scanner' | string | null
     created_at: number
     duplicate_count?: number
     is_latest?: boolean
@@ -287,6 +288,8 @@ export interface AdminOcrLog {
     ip: string | null
     error_message: string | null
     created_at: number
+    search_status?: 'found' | 'not_found' | null
+    search_count?: number
 }
 
 export interface AdminOcrStatsData {
@@ -302,6 +305,8 @@ export interface AdminOcrStatsData {
     dailyQuotaUsed: number
     dailyQuotaPercent: number
     rpmLimit: number
+    checkedCount?: number
+    checkedRate?: number
 }
 
 export interface AdminUpdateEntry {

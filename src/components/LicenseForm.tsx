@@ -8,7 +8,7 @@ import OcrScannerModal from '@/components/OcrScannerModal'
 import type { LicenseFormCopy } from '@/lib/i18n'
 
 interface LicenseFormProps {
-  onSubmit: (licenseNumber: string) => Promise<void>
+  onSubmit: (licenseNumber: string, source?: 'manual' | 'scanner') => Promise<void>
   onReset: () => void
   loading: boolean
   copy: LicenseFormCopy
@@ -67,6 +67,7 @@ export default function LicenseForm({
   const [error, setError] = useState('')
   const [focused, setFocused] = useState(false)
   const [isScanModalOpen, setIsScanModalOpen] = useState(false)
+  const [searchSource, setSearchSource] = useState<'manual' | 'scanner'>('manual')
   const [loadingMsgIdx, setLoadingMsgIdx] = useState(0)
   const [recentSearches, setRecentSearches] = useState<string[]>(() => {
     if (typeof window === 'undefined') return []
@@ -144,6 +145,9 @@ export default function LicenseForm({
       const rawInput = devanagariToAsciiDigits(e.target.value)
       const formatted = formatLicenseNumber(rawInput)
 
+      if (!rawInput.trim()) {
+        setSearchSource('manual')
+      }
       setLicenseNumber(formatted)
       setError('')
       onReset()
@@ -180,8 +184,9 @@ export default function LicenseForm({
   const handleSelectRecent = (num: string) => {
     if (loading || isLockedOut) return
     setLicenseNumber(num)
+    setSearchSource('manual')
     setError('')
-    onSubmit(num)
+    onSubmit(num, 'manual')
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -198,21 +203,30 @@ export default function LicenseForm({
     setError('')
     saveRecentSearch(licenseNumber)
     startLoadingMessages()
-    await onSubmit(licenseNumber)
+    await onSubmit(licenseNumber, searchSource)
     stopLoadingMessages()
   }
 
-  const handleOcrDetected = (detectedNumber: string) => {
+  const handleOcrDetected = async (detectedNumber: string) => {
     const formatted = formatLicenseNumber(detectedNumber)
     if (formatted) {
       setLicenseNumber(formatted)
-      setError(
-        formatted.length === 14 && !validateLicenseNumber(formatted)
-          ? copy.errors.invalidShort
-          : ''
-      )
+      setSearchSource('scanner')
       onReset()
-      inputRef.current?.focus()
+      if (validateLicenseNumber(formatted)) {
+        setError('')
+        saveRecentSearch(formatted)
+        startLoadingMessages()
+        await onSubmit(formatted, 'scanner')
+        stopLoadingMessages()
+      } else {
+        setError(
+          formatted.length === 14 && !validateLicenseNumber(formatted)
+            ? copy.errors.invalidShort
+            : ''
+        )
+        inputRef.current?.focus()
+      }
     }
   }
 
@@ -234,6 +248,7 @@ export default function LicenseForm({
 
         if (formatted) {
           setLicenseNumber(formatted)
+          setSearchSource('manual')
           setError(
             formatted.length === 14 && !validateLicenseNumber(formatted)
               ? copy.errors.invalidShort
@@ -399,6 +414,7 @@ export default function LicenseForm({
                   type="button"
                   onClick={() => {
                     setLicenseNumber('')
+                    setSearchSource('manual')
                     setError('')
                     onReset()
                     inputRef.current?.focus()

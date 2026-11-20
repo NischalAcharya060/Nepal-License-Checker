@@ -76,6 +76,7 @@ export default function AdminPage() {
     const [totalPages, setTotalPages] = useState(1)
     const [searchFilter, setSearchFilter] = useState('')
     const [statusFilter, setStatusFilter] = useState<'all' | 'found' | 'not_found' | 'duplicates'>('all')
+    const [sourceFilter, setSourceFilter] = useState<'all' | 'scanner' | 'manual'>('all')
     const [dataLoading, setDataLoading] = useState(false)
     const [autoRefresh, setAutoRefresh] = useState(true)
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
@@ -277,6 +278,7 @@ export default function AdminPage() {
             limit: String(limit),
             search: searchFilter,
             status: statusFilter,
+            source: sourceFilter,
         })
 
         fetch(`/api/admin/logs?${params.toString()}`, { cache: 'no-store' })
@@ -313,7 +315,7 @@ export default function AdminPage() {
         return () => {
             cancelled = true
         }
-    }, [isAuthenticated, page, limit, searchFilter, statusFilter, refreshKey])
+    }, [isAuthenticated, page, limit, searchFilter, statusFilter, sourceFilter, refreshKey])
 
     // 2a. Fetch Live System Mode (Normal / Degraded / Maintenance)
     useEffect(() => {
@@ -2635,6 +2637,8 @@ export default function AdminPage() {
                         totalPages={totalPages}
                         searchFilter={searchFilter}
                         statusFilter={statusFilter}
+                        sourceFilter={sourceFilter}
+                        setSourceFilter={setSourceFilter}
                         dataLoading={dataLoading}
                         lastUpdated={lastUpdated}
                         privacyMode={privacyMode}

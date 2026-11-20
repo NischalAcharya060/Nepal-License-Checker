@@ -13,6 +13,7 @@ export interface SearchLogRecord {
     city?: string | null
     region?: string | null
     user_agent?: string | null
+    source?: 'manual' | 'scanner' | string | null
     created_at: number
     duplicate_count?: number
     is_latest?: boolean
@@ -23,28 +24,48 @@ let tableChecked = false
 export async function ensureSearchLogsTable(): Promise<void> {
     if (tableChecked) return
     const db = getTurso()
-    await db.batch(
-        [
-            `CREATE TABLE IF NOT EXISTS search_logs (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                license_number TEXT NOT NULL,
-                status TEXT NOT NULL,
-                holder_name TEXT,
-                office TEXT,
-                category TEXT,
-                ip TEXT NOT NULL,
-                country TEXT,
-                city TEXT,
-                region TEXT,
-                user_agent TEXT,
-                created_at INTEGER NOT NULL
-            )`,
-            `CREATE INDEX IF NOT EXISTS idx_search_logs_created_at ON search_logs(created_at DESC)`,
-            `CREATE INDEX IF NOT EXISTS idx_search_logs_license ON search_logs(license_number)`,
-            `CREATE INDEX IF NOT EXISTS idx_search_logs_ip ON search_logs(ip)`,
-        ],
-        'write'
-    )
+    try {
+        await db.batch(
+            [
+                `CREATE TABLE IF NOT EXISTS search_logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    license_number TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    holder_name TEXT,
+                    office TEXT,
+                    category TEXT,
+                    ip TEXT NOT NULL,
+                    country TEXT,
+                    city TEXT,
+                    region TEXT,
+                    user_agent TEXT,
+                    source TEXT DEFAULT 'manual',
+                    created_at INTEGER NOT NULL
+                )`,
+                `CREATE INDEX IF NOT EXISTS idx_search_logs_created_at ON search_logs(created_at DESC)`,
+                `CREATE INDEX IF NOT EXISTS idx_search_logs_license ON search_logs(license_number)`,
+                `CREATE INDEX IF NOT EXISTS idx_search_logs_ip ON search_logs(ip)`,
+            ],
+            'write'
+        )
+    } catch {
+        // Table or core indexes already exist
+    }
+
+    // Non-destructive column addition for existing deployments
+    try {
+        await db.execute(`ALTER TABLE search_logs ADD COLUMN source TEXT DEFAULT 'manual'`)
+    } catch {
+        // Column already exists, safe to ignore
+    }
+
+    // Create index on source column once column is guaranteed to exist
+    try {
+        await db.execute(`CREATE INDEX IF NOT EXISTS idx_search_logs_source ON search_logs(source)`)
+    } catch {
+        // Index already exists, safe to ignore
+    }
+
     tableChecked = true
 }
 
@@ -59,6 +80,7 @@ export async function logSearch(entry: {
     city?: string | null
     region?: string | null
     user_agent?: string | null
+    source?: 'manual' | 'scanner' | string | null
 }): Promise<void> {
     try {
         await ensureSearchLogsTable()
@@ -66,8 +88,8 @@ export async function logSearch(entry: {
         const now = Date.now()
         await db.execute({
             sql: `INSERT INTO search_logs (
-                license_number, status, holder_name, office, category, ip, country, city, region, user_agent, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                license_number, status, holder_name, office, category, ip, country, city, region, user_agent, source, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             args: [
                 entry.license_number,
                 entry.status,
@@ -79,6 +101,7 @@ export async function logSearch(entry: {
                 entry.city || null,
                 entry.region || null,
                 entry.user_agent ? entry.user_agent.slice(0, 255) : null,
+                entry.source === 'scanner' ? 'scanner' : 'manual',
                 now,
             ],
         })
@@ -92,6 +115,7 @@ export interface SearchLogsFilter {
     limit?: number
     search?: string
     status?: 'all' | 'found' | 'not_found' | 'error' | 'duplicates'
+    source?: 'all' | 'scanner' | 'manual'
     onlyDuplicates?: boolean
 }
 
@@ -100,6 +124,7 @@ export async function getSearchLogs({
     limit = 50,
     search = '',
     status = 'all',
+    source = 'all',
     onlyDuplicates = false,
 }: SearchLogsFilter) {
     await ensureSearchLogsTable()
@@ -133,6 +158,11 @@ export async function getSearchLogs({
         args.push(status)
     }
 
+    if (source && source !== 'all') {
+        whereClauses.push("COALESCE(source, 'manual') = ?")
+        args.push(source)
+    }
+
     const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : ''
 
     const countRes = await db.execute({
@@ -147,7 +177,7 @@ export async function getSearchLogs({
         : 'ORDER BY created_at DESC'
 
     const listRes = await db.execute({
-        sql: `SELECT id, license_number, status, holder_name, office, category, ip, country, city, region, user_agent, created_at,
+        sql: `SELECT id, license_number, status, holder_name, office, category, ip, country, city, region, user_agent, source, created_at,
                      (SELECT COUNT(*) FROM search_logs s2 WHERE s2.license_number = search_logs.license_number) as duplicate_count,
                      (CASE WHEN id = (
                          SELECT s3.id FROM search_logs s3 
@@ -173,6 +203,7 @@ export async function getSearchLogs({
         city: row.city ? String(row.city) : null,
         region: row.region ? String(row.region) : null,
         user_agent: row.user_agent ? String(row.user_agent) : null,
+        source: row.source ? String(row.source) : 'manual',
         created_at: Number(row.created_at || 0),
         duplicate_count: Number(row.duplicate_count || 1),
         is_latest: Number(row.is_latest || 0) === 1,
@@ -221,13 +252,40 @@ export interface SearchLogsStats {
     redundantCount: number
 }
 
-export async function getSearchStats(): Promise<SearchLogsStats> {
+export interface GetSearchStatsOptions {
+    days?: number
+    startDate?: string
+    endDate?: string
+}
+
+export async function getSearchStats(options?: GetSearchStatsOptions): Promise<SearchLogsStats> {
     await ensureSearchLogsTable()
     const db = getTurso()
 
     const DAY_MS = 24 * 60 * 60 * 1000
     const todayTimestamp = getNepalMidnightTimestamp()
-    const sevenDaysAgoTimestamp = todayTimestamp - 6 * DAY_MS
+
+    let numDays = 7
+    let trendStartMs = todayTimestamp - 6 * DAY_MS
+    let trendEndMs = todayTimestamp + DAY_MS
+
+    if (options?.startDate && options?.endDate) {
+        try {
+            const sTime = new Date(`${options.startDate}T00:00:00+05:45`).getTime()
+            const eTime = new Date(`${options.endDate}T00:00:00+05:45`).getTime()
+            if (!isNaN(sTime) && !isNaN(eTime) && eTime >= sTime) {
+                trendStartMs = sTime
+                trendEndMs = eTime + DAY_MS
+                numDays = Math.min(365, Math.max(1, Math.round((trendEndMs - trendStartMs) / DAY_MS)))
+            }
+        } catch {
+            // fallback to default
+        }
+    } else if (options?.days && typeof options.days === 'number' && !isNaN(options.days)) {
+        numDays = Math.min(365, Math.max(1, options.days))
+        trendStartMs = todayTimestamp - (numDays - 1) * DAY_MS
+        trendEndMs = todayTimestamp + DAY_MS
+    }
 
     try {
         const batchResults = await db.batch(
@@ -253,9 +311,9 @@ export async function getSearchStats(): Promise<SearchLogsStats> {
                             status,
                             COUNT(*) as count
                           FROM search_logs
-                          WHERE created_at >= ?
+                          WHERE created_at >= ? AND created_at < ?
                           GROUP BY day_idx, status`,
-                    args: [sevenDaysAgoTimestamp, sevenDaysAgoTimestamp],
+                    args: [trendStartMs, trendStartMs, trendEndMs],
                 },
                 `SELECT 
                     license_number,
@@ -309,21 +367,23 @@ export async function getSearchStats(): Promise<SearchLogsStats> {
             count: Number(r.count || 0),
         }))
 
-        const dailyBuckets = Array.from({ length: 7 }, (_, idx) => {
-            const dayStartMs = sevenDaysAgoTimestamp + idx * DAY_MS
+        const dailyBuckets = Array.from({ length: numDays }, (_, idx) => {
+            const dayStartMs = trendStartMs + idx * DAY_MS
             const d = new Date(dayStartMs + 12 * 60 * 60 * 1000)
             const dateStr = d.toLocaleDateString('en-US', {
                 timeZone: 'Asia/Kathmandu',
                 month: 'short',
                 day: 'numeric',
             })
-            const labelStr =
-                idx === 6
-                    ? 'Today'
-                    : d.toLocaleDateString('en-US', {
-                          timeZone: 'Asia/Kathmandu',
-                          weekday: 'short',
-                      })
+            const isToday = Math.abs(dayStartMs - todayTimestamp) < DAY_MS / 2
+            const labelStr = isToday
+                ? 'Today'
+                : numDays <= 7
+                ? d.toLocaleDateString('en-US', {
+                      timeZone: 'Asia/Kathmandu',
+                      weekday: 'short',
+                  })
+                : dateStr
             return {
                 date: dateStr,
                 label: labelStr,
@@ -337,7 +397,7 @@ export async function getSearchStats(): Promise<SearchLogsStats> {
             const idx = Number(r.day_idx)
             const st = String(r.status || '')
             const c = Number(r.count || 0)
-            if (idx >= 0 && idx < 7) {
+            if (idx >= 0 && idx < numDays) {
                 dailyBuckets[idx].total += c
                 if (st === 'found') {
                     dailyBuckets[idx].found += c
@@ -660,7 +720,7 @@ export async function getPruneLogsPreview(days: number, limit: number = 100): Pr
             args: [],
         }),
         db.execute({
-            sql: `SELECT id, license_number, status, holder_name, office, category, ip, country, city, region, user_agent, created_at
+            sql: `SELECT id, license_number, status, holder_name, office, category, ip, country, city, region, user_agent, source, created_at
                   FROM search_logs
                   WHERE created_at < ?
                   ORDER BY created_at DESC
@@ -685,6 +745,7 @@ export async function getPruneLogsPreview(days: number, limit: number = 100): Pr
         city: row.city ? String(row.city) : null,
         region: row.region ? String(row.region) : null,
         user_agent: row.user_agent ? String(row.user_agent) : null,
+        source: row.source ? String(row.source) : 'manual',
         created_at: Number(row.created_at || 0),
     }))
 

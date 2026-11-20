@@ -269,9 +269,16 @@ export default function AdminOcr(props: any) {
               </svg>
             </span>
           </div>
-          <p className="mt-2.5 text-2xl sm:text-3xl font-black font-mono tabular-nums tracking-tight text-[var(--text-primary)]">
-            {ocrStats ? `${ocrStats.successRate}%` : '100%'}
-          </p>
+          <div className="mt-2.5 flex items-baseline justify-between">
+            <span className="text-2xl sm:text-3xl font-black font-mono tabular-nums tracking-tight text-[var(--text-primary)]">
+              {ocrStats ? `${ocrStats.successRate}%` : '100%'}
+            </span>
+            {ocrStats?.checkedCount !== undefined && ocrStats.checkedCount > 0 && (
+              <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-1.5 py-0.5 rounded-md" title={`${ocrStats.checkedCount} extracted licenses checked in DOTM searches`}>
+                {ocrStats.checkedCount} checked ({ocrStats.checkedRate}%)
+              </span>
+            )}
+          </div>
           <p className="mt-1 text-[10px] sm:text-[11px] text-[var(--text-muted)]">Valid Nepal license extracted</p>
         </div>
 
@@ -814,7 +821,8 @@ export default function AdminOcr(props: any) {
                 )}
                 <th scope="col" className="py-3.5 px-4">Time (NPT)</th>
                 <th scope="col" className="py-3.5 px-4">Detected License</th>
-                <th scope="col" className="py-3.5 px-4">Status</th>
+                <th scope="col" className="py-3.5 px-4">OCR Status</th>
+                <th scope="col" className="py-3.5 px-4">DOTM Check</th>
                 <th scope="col" className="py-3.5 px-4 text-right">Latency</th>
                 <th scope="col" className="py-3.5 px-4">Source Type</th>
                 <th scope="col" className="py-3.5 px-4">Model Engine</th>
@@ -824,7 +832,7 @@ export default function AdminOcr(props: any) {
             <tbody className="divide-y divide-[var(--border-default)]/50 font-medium">
               {ocrLoading ? (
                 <tr>
-                  <td colSpan={ocrSelectMode ? 8 : 7} className="py-16 text-center text-[var(--text-muted)]">
+                  <td colSpan={ocrSelectMode ? 9 : 8} className="py-16 text-center text-[var(--text-muted)]">
                     <div className="flex items-center justify-center gap-2.5">
                       <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-[var(--nepal-blue)]/30 border-t-[var(--nepal-blue)]" />
                       <span>Loading OCR scan records...</span>
@@ -833,7 +841,7 @@ export default function AdminOcr(props: any) {
                 </tr>
               ) : ocrLogs.length === 0 ? (
                 <tr>
-                  <td colSpan={ocrSelectMode ? 8 : 7} className="py-16 text-center text-[var(--text-muted)]">
+                  <td colSpan={ocrSelectMode ? 9 : 8} className="py-16 text-center text-[var(--text-muted)]">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <span className="text-3xl">📸</span>
                       <p className="font-bold text-sm text-[var(--text-primary)]">No OCR scans found</p>
@@ -925,6 +933,50 @@ export default function AdminOcr(props: any) {
                           </>
                         )}
                       </span>
+                    </td>
+                    <td className="py-3.5 px-4 whitespace-nowrap">
+                      {log.license_number ? (
+                        (log.search_count ?? 0) > 0 ? (
+                          log.search_status === 'found' ? (
+                            <span
+                              className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 shadow-2xs"
+                              title={`Citizen queried DOTM status for this license (${log.search_count} search${log.search_count === 1 ? '' : 'es'}). Card is PRINTED in DOTM.`}
+                            >
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                              <span>Checked • Printed</span>
+                              {(log.search_count ?? 0) > 1 && (
+                                <span className="opacity-80 font-mono">({log.search_count}×)</span>
+                              )}
+                            </span>
+                          ) : (
+                            <span
+                              className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-300 shadow-2xs"
+                              title={`Citizen queried DOTM status for this license (${log.search_count} search${log.search_count === 1 ? '' : 'es'}). Card is PENDING print.`}
+                            >
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                                <line x1="6" y1="6" x2="18" y2="18" />
+                              </svg>
+                              <span>Checked • Pending</span>
+                              {(log.search_count ?? 0) > 1 && (
+                                <span className="opacity-80 font-mono">({log.search_count}×)</span>
+                              )}
+                            </span>
+                          )
+                        ) : (
+                          <span
+                            className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-default)]/80 bg-[var(--bg-secondary)]/80 px-2 py-0.5 text-[10px] font-semibold text-[var(--text-muted)]"
+                            title="License was extracted from image but citizen has not clicked Check Status yet"
+                          >
+                            <span className="h-1.5 w-1.5 rounded-full bg-[var(--text-muted)]/50" />
+                            <span>Not Checked Yet</span>
+                          </span>
+                        )
+                      ) : (
+                        <span className="text-[var(--text-muted)] italic text-[11px]">—</span>
+                      )}
                     </td>
                     <td className="py-3.5 px-4 font-mono text-[10px] whitespace-nowrap text-right tabular-nums">
                       <span className="rounded-md bg-[var(--bg-secondary)]/70 border border-[var(--border-default)]/60 px-1.5 py-0.5 leading-4 text-[var(--text-secondary)]">

@@ -79,13 +79,15 @@ function ConfirmDeleteModal({ dialog, onClose, isSubmitting }: ConfirmDeleteModa
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 p-0 sm:p-4 backdrop-blur-md animate-fade-in"
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-950/75 dark:bg-black/85 p-0 sm:p-4 backdrop-blur-xl animate-fade-in"
             onClick={() => {
                 if (!isSubmitting) onClose()
             }}
+            role="alertdialog"
+            aria-modal="true"
         >
             <div
-                className="relative w-full max-w-md rounded-t-3xl sm:rounded-3xl border border-[var(--border-strong)] bg-[var(--surface-primary)] p-5 sm:p-6 shadow-2xl animate-in zoom-in-95 duration-150 max-h-[92vh] overflow-y-auto"
+                className="relative w-full max-w-md rounded-t-[28px] sm:rounded-3xl border border-white/15 dark:border-white/10 bg-[var(--surface-primary)] p-5 sm:p-6 shadow-2xl animate-in zoom-in-95 duration-150 max-h-[92vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Visual grabber bar on mobile */}
@@ -101,7 +103,7 @@ function ConfirmDeleteModal({ dialog, onClose, isSubmitting }: ConfirmDeleteModa
                     </div>
                     <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-base font-black text-[var(--text-primary)]">
+                            <h3 className="text-base font-black text-[var(--text-primary)] tracking-tight">
                                 {dialog.title}
                             </h3>
                             {dialog.badge && (
@@ -181,7 +183,7 @@ function ConfirmDeleteModal({ dialog, onClose, isSubmitting }: ConfirmDeleteModa
                                 }`}
                             />
                             {isPhraseMatched && phraseInput && (
-                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-bold text-[var(--success)] flex items-center gap-1 select-none pointer-events-none">
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-bold text-[var(--success)] flex items-center gap-1 select-none pointer-events-none font-mono">
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                         <polyline points="20 6 9 17 4 12" />
                                     </svg>
@@ -197,7 +199,7 @@ function ConfirmDeleteModal({ dialog, onClose, isSubmitting }: ConfirmDeleteModa
                         type="button"
                         disabled={isSubmitting}
                         onClick={onClose}
-                        className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-2.5 text-xs font-bold text-[var(--text-secondary)] transition hover:border-[var(--text-muted)] hover:text-[var(--text-primary)] active:scale-95 disabled:opacity-50 text-center cursor-pointer"
+                        className="w-full sm:w-auto min-h-[42px] inline-flex items-center justify-center rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-2 text-xs font-bold text-[var(--text-secondary)] transition hover:border-[var(--text-muted)] hover:text-[var(--text-primary)] active:scale-95 disabled:opacity-50 text-center cursor-pointer shadow-2xs"
                     >
                         Cancel
                     </button>
@@ -205,7 +207,7 @@ function ConfirmDeleteModal({ dialog, onClose, isSubmitting }: ConfirmDeleteModa
                         type="button"
                         disabled={isSubmitting || !isPhraseMatched}
                         onClick={handleExecute}
-                        className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--error)] px-4.5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                        className="w-full sm:w-auto min-h-[42px] inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--error)] px-4.5 py-2 text-xs font-bold text-white shadow-xs transition hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                     >
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                             <polyline points="3 6 5 6 21 6" />
@@ -216,6 +218,32 @@ function ConfirmDeleteModal({ dialog, onClose, isSubmitting }: ConfirmDeleteModa
                 </div>
             </div>
         </div>
+    )
+}
+
+function getPasskeyDeviceIcon(name: string) {
+    const lower = name.toLowerCase()
+    if (lower.includes('mac') || lower.includes('laptop') || lower.includes('pc') || lower.includes('desktop') || lower.includes('windows')) {
+        return (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="2" y="3" width="20" height="14" rx="2" />
+                <line x1="8" y1="21" x2="16" y2="21" />
+                <line x1="12" y1="17" x2="12" y2="21" />
+            </svg>
+        )
+    }
+    if (lower.includes('phone') || lower.includes('iphone') || lower.includes('android') || lower.includes('pixel') || lower.includes('samsung')) {
+        return (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+                <line x1="12" y1="18" x2="12.01" y2="18" />
+            </svg>
+        )
+    }
+    return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="m21 2-2 2m-1.5 1.5L14 9l-1.5-1.5L11 9l-1-1-1.5 1.5L7 8l-5 5a4 4 0 0 0 6 6l5-5-1.5-1.5L13 11l1.5 1.5 3.5-3.5" />
+        </svg>
     )
 }
 
@@ -278,14 +306,17 @@ export default function AdminModals(props: any) {
                 />
             )}
 
-            {/* Passkeys & Biometric Security Modal */}
+            {/* Passkeys & Biometric Security Modal (Apple Keychain / 1Password Style) */}
             {passkeyModalOpen && (
                 <div
-                    className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 p-0 sm:p-4 backdrop-blur-md animate-fade-in"
+                    className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-950/75 dark:bg-black/85 p-0 sm:p-4 backdrop-blur-xl animate-fade-in"
                     onClick={() => setPasskeyModalOpen(false)}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="passkey-modal-title"
                 >
                     <div
-                        className="relative w-full max-w-lg rounded-t-3xl sm:rounded-3xl border border-[var(--border-strong)] bg-[var(--surface-primary)] p-5 sm:p-6 shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto"
+                        className="relative w-full max-w-lg rounded-t-[28px] sm:rounded-3xl border border-white/15 dark:border-white/10 bg-[var(--surface-primary)] p-5 sm:p-6 shadow-2xl animate-in zoom-in-95 duration-200 max-h-[92vh] overflow-y-auto"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Visual grabber bar on mobile */}
@@ -302,11 +333,11 @@ export default function AdminModals(props: any) {
                                     </svg>
                                 </div>
                                 <div>
-                                    <h3 className="text-base font-black text-[var(--text-primary)]">
-                                        Passkeys & Biometric Access
+                                    <h3 id="passkey-modal-title" className="text-base font-black text-[var(--text-primary)] tracking-tight">
+                                        Passkeys &amp; Biometric Security
                                     </h3>
                                     <p className="mt-0.5 text-xs text-[var(--text-secondary)]">
-                                        Sign in with 1-click using Windows Hello, Touch ID, Face ID, or YubiKey.
+                                        Sign in passwordlessly with Touch ID, Face ID, Windows Hello, or YubiKey.
                                     </p>
                                 </div>
                             </div>
@@ -314,7 +345,7 @@ export default function AdminModals(props: any) {
                             <button
                                 type="button"
                                 onClick={() => setPasskeyModalOpen(false)}
-                                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--border-default)] text-[var(--text-muted)] hover:border-[var(--nepal-blue)] hover:text-[var(--text-primary)] transition cursor-pointer shrink-0"
+                                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border-default)] text-[var(--text-muted)] hover:border-[var(--nepal-blue)] hover:text-[var(--text-primary)] transition cursor-pointer shrink-0 shadow-2xs"
                                 aria-label="Close"
                             >
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -325,12 +356,12 @@ export default function AdminModals(props: any) {
                         </div>
 
                         {/* Section 1: Register New Passkey */}
-                        <div className="mt-5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-4">
+                        <div className="mt-5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 p-4">
                             <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-primary)]">
-                                Register This Device
+                                Enroll Current Device or Security Key
                             </h4>
                             <p className="mt-1 text-xs text-[var(--text-secondary)]">
-                                Add your current device or security key to sign in without entering your password.
+                                Bind this machine or external FIDO2 key to sign in with 1-click.
                             </p>
 
                             <form onSubmit={handleRegisterPasskey} className="mt-3.5 flex flex-col gap-2 sm:flex-row">
@@ -338,19 +369,19 @@ export default function AdminModals(props: any) {
                                     type="text"
                                     value={newPasskeyName}
                                     onChange={(e) => setNewPasskeyName(e.target.value)}
-                                    placeholder="Device name (e.g. My Laptop, iPhone, YubiKey)"
+                                    placeholder="Device label (e.g. MacBook Pro, YubiKey 5C)"
                                     maxLength={50}
-                                    className="h-11 sm:h-10 flex-1 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 text-xs text-[var(--text-primary)] transition focus:border-[var(--nepal-blue)] focus:outline-none"
+                                    className="h-10 flex-1 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 text-xs text-[var(--text-primary)] transition focus:border-[var(--nepal-blue)] focus:outline-none focus:ring-2 focus:ring-[var(--nepal-blue)]/20 shadow-2xs"
                                 />
                                 <button
                                     type="submit"
                                     disabled={registeringPasskey}
-                                    className="inline-flex min-h-[44px] sm:h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-[var(--nepal-blue)] px-4 text-xs font-bold text-white shadow-xs transition hover:bg-[var(--nepal-blue-mid)] active:scale-95 disabled:opacity-50 cursor-pointer"
+                                    className="inline-flex min-h-[40px] shrink-0 items-center justify-center gap-2 rounded-xl bg-[var(--nepal-blue)] px-4 text-xs font-bold text-white shadow-xs transition hover:bg-[var(--nepal-blue-mid)] active:scale-95 disabled:opacity-50 cursor-pointer"
                                 >
                                     {registeringPasskey ? (
                                         <>
                                             <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                                            <span>Touch Sensor / Key...</span>
+                                            <span>Touch Sensor...</span>
                                         </>
                                     ) : (
                                         <>
@@ -369,7 +400,7 @@ export default function AdminModals(props: any) {
                         <div className="mt-5">
                             <div className="flex items-center justify-between mb-3">
                                 <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
-                                    Enrolled Passkeys ({passkeys.length})
+                                    Enrolled Credentials ({passkeys.length})
                                 </h4>
                                 <button
                                     type="button"
@@ -387,22 +418,18 @@ export default function AdminModals(props: any) {
                                         <path d="M19.07 4.93a10 10 0 0 0-14.14 0M4.93 19.07a10 10 0 0 0 14.14 0" />
                                     </svg>
                                     <p className="font-semibold text-[var(--text-secondary)]">No passkeys enrolled yet</p>
-                                    <p className="mt-1">Register your current device above to get started.</p>
+                                    <p className="mt-1">Add your device biometric sensor or hardware token above.</p>
                                 </div>
                             ) : (
                                 <div className="space-y-2.5">
                                     {passkeys.map((pk) => (
                                         <div
                                             key={pk.id}
-                                            className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 sm:p-3.5 transition hover:border-[var(--nepal-blue)]/40"
+                                            className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 sm:p-3.5 transition hover:border-[var(--nepal-blue)]/40 shadow-2xs"
                                         >
                                             <div className="flex items-center gap-3 min-w-0 flex-1">
                                                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--bg-secondary)] text-[var(--text-primary)]">
-                                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                                        <rect x="2" y="3" width="20" height="14" rx="2" />
-                                                        <line x1="8" y1="21" x2="16" y2="21" />
-                                                        <line x1="12" y1="17" x2="12" y2="21" />
-                                                    </svg>
+                                                    {getPasskeyDeviceIcon(pk.device_name)}
                                                 </div>
                                                 <div className="min-w-0 flex-1">
                                                     <div className="flex flex-wrap items-center gap-2">
@@ -430,7 +457,7 @@ export default function AdminModals(props: any) {
                                             <button
                                                 type="button"
                                                 onClick={() => handleDeletePasskey(pk)}
-                                                className="self-end sm:self-auto rounded-xl border border-[var(--border-default)] p-2 text-[var(--text-muted)] transition hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95 cursor-pointer"
+                                                className="self-end sm:self-auto rounded-xl border border-[var(--border-default)] p-2 text-[var(--text-muted)] transition hover:border-[var(--error-border)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] active:scale-95 cursor-pointer shadow-2xs"
                                                 title="Remove passkey"
                                                 aria-label={`Remove passkey ${pk.device_name}`}
                                             >
@@ -453,8 +480,8 @@ export default function AdminModals(props: any) {
                                     <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                                 </svg>
                             </span>
-                            <div className="leading-relaxed">
-                                <strong className="text-[var(--text-primary)]">Zero-Password Security:</strong> Passkeys use public-key cryptography (FIDO2 / WebAuthn). Your private keys remain safely stored in your device&apos;s secure enclave or keychain. The master password remains available as a reliable backup anytime.
+                            <div className="leading-relaxed text-[11px]">
+                                <strong className="text-[var(--text-primary)]">FIDO2 Cryptographic Storage:</strong> Private keys never leave your device secure enclave or hardware chip. The master password remains available as a fail-safe anytime.
                             </div>
                         </div>
                     </div>
@@ -485,7 +512,7 @@ export default function AdminModals(props: any) {
                 />
             )}
 
-            {/* Prune Historical Search Logs Modal (> 7d, > 30d, > 90d, custom) */}
+            {/* Prune Historical Search Logs Modal */}
             {pruneModalOpen && (
                 <PruneOldLogsModal
                     key={`prune-${pruneInitialDays}`}
@@ -498,7 +525,7 @@ export default function AdminModals(props: any) {
                 />
             )}
 
-            {/* Live System Mode (Normal / Degraded / Maintenance) Controller Modal */}
+            {/* Live System Mode Controller Modal */}
             {systemModeModalOpen && (
                 <SystemModeModal
                     key={`sysmode-${systemModeConfig?.mode || 'normal'}-${systemModeConfig?.updated_at || 0}`}
@@ -515,13 +542,13 @@ export default function AdminModals(props: any) {
             {/* Inactivity Auto-Logout Warning Modal */}
             {inactivityWarningOpen && (
                 <div
-                    className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 p-0 sm:p-4 backdrop-blur-md animate-fade-in"
+                    className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-950/75 dark:bg-black/85 p-0 sm:p-4 backdrop-blur-xl animate-fade-in"
                     role="alertdialog"
                     aria-labelledby="inactivity-warning-title"
                     aria-describedby="inactivity-warning-desc"
                 >
                     <div
-                        className="relative w-full max-w-md rounded-t-3xl sm:rounded-3xl border border-[var(--warning-border)] bg-[var(--surface-primary)] p-5 sm:p-6 shadow-2xl animate-in zoom-in-95 duration-200"
+                        className="relative w-full max-w-md rounded-t-[28px] sm:rounded-3xl border border-[var(--warning-border)] bg-[var(--surface-primary)] p-5 sm:p-6 shadow-2xl animate-in zoom-in-95 duration-200"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Visual grabber bar on mobile */}
@@ -536,21 +563,21 @@ export default function AdminModals(props: any) {
                             </div>
                             <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2">
-                                    <h3 id="inactivity-warning-title" className="text-base font-black text-[var(--text-primary)]">
-                                        Inactivity Warning
+                                    <h3 id="inactivity-warning-title" className="text-base font-black text-[var(--text-primary)] tracking-tight">
+                                        Session Security Lock
                                     </h3>
                                     <span className="inline-flex items-center rounded-full border border-[var(--warning-border)] bg-[var(--warning-bg)] px-2 py-0.5 text-xs font-bold text-[var(--warning-text)]">
-                                        Auto Logout
+                                        Inactivity
                                     </span>
                                 </div>
                                 <p id="inactivity-warning-desc" className="mt-1.5 text-xs leading-relaxed text-[var(--text-secondary)]">
-                                    You have been inactive for 4 minutes. For security, your session will automatically log out in:
+                                    You have been inactive for 4 minutes. Your secure admin session will automatically terminate in:
                                 </p>
                             </div>
                         </div>
 
                         {/* Prominent Countdown Timer */}
-                        <div className="my-5 flex flex-col items-center justify-center rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)] py-4 text-center">
+                        <div className="my-5 flex flex-col items-center justify-center rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 py-4 text-center">
                             <div className="flex items-baseline gap-1 text-3xl font-black font-mono tabular-nums tracking-tight text-[var(--nepal-red)]">
                                 <span>{inactivitySecondsLeft}</span>
                                 <span className="text-xs font-semibold uppercase text-[var(--text-muted)]">seconds</span>
@@ -567,7 +594,7 @@ export default function AdminModals(props: any) {
                             <button
                                 type="button"
                                 onClick={() => handleLogout('inactivity')}
-                                className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-2.5 text-xs font-bold text-[var(--text-secondary)] transition hover:border-[var(--text-muted)] hover:text-[var(--text-primary)] active:scale-95 text-center cursor-pointer"
+                                className="w-full sm:w-auto min-h-[42px] inline-flex items-center justify-center rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 py-2 text-xs font-bold text-[var(--text-secondary)] transition hover:border-[var(--text-muted)] hover:text-[var(--text-primary)] active:scale-95 text-center cursor-pointer shadow-2xs"
                             >
                                 Log Out Now
                             </button>
@@ -575,7 +602,7 @@ export default function AdminModals(props: any) {
                                 type="button"
                                 autoFocus
                                 onClick={stayLoggedIn}
-                                className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--nepal-blue)] px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-[var(--nepal-blue-mid)] active:scale-95 text-center cursor-pointer"
+                                className="w-full sm:w-auto min-h-[42px] inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--nepal-blue)] px-5 py-2 text-xs font-bold text-white shadow-md transition hover:bg-[var(--nepal-blue-mid)] active:scale-95 text-center cursor-pointer"
                             >
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                     <polyline points="20 6 9 17 4 12" />

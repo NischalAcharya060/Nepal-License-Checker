@@ -252,7 +252,7 @@ export default function Home() {
     : copy.home.lastUpdatedFallback
 
   const checkLicense = useCallback(
-    async (licenseNumber: string) => {
+    async (licenseNumber: string, source: 'manual' | 'scanner' = 'manual') => {
       const now = Date.now()
 
       // If currently locked out, prevent searching
@@ -299,7 +299,8 @@ export default function Home() {
       }
 
       try {
-        const response = await fetch(`/api/license?number=${encodeURIComponent(licenseNumber)}`)
+        const sourceQuery = source === 'scanner' ? '&source=scanner' : ''
+        const response = await fetch(`/api/license?number=${encodeURIComponent(licenseNumber)}${sourceQuery}`)
         const data = await response.json()
 
         if (response.status === 429) {

@@ -136,6 +136,8 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(200, Math.max(10, parseInt(searchParams.get('limit') || '10', 10) || 10))
     const search = searchParams.get('search') || ''
     const statusParam = searchParams.get('status') || 'all'
+    const sourceParam = searchParams.get('source') || 'all'
+    const source = sourceParam === 'scanner' || sourceParam === 'manual' ? sourceParam : 'all'
     const isDuplicates = searchParams.get('duplicates') === 'true' || statusParam === 'duplicates'
     const status = isDuplicates
         ? 'duplicates'
@@ -143,11 +145,33 @@ export async function GET(request: NextRequest) {
         ? statusParam
         : 'all'
 
+    const statsOnly = searchParams.get('stats_only') === 'true'
+    const daysParam = searchParams.get('days')
+    const startDateParam = searchParams.get('startDate') || undefined
+    const endDateParam = searchParams.get('endDate') || undefined
+    const daysOption = daysParam ? parseInt(daysParam, 10) : undefined
+
     try {
+        if (statsOnly) {
+            const stats = await getSearchStats({
+                days: daysOption,
+                startDate: startDateParam,
+                endDate: endDateParam,
+            })
+            return NextResponse.json({
+                status: 'success',
+                data: { stats },
+            })
+        }
+
         const db = getTurso()
         const [logsData, stats, scraper, notificationStats, feedbackStats] = await Promise.all([
-            getSearchLogs({ page, limit, search, status }),
-            getSearchStats(),
+            getSearchLogs({ page, limit, search, status, source }),
+            getSearchStats({
+                days: daysOption,
+                startDate: startDateParam,
+                endDate: endDateParam,
+            }),
             getAdminScraperMeta(db),
             getNotificationStats().catch(() => ({ total: 0, pending: 0, sent: 0, cancelled: 0, deliveryRate: 0 })),
             getFeedbackStats().catch(() => ({ total: 0, newCount: 0, resolvedCount: 0, problemCount: 0, suggestionCount: 0 })),

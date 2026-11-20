@@ -26,6 +26,8 @@ export interface OcrLogItem {
   ip: string | null
   error_message: string | null
   created_at: number
+  search_status?: 'found' | 'not_found' | null
+  search_count?: number
 }
 
 export interface OcrStatsData {
@@ -41,6 +43,8 @@ export interface OcrStatsData {
   dailyQuotaUsed: number
   dailyQuotaPercent: number
   rpmLimit: number
+  checkedCount?: number
+  checkedRate?: number
 }
 
 let tableChecked = false
@@ -275,6 +279,17 @@ export async function getOcrStats(): Promise<OcrStatsData> {
   const measuredCount = successCount + notFoundCount
   const avgLatencyMs = measuredCount > 0 ? Math.round(totalLatency / measuredCount) : 0
 
+  let checkedCount = 0
+  try {
+    const checkedRes = await db.execute(
+      'SELECT COUNT(DISTINCT o.license_number) as count FROM ocr_logs o INNER JOIN search_logs s ON s.license_number = o.license_number WHERE o.license_number IS NOT NULL'
+    )
+    checkedCount = Number(checkedRes.rows[0]?.count) || 0
+  } catch {
+    // Ignored if search_logs table is unavailable
+  }
+  const checkedRate = successCount > 0 ? Math.round((checkedCount / successCount) * 100) : 0
+
   const dailyQuotaLimit = 1500
   const dailyQuotaPercent = Math.min(
     100,
@@ -294,6 +309,8 @@ export async function getOcrStats(): Promise<OcrStatsData> {
     dailyQuotaUsed: todayScans,
     dailyQuotaPercent,
     rpmLimit: 15,
+    checkedCount,
+    checkedRate,
   }
 }
 
@@ -334,7 +351,10 @@ export async function getOcrLogs(params: {
   const totalPages = Math.max(1, Math.ceil(total / limit))
 
   const rowsRes = await db.execute({
-    sql: `SELECT id, license_number, status, latency_ms, confidence, detected_source, model_used, ip, error_message, created_at 
+    sql: `SELECT 
+            id, license_number, status, latency_ms, confidence, detected_source, model_used, ip, error_message, created_at,
+            (SELECT s.status FROM search_logs s WHERE s.license_number = ocr_logs.license_number AND ocr_logs.license_number IS NOT NULL ORDER BY s.created_at DESC LIMIT 1) as search_status,
+            (SELECT COUNT(*) FROM search_logs s WHERE s.license_number = ocr_logs.license_number AND ocr_logs.license_number IS NOT NULL) as search_count
           FROM ocr_logs ${whereClause} 
           ORDER BY created_at DESC 
           LIMIT ? OFFSET ?`,
@@ -352,6 +372,8 @@ export async function getOcrLogs(params: {
     ip: row.ip ? String(row.ip) : null,
     error_message: row.error_message ? String(row.error_message) : null,
     created_at: Number(row.created_at),
+    search_status: row.search_status ? (String(row.search_status) as 'found' | 'not_found') : null,
+    search_count: Number(row.search_count) || 0,
   }))
 
   return { logs, total, totalPages }

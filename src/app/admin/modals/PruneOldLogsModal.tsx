@@ -167,13 +167,15 @@ export default function PruneOldLogsModal({
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 p-0 sm:p-4 backdrop-blur-md animate-fade-in"
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-950/75 dark:bg-black/85 p-0 sm:p-4 backdrop-blur-xl animate-fade-in"
             onClick={() => {
                 if (!pruning) onClose()
             }}
+            role="dialog"
+            aria-modal="true"
         >
             <div
-                className="relative w-full max-w-4xl rounded-t-3xl sm:rounded-3xl border border-[var(--border-strong)] bg-[var(--surface-primary)] shadow-2xl animate-in zoom-in-95 duration-150 max-h-[92vh] sm:max-h-[88vh] flex flex-col overflow-hidden"
+                className="relative w-full max-w-4xl rounded-t-[28px] sm:rounded-3xl border border-white/15 dark:border-white/10 bg-[var(--surface-primary)] shadow-2xl animate-in zoom-in-95 duration-150 max-h-[92vh] sm:max-h-[88vh] flex flex-col overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Mobile grabber bar */}
