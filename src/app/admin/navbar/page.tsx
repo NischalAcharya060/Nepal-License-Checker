@@ -13,19 +13,21 @@ export interface AdminNavbarProps {
     setAutoRefresh?: (val: boolean) => void
     dataLoading?: boolean
     handleManualRefresh?: () => void
-    activeTab?: 'searches' | 'notifications' | 'feedback' | 'testimonials' | 'developers' | 'ocr' | 'updates'
+    activeTab?: 'searches' | 'notifications' | 'feedback' | 'testimonials' | 'developers' | 'ocr' | 'updates' | 'users'
     exportCsv?: () => void
     exportNotificationCsv?: () => void
     exportFeedbackCsv?: () => void
     exportTestimonialsCsv?: () => void
     exportDevelopersCsv?: () => void
     exportOcrCsv?: () => void
+    exportUsersCsv?: () => void
     hasLogs?: boolean
     hasNotificationLogs?: boolean
     hasFeedbackLogs?: boolean
     hasTestimonialLogs?: boolean
     hasDeveloperLogs?: boolean
     hasOcrLogs?: boolean
+    hasUserLogs?: boolean
     setPasskeyModalOpen?: (val: boolean) => void
     fetchPasskeys?: () => void
     passkeyCount?: number
@@ -51,12 +53,14 @@ export default function AdminNavbar(props: any) {
         exportTestimonialsCsv = () => {},
         exportDevelopersCsv = () => {},
         exportOcrCsv = () => {},
+        exportUsersCsv = () => {},
         hasLogs = false,
         hasNotificationLogs = false,
         hasFeedbackLogs = false,
         hasTestimonialLogs = false,
         hasDeveloperLogs = false,
         hasOcrLogs = false,
+        hasUserLogs = false,
         setPasskeyModalOpen = () => {},
         fetchPasskeys = () => {},
         passkeyCount = 0,
@@ -236,6 +240,8 @@ export default function AdminNavbar(props: any) {
                                 ? exportTestimonialsCsv
                                 : activeTab === 'developers'
                                 ? exportDevelopersCsv
+                                : activeTab === 'users'
+                                ? exportUsersCsv
                                 : exportOcrCsv
                         }
                         disabled={
@@ -249,6 +255,8 @@ export default function AdminNavbar(props: any) {
                                 ? !hasTestimonialLogs
                                 : activeTab === 'developers'
                                 ? !hasDeveloperLogs
+                                : activeTab === 'users'
+                                ? !hasUserLogs
                                 : !hasOcrLogs
                         }
                         className="inline-flex min-h-[38px] sm:h-9 items-center justify-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-2.5 sm:px-3 text-xs font-semibold text-[var(--text-secondary)] shadow-2xs transition hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"

@@ -29,6 +29,8 @@ import {
     AdminOcrStatsData,
     AdminUpdateEntry,
     AdminUpdatesStatsData,
+    AdminUserItem,
+    AdminUserStatsData,
     SystemModeConfig,
 } from './types'
 import {
@@ -48,6 +50,7 @@ import AdminNotifications from './notifications/page'
 import AdminFeedback from './feedback/page'
 import AdminTestimonials from './testimonials/page'
 import AdminDevelopers from './developers/page'
+import AdminUsers from './users/page'
 import AdminOcr from './ocr/page'
 import AdminUpdates from './updates/page'
 import AdminLogin from './login/page'
@@ -63,8 +66,8 @@ export default function AdminPage() {
     const [showPassword, setShowPassword] = useState(false)
     const [privacyMode, setPrivacyMode] = useState(true)
 
-    // View Tabs: 'searches' | 'notifications' | 'feedback' | 'testimonials' | 'developers' | 'ocr' | 'updates'
-    const [activeTab, setActiveTab] = useState<'searches' | 'notifications' | 'feedback' | 'testimonials' | 'developers' | 'ocr' | 'updates'>('searches')
+    // View Tabs: 'searches' | 'notifications' | 'feedback' | 'testimonials' | 'developers' | 'users' | 'ocr' | 'updates'
+    const [activeTab, setActiveTab] = useState<'searches' | 'notifications' | 'feedback' | 'testimonials' | 'developers' | 'users' | 'ocr' | 'updates'>('searches')
 
     // Dashboard State - Searches
     const [logs, setLogs] = useState<SearchLog[]>([])
@@ -137,6 +140,16 @@ export default function AdminPage() {
     const [devTotalPages, setDevTotalPages] = useState(1)
     const [devSearchFilter, setDevSearchFilter] = useState('')
     const [devLoading, setDevLoading] = useState(false)
+
+    // Dashboard State - Citizen Users
+    const [userStats, setUserStats] = useState<AdminUserStatsData | null>(null)
+    const [users, setUsers] = useState<AdminUserItem[]>([])
+    const [userTotal, setUserTotal] = useState(0)
+    const [userPage, setUserPage] = useState(1)
+    const [userLimit, setUserLimit] = useState(10)
+    const [userTotalPages, setUserTotalPages] = useState(1)
+    const [userSearchFilter, setUserSearchFilter] = useState('')
+    const [userLoading, setUserLoading] = useState(false)
 
     // Dashboard State - AI Vision & OCR Scanner
     const [ocrConfig, setOcrConfig] = useState<AdminOcrConfig | null>(null)
@@ -506,6 +519,47 @@ export default function AdminPage() {
             cancelled = true
         }
     }, [isAuthenticated, devPage, devLimit, devSearchFilter, refreshKey])
+
+    // 2e-2. Fetch Citizen Users List & Stats
+    useEffect(() => {
+        if (!isAuthenticated) return
+        let cancelled = false
+        setUserLoading(true)
+
+        const params = new URLSearchParams({
+            page: String(userPage),
+            limit: String(userLimit),
+            search: userSearchFilter,
+        })
+
+        fetch(`/api/admin/users?${params.toString()}`, { cache: 'no-store' })
+            .then((res) => {
+                if (res.status === 401) {
+                    if (!cancelled) setIsAuthenticated(false)
+                    return null
+                }
+                return res.json()
+            })
+            .then((json) => {
+                if (cancelled || !json) return
+                if (json.status === 'success' && json.data) {
+                    setUsers(json.data.users || [])
+                    setUserTotal(json.data.total || 0)
+                    setUserTotalPages(json.data.totalPages || 1)
+                    if (json.data.stats) {
+                        setUserStats(json.data.stats)
+                    }
+                }
+                setUserLoading(false)
+            })
+            .catch(() => {
+                if (!cancelled) setUserLoading(false)
+            })
+
+        return () => {
+            cancelled = true
+        }
+    }, [isAuthenticated, userPage, userLimit, userSearchFilter, refreshKey])
 
     // 2f. Fetch OCR Config, Analytics & Scan Logs
     useEffect(() => {
@@ -1971,6 +2025,71 @@ export default function AdminPage() {
         })
     }
 
+    // 14b. Citizen Users Handlers
+    const exportUsersCsv = () => {
+        if (!users.length) return
+        const headers = [
+            'User ID',
+            'Email',
+            'Display Name',
+            'Auth Method',
+            'Saved Licenses Count',
+            'Feedback Messages Count',
+            'Joined Date (NPT)',
+            'Joined Date (ISO)',
+            'Last Active (NPT)',
+            'Last Active (ISO)',
+        ]
+        const rows = users.map((u) => [
+            `"${u.id}"`,
+            `"${u.email}"`,
+            `"${u.name || ''}"`,
+            u.has_password ? 'Password + OTP' : 'OTP Only',
+            String(u.saved_licenses_count),
+            String(u.feedbacks_count),
+            `"${formatNepalDateTime(u.created_at, 'en', true)}"`,
+            new Date(u.created_at).toISOString(),
+            u.last_login_at ? `"${formatNepalDateTime(u.last_login_at, 'en', true)}"` : '',
+            u.last_login_at ? new Date(u.last_login_at).toISOString() : '',
+        ])
+        const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n')
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `nepal-license-citizen-users-${new Date().toISOString().slice(0, 10)}.csv`
+        a.click()
+        URL.revokeObjectURL(url)
+        showToast('Exported citizen users to CSV', 'info')
+    }
+
+    const handleDeleteUser = (userId: string, email: string) => {
+        setConfirmDialog({
+            title: 'Delete Citizen Account',
+            message: `Are you sure you want to permanently delete the user account for "${email}"? This will delete all their saved family licenses and OTP tokens.`,
+            confirmLabel: 'Delete User Account',
+            badge: 'DANGER',
+            onConfirm: async () => {
+                try {
+                    const res = await fetch(`/api/admin/users?userId=${encodeURIComponent(userId)}`, {
+                        method: 'DELETE',
+                    })
+                    if (res.ok) {
+                        setUsers((prev) => prev.filter((u) => u.id !== userId))
+                        setUserTotal((t) => Math.max(0, t - 1))
+                        setRefreshKey((k) => k + 1)
+                        showToast('Citizen user account deleted successfully', 'success')
+                    } else {
+                        const err = await res.json()
+                        showToast(err.error || 'Failed to delete user', 'error')
+                    }
+                } catch {
+                    showToast('Network error while deleting user', 'error')
+                }
+            },
+        })
+    }
+
     // 15. OCR & AI Vision Handlers
     const exportOcrCsv = () => {
         if (!ocrLogs.length) return
@@ -2309,12 +2428,14 @@ export default function AdminPage() {
                 exportFeedbackCsv={exportFeedbackCsv}
                 exportTestimonialsCsv={exportTestimonialsCsv}
                 exportDevelopersCsv={exportDevelopersCsv}
+                exportUsersCsv={exportUsersCsv}
                 exportOcrCsv={exportOcrCsv}
                 hasLogs={logs.length > 0}
                 hasNotificationLogs={notificationLogs.length > 0}
                 hasFeedbackLogs={feedbackLogs.length > 0}
                 hasTestimonialLogs={testimonialLogs.length > 0}
                 hasDeveloperLogs={developers.length > 0}
+                hasUserLogs={users.length > 0}
                 hasOcrLogs={ocrLogs.length > 0}
                 setPasskeyModalOpen={setPasskeyModalOpen}
                 fetchPasskeys={fetchPasskeys}
@@ -2455,6 +2576,30 @@ export default function AdminPage() {
                                 activeTab === 'developers' ? 'bg-white/20 text-white' : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'
                             }`}>
                                 {devTotal.toLocaleString()}
+                            </span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('users')}
+                            className={`inline-flex min-h-[44px] flex-1 sm:flex-initial items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-3 sm:px-4 py-2 text-xs font-bold transition-all duration-200 whitespace-nowrap active:scale-95 cursor-pointer ${
+                                activeTab === 'users'
+                                    ? 'bg-[var(--nepal-blue)] text-white shadow-md shadow-[var(--nepal-blue)]/25'
+                                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]/60'
+                            }`}
+                        >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-hidden="true">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                <circle cx="9" cy="7" r="4" />
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                            </svg>
+                            <span className="hidden sm:inline">Citizen Users</span>
+                            <span className="sm:hidden">Users</span>
+                            <span className={`rounded-full px-2 py-0.5 font-mono tabular-nums text-xs font-semibold transition ${
+                                activeTab === 'users' ? 'bg-white/20 text-white' : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'
+                            }`}>
+                                {userTotal.toLocaleString()}
                             </span>
                         </button>
 
@@ -2785,6 +2930,24 @@ export default function AdminPage() {
                         handleUpdateRateLimit={handleUpdateDeveloperRateLimit}
                         handleDeleteKey={handleDeleteDeveloperKey}
                         exportDevelopersCsv={exportDevelopersCsv}
+                        startTransition={startTransition}
+                    />
+                ) : activeTab === 'users' ? (
+                    <AdminUsers
+                        users={users}
+                        userStats={userStats}
+                        userTotal={userTotal}
+                        userPage={userPage}
+                        userLimit={userLimit}
+                        userTotalPages={userTotalPages}
+                        userSearchFilter={userSearchFilter}
+                        userLoading={userLoading}
+                        privacyMode={privacyMode}
+                        setUserPage={setUserPage}
+                        setUserLimit={setUserLimit}
+                        setUserSearchFilter={setUserSearchFilter}
+                        handleDeleteUser={handleDeleteUser}
+                        exportUsersCsv={exportUsersCsv}
                         startTransition={startTransition}
                     />
                 ) : activeTab === 'ocr' ? (

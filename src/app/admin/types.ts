@@ -332,6 +332,51 @@ export interface AdminUpdatesStatsData {
     latestDateStr: string | null
 }
 
+export interface AdminUserSavedLicenseItem {
+    id: string
+    label: string
+    license_number: string
+    notify_email: boolean
+    created_at: number
+    status?: 'ready' | 'not_printed'
+    holder_name?: string | null
+    office?: string | null
+    category?: string | null
+}
+
+export interface AdminUserFeedbackItem {
+    id: string
+    subject: string
+    category: string
+    message: string
+    status: string
+    admin_notes?: string | null
+    created_at: number
+}
+
+export interface AdminUserItem {
+    id: string
+    email: string
+    name: string | null
+    has_password: boolean
+    created_at: number
+    updated_at: number
+    last_login_at: number | null
+    saved_licenses_count: number
+    feedbacks_count: number
+    saved_licenses?: AdminUserSavedLicenseItem[]
+    feedbacks?: AdminUserFeedbackItem[]
+}
+
+export interface AdminUserStatsData {
+    totalUsers: number
+    activeUsers30d: number
+    totalSavedLicenses: number
+    passwordUsersCount: number
+    otpOnlyUsersCount: number
+}
+
+
 
 
 
