@@ -7,6 +7,7 @@ import { createNotification, cancelNotification } from '@/lib/notifications'
 import { sendSubscriptionConfirmationEmail } from '@/lib/email'
 import { logSearch } from '@/lib/searchLogger'
 import { extractGeo } from '@/lib/geo'
+import { dashboardUserRateLimiter } from '@/lib/rateLimit'
 import crypto from 'crypto'
 
 export const dynamic = 'force-dynamic'
@@ -19,6 +20,36 @@ export async function GET(request: NextRequest) {
         const user = await getCurrentUser(request)
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized. Please sign in.' }, { status: 401 })
+        }
+
+        const isRefresh = request.nextUrl.searchParams.get('refresh') === 'true'
+        if (isRefresh) {
+            const rateStatus = dashboardUserRateLimiter.checkLimit(`user_${user.id}`)
+            if (!rateStatus.allowed) {
+                const minutes = Math.ceil(rateStatus.retryAfter / 60)
+                const hours = Math.floor(rateStatus.retryAfter / 3600)
+                const waitMsg =
+                    hours >= 1
+                        ? `${hours} hour${hours > 1 ? 's' : ''}`
+                        : minutes > 1
+                        ? `${minutes} minutes`
+                        : `${rateStatus.retryAfter} seconds`
+                return NextResponse.json(
+                    {
+                        status: 'error',
+                        code: 'RATE_LIMIT_EXCEEDED',
+                        error: `Rate limit reached. You can refresh up to 5 times per 5 minutes. Please wait ${waitMsg} before refreshing again.`,
+                        retryAfter: rateStatus.retryAfter,
+                    },
+                    {
+                        status: 429,
+                        headers: {
+                            'Retry-After': String(rateStatus.retryAfter),
+                            'Cache-Control': 'no-store, no-cache',
+                        },
+                    }
+                )
+            }
         }
 
         await ensureUserTables()

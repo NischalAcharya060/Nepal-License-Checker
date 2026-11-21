@@ -364,6 +364,9 @@ export interface AdminUserItem {
     last_login_at: number | null
     saved_licenses_count: number
     feedbacks_count: number
+    is_banned: boolean
+    ban_reason: string | null
+    banned_at: number | null
     saved_licenses?: AdminUserSavedLicenseItem[]
     feedbacks?: AdminUserFeedbackItem[]
 }
@@ -374,6 +377,7 @@ export interface AdminUserStatsData {
     totalSavedLicenses: number
     passwordUsersCount: number
     otpOnlyUsersCount: number
+    bannedUsersCount: number
 }
 
 

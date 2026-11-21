@@ -149,6 +149,7 @@ export default function AdminPage() {
     const [userLimit, setUserLimit] = useState(10)
     const [userTotalPages, setUserTotalPages] = useState(1)
     const [userSearchFilter, setUserSearchFilter] = useState('')
+    const [userStatusFilter, setUserStatusFilter] = useState<string>('all')
     const [userLoading, setUserLoading] = useState(false)
 
     // Dashboard State - AI Vision & OCR Scanner
@@ -532,6 +533,7 @@ export default function AdminPage() {
             page: String(userPage),
             limit: String(userLimit),
             search: userSearchFilter,
+            status: userStatusFilter,
         })
 
         fetch(`/api/admin/users?${params.toString()}`, { cache: 'no-store' })
@@ -561,7 +563,7 @@ export default function AdminPage() {
         return () => {
             cancelled = true
         }
-    }, [isAuthenticated, userPage, userLimit, userSearchFilter, refreshKey])
+    }, [isAuthenticated, userPage, userLimit, userSearchFilter, userStatusFilter, refreshKey])
 
     // 2f. Fetch OCR Config, Analytics & Scan Logs
     useEffect(() => {
@@ -2092,6 +2094,44 @@ export default function AdminPage() {
         })
     }
 
+    const handleBanUser = async (userId: string, isBanned: boolean, reason?: string): Promise<boolean> => {
+        try {
+            const res = await fetch('/api/admin/users', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId,
+                    action: isBanned ? 'ban' : 'unban',
+                    reason: reason || undefined,
+                }),
+            })
+            const data = await res.json()
+            if (res.ok && data?.status === 'success') {
+                setUsers((prev) =>
+                    prev.map((u) =>
+                        u.id === userId
+                            ? {
+                                  ...u,
+                                  is_banned: isBanned,
+                                  ban_reason: isBanned ? (reason || 'Your account has been suspended by an administrator.') : null,
+                                  banned_at: isBanned ? Date.now() : null,
+                              }
+                            : u
+                    )
+                )
+                setRefreshKey((k) => k + 1)
+                showToast(data.message || (isBanned ? 'User banned successfully' : 'User reinstated successfully'), 'success')
+                return true
+            } else {
+                showToast(data?.error || 'Failed to update user status', 'error')
+                return false
+            }
+        } catch {
+            showToast('Network error while updating user status', 'error')
+            return false
+        }
+    }
+
     // 15. OCR & AI Vision Handlers
     const exportOcrCsv = () => {
         if (!ocrLogs.length) return
@@ -2943,12 +2983,15 @@ export default function AdminPage() {
                         userLimit={userLimit}
                         userTotalPages={userTotalPages}
                         userSearchFilter={userSearchFilter}
+                        userStatusFilter={userStatusFilter}
                         userLoading={userLoading}
                         privacyMode={privacyMode}
                         setUserPage={setUserPage}
                         setUserLimit={setUserLimit}
                         setUserSearchFilter={setUserSearchFilter}
+                        setUserStatusFilter={setUserStatusFilter}
                         handleDeleteUser={handleDeleteUser}
+                        handleBanUser={handleBanUser}
                         exportUsersCsv={exportUsersCsv}
                         startTransition={startTransition}
                     />

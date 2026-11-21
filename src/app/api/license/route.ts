@@ -1,11 +1,12 @@
 // src/app/api/license/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { getTurso, type LicenseRow } from '@/lib/turso'
-import { RateLimiter } from '@/lib/rateLimit'
+import { RateLimiter, dashboardUserRateLimiter } from '@/lib/rateLimit'
 import { sanitizeInput } from '@/utils/sanitize'
 import { extractGeo } from '@/lib/geo'
 import { logSearch } from '@/lib/searchLogger'
 import { validateDeveloperApiKey, recordApiKeyUsage, recordDeveloperUsageMetric } from '@/lib/developerAuth'
+import { getCurrentUser } from '@/lib/userAuth'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -73,6 +74,17 @@ export async function GET(request: NextRequest) {
                 'X-RateLimit-Remaining': String(rateStatus.remaining ?? 0),
                 'X-RateLimit-Reset': String(rateStatus.reset ?? Math.ceil(Date.now() / 1000)),
             }
+        } else if (request.nextUrl.searchParams.get('source') === 'dashboard') {
+            // Citizen user dashboard live check rate limiting: 5 req per 5 minutes, 1-hour lockout
+            const user = await getCurrentUser(request).catch(() => null)
+            const rateKey = user ? `user_${user.id}` : `dash_ip_${ip}`
+            rateStatus = dashboardUserRateLimiter.checkLimit(rateKey)
+
+            rateHeaders = {
+                'X-RateLimit-Limit': String(rateStatus.limit ?? 5),
+                'X-RateLimit-Remaining': String(rateStatus.remaining ?? 0),
+                'X-RateLimit-Reset': String(rateStatus.reset ?? Math.ceil(Date.now() / 1000)),
+            }
         } else {
             // Anonymous IP rate limiting
             rateStatus = ipRateLimiter.checkLimit(ip)
@@ -97,11 +109,23 @@ export async function GET(request: NextRequest) {
 
         if (!rateStatus.allowed) {
             logDevMetric(429)
+            const isDashboard = request.nextUrl.searchParams.get('source') === 'dashboard'
             const minutes = Math.ceil(rateStatus.retryAfter / 60)
-            const waitMsg = minutes > 1 ? `${minutes} minutes` : `${rateStatus.retryAfter} seconds`
+            const hours = Math.floor(rateStatus.retryAfter / 3600)
+            const waitMsg =
+                hours >= 1
+                    ? `${hours} hour${hours > 1 ? 's' : ''}`
+                    : minutes > 1
+                    ? `${minutes} minutes`
+                    : `${rateStatus.retryAfter} seconds`
+            const errorMessage = isDashboard
+                ? `Rate limit reached. You can check up to 5 times per 5 minutes. Please wait ${waitMsg} before checking again.`
+                : `Too many searches. Please wait ${waitMsg} before searching again.`
             return NextResponse.json(
                 {
-                    error: `Too many searches. Please wait ${waitMsg} before searching again.`,
+                    status: 'error',
+                    code: 'RATE_LIMIT_EXCEEDED',
+                    error: errorMessage,
                     retryAfter: rateStatus.retryAfter,
                 },
                 {

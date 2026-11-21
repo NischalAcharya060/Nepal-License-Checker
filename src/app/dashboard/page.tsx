@@ -42,6 +42,13 @@ export default function UserDashboardPage() {
     const [refreshingAll, setRefreshingAll] = useState(false)
     const [copiedLicenseId, setCopiedLicenseId] = useState<string | null>(null)
 
+    // Rate Limiting & Cooldown State for Check / Refresh All
+    const [rateLimitCooldown, setRateLimitCooldown] = useState<number>(0)
+    const [checkHistory, setCheckHistory] = useState<number[]>([])
+    const [shakeRateLimit, setShakeRateLimit] = useState(false)
+    const [lastCheckedMap, setLastCheckedMap] = useState<Record<string, number>>({})
+    const [recentlyUpdatedId, setRecentlyUpdatedId] = useState<string | null>(null)
+
     // License Filter & Search
     const [licenseFilter, setLicenseFilter] = useState<'all' | 'ready' | 'pending'>('all')
     const [licenseSearch, setLicenseSearch] = useState('')
@@ -97,6 +104,87 @@ export default function UserDashboardPage() {
     const [savingPassword, setSavingPassword] = useState(false)
     const [passwordFeedback, setPasswordFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
+    // Prompt to set real password for OTP-only accounts
+    const [isSetPasswordPromptOpen, setIsSetPasswordPromptOpen] = useState(false)
+    const [promptNewPassword, setPromptNewPassword] = useState('')
+    const [promptConfirmPassword, setPromptConfirmPassword] = useState('')
+    const [showPromptPassword, setShowPromptPassword] = useState(false)
+    const [showPromptConfirmPassword, setShowPromptConfirmPassword] = useState(false)
+    const [promptSaving, setPromptSaving] = useState(false)
+    const [promptFeedback, setPromptFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+
+    // Caps Lock & Shift States for password fields
+    const [isCapsLockOn, setIsCapsLockOn] = useState(false)
+    const [isShiftOn, setIsShiftOn] = useState(false)
+
+    useEffect(() => {
+        const handleGlobalKeyUp = (e: KeyboardEvent) => {
+            if (e.key === 'Shift') setIsShiftOn(false)
+            if (e.key === 'CapsLock' && typeof e.getModifierState === 'function') {
+                setIsCapsLockOn(e.getModifierState('CapsLock'))
+            }
+        }
+        const handleGlobalBlur = () => setIsShiftOn(false)
+        window.addEventListener('keyup', handleGlobalKeyUp)
+        window.addEventListener('blur', handleGlobalBlur)
+        return () => {
+            window.removeEventListener('keyup', handleGlobalKeyUp)
+            window.removeEventListener('blur', handleGlobalBlur)
+        }
+    }, [])
+
+    // Initialize last checked records and active cooldown from storage
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            queueMicrotask(() => {
+                try {
+                    const storedChecked = localStorage.getItem('nlc_last_checked')
+                    if (storedChecked) {
+                        setLastCheckedMap(JSON.parse(storedChecked))
+                    }
+                    const storedCooldownEnd = sessionStorage.getItem('nlc_cooldown_end')
+                    if (storedCooldownEnd) {
+                        const diff = Math.ceil((Number(storedCooldownEnd) - Date.now()) / 1000)
+                        if (diff > 0) {
+                            setRateLimitCooldown(diff)
+                        }
+                    }
+                } catch {
+                    // Ignore storage parse issues
+                }
+            })
+        }
+    }, [])
+
+    // Second-by-second countdown for rate limit cooldown
+    useEffect(() => {
+        if (rateLimitCooldown <= 0) {
+            if (typeof window !== 'undefined') sessionStorage.removeItem('nlc_cooldown_end')
+            return
+        }
+        const timer = setInterval(() => {
+            setRateLimitCooldown((prev) => {
+                if (prev <= 1) {
+                    if (typeof window !== 'undefined') sessionStorage.removeItem('nlc_cooldown_end')
+                    return 0
+                }
+                return prev - 1
+            })
+        }, 1000)
+        return () => clearInterval(timer)
+    }, [rateLimitCooldown])
+
+    const checkModifiers = useCallback((e: React.KeyboardEvent | React.MouseEvent | React.FocusEvent) => {
+        if ('getModifierState' in e && typeof e.getModifierState === 'function') {
+            setIsCapsLockOn(e.getModifierState('CapsLock'))
+            if (e.type === 'keyup' && 'key' in e && (e as React.KeyboardEvent).key === 'Shift') {
+                setIsShiftOn(false)
+            } else {
+                setIsShiftOn(Boolean(e.getModifierState('Shift') || ('shiftKey' in e && (e as React.KeyboardEvent | React.MouseEvent).shiftKey)))
+            }
+        }
+    }, [])
+
     // Keyboard Escape listener to dismiss any active modal
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -105,15 +193,19 @@ export default function UserDashboardPage() {
                 if (unsubscribeTarget && !togglingNotification) setUnsubscribeTarget(null)
                 if (isAddModalOpen && !addingLicense) setIsAddModalOpen(false)
                 if (isNewTicketModalOpen && !submittingTicket) setIsNewTicketModalOpen(false)
+                if (isSetPasswordPromptOpen && !promptSaving) {
+                    setIsSetPasswordPromptOpen(false)
+                    if (typeof window !== 'undefined') sessionStorage.setItem('nlc_dismissed_pwd_prompt', '1')
+                }
             }
         }
         window.addEventListener('keydown', handleKeyDown)
         return () => window.removeEventListener('keydown', handleKeyDown)
-    }, [deleteTarget, deletingLicense, unsubscribeTarget, togglingNotification, isAddModalOpen, addingLicense, isNewTicketModalOpen, submittingTicket])
+    }, [deleteTarget, deletingLicense, unsubscribeTarget, togglingNotification, isAddModalOpen, addingLicense, isNewTicketModalOpen, submittingTicket, isSetPasswordPromptOpen, promptSaving])
 
     // Body scroll lock when any modal is open
     useEffect(() => {
-        const isModalOpen = Boolean(deleteTarget || unsubscribeTarget || isAddModalOpen || isNewTicketModalOpen)
+        const isModalOpen = Boolean(deleteTarget || unsubscribeTarget || isAddModalOpen || isNewTicketModalOpen || isSetPasswordPromptOpen)
         if (typeof document !== 'undefined') {
             document.body.style.overflow = isModalOpen ? 'hidden' : ''
         }
@@ -122,7 +214,7 @@ export default function UserDashboardPage() {
                 document.body.style.overflow = ''
             }
         }
-    }, [deleteTarget, unsubscribeTarget, isAddModalOpen, isNewTicketModalOpen])
+    }, [deleteTarget, unsubscribeTarget, isAddModalOpen, isNewTicketModalOpen, isSetPasswordPromptOpen])
 
     // Detect language from URL or local storage
     useEffect(() => {
@@ -199,21 +291,16 @@ export default function UserDashboardPage() {
             queueMicrotask(() => {
                 fetchLicenses()
                 fetchTickets()
+                // If user has not set a password (logged in via OTP), show security popup prompt
+                if (user.has_password === false && typeof window !== 'undefined') {
+                    const dismissed = sessionStorage.getItem('nlc_dismissed_pwd_prompt')
+                    if (!dismissed) {
+                        setIsSetPasswordPromptOpen(true)
+                    }
+                }
             })
         }
     }, [user, fetchLicenses, fetchTickets])
-
-    // Close modal on Escape key
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') {
-                setIsAddModalOpen(false)
-                setIsNewTicketModalOpen(false)
-            }
-        }
-        window.addEventListener('keydown', handleKeyDown)
-        return () => window.removeEventListener('keydown', handleKeyDown)
-    }, [])
 
     // Handle Logout
     const handleLogout = async () => {
@@ -224,12 +311,146 @@ export default function UserDashboardPage() {
         }
     }
 
+    // Helper to format last checked timestamp
+    const formatLastChecked = useCallback(
+        (timestamp?: number) => {
+            if (!timestamp) return null
+            const diffMs = Date.now() - timestamp
+            const diffSec = Math.floor(diffMs / 1000)
+            const diffMin = Math.floor(diffSec / 60)
+            const isNe = language === 'ne'
+
+            if (diffSec < 15) return isNe ? 'अहिले भर्खरै' : 'Just now'
+            if (diffSec < 60) return isNe ? `${diffSec} सेकेन्ड अघि` : `${diffSec}s ago`
+            if (diffMin < 60) return isNe ? `${diffMin} मिनेट अघि` : `${diffMin}m ago`
+            const date = new Date(timestamp)
+            return date.toLocaleTimeString(isNe ? 'ne-NP' : 'en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+            })
+        },
+        [language]
+    )
+
+    // Helper to format cooldown duration into human readable format (hours/mins/seconds)
+    const formatCooldown = useCallback(
+        (seconds: number) => {
+            const isNe = language === 'ne'
+            if (seconds >= 3600) {
+                const h = Math.floor(seconds / 3600)
+                const m = Math.floor((seconds % 3600) / 60)
+                return isNe ? `${h} घण्टा ${m > 0 ? `${m} मि` : ''}` : `${h}h ${m > 0 ? `${m}m` : ''}`
+            }
+            if (seconds >= 60) {
+                const m = Math.floor(seconds / 60)
+                const s = seconds % 60
+                return isNe ? `${m} मिनेट ${s > 0 ? `${s} से` : ''}` : `${m}m ${s > 0 ? `${s}s` : ''}`
+            }
+            return isNe ? `${seconds} सेकेन्ड` : `${seconds}s`
+        },
+        [language]
+    )
+
+    // Trigger cooldown penalty (1 hour lockout penalty)
+    const startCooldown = useCallback(
+        (seconds: number, message?: string) => {
+            const sec = Math.max(1, seconds)
+            setRateLimitCooldown(sec)
+            const durationText = formatCooldown(sec)
+            const msg =
+                message ||
+                (language === 'ne'
+                    ? `अनुरोधको सीमा पुग्यो। ५ मिनेटमा ५ पटकभन्दा बढी जाँच भएकाले ${durationText} को लागि रोक लगाइएको छ।`
+                    : `Rate limit reached. 5 requests in 5 minutes exceeded. Cooldown active for ${durationText}.`)
+            if (typeof window !== 'undefined') {
+                sessionStorage.setItem('nlc_cooldown_end', String(Date.now() + sec * 1000))
+            }
+            showToast(msg, 'error')
+        },
+        [language, showToast, formatCooldown]
+    )
+
+    // Pre-flight Rate Limit check: max 5 requests per 5 minutes (300,000ms), 1 hour lockout penalty
+    const checkCanProceed = useCallback((): boolean => {
+        if (rateLimitCooldown > 0) {
+            setShakeRateLimit(true)
+            setTimeout(() => setShakeRateLimit(false), 500)
+            const remainingText = formatCooldown(rateLimitCooldown)
+            showToast(
+                language === 'ne'
+                    ? `कृपया प्रतीक्षा गर्नुहोस्: ${remainingText} बाँकी छ।`
+                    : `Cooldown active: Please wait ${remainingText} before checking again.`,
+                'error'
+            )
+            return false
+        }
+
+        const now = Date.now()
+        // Rolling 5-minute (300,000ms) window
+        const recent = checkHistory.filter((t) => now - t < 300000)
+
+        // 5 checks already made within last 5 minutes -> 1-hour (3600s) lockout penalty!
+        if (recent.length >= 5) {
+            setShakeRateLimit(true)
+            setTimeout(() => setShakeRateLimit(false), 500)
+            startCooldown(
+                3600,
+                language === 'ne'
+                    ? 'अनुरोधको सीमा पुग्यो। तपाईंले ५ मिनेटमा ५ पटक जाँच गर्नुभयो। १ घण्टाको लागि रोक लगाइएको छ।'
+                    : 'Rate limit reached: Max 5 checks per 5 minutes. 1-hour cooldown penalty applied.'
+            )
+            return false
+        }
+
+        if (recent.length === 4) {
+            showToast(
+                language === 'ne'
+                    ? '⚠️ ध्यान दिनुहोस्: ५ मिनेटको लागि १ पटक मात्र जाँच बाँकी छ।'
+                    : '⚠️ Slow down: 1 check remaining before 1-hour cooldown penalty.',
+                'info'
+            )
+        }
+
+        setCheckHistory([...recent, now])
+        return true
+    }, [rateLimitCooldown, checkHistory, language, startCooldown, showToast, formatCooldown])
+
     // Refresh single license status
     const handleRefreshStatus = async (item: UserSavedLicense) => {
+        if (refreshingLicenseId || refreshingAll) return
+        if (!checkCanProceed()) return
+
         setRefreshingLicenseId(item.id)
         try {
             const res = await fetch(`/api/license?number=${encodeURIComponent(item.license_number)}&source=dashboard`)
             const data = await res.json()
+
+            if (res.status === 429 || data?.code === 'RATE_LIMIT_EXCEEDED') {
+                const retrySec = Number(data?.retryAfter) || 3600
+                startCooldown(
+                    retrySec,
+                    data?.error ||
+                        (language === 'ne'
+                            ? `अनुरोधको सीमा पुग्यो। कृपया ${formatCooldown(retrySec)} पर्खनुहोस्।`
+                            : `Rate limit reached. Please wait ${formatCooldown(retrySec)}.`)
+                )
+                return
+            }
+
+            // Save last checked timestamp
+            const now = Date.now()
+            setLastCheckedMap((prev) => {
+                const next = { ...prev, [item.id]: now }
+                if (typeof window !== 'undefined') {
+                    try {
+                        localStorage.setItem('nlc_last_checked', JSON.stringify(next))
+                    } catch {}
+                }
+                return next
+            })
+            setRecentlyUpdatedId(item.id)
+            setTimeout(() => setRecentlyUpdatedId(null), 3000)
+
             if (res.ok && data?.status === 'success' && data?.data) {
                 setLicenses((prev) =>
                     prev.map((lic) =>
@@ -246,13 +467,19 @@ export default function UserDashboardPage() {
                 )
                 showToast(
                     language === 'ne'
-                        ? `#${item.license_number} को स्थिति अद्यावधिक गरियो।`
-                        : `Status updated for #${item.license_number}`,
+                        ? `🎉 लाइसेन्स #${item.license_number} को स्थिति अद्यावधिक गरियो: छपाइ भइसकेको (Ready) छ!`
+                        : `🎉 License #${item.license_number} status updated: Ready to collect!`,
                     'success'
                 )
             } else {
                 setLicenses((prev) =>
                     prev.map((lic) => (lic.id === item.id ? { ...lic, status: 'not_printed' } : lic))
+                )
+                showToast(
+                    language === 'ne'
+                        ? `✓ लाइसेन्स #${item.license_number} को स्थिति अद्यावधिक गरियो: अझै छपाइ प्रक्रिया (In Queue) मा छ।`
+                        : `✓ License #${item.license_number} status updated: Still in printing queue.`,
+                    'success'
                 )
             }
         } catch (err) {
@@ -268,13 +495,60 @@ export default function UserDashboardPage() {
 
     // Refresh all licenses in batch
     const handleRefreshAll = async () => {
-        if (licenses.length === 0 || refreshingAll) return
+        if (licenses.length === 0 || refreshingAll || refreshingLicenseId) return
+        if (!checkCanProceed()) return
+
         setRefreshingAll(true)
         try {
-            await Promise.all(licenses.map((lic) => handleRefreshStatus(lic)))
+            const res = await fetch('/api/user/licenses?refresh=true')
+            const data = await res.json()
+
+            if (res.status === 429 || data?.code === 'RATE_LIMIT_EXCEEDED') {
+                const retrySec = Number(data?.retryAfter) || 3600
+                startCooldown(
+                    retrySec,
+                    data?.error ||
+                        (language === 'ne'
+                            ? `अनुरोधको सीमा पुग्यो। कृपया ${formatCooldown(retrySec)} पर्खनुहोस्।`
+                            : `Rate limit reached. Please wait ${formatCooldown(retrySec)}.`)
+                )
+                return
+            }
+
+            if (res.ok && Array.isArray(data?.licenses)) {
+                setLicenses(data.licenses)
+                const now = Date.now()
+                setLastCheckedMap((prev) => {
+                    const next = { ...prev }
+                    data.licenses.forEach((lic: UserSavedLicense) => {
+                        next[lic.id] = now
+                    })
+                    if (typeof window !== 'undefined') {
+                        try {
+                            localStorage.setItem('nlc_last_checked', JSON.stringify(next))
+                        } catch {}
+                    }
+                    return next
+                })
+
+                const readyNow = data.licenses.filter((l: UserSavedLicense) => l.status === 'ready').length
+                showToast(
+                    language === 'ne'
+                        ? `सबै ${data.licenses.length} लाइसेन्सको स्थिति अद्यावधिक गरियो (${readyNow} छापिएको)।`
+                        : `All ${data.licenses.length} licenses refreshed (${readyNow} ready).`,
+                    'success'
+                )
+            } else {
+                showToast(
+                    language === 'ne' ? 'ताजा गर्न असफल भयो।' : 'Failed to refresh licenses.',
+                    'error'
+                )
+            }
+        } catch (err) {
+            console.error('Error in refresh all:', err)
             showToast(
-                language === 'ne' ? 'सबै लाइसेन्स स्थिति अद्यावधिक गरियो।' : 'All licenses refreshed successfully.',
-                'success'
+                language === 'ne' ? 'ताजा गर्न असफल भयो।' : 'Failed to refresh licenses.',
+                'error'
             )
         } finally {
             setRefreshingAll(false)
@@ -572,6 +846,72 @@ export default function UserDashboardPage() {
         }
     }
 
+    // Handle Saving Password from the Onboarding / Security Popup Prompt
+    const handleSavePromptPassword = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setPromptFeedback(null)
+
+        if (!promptNewPassword || promptNewPassword.length < 6) {
+            setPromptFeedback({
+                type: 'error',
+                message: language === 'ne' ? 'पासवर्ड कम्तिमा ६ अक्षरको हुनुपर्छ।' : 'Password must be at least 6 characters.',
+            })
+            return
+        }
+
+        if (promptNewPassword !== promptConfirmPassword) {
+            setPromptFeedback({
+                type: 'error',
+                message: language === 'ne' ? 'पासवर्डहरू मिलेनन्।' : 'Passwords do not match.',
+            })
+            return
+        }
+
+        setPromptSaving(true)
+        try {
+            const res = await fetch('/api/user/auth/set-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    newPassword: promptNewPassword,
+                }),
+            })
+            const data = await res.json()
+
+            if (!res.ok) {
+                setPromptFeedback({
+                    type: 'error',
+                    message: data.error || (language === 'ne' ? 'पासवर्ड सुरक्षित गर्न सकिएन।' : 'Failed to update password.'),
+                })
+            } else {
+                const passMsg = language === 'ne' ? 'पासवर्ड सफलतापूर्वक सुरक्षित भयो! तपाईंको खाता अब सुरक्षित छ।' : 'Password set successfully! Your account is now secured.'
+                showToast(passMsg, 'success')
+                setPromptNewPassword('')
+                setPromptConfirmPassword('')
+                setIsSetPasswordPromptOpen(false)
+                if (typeof window !== 'undefined') {
+                    sessionStorage.setItem('nlc_dismissed_pwd_prompt', '1')
+                }
+                setUser((prev) => (prev ? { ...prev, has_password: true } : null))
+                fetchUser()
+            }
+        } catch {
+            setPromptFeedback({
+                type: 'error',
+                message: language === 'ne' ? 'सर्भर समस्या।' : 'Server error.',
+            })
+        } finally {
+            setPromptSaving(false)
+        }
+    }
+
+    const handleDismissPrompt = () => {
+        setIsSetPasswordPromptOpen(false)
+        if (typeof window !== 'undefined') {
+            sessionStorage.setItem('nlc_dismissed_pwd_prompt', '1')
+        }
+    }
+
     // Filtered Licenses
     const filteredLicenses = useMemo(() => {
         return licenses.filter((item) => {
@@ -619,7 +959,7 @@ export default function UserDashboardPage() {
         <main className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors pb-20 selection:bg-[var(--nepal-blue)]/20">
             {/* Top Navigation Bar */}
             <header className="sticky top-0 z-30 border-b border-[var(--border-default)] bg-[var(--surface-primary)]/85 backdrop-blur-xl transition-all">
-                <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
+                <div className="mx-auto flex w-full max-w-7xl 2xl:max-w-[1440px] items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
                     {/* Brand */}
                     <div className="flex items-center gap-3">
                         <Link href="/" className="flex items-center gap-2.5 group">
@@ -687,7 +1027,7 @@ export default function UserDashboardPage() {
             </header>
 
             {/* Main Container */}
-            <div className="mx-auto max-w-6xl px-4 pt-6 sm:px-6 sm:pt-8 space-y-6 sm:space-y-7">
+            <div className="mx-auto w-full max-w-7xl 2xl:max-w-[1440px] px-4 pt-5 sm:px-6 lg:px-8 sm:pt-7 space-y-6 sm:space-y-7">
                 {/* Hero Greeting & Stats Banner */}
                 <div className="relative rounded-2xl sm:rounded-3xl border border-[var(--border-default)] bg-gradient-to-br from-[var(--nepal-blue)]/10 via-[var(--surface-primary)] to-[var(--bg-secondary)]/40 p-5 sm:p-7 shadow-xl overflow-hidden">
                     {/* Background subtle watermark icon */}
@@ -734,7 +1074,7 @@ export default function UserDashboardPage() {
                         </div>
 
                         {/* Interactive Metric Tiles */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 shrink-0">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5 shrink-0 lg:min-w-[500px]">
                             {/* Metric 1: Total Saved */}
                             <button
                                 type="button"
@@ -898,9 +1238,17 @@ export default function UserDashboardPage() {
                             <button
                                 type="button"
                                 onClick={handleRefreshAll}
-                                disabled={refreshingAll}
-                                className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--nepal-blue)] transition cursor-pointer disabled:opacity-50"
-                                title="Check status for all saved licenses"
+                                disabled={refreshingAll || rateLimitCooldown > 0}
+                                className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition shadow-2xs ${
+                                    rateLimitCooldown > 0
+                                        ? 'border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300 cursor-not-allowed opacity-90'
+                                        : 'border-[var(--border-default)] bg-[var(--surface-primary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--nepal-blue)] cursor-pointer'
+                                } ${shakeRateLimit ? 'animate-shake' : ''}`}
+                                title={
+                                    rateLimitCooldown > 0
+                                        ? `Rate limit active: ${rateLimitCooldown}s remaining`
+                                        : (isNe ? 'सबै लाइसेन्सहरूको स्थिति DOTM प्रणालीबाट एकैपटक ताजा गर्नुहोस्' : 'Check status for all saved licenses')
+                                }
                             >
                                 <svg
                                     width="13"
@@ -914,7 +1262,18 @@ export default function UserDashboardPage() {
                                     <polyline points="23 4 23 10 17 10" />
                                     <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
                                 </svg>
-                                <span>{refreshingAll ? (isNe ? 'जाँच्दै...' : 'Checking...') : (isNe ? 'सबै ताजा गर्नुहोस्' : 'Refresh All')}</span>
+                                <span>
+                                    {refreshingAll
+                                        ? (isNe ? 'जाँच्दै...' : 'Refreshing...')
+                                        : rateLimitCooldown > 0
+                                        ? (isNe ? `कुर्नुहोस् (${formatCooldown(rateLimitCooldown)})` : `Wait (${formatCooldown(rateLimitCooldown)})`)
+                                        : (isNe ? 'सबै ताजा गर्नुहोस्' : 'Refresh All')}
+                                </span>
+                                {rateLimitCooldown === 0 && checkHistory.length > 0 && (
+                                    <span className="rounded-full bg-[var(--bg-secondary)] px-1.5 py-0.2 text-[9px] font-bold text-[var(--text-muted)] border border-[var(--border-default)]">
+                                        {Math.max(0, 5 - checkHistory.length)}/5
+                                    </span>
+                                )}
                             </button>
 
                             {/* Add Button */}
@@ -939,6 +1298,43 @@ export default function UserDashboardPage() {
                 {/* TAB 1: SAVED FAMILY LICENSES */}
                 {activeTab === 'licenses' && (
                     <div className="space-y-5">
+                        {/* Rate Limit Active Warning Banner */}
+                        {rateLimitCooldown > 0 && (
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-amber-500/40 bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-amber-500/5 p-4 shadow-sm animate-slide-up">
+                                <div className="flex items-start sm:items-center gap-3">
+                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                            <circle cx="12" cy="12" r="10" />
+                                            <polyline points="12 6 12 12 16 14" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs font-extrabold text-amber-800 dark:text-amber-200 uppercase tracking-wider">
+                                                {isNe ? 'अनुरोधको सीमा (Rate Limit Active)' : 'Rate Limit Cooldown Active'}
+                                            </span>
+                                            <span className="inline-flex items-center rounded-full bg-amber-500/20 px-2.5 py-0.5 text-[10px] font-mono font-extrabold text-amber-800 dark:text-amber-200 border border-amber-500/30">
+                                                {formatCooldown(rateLimitCooldown)}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-amber-900/90 dark:text-amber-200/90 mt-0.5 leading-relaxed">
+                                            {isNe
+                                                ? `तपाईंले ५ मिनेटभित्र ५ पटक जाँच गर्नुभएकाले सर्भर सुरक्षित राख्न १ घण्टाको लागि रोक लगाइएको छ। कृपया ${formatCooldown(rateLimitCooldown)}पछि पुनः प्रयास गर्नुहोस्।`
+                                                : `You made 5 checks within 5 minutes. A 1-hour cooldown penalty has been applied. Please wait ${formatCooldown(rateLimitCooldown)} before checking again.`}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="shrink-0 self-end sm:self-center">
+                                    <div className="w-24 sm:w-28 bg-amber-500/20 h-2 rounded-full overflow-hidden border border-amber-500/30">
+                                        <div
+                                            className="bg-amber-500 h-full transition-all duration-1000 ease-linear rounded-full"
+                                            style={{ width: `${Math.min(100, Math.max(0, (rateLimitCooldown / 3600) * 100))}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Search & Filter Toolbar */}
                         {licenses.length > 0 && (
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[var(--surface-primary)] p-3 rounded-2xl border border-[var(--border-default)]">
@@ -1033,7 +1429,7 @@ export default function UserDashboardPage() {
                                         <line x1="7" y1="16" x2="17" y2="16" />
                                     </svg>
                                 </div>
-                                <div className="max-w-md mx-auto space-y-1.5">
+                                <div className="max-w-lg mx-auto space-y-2">
                                     <h3 className="text-base sm:text-lg font-extrabold text-[var(--text-primary)]">
                                         {isNe ? 'पारिवारिक भल्ट खाली छ' : 'Your Family License Vault is Empty'}
                                     </h3>
@@ -1080,17 +1476,29 @@ export default function UserDashboardPage() {
                             </div>
                         ) : (
                             /* Authentic Smart Card Grid */
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
                                 {filteredLicenses.map((item) => {
                                     const isReady = item.status === 'ready'
                                     const isRefreshing = refreshingLicenseId === item.id
                                     const isCopied = copiedLicenseId === item.id
+                                    const lastChecked = lastCheckedMap[item.id]
+                                    const isRecentlyUpdated = recentlyUpdatedId === item.id
 
                                     return (
                                         <div
                                             key={item.id}
-                                            className="group relative rounded-2xl sm:rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] dev-glass-card p-5 sm:p-6 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between space-y-5"
+                                            className={`group relative rounded-2xl sm:rounded-3xl border dev-glass-card p-5 sm:p-6 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between space-y-5 ${
+                                                isRecentlyUpdated
+                                                    ? 'border-emerald-500 ring-2 ring-emerald-500/30 bg-emerald-500/5'
+                                                    : 'border-[var(--border-default)] bg-[var(--surface-primary)]'
+                                            }`}
                                         >
+                                            {/* Top Checking Progress Shimmer */}
+                                            {isRefreshing && (
+                                                <div className="absolute top-0 left-0 right-0 h-1 overflow-hidden rounded-t-2xl sm:rounded-t-3xl bg-[var(--nepal-blue)]/20">
+                                                    <div className="h-full bg-[var(--nepal-blue)] animate-slide-right" />
+                                                </div>
+                                            )}
                                             <div>
                                                 {/* Card Header: Relationship Pill & Live Status */}
                                                 <div className="flex items-start justify-between gap-3 mb-3">
@@ -1190,6 +1598,20 @@ export default function UserDashboardPage() {
                                                             Category: {item.category}
                                                         </span>
                                                     )}
+
+                                                    {/* Last Checked Timestamp */}
+                                                    {lastChecked && (
+                                                        <span
+                                                            className="inline-flex items-center gap-1 rounded-lg bg-[var(--bg-secondary)] px-2 py-1 text-[10.5px] font-semibold text-[var(--text-muted)] border border-[var(--border-default)]/60"
+                                                            title={isNe ? `पछिल्लो पटक जाँचिएको: ${new Date(lastChecked).toLocaleString('ne-NP')}` : `Last checked: ${new Date(lastChecked).toLocaleString()}`}
+                                                        >
+                                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                                <circle cx="12" cy="12" r="10" />
+                                                                <polyline points="12 6 12 12 16 14" />
+                                                            </svg>
+                                                            <span>{formatLastChecked(lastChecked)}</span>
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
 
@@ -1237,9 +1659,17 @@ export default function UserDashboardPage() {
                                                     <button
                                                         type="button"
                                                         onClick={() => handleRefreshStatus(item)}
-                                                        disabled={isRefreshing}
-                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] transition text-[11px] font-bold cursor-pointer disabled:opacity-50 shadow-2xs"
-                                                        title="Live check with DOTM database"
+                                                        disabled={isRefreshing || refreshingAll || rateLimitCooldown > 0}
+                                                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[11px] font-bold transition shadow-2xs ${
+                                                            rateLimitCooldown > 0
+                                                                ? 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 cursor-not-allowed opacity-80'
+                                                                : 'border-[var(--border-default)] bg-[var(--surface-primary)] hover:border-[var(--nepal-blue)] hover:text-[var(--nepal-blue)] cursor-pointer'
+                                                        } ${shakeRateLimit ? 'animate-shake' : ''}`}
+                                                        title={
+                                                            rateLimitCooldown > 0
+                                                                ? `Rate limit active: ${rateLimitCooldown}s remaining`
+                                                                : "Live check with DOTM database"
+                                                        }
                                                     >
                                                         <svg
                                                             width="12"
@@ -1253,7 +1683,13 @@ export default function UserDashboardPage() {
                                                             <polyline points="23 4 23 10 17 10" />
                                                             <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
                                                         </svg>
-                                                        <span>{isRefreshing ? (isNe ? '...' : '...') : (isNe ? 'पुनः जाँच' : 'Check')}</span>
+                                                        <span>
+                                                            {isRefreshing
+                                                                ? (isNe ? 'जाँच्दै...' : 'Checking...')
+                                                                : rateLimitCooldown > 0
+                                                                ? formatCooldown(rateLimitCooldown)
+                                                                : (isNe ? 'पुनः जाँच' : 'Check')}
+                                                        </span>
                                                     </button>
 
                                                     {/* Delete from Vault (Opens Proper Confirmation Modal) */}
@@ -1467,144 +1903,224 @@ export default function UserDashboardPage() {
 
                 {/* TAB 3: ACCOUNT & SECURITY */}
                 {activeTab === 'security' && (
-                    <div className="max-w-2xl mx-auto space-y-6">
-                        {/* Profile Info Card */}
-                        <div className="rounded-2xl sm:rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 shadow-sm space-y-4">
-                            <div>
-                                <h2 className="text-base font-extrabold text-[var(--text-primary)]">
-                                    {isNe ? 'खाता तथा सुरक्षा विवरण' : 'Account & Security Details'}
-                                </h2>
-                                <p className="text-xs text-[var(--text-secondary)]">
-                                    {isNe ? 'तपाईंको दर्ता गरिएको इमेल, सत्र र सुरक्षा स्थिति।' : 'Your primary authenticated citizen profile.'}
-                                </p>
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                        {/* Profile Info & Security Overview */}
+                        <div className="lg:col-span-5 space-y-6">
+                            {/* Profile Info Card */}
+                            <div className="rounded-2xl sm:rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 shadow-sm space-y-4">
+                                <div>
+                                    <h2 className="text-base font-extrabold text-[var(--text-primary)]">
+                                        {isNe ? 'खाता तथा सुरक्षा विवरण' : 'Account & Security Details'}
+                                    </h2>
+                                    <p className="text-xs text-[var(--text-secondary)]">
+                                        {isNe ? 'तपाईंको दर्ता गरिएको इमेल, सत्र र सुरक्षा स्थिति।' : 'Your primary authenticated citizen profile.'}
+                                    </p>
+                                </div>
+
+                                <div className="space-y-3 text-xs divide-y divide-[var(--border-default)]/60">
+                                    <div className="flex items-center justify-between py-2.5">
+                                        <span className="font-semibold text-[var(--text-secondary)]">Email Address</span>
+                                        <span className="font-bold text-[var(--text-primary)] truncate max-w-[180px] sm:max-w-xs">{user.email}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between py-2.5">
+                                        <span className="font-semibold text-[var(--text-secondary)]">
+                                            {isNe ? 'दर्ता मिति' : 'Member Since'}
+                                        </span>
+                                        <span className="font-medium text-[var(--text-primary)]">
+                                            {new Date(user.created_at).toLocaleDateString()}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between py-2.5">
+                                        <span className="font-semibold text-[var(--text-secondary)]">
+                                            {isNe ? 'प्रमाणीकरण विधि' : 'Auth Method'}
+                                        </span>
+                                        <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--nepal-blue)]/10 text-[var(--nepal-blue)] px-2.5 py-0.5 font-bold border border-[var(--nepal-blue)]/20">
+                                            {user.has_password
+                                                ? isNe
+                                                    ? 'पासवर्ड + ओटीपी दुवै चालु'
+                                                    : 'Password + OTP Active'
+                                                : isNe
+                                                ? '६-अङ्कको ओटीपी मात्र'
+                                                : 'Passwordless OTP'}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div className="space-y-3 text-xs divide-y divide-[var(--border-default)]/60">
-                                <div className="flex items-center justify-between py-2.5">
-                                    <span className="font-semibold text-[var(--text-secondary)]">Email Address</span>
-                                    <span className="font-bold text-[var(--text-primary)]">{user.email}</span>
+                            {/* Security Guidance Card */}
+                            <div className="rounded-2xl sm:rounded-3xl border border-[var(--border-default)] bg-gradient-to-br from-[var(--surface-primary)] to-[var(--bg-secondary)]/40 p-6 shadow-sm space-y-3">
+                                <div className="flex items-center gap-2 text-xs font-bold text-[var(--nepal-blue)]">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                                    </svg>
+                                    <span>{isNe ? 'सुरक्षा निर्देशनहरू' : 'Security Best Practices'}</span>
                                 </div>
-                                <div className="flex items-center justify-between py-2.5">
-                                    <span className="font-semibold text-[var(--text-secondary)]">
-                                        {isNe ? 'दर्ता मिति' : 'Member Since'}
-                                    </span>
-                                    <span className="font-medium text-[var(--text-primary)]">
-                                        {new Date(user.created_at).toLocaleDateString()}
-                                    </span>
-                                </div>
-                                <div className="flex items-center justify-between py-2.5">
-                                    <span className="font-semibold text-[var(--text-secondary)]">
-                                        {isNe ? 'प्रमाणीकरण विधि' : 'Auth Method'}
-                                    </span>
-                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--nepal-blue)]/10 text-[var(--nepal-blue)] px-2.5 py-0.5 font-bold border border-[var(--nepal-blue)]/20">
-                                        {user.has_password
-                                            ? isNe
-                                                ? 'पासवर्ड + ओटीपी दुवै चालु'
-                                                : 'Password + OTP Active'
-                                            : isNe
-                                            ? '६-अङ्कको ओटीपी मात्र'
-                                            : 'Passwordless OTP'}
-                                    </span>
-                                </div>
+                                <ul className="text-xs text-[var(--text-secondary)] space-y-2.5 leading-relaxed">
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-[var(--nepal-blue)] font-bold">•</span>
+                                        <span>{isNe ? 'आफ्नो स्थायी पासवर्ड अरूसँग कहिल्यै साझा नगर्नुहोस्।' : 'Never share your permanent password or one-time codes with anyone.'}</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-[var(--nepal-blue)] font-bold">•</span>
+                                        <span>{isNe ? 'पासवर्ड बिर्सिएमा तपाईं जुनसुकै बेला इमेल ओटीपीबाट सिधै लगइन गर्न सक्नुहुन्छ।' : 'If you ever forget your password, you can always sign in instantly using a 6-digit email OTP.'}</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-[var(--nepal-blue)] font-bold">•</span>
+                                        <span>{isNe ? 'सुरक्षित रहन समय-समयमा आफ्नो पासवर्ड अद्यावधिक गर्नुहोस्।' : 'Update your password regularly to keep your saved family licenses safe.'}</span>
+                                    </li>
+                                </ul>
                             </div>
                         </div>
 
                         {/* Set / Change Password Card */}
-                        <div className="rounded-2xl sm:rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 shadow-sm space-y-4">
-                            <div>
-                                <h3 className="text-sm sm:text-base font-extrabold text-[var(--text-primary)]">
-                                    {user.has_password
-                                        ? isNe
-                                            ? 'पासवर्ड परिवर्तन गर्नुहोस्'
-                                            : 'Change Permanent Password'
-                                        : isNe
-                                        ? 'स्थायी पासवर्ड राख्नुहोस् (ऐच्छिक)'
-                                        : 'Set Permanent Password (Optional)'}
-                                </h3>
-                                <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-                                    {isNe
-                                        ? 'पासवर्ड राखेपछि तपाईं पासवर्ड वा ६-अङ्कको ओटीपी दुवैबाट जुनसुकै बेला लगइन गर्न सक्नुहुन्छ।'
-                                        : 'Setting a password lets you sign in using either your permanent password or a 6-digit email OTP.'}
-                                </p>
-                            </div>
-
-                            {passwordFeedback && (
-                                <div
-                                    className={`rounded-xl p-3 text-xs font-semibold flex items-center gap-2 ${
-                                        passwordFeedback.type === 'success'
-                                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25'
-                                            : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/25'
-                                    }`}
-                                >
-                                    <span>{passwordFeedback.message}</span>
+                        <div className="lg:col-span-7">
+                            <div className="rounded-2xl sm:rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 sm:p-7 shadow-sm space-y-5">
+                                <div>
+                                    <h3 className="text-base sm:text-lg font-extrabold text-[var(--text-primary)]">
+                                        {user.has_password
+                                            ? isNe
+                                                ? 'पासवर्ड परिवर्तन गर्नुहोस्'
+                                                : 'Change Permanent Password'
+                                            : isNe
+                                            ? 'स्थायी पासवर्ड राख्नुहोस् (सिफारिस गरिएको)'
+                                            : 'Set Permanent Password (Recommended)'}
+                                    </h3>
+                                    <p className="text-xs text-[var(--text-secondary)] mt-1 leading-relaxed">
+                                        {isNe
+                                            ? 'पासवर्ड राखेपछि तपाईं पासवर्ड वा ६-अङ्कको ओटीपी दुवैबाट जुनसुकै बेला लगइन गर्न सक्नुहुन्छ।'
+                                            : 'Setting a permanent password allows quick one-step sign in alongside your email OTP verification backup.'}
+                                    </p>
                                 </div>
-                            )}
 
-                            <form onSubmit={handleSavePassword} className="space-y-4 text-xs">
-                                {user.has_password && (
-                                    <div>
-                                        <label className="block font-bold text-[var(--text-secondary)] mb-1.5 uppercase tracking-wider text-[10px]">
-                                            {isNe ? 'हालको पासवर्ड' : 'Current Password'}
-                                        </label>
-                                        <input
-                                            type="password"
-                                            required
-                                            value={currentPassword}
-                                            onChange={(e) => setCurrentPassword(e.target.value)}
-                                            className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3.5 py-2.5 text-xs text-[var(--text-primary)] focus:border-[var(--nepal-blue)] focus:outline-none transition"
-                                            placeholder="••••••••"
-                                        />
+                                {passwordFeedback && (
+                                    <div
+                                        className={`rounded-xl p-3 text-xs font-semibold flex items-center gap-2 ${
+                                            passwordFeedback.type === 'success'
+                                                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25'
+                                                : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/25'
+                                        }`}
+                                    >
+                                        <span>{passwordFeedback.message}</span>
                                     </div>
                                 )}
 
-                                <div>
-                                    <label className="block font-bold text-[var(--text-secondary)] mb-1.5 uppercase tracking-wider text-[10px]">
-                                        {isNe ? 'नयाँ पासवर्ड (कम्तिमा ६ अक्षर)' : 'New Password (min 6 characters)'}
-                                    </label>
-                                    <input
-                                        type="password"
-                                        required
-                                        value={newPassword}
-                                        onChange={(e) => setNewPassword(e.target.value)}
-                                        className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3.5 py-2.5 text-xs text-[var(--text-primary)] focus:border-[var(--nepal-blue)] focus:outline-none transition"
-                                        placeholder="••••••••"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block font-bold text-[var(--text-secondary)] mb-1.5 uppercase tracking-wider text-[10px]">
-                                        {isNe ? 'नयाँ पासवर्ड पुनः पुष्टि गर्नुहोस्' : 'Confirm New Password'}
-                                    </label>
-                                    <input
-                                        type="password"
-                                        required
-                                        value={confirmPassword}
-                                        onChange={(e) => setConfirmPassword(e.target.value)}
-                                        className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3.5 py-2.5 text-xs text-[var(--text-primary)] focus:border-[var(--nepal-blue)] focus:outline-none transition"
-                                        placeholder="••••••••"
-                                    />
-                                </div>
-
-                                <button
-                                    type="submit"
-                                    disabled={savingPassword}
-                                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-[var(--nepal-blue)] py-2.5 px-4 text-xs font-bold text-white shadow-sm transition hover:opacity-95 active:scale-95 disabled:opacity-50 cursor-pointer"
-                                >
-                                    {savingPassword ? (
-                                        <span>{isNe ? 'सुरक्षित गर्दै...' : 'Saving...'}</span>
-                                    ) : (
-                                        <span>
-                                            {user.has_password
-                                                ? isNe
-                                                    ? 'पासवर्ड अद्यावधिक गर्नुहोस्'
-                                                    : 'Update Password'
-                                                : isNe
-                                                ? 'पासवर्ड सुरक्षित गर्नुहोस्'
-                                                : 'Save Permanent Password'}
-                                        </span>
+                                <form onSubmit={handleSavePassword} className="space-y-4 text-xs">
+                                    {user.has_password && (
+                                        <div>
+                                            <label className="block font-bold text-[var(--text-secondary)] mb-1.5 uppercase tracking-wider text-[10px]">
+                                                {isNe ? 'हालको पासवर्ड' : 'Current Password'}
+                                            </label>
+                                            <div className="relative">
+                                                <input
+                                                    type="password"
+                                                    required
+                                                    value={currentPassword}
+                                                    onChange={(e) => setCurrentPassword(e.target.value)}
+                                                    onKeyDown={(e) => checkModifiers(e)}
+                                                    onKeyUp={checkModifiers}
+                                                    onClick={checkModifiers}
+                                                    onFocus={checkModifiers}
+                                                    onBlur={() => setIsShiftOn(false)}
+                                                    className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3.5 pr-20 py-2.5 text-xs text-[var(--text-primary)] focus:border-[var(--nepal-blue)] focus:outline-none transition"
+                                                    placeholder="••••••••"
+                                                />
+                                                {(isCapsLockOn || isShiftOn) && (
+                                                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                                                        {isCapsLockOn && (
+                                                            <span className="rounded bg-amber-500/15 border border-amber-500/30 px-1 py-0.5 text-[8px] font-bold text-amber-600">Caps</span>
+                                                        )}
+                                                        {isShiftOn && (
+                                                            <span className="rounded bg-sky-500/15 border border-sky-500/30 px-1 py-0.5 text-[8px] font-bold text-sky-600">Shift</span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
                                     )}
-                                </button>
-                            </form>
+
+                                    <div>
+                                        <label className="block font-bold text-[var(--text-secondary)] mb-1.5 uppercase tracking-wider text-[10px]">
+                                            {isNe ? 'नयाँ पासवर्ड (कम्तिमा ६ अक्षर)' : 'New Password (min 6 characters)'}
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                type="password"
+                                                required
+                                                value={newPassword}
+                                                onChange={(e) => setNewPassword(e.target.value)}
+                                                onKeyDown={(e) => checkModifiers(e)}
+                                                onKeyUp={checkModifiers}
+                                                onClick={checkModifiers}
+                                                onFocus={checkModifiers}
+                                                onBlur={() => setIsShiftOn(false)}
+                                                className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3.5 pr-20 py-2.5 text-xs text-[var(--text-primary)] focus:border-[var(--nepal-blue)] focus:outline-none transition"
+                                                placeholder="••••••••"
+                                            />
+                                            {(isCapsLockOn || isShiftOn) && (
+                                                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                                                    {isCapsLockOn && (
+                                                        <span className="rounded bg-amber-500/15 border border-amber-500/30 px-1 py-0.5 text-[8px] font-bold text-amber-600">Caps</span>
+                                                    )}
+                                                    {isShiftOn && (
+                                                        <span className="rounded bg-sky-500/15 border border-sky-500/30 px-1 py-0.5 text-[8px] font-bold text-sky-600">Shift</span>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block font-bold text-[var(--text-secondary)] mb-1.5 uppercase tracking-wider text-[10px]">
+                                            {isNe ? 'नयाँ पासवर्ड पुनः पुष्टि गर्नुहोस्' : 'Confirm New Password'}
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                type="password"
+                                                required
+                                                value={confirmPassword}
+                                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                                onKeyDown={(e) => checkModifiers(e)}
+                                                onKeyUp={checkModifiers}
+                                                onClick={checkModifiers}
+                                                onFocus={checkModifiers}
+                                                onBlur={() => setIsShiftOn(false)}
+                                                className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3.5 pr-20 py-2.5 text-xs text-[var(--text-primary)] focus:border-[var(--nepal-blue)] focus:outline-none transition"
+                                                placeholder="••••••••"
+                                            />
+                                            {(isCapsLockOn || isShiftOn) && (
+                                                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                                                    {isCapsLockOn && (
+                                                        <span className="rounded bg-amber-500/15 border border-amber-500/30 px-1 py-0.5 text-[8px] font-bold text-amber-600">Caps</span>
+                                                    )}
+                                                    {isShiftOn && (
+                                                        <span className="rounded bg-sky-500/15 border border-sky-500/30 px-1 py-0.5 text-[8px] font-bold text-sky-600">Shift</span>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        type="submit"
+                                        disabled={savingPassword}
+                                        className="w-full flex items-center justify-center gap-2 rounded-xl bg-[var(--nepal-blue)] py-2.5 px-4 text-xs font-bold text-white shadow-sm transition hover:opacity-95 active:scale-95 disabled:opacity-50 cursor-pointer"
+                                    >
+                                        {savingPassword ? (
+                                            <span>{isNe ? 'सुरक्षित गर्दै...' : 'Saving...'}</span>
+                                        ) : (
+                                            <span>
+                                                {user.has_password
+                                                    ? isNe
+                                                        ? 'पासवर्ड अद्यावधिक गर्नुहोस्'
+                                                        : 'Update Password'
+                                                    : isNe
+                                                    ? 'पासवर्ड सुरक्षित गर्नुहोस्'
+                                                    : 'Save Permanent Password'}
+                                            </span>
+                                        )}
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -1618,7 +2134,7 @@ export default function UserDashboardPage() {
                         if (e.target === e.currentTarget) setIsAddModalOpen(false)
                     }}
                 >
-                    <div className="w-full max-w-md rounded-2xl sm:rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 shadow-2xl space-y-4">
+                    <div className="w-full max-w-lg rounded-2xl sm:rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 sm:p-7 shadow-2xl space-y-4">
                         <div className="flex items-center justify-between pb-3 border-b border-[var(--border-default)]">
                             <div>
                                 <h3 className="text-base font-extrabold text-[var(--text-primary)]">
@@ -1748,7 +2264,7 @@ export default function UserDashboardPage() {
                         if (e.target === e.currentTarget) setIsNewTicketModalOpen(false)
                     }}
                 >
-                    <div className="w-full max-w-lg rounded-2xl sm:rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 shadow-2xl space-y-4">
+                    <div className="w-full max-w-2xl rounded-2xl sm:rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 sm:p-7 shadow-2xl space-y-4">
                         <div className="flex items-center justify-between pb-3 border-b border-[var(--border-default)]">
                             <div>
                                 <h3 className="text-base font-extrabold text-[var(--text-primary)]">
@@ -1893,7 +2409,7 @@ export default function UserDashboardPage() {
                     }}
                 >
                     <div
-                        className="w-full max-w-md rounded-2xl sm:rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 shadow-2xl space-y-4 animate-slide-up"
+                        className="w-full max-w-lg rounded-2xl sm:rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 sm:p-7 shadow-2xl space-y-4 animate-slide-up"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Header: Hazard Icon + Title */}
@@ -2011,7 +2527,7 @@ export default function UserDashboardPage() {
                     }}
                 >
                     <div
-                        className="w-full max-w-md rounded-2xl sm:rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 shadow-2xl space-y-4 animate-slide-up"
+                        className="w-full max-w-lg rounded-2xl sm:rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 sm:p-7 shadow-2xl space-y-4 animate-slide-up"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Header: Alert Off Icon + Title */}
@@ -2096,6 +2612,212 @@ export default function UserDashboardPage() {
                                 )}
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* POPUP PROMPT TO SET PERMANENT PASSWORD FOR OTP CITIZEN ACCOUNTS */}
+            {isSetPasswordPromptOpen && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-sm p-4 animate-fade-in"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="set-password-dialog-title"
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget && !promptSaving) {
+                            handleDismissPrompt()
+                        }
+                    }}
+                >
+                    <div
+                        className="w-full max-w-lg rounded-2xl sm:rounded-3xl border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 sm:p-7 shadow-2xl space-y-4 animate-slide-up"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Header: Shield / Key Icon + Title */}
+                        <div className="flex items-start gap-3.5">
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                                    <circle cx="12" cy="11" r="2" />
+                                    <path d="M12 13v3" />
+                                </svg>
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-extrabold text-amber-700 dark:text-amber-400 mb-1 border border-amber-500/20">
+                                    <span>⚠️ {isNe ? 'सुरक्षा सिफारिस' : 'Security Recommendation'}</span>
+                                </div>
+                                <h3 id="set-password-dialog-title" className="text-base font-extrabold text-[var(--text-primary)]">
+                                    {isNe ? 'आफ्नो खाता सुरक्षित गर्नुहोस्' : 'Secure Your Account'}
+                                </h3>
+                                <p className="text-xs text-[var(--text-secondary)] mt-1 leading-relaxed">
+                                    {isNe
+                                        ? 'तपाईं हाल अस्थायी ६-अङ्कको ओटीपी कोडबाट लगइन हुनुभएको छ। आफ्नो पारिवारिक लाइसेन्स भल्ट सुरक्षित राख्न र सिधै लगइन गर्न स्थायी पासवर्ड सेट गर्नुहोस्।'
+                                        : 'You are currently signed in using a temporary 6-digit OTP code. Set a permanent password to secure your account and enable instant password sign-in.'}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Error / Success Feedback */}
+                        {promptFeedback && (
+                            <div
+                                className={`rounded-xl p-3 text-xs font-semibold flex items-center gap-2 ${
+                                    promptFeedback.type === 'success'
+                                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25'
+                                        : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/25'
+                                }`}
+                            >
+                                <span>{promptFeedback.message}</span>
+                            </div>
+                        )}
+
+                        <form onSubmit={handleSavePromptPassword} className="space-y-3.5 text-xs">
+                            {/* New Password */}
+                            <div>
+                                <label className="block font-bold text-[var(--text-secondary)] mb-1 uppercase tracking-wider text-[10px]">
+                                    {isNe ? 'नयाँ पासवर्ड (कम्तिमा ६ अक्षर)' : 'New Password (min 6 characters)'}
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type={showPromptPassword ? 'text' : 'password'}
+                                        required
+                                        value={promptNewPassword}
+                                        onChange={(e) => {
+                                            setPromptNewPassword(e.target.value)
+                                            if (promptFeedback) setPromptFeedback(null)
+                                        }}
+                                        onKeyDown={(e) => checkModifiers(e)}
+                                        onKeyUp={checkModifiers}
+                                        onClick={checkModifiers}
+                                        onFocus={checkModifiers}
+                                        onBlur={() => setIsShiftOn(false)}
+                                        className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3.5 pr-20 py-2.5 text-xs text-[var(--text-primary)] focus:border-[var(--nepal-blue)] focus:outline-none transition"
+                                        placeholder="••••••••"
+                                    />
+                                    <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                                        {isCapsLockOn && (
+                                            <div
+                                                className="inline-flex items-center gap-0.5 rounded bg-amber-500/15 border border-amber-500/30 px-1 py-0.5 text-amber-600 select-none text-[8px] font-bold"
+                                                title="Caps Lock is active"
+                                            >
+                                                <span>Caps</span>
+                                            </div>
+                                        )}
+                                        {isShiftOn && (
+                                            <div
+                                                className="inline-flex items-center gap-0.5 rounded bg-sky-500/15 border border-sky-500/30 px-1 py-0.5 text-sky-600 select-none text-[8px] font-bold"
+                                                title="Shift is active"
+                                            >
+                                                <span>Shift</span>
+                                            </div>
+                                        )}
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPromptPassword(!showPromptPassword)}
+                                            className="p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer"
+                                            aria-label="Toggle password visibility"
+                                        >
+                                            {showPromptPassword ? (
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+                                                    <line x1="1" y1="1" x2="23" y2="23" />
+                                                </svg>
+                                            ) : (
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                                                    <circle cx="12" cy="12" r="3" />
+                                                </svg>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Confirm Password */}
+                            <div>
+                                <label className="block font-bold text-[var(--text-secondary)] mb-1 uppercase tracking-wider text-[10px]">
+                                    {isNe ? 'नयाँ पासवर्ड पुनः पुष्टि गर्नुहोस्' : 'Confirm New Password'}
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type={showPromptConfirmPassword ? 'text' : 'password'}
+                                        required
+                                        value={promptConfirmPassword}
+                                        onChange={(e) => {
+                                            setPromptConfirmPassword(e.target.value)
+                                            if (promptFeedback) setPromptFeedback(null)
+                                        }}
+                                        onKeyDown={(e) => checkModifiers(e)}
+                                        onKeyUp={checkModifiers}
+                                        onClick={checkModifiers}
+                                        onFocus={checkModifiers}
+                                        onBlur={() => setIsShiftOn(false)}
+                                        className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] px-3.5 pr-20 py-2.5 text-xs text-[var(--text-primary)] focus:border-[var(--nepal-blue)] focus:outline-none transition"
+                                        placeholder="••••••••"
+                                    />
+                                    <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                                        {isCapsLockOn && (
+                                            <div
+                                                className="inline-flex items-center gap-0.5 rounded bg-amber-500/15 border border-amber-500/30 px-1 py-0.5 text-amber-600 select-none text-[8px] font-bold"
+                                                title="Caps Lock is active"
+                                            >
+                                                <span>Caps</span>
+                                            </div>
+                                        )}
+                                        {isShiftOn && (
+                                            <div
+                                                className="inline-flex items-center gap-0.5 rounded bg-sky-500/15 border border-sky-500/30 px-1 py-0.5 text-sky-600 select-none text-[8px] font-bold"
+                                                title="Shift is active"
+                                            >
+                                                <span>Shift</span>
+                                            </div>
+                                        )}
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPromptConfirmPassword(!showPromptConfirmPassword)}
+                                            className="p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer"
+                                            aria-label="Toggle confirm password visibility"
+                                        >
+                                            {showPromptConfirmPassword ? (
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+                                                    <line x1="1" y1="1" x2="23" y2="23" />
+                                                </svg>
+                                            ) : (
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                                                    <circle cx="12" cy="12" r="3" />
+                                                </svg>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Modal Action Buttons */}
+                            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[var(--border-default)]">
+                                <button
+                                    type="button"
+                                    onClick={handleDismissPrompt}
+                                    className="rounded-xl border border-[var(--border-default)] px-3.5 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer"
+                                >
+                                    {isNe ? 'पछि गर्नुहोला' : 'Remind Me Later'}
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={promptSaving || !promptNewPassword || !promptConfirmPassword}
+                                    className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--nepal-blue)] hover:opacity-95 px-4 py-2 text-xs font-bold text-white shadow-sm transition active:scale-95 disabled:opacity-50 cursor-pointer"
+                                >
+                                    {promptSaving ? (
+                                        <>
+                                            <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                                            <span>{isNe ? 'सुरक्षित गर्दै...' : 'Saving...'}</span>
+                                        </>
+                                    ) : (
+                                        <span>{isNe ? 'पासवर्ड सेट गर्नुहोस्' : 'Set Password'}</span>
+                                    )}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

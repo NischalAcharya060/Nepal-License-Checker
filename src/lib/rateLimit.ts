@@ -149,3 +149,6 @@ export class RateLimiter {
         }
     }
 }
+
+// User Dashboard Rate Limiter: max 5 requests per 5 minutes (300,000ms), with a 1-hour (3,600,000ms) lockout penalty
+export const dashboardUserRateLimiter = new RateLimiter(5, 300000, 3600000)

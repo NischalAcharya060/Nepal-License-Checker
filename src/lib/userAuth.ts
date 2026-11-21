@@ -18,6 +18,9 @@ export interface UserProfile {
     created_at: number
     updated_at: number
     last_login_at: number | null
+    is_banned?: boolean
+    ban_reason?: string | null
+    banned_at?: number | null
 }
 
 export interface UserSavedLicense {
@@ -61,7 +64,10 @@ export async function ensureUserTables(): Promise<void> {
                 password_salt TEXT,
                 created_at INTEGER NOT NULL,
                 updated_at INTEGER NOT NULL,
-                last_login_at INTEGER
+                last_login_at INTEGER,
+                is_banned INTEGER NOT NULL DEFAULT 0,
+                ban_reason TEXT,
+                banned_at INTEGER
             )`,
             `CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`,
             `CREATE TABLE IF NOT EXISTS user_otps (
@@ -89,6 +95,11 @@ export async function ensureUserTables(): Promise<void> {
         ],
         'write'
     )
+
+    // Execute non-blocking column migrations for existing databases
+    await db.execute(`ALTER TABLE users ADD COLUMN is_banned INTEGER NOT NULL DEFAULT 0`).catch(() => {})
+    await db.execute(`ALTER TABLE users ADD COLUMN ban_reason TEXT`).catch(() => {})
+    await db.execute(`ALTER TABLE users ADD COLUMN banned_at INTEGER`).catch(() => {})
 
     tablesChecked = true
 }
@@ -174,6 +185,17 @@ export async function requestOtp(email: string): Promise<{ success: boolean; err
 
     if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
         return { success: false, error: 'Please provide a valid email address.' }
+    }
+
+    // Check if account has been suspended by an administrator
+    const existingUser = await getUserByEmail(normalizedEmail)
+    if (existingUser && existingUser.is_banned) {
+        return {
+            success: false,
+            error: existingUser.ban_reason
+                ? `Your account has been suspended: ${existingUser.ban_reason}. Please contact support.`
+                : 'Your account has been suspended by an administrator. Please contact support.',
+        }
     }
 
     const db = getTurso()
@@ -298,8 +320,8 @@ export async function verifyOtp(
     if (!user) {
         const userId = `usr_${crypto.randomUUID()}`
         await db.execute({
-            sql: `INSERT INTO users (id, email, created_at, updated_at, last_login_at) 
-                  VALUES (?, ?, ?, ?, ?)`,
+            sql: `INSERT INTO users (id, email, created_at, updated_at, last_login_at, is_banned) 
+                  VALUES (?, ?, ?, ?, ?, 0)`,
             args: [userId, normalizedEmail, now, now, now],
         })
         user = {
@@ -310,8 +332,20 @@ export async function verifyOtp(
             created_at: now,
             updated_at: now,
             last_login_at: now,
+            is_banned: false,
+            ban_reason: null,
+            banned_at: null,
         }
     } else {
+        if (user.is_banned) {
+            return {
+                success: false,
+                error: user.ban_reason
+                    ? `Your account has been suspended: ${user.ban_reason}. Please contact support.`
+                    : 'Your account has been suspended by an administrator. Please contact support.',
+            }
+        }
+
         await db.execute({
             sql: `UPDATE users SET last_login_at = ?, updated_at = ? WHERE id = ?`,
             args: [now, now, user.id],
@@ -349,7 +383,8 @@ export async function loginWithPassword(
 
     const db = getTurso()
     const res = await db.execute({
-        sql: `SELECT id, email, name, password_hash, password_salt, created_at, updated_at, last_login_at 
+        sql: `SELECT id, email, name, password_hash, password_salt, created_at, updated_at, last_login_at, 
+                     is_banned, ban_reason, banned_at 
               FROM users WHERE email = ? LIMIT 1`,
         args: [normalizedEmail],
     })
@@ -359,6 +394,18 @@ export async function loginWithPassword(
     }
 
     const row = res.rows[0]
+
+    // Check ban status
+    if (Boolean(row.is_banned)) {
+        const reason = (row.ban_reason as string) || null
+        return {
+            success: false,
+            error: reason
+                ? `Your account has been suspended: ${reason}. Please contact support.`
+                : 'Your account has been suspended by an administrator. Please contact support.',
+        }
+    }
+
     const passHash = row.password_hash as string | null
     const passSalt = row.password_salt as string | null
 
@@ -388,6 +435,9 @@ export async function loginWithPassword(
         created_at: Number(row.created_at),
         updated_at: Number(row.updated_at),
         last_login_at: now,
+        is_banned: Boolean(row.is_banned),
+        ban_reason: (row.ban_reason as string) || null,
+        banned_at: row.banned_at ? Number(row.banned_at) : null,
     }
 
     const token = createSessionToken({
@@ -454,7 +504,8 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
     await ensureUserTables()
     const db = getTurso()
     const res = await db.execute({
-        sql: `SELECT id, email, name, password_hash, created_at, updated_at, last_login_at 
+        sql: `SELECT id, email, name, password_hash, created_at, updated_at, last_login_at,
+                     is_banned, ban_reason, banned_at 
               FROM users WHERE email = ? LIMIT 1`,
         args: [email.toLowerCase().trim()],
     })
@@ -470,6 +521,9 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
         created_at: Number(row.created_at),
         updated_at: Number(row.updated_at),
         last_login_at: row.last_login_at ? Number(row.last_login_at) : null,
+        is_banned: Boolean(row.is_banned),
+        ban_reason: (row.ban_reason as string) || null,
+        banned_at: row.banned_at ? Number(row.banned_at) : null,
     }
 }
 
@@ -477,7 +531,8 @@ export async function getUserById(userId: string): Promise<UserProfile | null> {
     await ensureUserTables()
     const db = getTurso()
     const res = await db.execute({
-        sql: `SELECT id, email, name, password_hash, created_at, updated_at, last_login_at 
+        sql: `SELECT id, email, name, password_hash, created_at, updated_at, last_login_at,
+                     is_banned, ban_reason, banned_at 
               FROM users WHERE id = ? LIMIT 1`,
         args: [userId],
     })
@@ -493,6 +548,9 @@ export async function getUserById(userId: string): Promise<UserProfile | null> {
         created_at: Number(row.created_at),
         updated_at: Number(row.updated_at),
         last_login_at: row.last_login_at ? Number(row.last_login_at) : null,
+        is_banned: Boolean(row.is_banned),
+        ban_reason: (row.ban_reason as string) || null,
+        banned_at: row.banned_at ? Number(row.banned_at) : null,
     }
 }
 
@@ -503,7 +561,10 @@ export async function getCurrentUser(request: NextRequest): Promise<UserProfile 
     const payload = verifySessionToken(cookie.value)
     if (!payload?.id) return null
 
-    return getUserById(payload.id)
+    const user = await getUserById(payload.id)
+    if (!user || user.is_banned) return null
+
+    return user
 }
 
 /* -------------------------------------------------------------------------- */
@@ -542,6 +603,9 @@ export interface AdminUserItem {
     last_login_at: number | null
     saved_licenses_count: number
     feedbacks_count: number
+    is_banned: boolean
+    ban_reason: string | null
+    banned_at: number | null
     saved_licenses?: AdminUserSavedLicenseItem[]
     feedbacks?: AdminUserFeedbackItem[]
 }
@@ -552,12 +616,14 @@ export interface AdminUserStatsData {
     totalSavedLicenses: number
     passwordUsersCount: number
     otpOnlyUsersCount: number
+    bannedUsersCount: number
 }
 
 export async function getAdminUsersList(params: {
     page?: number
     limit?: number
     search?: string
+    status?: string
 }): Promise<{ users: AdminUserItem[]; total: number; page: number; limit: number; totalPages: number }> {
     await ensureUserTables()
     const db = getTurso()
@@ -566,25 +632,38 @@ export async function getAdminUsersList(params: {
     const limit = Math.min(100, Math.max(1, params.limit || 10))
     const offset = (page - 1) * limit
     const search = (params.search || '').trim().toLowerCase()
+    const status = (params.status || 'all').trim().toLowerCase()
 
-    let countSql = `SELECT COUNT(*) as count FROM users`
-    let countArgs: (string | number)[] = []
+    let countSql = `SELECT COUNT(*) as count FROM users u`
+    const countArgs: (string | number)[] = []
 
     let selectSql = `
         SELECT u.id, u.email, u.name, u.password_hash, u.created_at, u.updated_at, u.last_login_at,
+               COALESCE(u.is_banned, 0) as is_banned, u.ban_reason, u.banned_at,
                (SELECT COUNT(*) FROM user_saved_licenses WHERE user_id = u.id) as saved_licenses_count,
                (SELECT COUNT(*) FROM user_feedbacks WHERE LOWER(email) = LOWER(u.email)) as feedbacks_count
         FROM users u
     `
-    let selectArgs: (string | number)[] = []
+    const selectArgs: (string | number)[] = []
 
+    const whereClauses: string[] = []
     if (search) {
         const pattern = `%${search}%`
-        countSql += ` WHERE (LOWER(email) LIKE ? OR LOWER(COALESCE(name, '')) LIKE ?)`
-        countArgs = [pattern, pattern]
+        whereClauses.push(`(LOWER(u.email) LIKE ? OR LOWER(COALESCE(u.name, '')) LIKE ?)`)
+        countArgs.push(pattern, pattern)
+        selectArgs.push(pattern, pattern)
+    }
 
-        selectSql += ` WHERE (LOWER(u.email) LIKE ? OR LOWER(COALESCE(u.name, '')) LIKE ?)`
-        selectArgs = [pattern, pattern]
+    if (status === 'banned') {
+        whereClauses.push(`COALESCE(u.is_banned, 0) = 1`)
+    } else if (status === 'active') {
+        whereClauses.push(`COALESCE(u.is_banned, 0) = 0`)
+    }
+
+    if (whereClauses.length > 0) {
+        const whereStr = ` WHERE ` + whereClauses.join(' AND ')
+        countSql += whereStr
+        selectSql += whereStr
     }
 
     selectSql += ` ORDER BY u.created_at DESC LIMIT ? OFFSET ?`
@@ -606,6 +685,9 @@ export async function getAdminUsersList(params: {
         created_at: Number(row.created_at),
         updated_at: Number(row.updated_at),
         last_login_at: row.last_login_at ? Number(row.last_login_at) : null,
+        is_banned: Boolean(row.is_banned),
+        ban_reason: (row.ban_reason as string) || null,
+        banned_at: row.banned_at ? Number(row.banned_at) : null,
         saved_licenses_count: Number(row.saved_licenses_count || 0),
         feedbacks_count: Number(row.feedbacks_count || 0),
     }))
@@ -618,7 +700,7 @@ export async function getAdminUserStats(): Promise<AdminUserStatsData> {
     const db = getTurso()
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000
 
-    const [userCountRes, activeRes, licenseCountRes, passwordCountRes] = await Promise.all([
+    const [userCountRes, activeRes, licenseCountRes, passwordCountRes, bannedCountRes] = await Promise.all([
         db.execute(`SELECT COUNT(*) as count FROM users`),
         db.execute({
             sql: `SELECT COUNT(*) as count FROM users WHERE last_login_at >= ?`,
@@ -626,6 +708,7 @@ export async function getAdminUserStats(): Promise<AdminUserStatsData> {
         }),
         db.execute(`SELECT COUNT(*) as count FROM user_saved_licenses`),
         db.execute(`SELECT COUNT(*) as count FROM users WHERE password_hash IS NOT NULL AND password_hash != ''`),
+        db.execute(`SELECT COUNT(*) as count FROM users WHERE COALESCE(is_banned, 0) = 1`),
     ])
 
     const totalUsers = Number(userCountRes.rows[0]?.count || 0)
@@ -633,6 +716,7 @@ export async function getAdminUserStats(): Promise<AdminUserStatsData> {
     const totalSavedLicenses = Number(licenseCountRes.rows[0]?.count || 0)
     const passwordUsersCount = Number(passwordCountRes.rows[0]?.count || 0)
     const otpOnlyUsersCount = Math.max(0, totalUsers - passwordUsersCount)
+    const bannedUsersCount = Number(bannedCountRes.rows[0]?.count || 0)
 
     return {
         totalUsers,
@@ -640,6 +724,7 @@ export async function getAdminUserStats(): Promise<AdminUserStatsData> {
         totalSavedLicenses,
         passwordUsersCount,
         otpOnlyUsersCount,
+        bannedUsersCount,
     }
 }
 
@@ -648,7 +733,9 @@ export async function adminGetUserDetail(userId: string): Promise<AdminUserItem 
     const db = getTurso()
 
     const userRes = await db.execute({
-        sql: `SELECT id, email, name, password_hash, created_at, updated_at, last_login_at FROM users WHERE id = ? LIMIT 1`,
+        sql: `SELECT id, email, name, password_hash, created_at, updated_at, last_login_at,
+                     COALESCE(is_banned, 0) as is_banned, ban_reason, banned_at 
+              FROM users WHERE id = ? LIMIT 1`,
         args: [userId],
     })
 
@@ -720,11 +807,53 @@ export async function adminGetUserDetail(userId: string): Promise<AdminUserItem 
         created_at: Number(uRow.created_at),
         updated_at: Number(uRow.updated_at),
         last_login_at: uRow.last_login_at ? Number(uRow.last_login_at) : null,
+        is_banned: Boolean(uRow.is_banned),
+        ban_reason: (uRow.ban_reason as string) || null,
+        banned_at: uRow.banned_at ? Number(uRow.banned_at) : null,
         saved_licenses_count: savedLicenses.length,
         feedbacks_count: feedbacks.length,
         saved_licenses: savedLicenses,
         feedbacks,
     }
+}
+
+export async function adminBanUser(
+    userId: string,
+    isBanned: boolean,
+    reason?: string | null
+): Promise<{ success: boolean; error?: string }> {
+    await ensureUserTables()
+    const db = getTurso()
+    const now = Date.now()
+
+    const user = await getUserById(userId)
+    if (!user) {
+        return { success: false, error: 'User not found.' }
+    }
+
+    if (isBanned) {
+        const banReason = reason?.trim() || 'Your account has been suspended by an administrator.'
+        await db.batch(
+            [
+                {
+                    sql: `UPDATE users SET is_banned = 1, ban_reason = ?, banned_at = ?, updated_at = ? WHERE id = ?`,
+                    args: [banReason, now, now, userId],
+                },
+                {
+                    sql: `DELETE FROM user_otps WHERE email = ?`,
+                    args: [user.email],
+                },
+            ],
+            'write'
+        )
+    } else {
+        await db.execute({
+            sql: `UPDATE users SET is_banned = 0, ban_reason = NULL, banned_at = NULL, updated_at = ? WHERE id = ?`,
+            args: [now, userId],
+        })
+    }
+
+    return { success: true }
 }
 
 export async function adminDeleteUser(userId: string): Promise<boolean> {

@@ -1,7 +1,7 @@
 // src/app/login/page.tsx
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -24,6 +24,11 @@ export default function LoginPage() {
     const [otpCode, setOtpCode] = useState(['', '', '', '', '', ''])
     const [password, setPassword] = useState('')
     const [showPassword, setShowPassword] = useState(false)
+
+    // Caps Lock, Shift & UX States (identical to Admin Login Portal)
+    const [isCapsLockOn, setIsCapsLockOn] = useState(false)
+    const [isShiftOn, setIsShiftOn] = useState(false)
+    const passwordInputRef = useRef<HTMLInputElement>(null)
 
     // UI feedback
     const [submitting, setSubmitting] = useState(false)
@@ -59,6 +64,27 @@ export default function LoginPage() {
         }
     }, [])
 
+    // Reset modifier states if window loses focus or key is released globally
+    useEffect(() => {
+        const handleGlobalKeyUp = (e: KeyboardEvent) => {
+            if (e.key === 'Shift') {
+                setIsShiftOn(false)
+            }
+            if (e.key === 'CapsLock' && typeof e.getModifierState === 'function') {
+                setIsCapsLockOn(e.getModifierState('CapsLock'))
+            }
+        }
+        const handleGlobalBlur = () => {
+            setIsShiftOn(false)
+        }
+        window.addEventListener('keyup', handleGlobalKeyUp)
+        window.addEventListener('blur', handleGlobalBlur)
+        return () => {
+            window.removeEventListener('keyup', handleGlobalKeyUp)
+            window.removeEventListener('blur', handleGlobalBlur)
+        }
+    }, [])
+
     // Check if user is already logged in
     useEffect(() => {
         let isMounted = true
@@ -69,6 +95,18 @@ export default function LoginPage() {
                 if (data?.authenticated) {
                     router.replace('/dashboard')
                 } else {
+                    if (data?.banned) {
+                        setErrorMsg(
+                            data.error ||
+                            (data.ban_reason
+                                ? (language === 'ne'
+                                    ? `तपाईंको खाता निलम्बित गरिएको छ: ${data.ban_reason}। कृपया सहयोगको लागि सम्पर्क गर्नुहोस्।`
+                                    : `Your account has been suspended: ${data.ban_reason}. Please contact support.`)
+                                : (language === 'ne'
+                                    ? 'तपाईंको खाता व्यवस्थापकद्वारा निलम्बित गरिएको छ। कृपया सहयोगको लागि सम्पर्क गर्नुहोस्।'
+                                    : 'Your account has been suspended by an administrator. Please contact support.'))
+                        )
+                    }
                     setCheckingAuth(false)
                 }
             })
@@ -79,7 +117,38 @@ export default function LoginPage() {
         return () => {
             isMounted = false
         }
-    }, [router])
+    }, [router, language])
+
+    // In-field modifier keys detector (Caps Lock & Shift)
+    const checkModifiers = useCallback((e: React.KeyboardEvent | React.MouseEvent | React.FocusEvent) => {
+        if ('getModifierState' in e && typeof e.getModifierState === 'function') {
+            setIsCapsLockOn(e.getModifierState('CapsLock'))
+            if (e.type === 'keyup' && 'key' in e && (e as React.KeyboardEvent).key === 'Shift') {
+                setIsShiftOn(false)
+            } else {
+                setIsShiftOn(Boolean(e.getModifierState('Shift') || ('shiftKey' in e && (e as React.KeyboardEvent | React.MouseEvent).shiftKey)))
+            }
+        }
+    }, [])
+
+    const getInputPaddingRight = () => {
+        const hasClear = password.length > 0
+        const badgeCount = (isCapsLockOn ? 1 : 0) + (isShiftOn ? 1 : 0)
+
+        if (badgeCount === 2) {
+            return hasClear ? 'pr-48' : 'pr-36'
+        }
+        if (badgeCount === 1) {
+            return hasClear ? 'pr-36' : 'pr-24'
+        }
+        return hasClear ? 'pr-20' : 'pr-12'
+    }
+
+    const handleClearPassword = () => {
+        setPassword('')
+        if (errorMsg) setErrorMsg(null)
+        passwordInputRef.current?.focus()
+    }
 
     // Cooldown timer effect
     useEffect(() => {
@@ -505,13 +574,48 @@ export default function LoginPage() {
 
                             {/* Feedback Messages */}
                             {errorMsg && (
-                                <div className="mb-4 sm:mb-5 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs font-semibold text-rose-600 dark:text-rose-400 flex items-start gap-2">
-                                    <svg className="h-4 w-4 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <circle cx="12" cy="12" r="10" />
-                                        <line x1="12" y1="8" x2="12" y2="12" />
-                                        <line x1="12" y1="16" x2="12.01" y2="16" />
-                                    </svg>
-                                    <span>{errorMsg}</span>
+                                <div
+                                    className={`mb-4 sm:mb-5 rounded-2xl border p-4 text-xs font-semibold flex items-start gap-3 shadow-xs ${
+                                        errorMsg.toLowerCase().includes('suspended') || errorMsg.toLowerCase().includes('banned') || errorMsg.includes('निलम्बित')
+                                            ? 'border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-400'
+                                            : 'border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                                    }`}
+                                >
+                                    {errorMsg.toLowerCase().includes('suspended') || errorMsg.toLowerCase().includes('banned') || errorMsg.includes('निलम्बित') ? (
+                                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-rose-500/20 text-rose-600 dark:text-rose-400">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                <circle cx="12" cy="12" r="10" />
+                                                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                                            </svg>
+                                        </div>
+                                    ) : (
+                                        <svg className="h-4 w-4 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <circle cx="12" cy="12" r="10" />
+                                            <line x1="12" y1="8" x2="12" y2="12" />
+                                            <line x1="12" y1="16" x2="12.01" y2="16" />
+                                        </svg>
+                                    )}
+                                    <div className="min-w-0 flex-1">
+                                        {(errorMsg.toLowerCase().includes('suspended') || errorMsg.toLowerCase().includes('banned') || errorMsg.includes('निलम्बित')) && (
+                                            <div className="font-extrabold uppercase tracking-wider text-[11px] mb-0.5 text-rose-700 dark:text-rose-300">
+                                                {isNe ? 'खाता निलम्बित (Account Suspended)' : 'Account Suspended'}
+                                            </div>
+                                        )}
+                                        <span className="leading-relaxed block">{errorMsg}</span>
+                                        {(errorMsg.toLowerCase().includes('suspended') || errorMsg.toLowerCase().includes('banned') || errorMsg.includes('निलम्बित')) && (
+                                            <div className="mt-2 pt-2 border-t border-rose-500/20 flex items-center gap-2">
+                                                <Link
+                                                    href="/feedback"
+                                                    className="inline-flex items-center gap-1 rounded-lg bg-rose-600 px-2.5 py-1 text-[11px] font-bold text-white shadow-xs hover:bg-rose-700 transition"
+                                                >
+                                                    <span>{isNe ? 'सम्पर्क सहयोग (Contact Support)' : 'Contact Support'}</span>
+                                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                        <polyline points="9 18 15 12 9 6" />
+                                                    </svg>
+                                                </Link>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             )}
 
@@ -551,7 +655,7 @@ export default function LoginPage() {
 
                                     <div>
                                         <div className="flex items-center justify-between mb-1.5">
-                                            <label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                                            <label htmlFor="user-password-input" className="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
                                                 {isNe ? 'पासवर्ड' : 'Password'}
                                             </label>
                                         </div>
@@ -563,33 +667,100 @@ export default function LoginPage() {
                                                 </svg>
                                             </div>
                                             <input
+                                                ref={passwordInputRef}
+                                                id="user-password-input"
                                                 type={showPassword ? 'text' : 'password'}
                                                 required
                                                 value={password}
-                                                onChange={(e) => setPassword(e.target.value)}
+                                                onChange={(e) => {
+                                                    setPassword(e.target.value)
+                                                    if (errorMsg) setErrorMsg(null)
+                                                }}
+                                                onKeyDown={(e) => {
+                                                    checkModifiers(e)
+                                                    if (e.key === 'Escape') {
+                                                        handleClearPassword()
+                                                    }
+                                                }}
+                                                onKeyUp={checkModifiers}
+                                                onClick={checkModifiers}
+                                                onFocus={checkModifiers}
+                                                onBlur={() => {
+                                                    setIsShiftOn(false)
+                                                }}
                                                 placeholder="••••••••"
-                                                className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] pl-10 pr-11 py-3 sm:py-2.5 text-sm font-medium text-[var(--text-primary)] placeholder-[var(--text-secondary)]/50 focus:border-[var(--nepal-blue)] focus:outline-none focus:ring-2 focus:ring-[var(--nepal-blue)]/20 transition"
+                                                className={`w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] pl-10 ${getInputPaddingRight()} py-3 sm:py-2.5 text-sm font-medium text-[var(--text-primary)] placeholder-[var(--text-secondary)]/50 focus:border-[var(--nepal-blue)] focus:outline-none focus:ring-2 focus:ring-[var(--nepal-blue)]/20 transition`}
                                             />
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowPassword(!showPassword)}
-                                                className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer"
-                                                aria-label={showPassword ? 'Hide password' : 'Show password'}
-                                            >
-                                                {showPassword ? (
-                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                        <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
-                                                        <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
-                                                        <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
-                                                        <line x1="2" x2="22" y1="2" y2="22" />
-                                                    </svg>
-                                                ) : (
-                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                                                        <circle cx="12" cy="12" r="3" />
-                                                    </svg>
+                                            <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                                                {/* In-field Caps Lock Badge */}
+                                                {isCapsLockOn && (
+                                                    <div
+                                                        className="inline-flex items-center gap-1 rounded-md bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 text-amber-600 dark:text-amber-400 select-none"
+                                                        title="Caps Lock is active"
+                                                        aria-label="Caps Lock is active"
+                                                        role="status"
+                                                    >
+                                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                            <path d="M12 4L4 12h5v6h6v-6h5L12 4z" />
+                                                            <path d="M4 20h16" />
+                                                        </svg>
+                                                        <span className="font-mono text-[9px] font-extrabold uppercase tracking-wider">Caps</span>
+                                                    </div>
                                                 )}
-                                            </button>
+
+                                                {/* In-field Shift Key Badge */}
+                                                {isShiftOn && (
+                                                    <div
+                                                        className="inline-flex items-center gap-1 rounded-md bg-sky-500/15 border border-sky-500/30 px-1.5 py-0.5 text-sky-600 dark:text-sky-400 select-none"
+                                                        title="Shift key is pressed"
+                                                        aria-label="Shift key is pressed"
+                                                        role="status"
+                                                    >
+                                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                            <path d="M12 4L4 12h5v8h6v-8h5L12 4z" />
+                                                        </svg>
+                                                        <span className="font-mono text-[9px] font-extrabold uppercase tracking-wider">Shift</span>
+                                                    </div>
+                                                )}
+
+                                                {/* Quick Clear Button */}
+                                                {password.length > 0 && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleClearPassword}
+                                                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-muted)] transition hover:text-[var(--text-primary)] cursor-pointer"
+                                                        title="Clear password (Esc)"
+                                                        aria-label="Clear password"
+                                                    >
+                                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                            <line x1="18" y1="6" x2="6" y2="18" />
+                                                            <line x1="6" y1="6" x2="18" y2="18" />
+                                                        </svg>
+                                                    </button>
+                                                )}
+
+                                                {/* Password Visibility Toggle */}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowPassword(!showPassword)}
+                                                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer"
+                                                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                                >
+                                                    {showPassword ? (
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                            <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                                                            <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+                                                            <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+                                                            <line x1="2" x2="22" y1="2" y2="22" />
+                                                        </svg>
+                                                    ) : (
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                                                            <circle cx="12" cy="12" r="3" />
+                                                        </svg>
+                                                    )}
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
 
