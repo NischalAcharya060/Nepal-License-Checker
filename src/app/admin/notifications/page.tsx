@@ -13,7 +13,7 @@ export interface AdminNotificationsProps {
     notifLimit?: number
     notifTotalPages?: number
     notifSearchFilter?: string
-    notifStatusFilter?: 'all' | 'pending' | 'sent' | 'cancelled'
+    notifStatusFilter?: 'all' | 'pending' | 'sent' | 'cancelled' | 'failed'
     notifLoading?: boolean
     privacyMode?: boolean
     notifSelectMode?: boolean
@@ -24,13 +24,13 @@ export interface AdminNotificationsProps {
     setNotifPage?: (page: number) => void
     setNotifLimit?: (limit: number) => void
     setNotifSearchFilter?: (filter: string) => void
-    setNotifStatusFilter?: (status: 'all' | 'pending' | 'sent' | 'cancelled') => void
+    setNotifStatusFilter?: (status: 'all' | 'pending' | 'sent' | 'cancelled' | 'failed') => void
     setNotifSelectMode?: (mode: boolean) => void
     setSelectedNotifIds?: React.Dispatch<React.SetStateAction<string[]>>
     copyToClipboard?: (text: string, key: string) => void
     handleDeleteNotification?: (id: string, license: string) => void
     handleDeleteSelectedNotifications?: () => void
-    handleDeleteNotificationsByStatus?: (status: 'cancelled' | 'sent') => void
+    handleDeleteNotificationsByStatus?: (status: 'cancelled' | 'sent' | 'failed') => void
     handleDeleteAllNotifications?: () => void
     handleSendNotificationEmail?: (id: string, email: string, license: string) => void
     handleSendSelectedNotifications?: () => void
@@ -208,7 +208,7 @@ export default function AdminNotifications(props: any) {
                 <div className="flex flex-wrap items-center gap-2">
                     {/* Status Filter */}
                     <div className="inline-flex rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] p-1 text-xs font-semibold">
-                        {(['all', 'pending', 'sent', 'cancelled'] as const).map((st) => (
+                        {(['all', 'pending', 'sent', 'cancelled', 'failed'] as const).map((st) => (
                             <button
                                 key={st}
                                 type="button"
@@ -222,7 +222,7 @@ export default function AdminNotifications(props: any) {
                                         : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
                                 }`}
                             >
-                                {st === 'sent' ? 'Delivered' : st === 'pending' ? 'In Queue' : st}
+                                {st === 'sent' ? 'Delivered' : st === 'pending' ? 'In Queue' : st === 'failed' ? 'Failed' : st}
                             </button>
                         ))}
                     </div>
@@ -466,6 +466,18 @@ export default function AdminNotifications(props: any) {
                                                                 <line x1="6" y1="6" x2="18" y2="18" />
                                                             </svg>
                                                             <span>Unsubscribed</span>
+                                                        </span>
+                                                    ) : log.status === 'failed' ? (
+                                                        <span
+                                                            className="inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-0.5 text-xs font-bold text-red-600 dark:text-red-400"
+                                                            title={log.last_error ? `Error: ${log.last_error}` : 'Delivery failed after 3 attempts'}
+                                                        >
+                                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                                <circle cx="12" cy="12" r="10" />
+                                                                <line x1="12" y1="8" x2="12" y2="12" />
+                                                                <line x1="12" y1="16" x2="12.01" y2="16" />
+                                                            </svg>
+                                                            <span>Delivery Failed {log.retry_count ? `(${log.retry_count}x)` : ''}</span>
                                                         </span>
                                                     ) : (
                                                         <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 px-2.5 py-0.5 text-xs font-bold text-purple-600">
@@ -839,6 +851,25 @@ export default function AdminNotifications(props: any) {
                                                             {log.cancelled_at && (
                                                                 <span className="font-mono text-[9px] text-[var(--text-muted)]">
                                                                     {formatNepalDateTime(log.cancelled_at)}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    ) : log.status === 'failed' ? (
+                                                        <div className="flex flex-col items-start gap-0.5 leading-tight">
+                                                            <span
+                                                                className="inline-flex items-center gap-1 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-0.5 text-[10px] font-bold text-red-600 dark:text-red-400"
+                                                                title={log.last_error ? `Error: ${log.last_error}` : 'Delivery failed after 3 attempts'}
+                                                            >
+                                                                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                                    <circle cx="12" cy="12" r="10" />
+                                                                    <line x1="12" y1="8" x2="12" y2="12" />
+                                                                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                                                                </svg>
+                                                                <span>Delivery Failed ({log.retry_count || 3}x)</span>
+                                                            </span>
+                                                            {log.last_error && (
+                                                                <span className="font-mono text-[9px] text-red-500/80 max-w-[170px] truncate" title={log.last_error}>
+                                                                    {log.last_error}
                                                                 </span>
                                                             )}
                                                         </div>

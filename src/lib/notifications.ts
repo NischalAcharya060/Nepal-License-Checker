@@ -9,8 +9,11 @@ export interface NotificationRecord {
   id: string
   license_number: string
   email: string
-  status: 'pending' | 'processing' | 'sent' | 'cancelled'
+  status: 'pending' | 'processing' | 'sent' | 'cancelled' | 'failed'
   unsubscribe_token: string
+  retry_count?: number
+  last_error?: string | null
+  failed_at?: number | null
   created_at: number
   updated_at: number
   sent_at?: number | null
@@ -78,6 +81,7 @@ export interface NotificationStats {
   pending: number
   sent: number
   cancelled: number
+  failed?: number
   deliveryRate: number
   pendingUnnotified?: number
 }
@@ -86,7 +90,10 @@ export interface NotificationLogItem {
   id: string
   license_number: string
   email: string
-  status: 'pending' | 'processing' | 'sent' | 'cancelled'
+  status: 'pending' | 'processing' | 'sent' | 'cancelled' | 'failed'
+  retry_count?: number
+  last_error?: string | null
+  failed_at?: number | null
   created_at: number
   updated_at: number
   sent_at?: number | null

@@ -205,6 +205,7 @@ export const ne: UICopy = {
     confirmEmailEditButton: 'सच्याउनुहोस्',
     typoSuggestionPrefix: 'के तपाईंको आशय',
     typoSuggestionButton: 'सच्याउनुहोस्:',
+    storageHint: 'इमेल डेलिभरी नरोकियोस् भन्नका लागि आफ्नो इनबक्स (Gmail/Drive) मा खाली ठाउँ (storage) भएको सुनिश्चित गर्नुहोस्।',
   },
   unsubscribe: {
     pageTitle: 'लाइसेन्स इमेल सूचना व्यवस्थापन',

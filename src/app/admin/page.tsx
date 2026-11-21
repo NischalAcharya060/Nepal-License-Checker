@@ -96,7 +96,7 @@ export default function AdminPage() {
     const [notifLimit, setNotifLimit] = useState(10)
     const [notifTotalPages, setNotifTotalPages] = useState(1)
     const [notifSearchFilter, setNotifSearchFilter] = useState('')
-    const [notifStatusFilter, setNotifStatusFilter] = useState<'all' | 'pending' | 'sent' | 'cancelled'>('all')
+    const [notifStatusFilter, setNotifStatusFilter] = useState<'all' | 'pending' | 'sent' | 'cancelled' | 'failed'>('all')
     const [notifLoading, setNotifLoading] = useState(false)
     const [selectedNotifIds, setSelectedNotifIds] = useState<string[]>([])
     const [notifSelectMode, setNotifSelectMode] = useState(false)

@@ -99,7 +99,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ status: 'success', message: 'Selected notification logs deleted.' })
     }
 
-    if (status === 'cancelled' || status === 'sent' || status === 'pending') {
+    if (status === 'cancelled' || status === 'sent' || status === 'pending' || status === 'failed') {
       await db.execute({
         sql: 'DELETE FROM license_notifications WHERE status = ?',
         args: [status],

@@ -368,6 +368,17 @@ export default function LicenseNotificationCard({
                 {copy.confirmEmailQuestion}
               </p>
 
+              {copy.storageHint && (
+                <div className="mt-2.5 flex items-start gap-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2.5 py-1.5 text-[11px] text-[var(--text-secondary)]">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 flex-shrink-0 text-[var(--nepal-blue)]">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                  <span className="leading-tight">{copy.storageHint}</span>
+                </div>
+              )}
+
               <div className="mt-2.5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                 <button
                   type="button"
@@ -440,9 +451,21 @@ export default function LicenseNotificationCard({
               </button>
             </div>
 
-            <p className="text-[11px] leading-4 text-[var(--text-muted)]">
-              {copy.privacyNote}
-            </p>
+            <div className="flex flex-col gap-1">
+              <p className="text-[11px] leading-4 text-[var(--text-muted)]">
+                {copy.privacyNote}
+              </p>
+              {copy.storageHint && (
+                <p className="flex items-center gap-1.5 text-[10.5px] leading-4 text-[var(--text-muted)] opacity-85">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 text-amber-500/80">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                  <span>{copy.storageHint}</span>
+                </p>
+              )}
+            </div>
           </form>
         )}
       </div>

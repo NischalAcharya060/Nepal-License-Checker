@@ -205,6 +205,7 @@ export const en: UICopy = {
     confirmEmailEditButton: 'Change / Edit',
     typoSuggestionPrefix: 'Did you mean',
     typoSuggestionButton: 'Fix to',
+    storageHint: 'Ensure your inbox has free storage (e.g. Google Drive/Gmail) so delivery isn’t blocked.',
   },
   unsubscribe: {
     pageTitle: 'Manage License Email Notifications',

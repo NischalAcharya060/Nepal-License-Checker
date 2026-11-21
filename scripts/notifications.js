@@ -34,6 +34,9 @@ async function ensureNotificationsTable(db) {
             email                TEXT NOT NULL,
             status               TEXT NOT NULL DEFAULT 'pending',
             unsubscribe_token    TEXT NOT NULL UNIQUE,
+            retry_count          INTEGER NOT NULL DEFAULT 0,
+            last_error           TEXT,
+            failed_at            INTEGER,
             created_at           INTEGER NOT NULL,
             updated_at           INTEGER NOT NULL,
             sent_at              INTEGER,
@@ -42,9 +45,24 @@ async function ensureNotificationsTable(db) {
         )
     `);
 
-    // Ensure confirmation_sent_at column exists for previously created databases
+    // Ensure confirmation_sent_at and retry/failure tracking columns exist for previously created databases
     try {
         await db.execute(`ALTER TABLE license_notifications ADD COLUMN confirmation_sent_at INTEGER`);
+    } catch {
+        // Column already exists
+    }
+    try {
+        await db.execute(`ALTER TABLE license_notifications ADD COLUMN retry_count INTEGER DEFAULT 0`);
+    } catch {
+        // Column already exists
+    }
+    try {
+        await db.execute(`ALTER TABLE license_notifications ADD COLUMN last_error TEXT`);
+    } catch {
+        // Column already exists
+    }
+    try {
+        await db.execute(`ALTER TABLE license_notifications ADD COLUMN failed_at INTEGER`);
     } catch {
         // Column already exists
     }
@@ -546,11 +564,11 @@ async function processPendingNotifications(db) {
     await ensureNotificationsTable(db);
 
     const query = `
-        SELECT n.id, n.license_number, n.email, n.unsubscribe_token,
+        SELECT n.id, n.license_number, n.email, n.unsubscribe_token, COALESCE(n.retry_count, 0) as retry_count,
                l.holder_name, l.office, l.category, l.updated_at
         FROM license_notifications n
         INNER JOIN licenses l ON n.license_number = l.license_number
-        WHERE n.status = 'pending'
+        WHERE n.status = 'pending' AND COALESCE(n.retry_count, 0) < 3
     `;
 
     let res;
@@ -579,6 +597,7 @@ async function processPendingNotifications(db) {
         const holderName = String(row.holder_name || 'N/A');
         const office = String(row.office || 'N/A');
         const category = String(row.category || 'N/A');
+        const currentRetry = Number(row.retry_count || 0);
 
         // Atomically acquire lock to avoid race conditions and duplicate emails
         const lockRes = await db.execute({
@@ -592,7 +611,7 @@ async function processPendingNotifications(db) {
         }
 
         try {
-            await sendAvailableLicenseEmail({
+            const sendRes = await sendAvailableLicenseEmail({
                 to: email,
                 licenseNumber,
                 holderName,
@@ -600,6 +619,10 @@ async function processPendingNotifications(db) {
                 category,
                 unsubscribeToken: token,
             });
+
+            if (sendRes && sendRes.success === false) {
+                throw new Error(sendRes.error || 'Failed to dispatch email');
+            }
 
             await db.execute({
                 sql: `UPDATE license_notifications SET status = 'sent', sent_at = ?, updated_at = ? WHERE id = ?`,
@@ -610,12 +633,31 @@ async function processPendingNotifications(db) {
             console.log(`  ✓ Sent notification to ${maskEmail(email)} for license ${licenseNumber}`);
         } catch (err) {
             failedCount++;
-            console.error(`  ✗ Error sending notification to ${email} for ${licenseNumber}:`, err.message);
+            const newRetryCount = currentRetry + 1;
+            const MAX_RETRIES = 3;
+            const isExhausted = newRetryCount >= MAX_RETRIES;
+            const newStatus = isExhausted ? 'failed' : 'pending';
+            const errorMessage = (err && err.message) ? String(err.message).slice(0, 500) : 'Unknown delivery error';
 
-            // Revert back to pending so it can be retried on next scrape
+            console.error(`  ✗ Error sending notification to ${email} for ${licenseNumber} (attempt ${newRetryCount}/${MAX_RETRIES}):`, err.message);
+
+            // If retries exhausted (>=3), mark as 'failed' so it doesn't loop infinitely. Otherwise revert to 'pending'.
             await db.execute({
-                sql: `UPDATE license_notifications SET status = 'pending', updated_at = ? WHERE id = ?`,
-                args: [Date.now(), id],
+                sql: `UPDATE license_notifications 
+                      SET status = ?, 
+                          retry_count = ?, 
+                          last_error = ?, 
+                          failed_at = ?, 
+                          updated_at = ? 
+                      WHERE id = ?`,
+                args: [
+                    newStatus, 
+                    newRetryCount, 
+                    errorMessage, 
+                    isExhausted ? Date.now() : null, 
+                    Date.now(), 
+                    id
+                ],
             });
         }
     }
@@ -627,7 +669,7 @@ async function processPendingNotifications(db) {
  * Get notification statistics for admin dashboard
  */
 async function getNotificationStats(db) {
-    if (!db) return { total: 0, pending: 0, sent: 0, cancelled: 0, deliveryRate: 0 };
+    if (!db) return { total: 0, pending: 0, sent: 0, cancelled: 0, failed: 0, deliveryRate: 0 };
     await ensureNotificationsTable(db);
 
     const res = await db.execute(`
@@ -640,6 +682,7 @@ async function getNotificationStats(db) {
     let pending = 0;
     let sent = 0;
     let cancelled = 0;
+    let failed = 0;
 
     for (const row of res.rows || []) {
         const s = String(row.status);
@@ -647,6 +690,7 @@ async function getNotificationStats(db) {
         if (s === 'pending' || s === 'processing') pending += c;
         else if (s === 'sent') sent += c;
         else if (s === 'cancelled') cancelled += c;
+        else if (s === 'failed') failed += c;
         total += c;
     }
 
@@ -669,6 +713,7 @@ async function getNotificationStats(db) {
         pending,
         sent,
         cancelled,
+        failed,
         deliveryRate,
         pendingUnnotified,
     };
@@ -710,7 +755,8 @@ async function getNotificationLogs(db, { page = 1, limit = 50, search = '', stat
 
     // Rows
     const dataSql = `
-        SELECT n.id, n.license_number, n.email, n.status, n.created_at, n.updated_at, n.sent_at, n.cancelled_at,
+        SELECT n.id, n.license_number, n.email, n.status, n.retry_count, n.last_error, n.failed_at,
+               n.created_at, n.updated_at, n.sent_at, n.cancelled_at,
                n.confirmation_sent_at,
                l.holder_name, l.office
         FROM license_notifications n

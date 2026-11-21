@@ -131,7 +131,10 @@ export interface NotificationLog {
     id: string
     license_number: string
     email: string
-    status: 'pending' | 'processing' | 'sent' | 'cancelled'
+    status: 'pending' | 'processing' | 'sent' | 'cancelled' | 'failed'
+    retry_count?: number
+    last_error?: string | null
+    failed_at?: number | null
     created_at: number
     updated_at: number
     sent_at?: number | null
@@ -146,6 +149,7 @@ export interface NotificationStatsData {
     pending: number
     sent: number
     cancelled: number
+    failed?: number
     deliveryRate: number
     pendingUnnotified?: number
 }

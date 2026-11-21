@@ -183,6 +183,7 @@ export interface NotificationCopy {
   confirmEmailEditButton: string
   typoSuggestionPrefix: string
   typoSuggestionButton: string
+  storageHint: string
 }
 
 export interface UnsubscribeCopy {
