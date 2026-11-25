@@ -1,10 +1,17 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect, useSyncExternalStore } from 'react'
 import toast from 'react-hot-toast'
 import { formatNepalDateTime, formatTimeUntil } from '@/lib/cronHelper'
 import type { NotificationCopy } from '@/lib/i18n'
 import type { LicenseData } from '@/app/page'
+import {
+  isPushSupported,
+  subscribeUserToPush,
+  unsubscribeUserFromPush,
+  getCurrentPushSubscription,
+  sendTestPushToSelf,
+} from '@/lib/pushClient'
 
 const DOMAIN_TYPOS: Record<string, string> = {
   'gamil.com': 'gmail.com',
@@ -58,6 +65,96 @@ export default function LicenseNotificationCard({
   const [unsubscribeToken, setUnsubscribeToken] = useState<string | null>(null)
   const [isCancelling, setIsCancelling] = useState(false)
   const [isCancelled, setIsCancelled] = useState(false)
+
+  // Web Push notification states
+  const pushSupported = useSyncExternalStore(
+    () => () => {},
+    () => isPushSupported(),
+    () => false
+  )
+  const [isPushSubscribed, setIsPushSubscribed] = useState(false)
+  const [isPushLoading, setIsPushLoading] = useState(false)
+  const [isTestingPush, setIsTestingPush] = useState(false)
+
+  useEffect(() => {
+    if (!pushSupported) return
+    let active = true
+    getCurrentPushSubscription().then((sub) => {
+      if (active) {
+        setIsPushSubscribed(!!sub)
+      }
+    })
+    return () => {
+      active = false
+    }
+  }, [pushSupported])
+
+  const handleSubscribePush = async () => {
+    setIsPushLoading(true)
+    try {
+      const res = await subscribeUserToPush({ licenseNumber, sendWelcome: true })
+      if (res.success) {
+        setIsPushSubscribed(true)
+        toast.success(
+          language === 'ne'
+            ? 'यो डिभाइसमा वेब नोटिफिकेसन सक्रिय भयो! लाइसेन्स छापिएपछि तपाईंलाई अलर्ट आउनेछ।'
+            : 'Web push notifications enabled! You will be alerted on this device once your license is printed.'
+        )
+      } else {
+        toast.error(
+          res.error ||
+            (language === 'ne'
+              ? 'नोटिफिकेसन सक्रिय गर्न सकिएन।'
+              : 'Could not enable push notifications.')
+        )
+      }
+    } catch {
+      toast.error(
+        language === 'ne'
+          ? 'नोटिफिकेसन सक्रिय गर्न सकिएन।'
+          : 'Failed to enable push notifications.'
+      )
+    } finally {
+      setIsPushLoading(false)
+    }
+  }
+
+  const handleUnsubscribePush = async () => {
+    setIsPushLoading(true)
+    try {
+      const res = await unsubscribeUserFromPush({ licenseNumber })
+      if (res.success) {
+        setIsPushSubscribed(false)
+        toast.success(
+          language === 'ne' ? 'पुश नोटिफिकेसन बन्द गरियो।' : 'Push notifications disabled.'
+        )
+      }
+    } catch {
+      toast.error('Failed to disable push notifications.')
+    } finally {
+      setIsPushLoading(false)
+    }
+  }
+
+  const handleTestPush = async () => {
+    setIsTestingPush(true)
+    try {
+      const res = await sendTestPushToSelf()
+      if (res.success) {
+        toast.success(
+          language === 'ne'
+            ? 'परीक्षण नोटिफिकेसन पठाइयो!'
+            : 'Test notification sent to your device!'
+        )
+      } else {
+        toast.error(res.error || 'Failed to send test push')
+      }
+    } catch {
+      toast.error('Failed to send test push')
+    } finally {
+      setIsTestingPush(false)
+    }
+  }
 
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -250,8 +347,151 @@ export default function LicenseNotificationCard({
         </div>
       )}
 
+      {/* Web Push Notification Section (Instant alerts directly to this device) */}
+      {pushSupported && (
+        <div className="mt-3.5 rounded-xl border border-[var(--nepal-blue)]/30 bg-[var(--surface-primary)] p-3.5 sm:p-4 shadow-xs">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-2.5">
+              <div
+                className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${
+                  isPushSubscribed
+                    ? 'bg-[var(--success)] text-white shadow-xs'
+                    : 'bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)]'
+                }`}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <h4 className="text-xs font-bold text-[var(--text-primary)] sm:text-sm">
+                    {language === 'ne'
+                      ? 'यो डिभाइसमा तुरुन्त सूचना (Web Push)'
+                      : 'Instant Device Push Notification'}
+                  </h4>
+                  {isPushSubscribed && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-[var(--success-bg)] px-2 py-0.5 text-[10px] font-bold text-[var(--success)]">
+                      <span className="h-1.5 w-1.5 rounded-full bg-[var(--success)] animate-pulse" />
+                      {language === 'ne' ? 'सक्रिय' : 'Active'}
+                    </span>
+                  )}
+                </div>
+                <p className="mt-0.5 text-[11px] leading-relaxed text-[var(--text-secondary)] sm:text-xs">
+                  {isPushSubscribed
+                    ? language === 'ne'
+                      ? 'तपाईंको डिभाइसमा पुश नोटिफिकेसन सक्रिय छ। लाइसेन्स छापिएपछि सिधै स्क्रिनमा अलर्ट आउनेछ।'
+                      : 'Push notifications are active. You will get a notification on this device once printed.'
+                    : language === 'ne'
+                    ? 'इमेल नराखी सिधै आफ्नो फोन वा ल्यापटपमा नोटिफिकेसन पाउनुहोस्।'
+                    : 'Get alerted on this phone or browser the moment your card is printed — no email needed.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 self-start sm:self-center">
+              {isPushSubscribed ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleTestPush}
+                    disabled={isTestingPush}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2.5 py-1.5 text-[11px] font-semibold text-[var(--text-secondary)] transition hover:bg-[var(--surface-primary)] hover:text-[var(--text-primary)] disabled:opacity-50"
+                  >
+                    {isTestingPush ? (
+                      <span>{language === 'ne' ? 'पठाउँदै...' : 'Sending...'}</span>
+                    ) : (
+                      <>
+                        <svg
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="m22 2-7 20-4-9-9-4Z" />
+                          <path d="M22 2 11 13" />
+                        </svg>
+                        <span>{language === 'ne' ? 'परीक्षण पठाउनुहोस्' : 'Test Alert'}</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleUnsubscribePush}
+                    disabled={isPushLoading}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--text-muted)] transition hover:text-[var(--error)]"
+                  >
+                    <span>{language === 'ne' ? 'बन्द गर्नुहोस्' : 'Disable'}</span>
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleSubscribePush}
+                  disabled={isPushLoading}
+                  className="inline-flex min-h-[38px] items-center justify-center gap-1.5 rounded-xl bg-[var(--nepal-blue)] px-3.5 py-1.5 text-xs font-bold text-white shadow-xs transition hover:bg-[var(--nepal-blue)]/90 active:scale-95 disabled:opacity-60"
+                >
+                  {isPushLoading ? (
+                    <>
+                      <svg className="h-3.5 w-3.5 animate-spin text-white" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                      </svg>
+                      <span>{language === 'ne' ? 'सक्रिय गर्दै...' : 'Enabling...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                      </svg>
+                      <span>{language === 'ne' ? 'पुश सूचना अन गर्नुहोस्' : 'Enable Device Push'}</span>
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Divider between Web Push and Email */}
+      {pushSupported && !isSubscribed && !isConfirming && (
+        <div className="relative my-3.5 flex items-center justify-center">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-[var(--border-default)]" />
+          </div>
+          <div className="relative bg-[var(--surface-primary)] px-2.5 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+            {language === 'ne' ? 'अथवा इमेल मार्फत' : 'Or via Email'}
+          </div>
+        </div>
+      )}
+
       {/* Main interactive state: Subscribed vs Double-Check Confirmation vs Initial Form vs Cancelled */}
-      <div className="mt-4">
+      <div className={pushSupported && !isSubscribed && !isConfirming ? 'mt-1' : 'mt-4'}>
         {isSubscribed ? (
           <div className="rounded-xl border border-[var(--success-border)] bg-[var(--success-bg)] p-3.5 sm:p-4 animate-in fade-in duration-200">
             <div className="flex items-start gap-2.5">

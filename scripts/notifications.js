@@ -6,6 +6,13 @@ const nodemailer = require('nodemailer');
 const axios = require('axios');
 const { formatNepalDateTime, formatTimeUntil } = require('./cronHelper');
 
+let pushService = null;
+try {
+    pushService = require('./pushNotifications');
+} catch {
+    // pushNotifications is optional
+}
+
 const LICENSE_REGEX = /^\d{2}-\d{2}-\d{8}$/;
 const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
 
@@ -472,7 +479,7 @@ async function sendAvailableLicenseEmail({
         `Nepal License Checker (license-checker.acharyanischal.com.np)`;
 
     const subject = `Your Nepal Driving License (${licenseNumber}) is Printed & Ready to Collect! 🇳🇵`;
-    const defaultSender = 'Nepal License Checker <license-checker@acharyanischal.com.np>';
+    const defaultSender = 'Nepal License Checker <nepallicensechecker@gmail.com>';
     let fromAddress = (process.env.SMTP_FROM || defaultSender).trim();
 
     // Sanitize fromAddress: normalize spaces inside angle brackets and ensure valid @ format
@@ -662,7 +669,16 @@ async function processPendingNotifications(db) {
         }
     }
 
-    return { totalFound: rows.length, sentCount, failedCount };
+    let pushStats = { totalFound: 0, sentCount: 0, expiredCount: 0, failedCount: 0 };
+    if (pushService && typeof pushService.processPendingPushNotifications === 'function') {
+        try {
+            pushStats = await pushService.processPendingPushNotifications(db);
+        } catch (pushErr) {
+            console.warn(`Failed to process push notifications: ${pushErr.message}`);
+        }
+    }
+
+    return { totalFound: rows.length, sentCount, failedCount, pushStats };
 }
 
 /**

@@ -154,6 +154,27 @@ export interface NotificationStatsData {
     pendingUnnotified?: number
 }
 
+export interface PushSubscriptionLog {
+    id: string
+    endpoint: string
+    p256dh: string
+    auth: string
+    license_number: string | null
+    user_agent: string | null
+    status: 'active' | 'unsubscribed' | 'expired'
+    created_at: number
+    updated_at: number
+    last_notified_at: number | null
+}
+
+export interface PushStatsData {
+    total: number
+    active: number
+    unsubscribed: number
+    expired: number
+    notified: number
+}
+
 export type FeedbackStatus = 'new' | 'in_progress' | 'resolved'
 
 export interface FeedbackLog {

@@ -32,6 +32,8 @@ import {
     AdminUserItem,
     AdminUserStatsData,
     SystemModeConfig,
+    PushSubscriptionLog,
+    PushStatsData,
 } from './types'
 import {
     INACTIVITY_TIMEOUT_MS,
@@ -47,6 +49,7 @@ import AdminAnalytics from './analytics/page'
 import AdminAutomation from './automation/page'
 import AdminSearches from './searches/page'
 import AdminNotifications from './notifications/page'
+import AdminPush from './push/page'
 import AdminFeedback from './feedback/page'
 import AdminTestimonials from './testimonials/page'
 import AdminDevelopers from './developers/page'
@@ -66,8 +69,8 @@ export default function AdminPage() {
     const [showPassword, setShowPassword] = useState(false)
     const [privacyMode, setPrivacyMode] = useState(true)
 
-    // View Tabs: 'searches' | 'notifications' | 'feedback' | 'testimonials' | 'developers' | 'users' | 'ocr' | 'updates'
-    const [activeTab, setActiveTab] = useState<'searches' | 'notifications' | 'feedback' | 'testimonials' | 'developers' | 'users' | 'ocr' | 'updates'>('searches')
+    // View Tabs: 'searches' | 'notifications' | 'push' | 'feedback' | 'testimonials' | 'developers' | 'users' | 'ocr' | 'updates'
+    const [activeTab, setActiveTab] = useState<'searches' | 'notifications' | 'push' | 'feedback' | 'testimonials' | 'developers' | 'users' | 'ocr' | 'updates'>('searches')
 
     // Dashboard State - Searches
     const [logs, setLogs] = useState<SearchLog[]>([])
@@ -102,6 +105,17 @@ export default function AdminPage() {
     const [notifSelectMode, setNotifSelectMode] = useState(false)
     const [sendingNotifId, setSendingNotifId] = useState<string | null>(null)
     const [sendingNotifBulk, setSendingNotifBulk] = useState(false)
+
+    // Dashboard State - Web Push Notifications
+    const [pushStats, setPushStats] = useState<PushStatsData | null>(null)
+    const [pushLogs, setPushLogs] = useState<PushSubscriptionLog[]>([])
+    const [pushTotal, setPushTotal] = useState(0)
+    const [pushPage, setPushPage] = useState(1)
+    const [pushLimit, setPushLimit] = useState(10)
+    const [pushTotalPages, setPushTotalPages] = useState(1)
+    const [pushSearchFilter, setPushSearchFilter] = useState('')
+    const [pushStatusFilter, setPushStatusFilter] = useState<'all' | 'active' | 'unsubscribed' | 'expired'>('all')
+    const [pushLoading, setPushLoading] = useState(false)
 
     // Dashboard State - User Feedback & Inquiries
     const [feedbackStats, setFeedbackStats] = useState<FeedbackStatsData | null>(null)
@@ -398,7 +412,48 @@ export default function AdminPage() {
         }
     }, [isAuthenticated, notifPage, notifLimit, notifSearchFilter, notifStatusFilter, refreshKey])
 
-    // 2c. Fetch User Feedback Logs & Stats
+    // 2c. Fetch Web Push Subscriptions & Stats
+    useEffect(() => {
+        if (!isAuthenticated) return
+        let cancelled = false
+
+        const params = new URLSearchParams({
+            page: String(pushPage),
+            limit: String(pushLimit),
+            search: pushSearchFilter,
+            status: pushStatusFilter,
+        })
+
+        fetch(`/api/admin/push?${params.toString()}`, { cache: 'no-store' })
+            .then((res) => {
+                if (res.status === 401) {
+                    if (!cancelled) setIsAuthenticated(false)
+                    return null
+                }
+                return res.json()
+            })
+            .then((json) => {
+                if (cancelled || !json) return
+                if (json.status === 'success' && json.data) {
+                    setPushLogs(json.data.logs || [])
+                    setPushTotal(json.data.total || 0)
+                    setPushTotalPages(json.data.totalPages || 1)
+                    if (json.data.stats) {
+                        setPushStats(json.data.stats)
+                    }
+                }
+                setPushLoading(false)
+            })
+            .catch(() => {
+                if (!cancelled) setPushLoading(false)
+            })
+
+        return () => {
+            cancelled = true
+        }
+    }, [isAuthenticated, pushPage, pushLimit, pushSearchFilter, pushStatusFilter, refreshKey])
+
+    // 2d. Fetch User Feedback Logs & Stats
     useEffect(() => {
         if (!isAuthenticated) return
         let cancelled = false
@@ -1406,6 +1461,122 @@ export default function AdminPage() {
                 }
             },
         })
+    }
+
+    // Web Push Handlers
+    const handleSendPushBroadcast = async (title: string, body: string, url: string, targetLicense?: string) => {
+        try {
+            const res = await fetch('/api/admin/push', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'broadcast',
+                    title,
+                    body,
+                    url,
+                    targetLicense: targetLicense || null,
+                }),
+            })
+            const data = await res.json()
+            if (res.ok) {
+                showToast(data.message || 'Push broadcast sent successfully', 'success')
+                setRefreshKey((k) => k + 1)
+                return data
+            } else {
+                showToast(data.error || 'Failed to dispatch push broadcast', 'error')
+                throw new Error(data.error || 'Failed')
+            }
+        } catch (err: unknown) {
+            const error = err as Error
+            showToast(error.message || 'Error sending push broadcast', 'error')
+            throw error
+        }
+    }
+
+    const handleSendTestPushToRow = async (row: PushSubscriptionLog) => {
+        try {
+            const res = await fetch('/api/admin/push', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'send_test',
+                    endpoint: row.endpoint,
+                    p256dh: row.p256dh,
+                    auth: row.auth,
+                }),
+            })
+            const data = await res.json()
+            if (res.ok) {
+                showToast('Test push notification delivered to device!', 'success')
+                return data
+            } else {
+                showToast(data.error || 'Failed to send test push', 'error')
+                throw new Error(data.error || 'Failed')
+            }
+        } catch {
+            showToast('Failed to send test notification', 'error')
+        }
+    }
+
+    const handleDeletePushRow = async (id: string) => {
+        try {
+            const res = await fetch(`/api/admin/push?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
+            const data = await res.json()
+            if (res.ok) {
+                showToast('Push subscription deleted', 'success')
+                setRefreshKey((k) => k + 1)
+                return data
+            } else {
+                showToast(data.error || 'Failed to delete subscription', 'error')
+                throw new Error(data.error || 'Failed')
+            }
+        } catch {
+            showToast('Failed to delete push subscription', 'error')
+        }
+    }
+
+    const handleCleanExpiredPush = async (status: 'expired' | 'unsubscribed') => {
+        try {
+            const res = await fetch(`/api/admin/push?status=${status}`, { method: 'DELETE' })
+            const data = await res.json()
+            if (res.ok) {
+                showToast(data.message || `Cleaned up ${status} subscriptions`, 'success')
+                setRefreshKey((k) => k + 1)
+                return data
+            } else {
+                showToast(data.error || 'Failed to clean subscriptions', 'error')
+                throw new Error(data.error || 'Failed')
+            }
+        } catch {
+            showToast('Failed to clean push subscriptions', 'error')
+        }
+    }
+
+    const exportPushCsv = () => {
+        if (!pushLogs.length) return
+        const headers = ['ID', 'Subscribed At (NPT)', 'License Number', 'Device', 'Status', 'Last Notified (NPT)']
+        const rows = pushLogs.map((l) => [
+            `"${l.id}"`,
+            `"${formatNepalDateTime(l.created_at, 'en', true)}"`,
+            `"${l.license_number ? maskLicenseNumber(l.license_number, privacyMode) : 'General'}"`,
+            `"${(l.user_agent || '').replace(/"/g, '""')}"`,
+            l.status,
+            l.last_notified_at ? `"${formatNepalDateTime(l.last_notified_at, 'en', true)}"` : '',
+        ])
+        const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n')
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `nepal-license-push-subscriptions-${new Date().toISOString().slice(0, 10)}.csv`
+        a.click()
+        URL.revokeObjectURL(url)
+        showToast(
+            privacyMode
+                ? 'Exported push subscriptions CSV (Privacy Masked)'
+                : 'Exported push subscriptions CSV (Full Data)',
+            'info'
+        )
     }
 
     // 10. Feedback CSV Export (Respects Privacy Mode)
@@ -2467,6 +2638,7 @@ export default function AdminPage() {
                 activeTab={activeTab}
                 exportCsv={exportCsv}
                 exportNotificationCsv={exportNotificationCsv}
+                exportPushCsv={exportPushCsv}
                 exportFeedbackCsv={exportFeedbackCsv}
                 exportTestimonialsCsv={exportTestimonialsCsv}
                 exportDevelopersCsv={exportDevelopersCsv}
@@ -2474,6 +2646,7 @@ export default function AdminPage() {
                 exportOcrCsv={exportOcrCsv}
                 hasLogs={logs.length > 0}
                 hasNotificationLogs={notificationLogs.length > 0}
+                hasPushLogs={pushLogs.length > 0}
                 hasFeedbackLogs={feedbackLogs.length > 0}
                 hasTestimonialLogs={testimonialLogs.length > 0}
                 hasDeveloperLogs={developers.length > 0}
@@ -2543,6 +2716,28 @@ export default function AdminPage() {
                                 activeTab === 'notifications' ? 'bg-white/20 text-white' : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'
                             }`}>
                                 {notifTotal.toLocaleString()}
+                            </span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('push')}
+                            className={`inline-flex min-h-[44px] flex-1 sm:flex-initial items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-3 sm:px-4 py-2 text-xs font-bold transition-all duration-200 whitespace-nowrap active:scale-95 cursor-pointer ${
+                                activeTab === 'push'
+                                    ? 'bg-[var(--nepal-blue)] text-white shadow-md shadow-[var(--nepal-blue)]/25'
+                                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]/60'
+                            }`}
+                        >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-hidden="true">
+                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                            </svg>
+                            <span className="hidden sm:inline">Web Push</span>
+                            <span className="sm:hidden">Push</span>
+                            <span className={`rounded-full px-2 py-0.5 font-mono tabular-nums text-xs font-semibold transition ${
+                                activeTab === 'push' ? 'bg-white/20 text-white' : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'
+                            }`}>
+                                {pushStats ? pushStats.active.toLocaleString() : pushTotal.toLocaleString()}
                             </span>
                         </button>
 
@@ -2884,6 +3079,29 @@ export default function AdminPage() {
                         handleSendSelectedNotifications={handleSendSelectedNotifications}
                         handleSendAllPendingNotifications={handleSendAllPendingNotifications}
                         startTransition={startTransition}
+                    />
+                ) : activeTab === 'push' ? (
+                    <AdminPush
+                        pushLogs={pushLogs}
+                        pushStats={pushStats}
+                        pushTotal={pushTotal}
+                        pushPage={pushPage}
+                        pushLimit={pushLimit}
+                        pushTotalPages={pushTotalPages}
+                        pushSearchFilter={pushSearchFilter}
+                        pushStatusFilter={pushStatusFilter}
+                        pushLoading={pushLoading}
+                        privacyMode={privacyMode}
+                        setPushPage={setPushPage}
+                        setPushLimit={setPushLimit}
+                        setPushSearchFilter={setPushSearchFilter}
+                        setPushStatusFilter={setPushStatusFilter}
+                        handleSendPushBroadcast={handleSendPushBroadcast}
+                        handleSendTestPushToRow={handleSendTestPushToRow}
+                        handleDeletePushRow={handleDeletePushRow}
+                        handleCleanExpiredPush={handleCleanExpiredPush}
+                        onRefresh={() => setRefreshKey((k) => k + 1)}
+                        showToast={showToast}
                     />
                 ) : activeTab === 'feedback' ? (
                     <AdminFeedback
