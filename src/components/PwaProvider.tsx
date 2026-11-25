@@ -119,9 +119,14 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  // Service worker lifecycle: never in dev, so HMR is never served stale.
+  // Service worker lifecycle: never in dev by default so HMR is never served stale, unless explicitly enabled for testing
   useEffect(() => {
-    if (process.env.NODE_ENV !== 'production') return
+    const allowSwInDev =
+      typeof window !== 'undefined' &&
+      (window.location.search.includes('enable_sw=1') ||
+        process.env.NEXT_PUBLIC_ENABLE_SW === 'true')
+
+    if (process.env.NODE_ENV !== 'production' && !allowSwInDev) return
     if (!('serviceWorker' in navigator)) return
 
     let cancelled = false

@@ -9,7 +9,7 @@
  *  - never cached     : non-GET requests, cross-origin requests, video/audio
  */
 
-const VERSION = 'v8'
+const VERSION = 'v9'
 const PRECACHE = `nlc-precache-${VERSION}`
 const PAGES = `nlc-pages-${VERSION}`
 const ASSETS = `nlc-assets-${VERSION}`
@@ -311,4 +311,71 @@ self.addEventListener('fetch', (event) => {
   }
 
   event.respondWith(staleWhileRevalidate(request))
+})
+
+// ==========================================
+// Web Push Notifications Handling
+// ==========================================
+
+self.addEventListener('push', (event) => {
+  let payload = {
+    title: 'Nepal License Checker',
+    body: 'New update on driving license print status.',
+    icon: '/android-chrome-192x192.png',
+    badge: '/favicon-32x32.png',
+    data: { url: '/' },
+  }
+
+  if (event.data) {
+    try {
+      const json = event.data.json()
+      payload = { ...payload, ...json }
+    } catch {
+      payload.body = event.data.text() || payload.body
+    }
+  }
+
+  const notificationOptions = {
+    body: payload.body,
+    icon: payload.icon || '/android-chrome-192x192.png',
+    badge: payload.badge || '/favicon-32x32.png',
+    vibrate: [120, 60, 120, 60, 240],
+    data: payload.data || { url: '/' },
+    tag: payload.tag || 'license-notification',
+    renotify: true,
+    requireInteraction: true,
+    actions: [
+      { action: 'open', title: 'Open / हेर्नुहोस्' },
+      { action: 'close', title: 'Dismiss' },
+    ],
+  }
+
+  event.waitUntil(self.registration.showNotification(payload.title, notificationOptions))
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+
+  if (event.action === 'close') {
+    return
+  }
+
+  const targetUrl = (event.notification.data && event.notification.data.url) || '/'
+  const absoluteUrl = new URL(targetUrl, self.location.origin).href
+
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clientList) => {
+        for (const client of clientList) {
+          if (client.url && 'focus' in client) {
+            client.navigate(absoluteUrl)
+            return client.focus()
+          }
+        }
+        if (self.clients.openWindow) {
+          return self.clients.openWindow(absoluteUrl)
+        }
+      })
+  )
 })

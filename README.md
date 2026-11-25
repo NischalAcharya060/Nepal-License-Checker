@@ -68,7 +68,7 @@ Copy `.env.example` to `.env` and fill in:
 | `NEXT_PUBLIC_SITE_URL` | Public site URL (optional; defaults to the Vercel domain) |
 | `RESEND_API_KEY` | Resend API key for sending email notifications (optional) |
 | `SMTP_HOST` / `SMTP_USER` / `SMTP_PASS` | SMTP credentials for Nodemailer (alternative to Resend) |
-| `SMTP_FROM` | Sender email address (e.g. `Nepal License Checker <notifications@acharyanischal.com.np>`) |
+| `SMTP_FROM` | Sender email address (e.g. `Nepal License Checker <nepallicensechecker@gmail.com>`) |
 
 ### 3. Run the dev server
 

@@ -13,9 +13,10 @@ export interface AdminNavbarProps {
     setAutoRefresh?: (val: boolean) => void
     dataLoading?: boolean
     handleManualRefresh?: () => void
-    activeTab?: 'searches' | 'notifications' | 'feedback' | 'testimonials' | 'developers' | 'ocr' | 'updates' | 'users'
+    activeTab?: 'searches' | 'notifications' | 'push' | 'feedback' | 'testimonials' | 'developers' | 'ocr' | 'updates' | 'users'
     exportCsv?: () => void
     exportNotificationCsv?: () => void
+    exportPushCsv?: () => void
     exportFeedbackCsv?: () => void
     exportTestimonialsCsv?: () => void
     exportDevelopersCsv?: () => void
@@ -23,6 +24,7 @@ export interface AdminNavbarProps {
     exportUsersCsv?: () => void
     hasLogs?: boolean
     hasNotificationLogs?: boolean
+    hasPushLogs?: boolean
     hasFeedbackLogs?: boolean
     hasTestimonialLogs?: boolean
     hasDeveloperLogs?: boolean
@@ -49,6 +51,7 @@ export default function AdminNavbar(props: any) {
         activeTab = 'searches',
         exportCsv = () => {},
         exportNotificationCsv = () => {},
+        exportPushCsv = () => {},
         exportFeedbackCsv = () => {},
         exportTestimonialsCsv = () => {},
         exportDevelopersCsv = () => {},
@@ -56,6 +59,7 @@ export default function AdminNavbar(props: any) {
         exportUsersCsv = () => {},
         hasLogs = false,
         hasNotificationLogs = false,
+        hasPushLogs = false,
         hasFeedbackLogs = false,
         hasTestimonialLogs = false,
         hasDeveloperLogs = false,
@@ -234,6 +238,8 @@ export default function AdminNavbar(props: any) {
                                 ? exportCsv
                                 : activeTab === 'notifications'
                                 ? exportNotificationCsv
+                                : activeTab === 'push'
+                                ? exportPushCsv
                                 : activeTab === 'feedback'
                                 ? exportFeedbackCsv
                                 : activeTab === 'testimonials'
@@ -249,6 +255,8 @@ export default function AdminNavbar(props: any) {
                                 ? !hasLogs
                                 : activeTab === 'notifications'
                                 ? !hasNotificationLogs
+                                : activeTab === 'push'
+                                ? !hasPushLogs
                                 : activeTab === 'feedback'
                                 ? !hasFeedbackLogs
                                 : activeTab === 'testimonials'

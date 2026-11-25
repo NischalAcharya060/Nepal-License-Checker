@@ -296,6 +296,11 @@ export default function Navbar({
             </span>
           </button>
 
+          {/* Install PWA Button (Desktop) */}
+          <span className="hidden sm:inline-flex">
+            <InstallAppButton language={language} variant="pill" />
+          </span>
+
           {/* 1-Click Theme Toggle Button (Comfortable Hit Area) */}
           <button
             type="button"
