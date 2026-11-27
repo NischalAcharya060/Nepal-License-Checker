@@ -4,38 +4,38 @@ import Link from 'next/link'
 import { getSiteUrl } from '@/lib/siteUrl'
 
 const siteUrl = getSiteUrl()
-const videoUrl = `${siteUrl}/tutorial.mp4`
+const videoUrl = `${siteUrl}/tutorial/tutorial.mp4`
 const pageUrl = `${siteUrl}/tutorial`
-const thumbnailUrl = `${siteUrl}/tutorial-poster.jpg`
+const thumbnailUrl = `${siteUrl}/tutorial/tutorial-poster.jpg`
 
 export const metadata: Metadata = {
   title:
     'Video Tutorial: How to Check Nepal Licence Print Status | सवारी चालक अनुमतिपत्र छापिएको कि छैन हेर्ने भिडियो',
   description:
-    'Watch a 19-second tutorial on how to check your Nepal smart card driving licence print status online (सवारी चालक अनुमति पत्र चेक) using the DOTM printed list on Nepal License Checker.',
+    'Watch a 25-second tutorial on how to check your Nepal smart card driving licence print status online (सवारी चालक अनुमति पत्र चेक) using the DOTM printed list on Nepal License Checker.',
   alternates: {
     canonical: '/tutorial',
   },
   openGraph: {
     title: 'Video Tutorial: How to Check Nepal Licence Print Status',
     description:
-      'Watch a 19-second tutorial on how to check your smart card driving licence print status online with Nepal License Checker.',
+      'Watch a 25-second tutorial on how to check your smart card driving licence print status online with Nepal License Checker.',
     url: '/tutorial',
     siteName: 'Nepal License Checker',
     type: 'video.other',
     videos: [
       {
         url: videoUrl,
-        width: 1280,
-        height: 720,
+        width: 1920,
+        height: 1080,
         type: 'video/mp4',
       },
     ],
     images: [
       {
-        url: '/tutorial-poster.jpg',
-        width: 1280,
-        height: 720,
+        url: '/tutorial/tutorial-poster.jpg',
+        width: 1920,
+        height: 1080,
         alt: 'Nepal License Checker video tutorial',
       },
     ],
@@ -44,8 +44,8 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Video Tutorial: How to Check Nepal Licence Print Status',
     description:
-      'Watch a 19-second tutorial on how to check your smart card driving licence print status online.',
-    images: ['/tutorial-poster.jpg'],
+      'Watch a 25-second tutorial on how to check your smart card driving licence print status online.',
+    images: ['/tutorial/tutorial-poster.jpg'],
   },
   robots: {
     index: true,
@@ -68,15 +68,15 @@ const videoObject = {
   '@id': `${pageUrl}#video`,
   name: 'How to Check if Your Nepal Driving Licence is Printed (Video Tutorial)',
   description:
-    'A 19-second step-by-step tutorial showing how to check the smart card driving licence print status online using the official DOTM printed list on Nepal License Checker: enter your licence number, press Check Status, and read the result.',
+    'A 25-second step-by-step tutorial showing how to check the smart card driving licence print status online using the official DOTM printed list on Nepal License Checker: enter your licence number, press Check Status, and read the result.',
   thumbnailUrl: [thumbnailUrl],
   contentUrl: videoUrl,
   embedUrl: pageUrl,
   uploadDate: '2026-10-01T00:00:00+05:45',
-  duration: 'PT19S',
+  duration: 'PT25S',
   inLanguage: ['en-NP', 'ne-NP'],
-  width: 1280,
-  height: 720,
+  width: 1920,
+  height: 1080,
   embeddable: true,
   expirationDate: '2036-10-01T00:00:00+05:45',
   isAccessibleForFree: true,
@@ -143,7 +143,7 @@ export default function TutorialPage() {
             <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
               <path d="M8 5v14l11-7z" />
             </svg>
-            19-second tutorial
+            25-second tutorial
           </span>
           <h1 className="mt-2 text-xl font-black tracking-tight text-[var(--text-primary)] sm:text-2xl">
             How to Check if Your Nepal Driving Licence is Printed
@@ -164,9 +164,9 @@ export default function TutorialPage() {
             controls
             preload="metadata"
             playsInline
-            poster="/tutorial-poster.jpg"
+            poster="/tutorial/tutorial-poster.jpg"
           >
-            <source src="/tutorial.mp4" type="video/mp4" />
+            <source src="/tutorial/tutorial.mp4" type="video/mp4" />
             Your browser does not support the video tag.
           </video>
 
@@ -240,8 +240,8 @@ export default function TutorialPage() {
             alt=""
             aria-hidden
             width={16}
-            height={11}
-            className="mr-1.5 inline-block align-middle"
+            height={20}
+            className="mr-1.5 inline-block h-5 w-4 align-middle"
           />
           This site is an independent verification tool. Data is mirrored from{' '}
           <a

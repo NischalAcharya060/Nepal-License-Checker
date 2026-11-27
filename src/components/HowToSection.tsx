@@ -123,7 +123,7 @@ export default function HowToSection({ language, lastUpdatedAt }: HowToSectionPr
               }
             >
               <Image
-                src="/tutorial-poster.jpg"
+                src="/tutorial/tutorial-poster.jpg"
                 alt={
                   language === 'ne'
                     ? 'सवारी चालक अनुमतिपत्र छापिएको कि छैन जाँच्ने भिडियो ट्युटोरियल'
@@ -141,7 +141,7 @@ export default function HowToSection({ language, lastUpdatedAt }: HowToSectionPr
                 </span>
               </span>
               <span className="absolute bottom-2.5 right-2.5 rounded-lg bg-black/75 backdrop-blur-xs px-2 py-0.5 font-mono text-[10px] font-bold text-white">
-                0:19
+                0:25
               </span>
               <span className="absolute bottom-2.5 left-2.5 rounded-lg bg-black/75 backdrop-blur-xs px-2.5 py-0.5 text-[11px] font-bold text-white">
                 {language === 'ne' ? 'भिडियो ट्युटोरियल हेर्नुहोस्' : 'Watch video tutorial'}
