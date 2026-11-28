@@ -105,13 +105,17 @@ export default function NpmModal({ isOpen, onClose, language }: NpmModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-0 sm:p-4 lg:p-6 backdrop-blur-md transition-opacity duration-300"
-      style={backdropStyle}
-      onClick={triggerClose}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 lg:p-6"
       role="dialog"
       aria-modal="true"
       aria-labelledby="sdk-modal-title"
     >
+      <div
+        className="absolute inset-0 bg-black/70 backdrop-blur-md"
+        style={backdropStyle}
+        onClick={triggerClose}
+        aria-hidden="true"
+      />
       <div
         style={modalStyle}
         className="relative flex max-h-[83vh] sm:max-h-[90vh] w-full max-w-5xl xl:max-w-[1080px] flex-col overflow-hidden rounded-t-[28px] sm:rounded-3xl dev-glass-card shadow-2xl border border-[var(--border-default)] pb-[max(0.75rem,env(safe-area-inset-bottom))]"

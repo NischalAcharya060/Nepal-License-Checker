@@ -135,16 +135,20 @@ export default function SponsorModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 p-0 sm:p-4 backdrop-blur-md transition-opacity duration-300"
-      style={backdropStyle}
-      onClick={triggerClose}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="sponsor-modal-title"
     >
       <div
+        className="absolute inset-0 bg-black/75 backdrop-blur-md"
+        style={backdropStyle}
+        onClick={triggerClose}
+        aria-hidden="true"
+      />
+      <div
         style={modalStyle}
-        className="relative flex max-h-[83vh] sm:max-h-[88vh] w-full max-w-lg flex-col overflow-hidden rounded-t-[28px] sm:rounded-3xl dev-glass-card shadow-2xl border border-[var(--border-default)] animate-rise-in pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+        className="relative flex max-h-[83vh] sm:max-h-[88vh] w-full max-w-lg flex-col overflow-hidden rounded-t-[28px] sm:rounded-3xl dev-glass-card shadow-2xl border border-[var(--border-default)] pb-[max(0.75rem,env(safe-area-inset-bottom))]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Mobile Swipe-to-Close Drag Indicator */}

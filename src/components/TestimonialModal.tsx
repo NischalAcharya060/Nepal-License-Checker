@@ -121,16 +121,20 @@ export default function TestimonialModal({
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4 backdrop-blur-xs transition-opacity duration-300"
-            style={backdropStyle}
-            onClick={triggerClose}
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
             role="dialog"
             aria-modal="true"
             aria-labelledby="testimonial-modal-title"
         >
             <div
+                className="absolute inset-0 bg-black/60 backdrop-blur-xs"
+                style={backdropStyle}
+                onClick={triggerClose}
+                aria-hidden="true"
+            />
+            <div
                 style={modalStyle}
-                className="relative w-full max-w-lg rounded-t-[28px] sm:rounded-3xl dev-glass-card p-5 sm:p-7 shadow-2xl transition max-h-[83vh] sm:max-h-[88vh] overflow-y-auto no-scrollbar pb-[max(1.5rem,env(safe-area-inset-bottom))]"
+                className="relative w-full max-w-lg rounded-t-[28px] sm:rounded-3xl dev-glass-card p-5 sm:p-7 shadow-2xl max-h-[83vh] sm:max-h-[88vh] overflow-y-auto no-scrollbar pb-[max(1.5rem,env(safe-area-inset-bottom))]"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Mobile handle indicator & Swipe Down zone */}

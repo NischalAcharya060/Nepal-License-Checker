@@ -673,13 +673,17 @@ export default function Footer({
       {/* Required Documents Modal */}
       {mounted && docsSwipe.isRendered && createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/65 p-0 sm:p-4 backdrop-blur-md transition-opacity duration-300"
-          style={docsSwipe.backdropStyle}
-          onClick={docsSwipe.triggerClose}
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
           role="dialog"
           aria-modal="true"
           aria-label={isNe ? 'लाइसेन्स लिन चाहिने कागजात' : 'Required Documents Checklist'}
         >
+          <div
+            className="absolute inset-0 bg-black/65 backdrop-blur-md"
+            style={docsSwipe.backdropStyle}
+            onClick={docsSwipe.triggerClose}
+            aria-hidden="true"
+          />
           <div
             style={docsSwipe.modalStyle}
             className="relative flex flex-col w-full max-w-xl max-h-[83vh] sm:max-h-[85vh] overflow-hidden rounded-t-[28px] sm:rounded-3xl bg-[var(--surface-primary)] dev-glass-card shadow-2xl border border-[var(--border-default)] pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-0"
@@ -835,13 +839,17 @@ export default function Footer({
       {/* Vehicle Categories Breakdown Modal */}
       {mounted && categoriesSwipe.isRendered && createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/65 p-0 sm:p-4 backdrop-blur-md transition-opacity duration-300"
-          style={categoriesSwipe.backdropStyle}
-          onClick={categoriesSwipe.triggerClose}
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
           role="dialog"
           aria-modal="true"
           aria-label={isNe ? 'सवारी साधनका वर्गहरू' : 'Vehicle Categories Breakdown'}
         >
+          <div
+            className="absolute inset-0 bg-black/65 backdrop-blur-md"
+            style={categoriesSwipe.backdropStyle}
+            onClick={categoriesSwipe.triggerClose}
+            aria-hidden="true"
+          />
           <div
             style={categoriesSwipe.modalStyle}
             className="relative flex flex-col w-full max-w-2xl max-h-[83vh] sm:max-h-[85vh] overflow-hidden rounded-t-[28px] sm:rounded-3xl bg-[var(--surface-primary)] dev-glass-card shadow-2xl border border-[var(--border-default)] pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-0"
