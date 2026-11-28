@@ -13,7 +13,15 @@ export default function FaqSection({ language, lastUpdatedAt }: FaqSectionProps)
       ? [
           {
             q: 'DOTM को स्मार्ट लाइसेन्स छापिएको सूची (Smart Licence Printed List) अनलाइन कसरी चेक गर्ने?',
-            a: 'आफ्नो सवारी चालक अनुमतिपत्र नम्बर XX-XX-XXXXXXXX ढाँचामा माथिको खोज बाकसमा राखेर "स्थिति जाँच्नुहोस्" मा क्लिक गर्नुहोस्। हाम्रो प्रणालीले १० लाख+ आधिकारिक रेकर्डहरूबाट तपाईंको कार्ड छापिएको छ वा छैन तुरुन्तै देखाउँछ।',
+            a: 'आफ्नो सवारी चालक अनुमतिपत्र नम्बर XX-XX-XXXXXXXX ढाँचामा माथिको खोज बाकसमा राखेर "स्थिति जाँच्नुहोस्" मा क्लिक गर्नुहोस्। हाम्रो प्रणालीले आधिकारिक सरकारी रेकर्डहरूबाट तपाईंको कार्ड छापिएको छ वा छैन तुरुन्तै देखाउँछ।',
+          },
+          {
+            q: 'www.dotm.gov.np को सट्टा यो पोर्टलमा लाइसेन्स प्रिन्ट चेक किन गर्ने?',
+            a: 'यातायात व्यवस्था विभागको आधिकारिक पोर्टल (dotm.gov.np) मा धेरै प्रयोगकर्ता हुँदा सर्भर स्लो हुने वा डाउन हुने समस्या आउँछ। यहाँ आधिकारिक छपाइ सूची सिङ्क गरिएको हुनाले बिना कुनै सर्भर अवरोध तुरुन्तै परिणाम प्राप्त हुन्छ।',
+          },
+          {
+            q: 'के काठमाडौं, जनकपुर, बुटवल, पोखरा लगायत सबै यातायात कार्यालयहरूको लाइसेन्स चेक गर्न सकिन्छ?',
+            a: 'हो, नेपालभरका सबै ७ प्रदेश र २५ भन्दा बढी यातायात कार्यालयहरू (एकान्तकुना, ठूलोभर्‍याङ, चाबहिल, राधेराधे, जनकपुर, बुटवल, पोखरा, वीरगञ्ज, विराटनगर, इटहरी, चितवन, नेपालगञ्ज, धनगढी आदि) को छपाइ स्थिति यहाँ जाँच गर्न सकिन्छ।',
           },
           {
             q: 'के नागरिकता नम्बर वा नामबाट लाइसेन्स छापिएको कि छैन चेक गर्न सकिन्छ?',
@@ -62,8 +70,16 @@ export default function FaqSection({ language, lastUpdatedAt }: FaqSectionProps)
         ]
       : [
           {
-            q: 'How to check smart licence printed list online on dotm.gov.np?',
-            a: 'Enter your driving license number in the XX-XX-XXXXXXXX format in our search tool above and click “Check Status”. Our system instantly searches across 1,000,000+ official DOTM printed records and shows whether your card is printed and ready for pickup at your local transport office.',
+            q: 'How to check driving license print check online on dotm.gov.np?',
+            a: 'Enter your driving license number in the XX-XX-XXXXXXXX format in our search tool above and click “Check Status”. Our system instantly searches across official DOTM printed records and shows whether your card is printed and ready for pickup at your local transport office.',
+          },
+          {
+            q: 'Why check license print check here instead of www.dotm.gov.np?',
+            a: 'The official DOTM portal (dotm.gov.np / applydlnew) often experiences high server traffic, slow response times, or connection timeouts. Our database mirrors the latest published print lists directly so you can verify your driving license print status instantly without server lag.',
+          },
+          {
+            q: 'Can I check driving license print check for Kathmandu, Janakpur, Butwal, Pokhara, and other transport offices?',
+            a: 'Yes! The tool indexes printed smart card records across all 7 provinces and 25+ Transport Management Offices (TMOs), including Kathmandu (Ekantakuna, Thulo Bharyang, Chabahil, Radhe Radhe), Janakpur, Butwal, Pokhara, Birgunj, Biratnagar, Itahari, Chitwan, Nepalgunj, Dhangadhi, and more.',
           },
           {
             q: 'Can I check my driving license print status by citizenship number or name?',

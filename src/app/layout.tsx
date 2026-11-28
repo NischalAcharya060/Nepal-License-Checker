@@ -20,14 +20,14 @@ const mukta = Mukta({
 
 const siteUrl = getSiteUrl()
 
-const appTitleEn = 'Smart Licence Printed List | DOTM Nepal License Print Check'
-const appTitleNe = 'सवारी चालक अनुमति पत्र चेक | स्मार्ट लाइसेन्स छापिएको सूची - DOTM'
+const appTitleEn = 'License Print Check Nepal | Driving License Smart Card Status'
+const appTitleNe = 'सवारी चालक अनुमति पत्र चेक | नेपाल स्मार्ट लाइसेन्स प्रिन्ट अवस्था'
 const appTitle = `${appTitleEn} · ${appTitleNe}`
 
 const appDescriptionEn =
-  'Check smart licence printed list from DOTM Nepal. Search your smart card driving license print status online (सवारी चालक अनुमति पत्र चेक) across 1,000,000+ indexed official dotm.gov.np records.'
+  'Instant Nepal driving license print check. Search official DOTM smart card records across Kathmandu, Pokhara, Butwal, Janakpur & all Yatayat offices.'
 const appDescriptionNe =
-  'यातायात व्यवस्था विभाग (DOTM) को स्मार्ट लाइसेन्स छापिएको सूची (Smart Licence Printed List) मा आफ्नो सवारी चालक अनुमति पत्र चेक गर्नुहोस्। १० लाख+ अभिलेखहरूमा निःशुल्क अनलाइन खोजी।'
+  'नेपाल सवारी चालक अनुमतिपत्र प्रिन्ट चेक। काठमाडौं, पोखरा, बुटवल, जनकपुर लगायत सबै यातायात कार्यालयहरूको आधिकारिक DOTM स्मार्ट कार्ड स्थिति तुरुन्तै जाँच गर्नुहोस्।'
 const appDescription = `${appDescriptionEn} | ${appDescriptionNe}`
 
 const themeInitScript = `
@@ -219,6 +219,7 @@ const structuredData = {
         '@type': 'Thing',
         name: 'Nepal Smart Card Driving License Print Status',
       },
+      image: `${siteUrl}/og-image.png`,
       mainEntity: {
         '@id': `${siteUrl}/#service`,
       },
@@ -230,18 +231,50 @@ const structuredData = {
       mainEntity: [
         {
           '@type': 'Question',
-          name: 'How to check smart licence printed list online on dotm.gov.np?',
+          name: 'How to check driving license print check online in Nepal?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'To check the smart licence printed list from DOTM Nepal, enter your driving license number (XX-XX-XXXXXXXX) into the search box above. Our tool checks your status instantly across 1,000,000+ indexed official DOTM printed records and shows whether your card is printed and ready for pickup at your local Transport Management Office (TMO).',
+            text: 'To check your driving license print check status online, enter your license number (XX-XX-XXXXXXXX) into the search box above. Our tool verifies your status instantly across official DOTM smart card print records and indicates whether your card is printed and ready for collection at your local Transport Management Office (TMO).',
           },
         },
         {
           '@type': 'Question',
-          name: 'DOTM को स्मार्ट लाइसेन्स छापिएको सूची (Smart Licence Printed List) अनलाइन कसरी चेक गर्ने?',
+          name: 'नेपालमा सवारी चालक अनुमतिपत्र प्रिन्ट चेक (License Print Check) अनलाइन कसरी गर्ने?',
           acceptedAnswer: {
             '@type': 'Answer',
             text: 'आफ्नो सवारी चालक अनुमतिपत्र नम्बर XX-XX-XXXXXXXX ढाँचामा माथिको खोज बाकसमा हालेर "स्थिति जाँच्नुहोस्" मा थिच्नुहोस्। यदि तपाईंको कार्ड यातायात व्यवस्था विभाग (DOTM) द्वारा छापिएको छ भने कार्यालयको नाम र संकलन निर्देशन तुरुन्तै देखाउँछ।',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'Why check license print check here instead of www.dotm.gov.np?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'The official DOTM portal (dotm.gov.np / applydlnew) often experiences high server traffic, slow loading times, or connection timeouts. Our database mirrors the latest published DOTM smart licence printed lists so you can check your driving license print status instantly without server errors.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'www.dotm.gov.np को सट्टा यहाँ लाइसेन्स प्रिन्ट चेक किन गर्ने?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'यातायात व्यवस्था विभागको आधिकारिक पोर्टल (dotm.gov.np) मा धेरै ट्राफिक हुँदा ढिला खुल्ने वा सर्भर समस्या (Server Down) हुने गर्दछ। यहाँ आधिकारिक छपाइ सूची द्रुत गतिमा बिना कुनै सर्भर अवरोध तुरुन्तै जाँच गर्न सकिन्छ।',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'Can I check driving license print check for Kathmandu, Janakpur, Butwal, Pokhara, and other transport offices?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Yes. The system indexes printed license records across all 7 provinces and 25+ Transport Management Offices, including Kathmandu (Ekantakuna, Thulo Bharyang, Chabahil, Radhe Radhe), Janakpur, Butwal, Pokhara, Birgunj, Biratnagar, Itahari, Chitwan, Nepalgunj, Dhangadhi, and more.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'के काठमाडौं, जनकपुर, बुटवल, पोखरा लगायत सबै यातायात कार्यालयहरूको लाइसेन्स चेक गर्न सकिन्छ?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'हो, यहाँ नेपालका सबै ७ प्रदेश र २५ भन्दा बढी यातायात कार्यालयहरू (एकान्तकुना, ठूलोभर्‍याङ, चाबहिल, राधेराधे, जनकपुर, बुटवल, पोखरा, वीरगञ्ज, विराटनगर, इटहरी, चितवन, नेपालगञ्ज, धनगढी आदि) बाट प्रकाशित छपाइ सूची जाँच गर्न सकिन्छ।',
           },
         },
         {
@@ -481,27 +514,26 @@ export const metadata: Metadata = {
     statusBarStyle: 'black-translucent',
   },
   openGraph: {
-    title: appTitle,
-    description: appDescription,
+    title: appTitleEn,
+    description: appDescriptionEn,
     url: '/',
     siteName: 'Nepal License Checker',
     type: 'website',
     locale: 'en_NP',
     alternateLocale: ['ne_NP'],
-    countryName: 'Nepal',
     images: [
       {
         url: '/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'Nepal License Checker - Smart Card Driving License Status',
+        width: 1892,
+        height: 981,
+        alt: 'License Print Check Nepal - Driving License Smart Card Status',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: appTitle,
-    description: appDescription,
+    title: appTitleEn,
+    description: appDescriptionEn,
     creator: '@nischal_dev',
     images: ['/og-image.png'],
   },
@@ -767,6 +799,75 @@ export const metadata: Metadata = {
     'yatayat licence check nepal',
     'kasari check garne nepal license',
     'kasari check garne',
+    // Regional & City Specific Queries from Google Search Console
+    'driving license print check kathmandu',
+    'driving license print check janakpur',
+    'driving license print check butwal',
+    'driving license print check biratnagar',
+    'driving license print check birgunj',
+    'driving license print check nepalgunj',
+    'driving license print check chitwan',
+    'driving license print check bharatpur',
+    'driving license print check pokhara',
+    'driving license print check hetauda',
+    'driving license print check bardibas',
+    'driving license print check jhapa',
+    'driving license print check palpa',
+    'driving license print check dhangadhi',
+    'driving license print check sunsari',
+    'driving license print check itahari',
+    'driving license print check bhaktapur',
+    'driving license print check chabahil',
+    'driving license print check thulo bharyang',
+    'driving license print check radhe radhe',
+    'driving license print check ekantakuna',
+    'driving license print check bagmati pradesh',
+    'driving license print check madhesh pradesh',
+    'driving license print check koshi pradesh',
+    'driving license print check gandaki',
+    'driving license print check lumbini',
+    'smart license print check online rupandehi',
+    'smart license print check online butwal',
+    'smart license print check online kathmandu',
+    'smart license print check online janakpur',
+    'smart license print check online birgunj',
+    'smart license print check online nepalgunj',
+    'smart license print check online itahari',
+    'smart license print check online pokhara',
+    'smart license print check online chitwan',
+    'smart license print check online bagmati',
+    'smart license print check online koshi pradesh',
+    'nepali driving licence print check online butwal',
+    'nepali driving licence print check online kathmandu',
+    'nepali driving licence print check online janakpur',
+    'nepali driving licence print check online birgunj',
+    'nepali driving licence print check online itahari',
+    'nepali driving licence print check online bhaktapur',
+    'nepali driving licence print check online pokhara',
+    'thulo bharyang license check',
+    'chabahil license print check',
+    'radhe radhe license print check',
+    'dotm license check by name',
+    'dotm license check by name nepal',
+    'license check by citizenship number',
+    'how to check if license is printed or not',
+    'is my license printed',
+    'how to check smart license printed or not',
+    'nagarik app license check',
+    'license print check sms',
+    '33001 license check',
+    'apply new.dotm.gov.np license check',
+    'applydlnew.dotm.gov.np/licensecheck',
+    'driving license online print check',
+    'how to find license number in nepal',
+    'bike license print check',
+    'car license check nepal',
+    'license renewal print check',
+    'laisan print check',
+    'liscence print check',
+    'लाइसेन्स प्रिंट चेक',
+    'नेपाली लाइसेन्स चेक',
+    'सवारी चालक अनुमति पत्र खोजी',
   ],
   authors: [
     { name: 'Nischal Acharya', url: 'https://acharyanischal.com.np/' },

@@ -3,9 +3,9 @@ import type { UICopy } from './types'
 export const en: UICopy = {
   home: {
     badge: 'Govt. of Nepal · DOTM Data',
-    title: 'Smart Driving License',
-    titleAccent: 'Print Status',
-    description: 'Instantly check if your Nepal smart card driving license has been printed by the Department of Transport Management (DOTM) and is ready for collection.',
+    title: 'Driving License',
+    titleAccent: 'Print Check',
+    description: 'Instant Nepal driving license print check. Search official DOTM smart card records across Kathmandu, Pokhara, Butwal, Janakpur & all Yatayat offices.',
     themeLabel: 'Appearance',
     lightLabel: 'Light',
     darkLabel: 'Dark',
