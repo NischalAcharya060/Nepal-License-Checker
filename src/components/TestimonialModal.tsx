@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import type { Language } from '@/lib/i18n'
+import { useSwipeDownToClose } from '@/hooks/useSwipeDownToClose'
 
 interface TestimonialModalProps {
     isOpen: boolean
@@ -28,6 +29,11 @@ export default function TestimonialModal({
     const [errorMessage, setErrorMessage] = useState('')
     const [isSuccess, setIsSuccess] = useState(false)
 
+    const { isRendered, triggerClose, modalStyle, backdropStyle, handleProps } = useSwipeDownToClose({
+        isOpen,
+        onClose,
+    })
+
     // Reset when modal opens without cascading effect setState
     const [prevIsOpen, setPrevIsOpen] = useState(isOpen)
     if (isOpen !== prevIsOpen) {
@@ -38,18 +44,7 @@ export default function TestimonialModal({
         }
     }
 
-    // Close on Escape key
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && isOpen && !isSubmitting) {
-                onClose()
-            }
-        }
-        window.addEventListener('keydown', handleKeyDown)
-        return () => window.removeEventListener('keydown', handleKeyDown)
-    }, [isOpen, isSubmitting, onClose])
-
-    if (!isOpen) return null
+    if (!isRendered) return null
 
     const ratingLabels: Record<number, { en: string; ne: string }> = {
         5: { en: 'Outstanding / Very Helpful', ne: 'अति उत्तम / धेरै उपयोगी' },
@@ -126,17 +121,28 @@ export default function TestimonialModal({
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4 backdrop-blur-xs animate-fade-in"
-            onClick={onClose}
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4 backdrop-blur-xs transition-opacity duration-300"
+            style={backdropStyle}
+            onClick={triggerClose}
             role="dialog"
             aria-modal="true"
             aria-labelledby="testimonial-modal-title"
         >
             <div
-                className="relative w-full max-w-lg rounded-t-[28px] sm:rounded-3xl dev-glass-card p-5 sm:p-7 shadow-2xl transition max-h-[92vh] overflow-y-auto no-scrollbar"
+                style={modalStyle}
+                className="relative w-full max-w-lg rounded-t-[28px] sm:rounded-3xl dev-glass-card p-5 sm:p-7 shadow-2xl transition max-h-[83vh] sm:max-h-[88vh] overflow-y-auto no-scrollbar pb-[max(1.5rem,env(safe-area-inset-bottom))]"
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="w-10 h-1 bg-[var(--border-default)] rounded-full mx-auto -mt-2 mb-3 sm:hidden" aria-hidden />
+                {/* Mobile handle indicator & Swipe Down zone */}
+                <div
+                    className="w-full pt-1 pb-3 flex flex-col items-center justify-center cursor-grab active:cursor-grabbing touch-none select-none sm:hidden"
+                    {...handleProps}
+                >
+                    <div className="w-12 h-1.5 bg-[var(--border-default)] hover:bg-[var(--text-muted)] rounded-full transition-colors" />
+                    <span className="text-[10px] text-[var(--text-muted)] mt-1 font-medium opacity-65 tracking-tight">
+                        {isNe ? 'बन्द गर्न तल तान्नुहोस्' : 'Swipe down to close'}
+                    </span>
+                </div>
 
                 {/* Header */}
                 <div className="flex items-start justify-between gap-4 border-b border-[var(--border-default)]/60 pb-4">
@@ -162,7 +168,7 @@ export default function TestimonialModal({
                     </div>
                     <button
                         type="button"
-                        onClick={onClose}
+                        onClick={triggerClose}
                         className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-xl border border-[var(--border-default)] p-2 text-[var(--text-muted)] transition hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
                         aria-label="Close dialog"
                     >
@@ -202,7 +208,7 @@ export default function TestimonialModal({
                         <div className="mt-6 flex justify-center">
                             <button
                                 type="button"
-                                onClick={onClose}
+                                onClick={triggerClose}
                                 className="rounded-xl bg-[var(--nepal-blue)] px-6 py-2.5 text-xs font-bold text-white shadow-md hover:opacity-95 transition cursor-pointer"
                             >
                                 {isNe ? 'बन्द गर्नुहोस्' : 'Done & Close'}
@@ -350,7 +356,7 @@ export default function TestimonialModal({
                         <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-[var(--border-default)]/60">
                             <button
                                 type="button"
-                                onClick={onClose}
+                                onClick={triggerClose}
                                 disabled={isSubmitting}
                                 className="rounded-xl border border-[var(--border-default)] px-4 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition cursor-pointer"
                             >

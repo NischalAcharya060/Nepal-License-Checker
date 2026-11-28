@@ -705,8 +705,8 @@ export default function LicenseResult({
                     </p>
                     <p className="text-[11px] text-[var(--text-secondary)]">
                       {language === 'ne'
-                        ? 'सर्भर तथा डेटाबेस सञ्चालन खर्च धान्न स्वेच्छिक सहयोग गर्न सक्नुहुन्छ।'
-                        : 'Consider supporting this open-source tool via eSewa or Khalti.'}
+                        ? 'तपाईंको सानो सहयोगले हामीलाई आफ्नै .com डोमेन लिन र भरपर्दो सर्भर होस्टिङ सञ्चालन गर्न मद्दत पुग्छ।'
+                        : 'Your support helps us purchase an official .com domain & maintain reliable high-speed hosting.'}
                     </p>
                   </div>
                 </div>

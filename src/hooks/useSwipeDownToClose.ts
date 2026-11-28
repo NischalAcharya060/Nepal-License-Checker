@@ -274,13 +274,9 @@ export function useSwipeDownToClose({
     isDragging: isSwipeDisabled ? false : isDragging,
     isDesktop,
     triggerClose,
-    containerProps: isSwipeDisabled
-      ? {}
-      : {
-          onTouchStart: handleTouchStart,
-          onTouchMove: handleTouchMove,
-          onTouchEnd: handleTouchEnd,
-        },
+    // containerProps is intentionally empty so that scrolling inside modal content
+    // never accidentally triggers swipe-down-to-close. Swipe is strictly handled via handleProps.
+    containerProps: {},
     handleProps: isSwipeDisabled
       ? {}
       : {

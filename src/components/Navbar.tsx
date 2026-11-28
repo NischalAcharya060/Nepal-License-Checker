@@ -199,18 +199,29 @@ export default function Navbar({
             </button>
           )}
 
-          {/* Sponsor / Support Button (Desktop) */}
+          {/* Sponsor / Support Button (Visible on both Mobile & Desktop) */}
           {onOpenSponsor && (
             <button
               type="button"
               onClick={onOpenSponsor}
-              className="hidden items-center gap-1.5 rounded-full border border-rose-500/30 bg-rose-500/10 px-3 py-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 transition hover:bg-rose-500/20 active:scale-95 sm:inline-flex cursor-pointer group shadow-2xs"
-              title={language === 'ne' ? 'परियोजनालाई सहयोग गर्नुहोस्' : 'Support / Sponsor Project'}
+              className="inline-flex h-8 w-8 min-[380px]:w-auto min-[380px]:h-auto items-center justify-center gap-1 min-[380px]:gap-1.5 rounded-full border border-rose-500/30 bg-rose-500/10 px-2 min-[380px]:px-2.5 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-bold text-rose-600 dark:text-rose-400 transition hover:bg-rose-500/20 active:scale-95 cursor-pointer group shadow-2xs shrink-0"
+              title={
+                language === 'ne'
+                  ? 'परियोजनालाई .com डोमेन र होस्टिङका लागि सहयोग गर्नुहोस्'
+                  : 'Support Project: Help fund our .com domain & reliable hosting'
+              }
+              aria-label={
+                language === 'ne'
+                  ? 'परियोजनालाई .com डोमेन र होस्टिङका लागि सहयोग गर्नुहोस्'
+                  : 'Support Project: Help fund our .com domain & reliable hosting'
+              }
             >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" className="text-rose-500 transition-transform group-hover:scale-110">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" className="text-rose-500 transition-transform group-hover:scale-115 shrink-0" aria-hidden="true">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
               </svg>
-              <span>{language === 'ne' ? 'सहयोग' : 'Sponsor'}</span>
+              <span className="hidden min-[380px]:inline">
+                {language === 'ne' ? 'सहयोग' : 'Sponsor'}
+              </span>
             </button>
           )}
 
@@ -662,7 +673,9 @@ export default function Navbar({
                       {language === 'ne' ? 'परियोजनालाई सहयोग (Sponsor)' : 'Support this Project'}
                     </span>
                     <span className="text-[10px] text-[var(--text-secondary)]">
-                      {language === 'ne' ? 'eSewa वा Khalti मार्फत स्वेच्छिक सहयोग' : 'Voluntary donation via eSewa or Khalti'}
+                      {language === 'ne'
+                        ? '.com डोमेन र भरपर्दो होस्टिङका लागि स्वेच्छिक सहयोग'
+                        : 'Help fund our .com domain & reliable hosting'}
                     </span>
                   </div>
                 </div>

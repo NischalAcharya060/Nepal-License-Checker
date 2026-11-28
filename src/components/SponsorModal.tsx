@@ -30,7 +30,6 @@ export default function SponsorModal({
     modalStyle,
     backdropStyle,
     handleProps,
-    containerProps,
   } = useSwipeDownToClose({
     isOpen,
     onClose,
@@ -145,8 +144,7 @@ export default function SponsorModal({
     >
       <div
         style={modalStyle}
-        {...containerProps}
-        className="relative flex max-h-[92vh] sm:max-h-[88vh] w-full max-w-lg flex-col overflow-hidden rounded-t-[28px] sm:rounded-3xl dev-glass-card shadow-2xl border border-[var(--border-default)] animate-rise-in pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+        className="relative flex max-h-[83vh] sm:max-h-[88vh] w-full max-w-lg flex-col overflow-hidden rounded-t-[28px] sm:rounded-3xl dev-glass-card shadow-2xl border border-[var(--border-default)] animate-rise-in pb-[max(0.75rem,env(safe-area-inset-bottom))]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Mobile Swipe-to-Close Drag Indicator */}
@@ -183,8 +181,8 @@ export default function SponsorModal({
               </h2>
               <p className="text-[11px] sm:text-xs text-[var(--text-secondary)] font-medium">
                 {isNe
-                  ? 'निःशुल्क नागरिक सेवालाई निरन्तरता दिन स्वेच्छिक सहयोग'
-                  : 'Voluntary civic contribution via Digital Wallet'}
+                  ? '.com डोमेन र भरपर्दो होस्टिङका लागि नागरिक सहयोग'
+                  : 'Fund our official .com domain & reliable cloud hosting'}
               </p>
             </div>
           </div>
@@ -225,9 +223,45 @@ export default function SponsorModal({
             </div>
             <p>
               {isNe
-                ? 'यो पोर्टल कुनै सरकारी अनुदान बिना स्वतन्त्र रूपमा सञ्चालित छ। तपाईँको सानो स्वेच्छिक सहयोग (रु. १०, २५, ५०, १०० वा आफ्नो इच्छा अनुसार) सिधै दैनिक क्लाउड सर्भर, डेटाबेस सिङ्क तथा डोमेन नवीकरणमा खर्च हुनेछ।'
-                : 'Nepal License Checker runs independently with zero ads. Your voluntary contributions (NPR 10, 25, 50, 100 or whatever you wish) directly fund automated scraper cloud servers, database queries, and domain upkeep.'}
+                ? 'यो पोर्टल कुनै सरकारी बजेट बिना स्वतन्त्र रूपमा सञ्चालित छ। तपाईँको कुनै पनि सानो स्वेच्छिक सहयोग (रु. १०, २५, ५० वा १००) सिधै यस परियोजनाको लागि आफ्नै आधिकारिक .com डोमेन खरिद गर्न र भरपर्दो, द्रुत सर्भर होस्टिङ सञ्चालन गर्न प्रयोग गरिनेछ।'
+                : 'Nepal License Checker runs 100% independently with zero ads. Any voluntary contribution (NPR 10, 25, 50, 100 or any amount) directly funds purchasing our official .com domain and maintaining fast, high-uptime server hosting for all citizens.'}
             </p>
+
+            {/* Target Funding Milestones */}
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2.5 border-t border-[var(--border-default)]/60 text-[11px]">
+              <div className="flex items-center gap-2 rounded-xl bg-[var(--bg-secondary)] px-3 py-2 border border-[var(--border-default)]/50">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--nepal-blue)] shrink-0" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="2" y1="12" x2="22" y2="12" />
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                </svg>
+                <div className="flex flex-col min-w-0">
+                  <span className="font-bold text-[var(--text-primary)] truncate">
+                    {isNe ? 'आधिकारिक .com डोमेन' : 'Official .com Domain'}
+                  </span>
+                  <span className="text-[10px] text-[var(--text-muted)]">
+                    {isNe ? 'सजिलो र सुरक्षित पहुँच' : 'Direct & trusted web address'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 rounded-xl bg-[var(--bg-secondary)] px-3 py-2 border border-[var(--border-default)]/50">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500 shrink-0" aria-hidden="true">
+                  <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
+                  <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
+                  <line x1="6" y1="6" x2="6.01" y2="6" />
+                  <line x1="6" y1="18" x2="6.01" y2="18" />
+                </svg>
+                <div className="flex flex-col min-w-0">
+                  <span className="font-bold text-[var(--text-primary)] truncate">
+                    {isNe ? 'भरपर्दो सर्भर होस्टिङ' : 'Reliable Cloud Hosting'}
+                  </span>
+                  <span className="text-[10px] text-[var(--text-muted)]">
+                    {isNe ? 'द्रुत र अविरल सञ्चालन' : '99.9% uptime & fast queries'}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Wallet Switcher Tabs (eSewa & Khalti) */}
