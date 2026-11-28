@@ -116,13 +116,18 @@ export default function OfficesModal({ isOpen, onClose, copy, language }: Office
     <>
       {/* Main Offices Directory Modal */}
       <div
-        style={{ zIndex: 1000, ...backdropStyle }}
-        className="fixed inset-0 flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4 backdrop-blur-sm transition-opacity duration-300"
-        onClick={triggerClose}
+        style={{ zIndex: 1000 }}
+        className="fixed inset-0 flex items-end sm:items-center justify-center p-0 sm:p-4"
         role="dialog"
         aria-modal="true"
         aria-labelledby="offices-modal-title"
       >
+        <div
+          className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+          style={backdropStyle}
+          onClick={triggerClose}
+          aria-hidden="true"
+        />
         <div
           style={modalStyle}
           className="relative flex max-h-[83vh] sm:max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[28px] sm:rounded-3xl dev-glass-card shadow-2xl pb-[max(1rem,env(safe-area-inset-bottom))]"

@@ -192,15 +192,19 @@ export default function FeedbackModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs transition-opacity duration-300"
-      style={backdropStyle}
-      onClick={(e) => {
-        if (e.target === e.currentTarget && !isSubmitting && !isTracking) triggerClose()
-      }}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="feedback-modal-title"
     >
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-xs"
+        style={backdropStyle}
+        onClick={() => {
+          if (!isSubmitting && !isTracking) triggerClose()
+        }}
+        aria-hidden="true"
+      />
       <div
         style={modalStyle}
         className="relative flex flex-col max-h-[83vh] sm:max-h-[88vh] w-full max-w-lg rounded-t-[28px] sm:rounded-3xl dev-glass-card shadow-2xl overflow-hidden pb-[max(1rem,env(safe-area-inset-bottom))]"

@@ -30,13 +30,17 @@ export default function SmsModal({ isOpen, onClose, copy }: SmsModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4 backdrop-blur-sm transition-opacity duration-300"
-      style={backdropStyle}
-      onClick={triggerClose}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="sms-modal-title"
     >
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        style={backdropStyle}
+        onClick={triggerClose}
+        aria-hidden="true"
+      />
       <div
         style={modalStyle}
         className="relative flex max-h-[83vh] sm:max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-t-[28px] sm:rounded-3xl dev-glass-card shadow-2xl pb-[max(1rem,env(safe-area-inset-bottom))]"

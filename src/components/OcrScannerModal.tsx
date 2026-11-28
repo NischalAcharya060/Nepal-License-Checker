@@ -56,6 +56,33 @@ function compressImageFile(file: File, maxWidth = 960, quality = 0.72): Promise<
   })
 }
 
+/** Human-readable, actionable camera error messages for both languages. */
+function getCameraErrorMessage(err: unknown, isNe: boolean, fallback?: string): string {
+  const name = err instanceof DOMException ? err.name : (err as { name?: string } | null)?.name
+
+  if (name === 'NotAllowedError' || name === 'PermissionDeniedError' || name === 'SecurityError') {
+    return isNe
+      ? 'क्यामेरा अनुमति ब्लक छ। ब्राउजरको साइट सेटिङ्समा क्यामेरा अनुमति दिनुहोस्, त्यसपछि "फेरि प्रयास गर्नुहोस्" थिच्नुहोस्।'
+      : 'Camera access is blocked. Allow camera for this site in your browser settings, then tap “Try again”.'
+  }
+  if (name === 'NotFoundError' || name === 'DevicesNotFoundError' || name === 'OverconstrainedError') {
+    return isNe
+      ? 'यन्त्रमा क्यामेरा भेटिएन। ग्यालरीबाट फोटो अपलोड गर्नुहोस्।'
+      : 'No camera found on this device. Please upload a photo from your gallery.'
+  }
+  if (name === 'NotReadableError' || name === 'TrackStartError') {
+    return isNe
+      ? 'क्यामेरा अर्को एपमा प्रयोग भइरहेको छ। बन्द गरेर फेरि प्रयास गर्नुहोस्।'
+      : 'Camera is busy in another app. Close it and try again.'
+  }
+  return (
+    fallback ||
+    (isNe
+      ? 'क्यामेरा सुरु गर्न सकिएन। ग्यालरीबाट फोटो अपलोड गर्नुहोस्।'
+      : 'Could not start the camera. Please upload a photo from your gallery.')
+  )
+}
+
 export default function OcrScannerModal({
   isOpen,
   onClose,
@@ -68,6 +95,7 @@ export default function OcrScannerModal({
   const [previewImage, setPreviewImage] = useState<string | null>(null)
   const [scanning, setScanning] = useState(false)
   const [cameraError, setCameraError] = useState<string | null>(null)
+  const [cameraRetryCount, setCameraRetryCount] = useState(0)
 
   // Auto-capture countdown & document detection states
   const [autoCaptureEnabled, setAutoCaptureEnabled] = useState(true)
@@ -141,6 +169,21 @@ export default function OcrScannerModal({
       return
     }
 
+    if (typeof window !== 'undefined' && !window.isSecureContext) {
+      // getUserMedia is unavailable on insecure origins, so no prompt can appear.
+      const timer = setTimeout(() => {
+        if (!isCancelled) {
+          setCameraActive(false)
+          setCameraError(
+            isNe
+              ? 'क्यामेरा प्रयोग गर्न HTTPS आवश्यक छ। सुरक्षित लिङ्कबाट खोल्नुहोस् वा ग्यालरीबाट फोटो अपलोड गर्नुहोस्।'
+              : 'Camera needs a secure (HTTPS) connection. Open the site over HTTPS or upload a photo from your gallery.'
+          )
+        }
+      }, 0)
+      return () => clearTimeout(timer)
+    }
+
     if (!navigator?.mediaDevices?.getUserMedia) {
       // Async dispatch error so setState is not synchronous in effect body
       const timer = setTimeout(() => {
@@ -191,12 +234,7 @@ export default function OcrScannerModal({
         console.warn('Camera getUserMedia error:', err)
         if (!isCancelled) {
           setCameraActive(false)
-          setCameraError(
-            copy?.scanPermissionDenied ||
-              (isNe
-                ? 'क्यामेरा चलाउन अनुमति मिलेन वा उपलब्ध छैन। कृपया तलको बटनबाट फोटो अपलोड गर्नुहोस्।'
-                : 'Camera access denied or unavailable. Please upload a photo using the button below.')
-          )
+          setCameraError(getCameraErrorMessage(err, isNe, copy?.scanPermissionDenied))
         }
       })
 
@@ -210,7 +248,7 @@ export default function OcrScannerModal({
         streamRef.current = null
       }
     }
-  }, [isOpen, previewImage, facingMode, copy?.scanPermissionDenied, isNe])
+  }, [isOpen, previewImage, facingMode, cameraRetryCount, copy?.scanPermissionDenied, isNe])
 
   // Ensure stream is attached to video element as soon as videoRef mounts or updates
   useEffect(() => {
@@ -546,10 +584,14 @@ export default function OcrScannerModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 p-0 sm:p-4 backdrop-blur-md transition-opacity duration-300"
-      style={backdropStyle}
-      onClick={triggerClose}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
     >
+      <div
+        className="absolute inset-0 bg-black/75 backdrop-blur-md"
+        style={backdropStyle}
+        onClick={triggerClose}
+        aria-hidden="true"
+      />
       <div
         role="dialog"
         aria-modal="true"
@@ -768,6 +810,22 @@ export default function OcrScannerModal({
                   <p className="mt-1 text-xs text-white/60">
                     {isNe ? 'वा तलको बटनबाट ग्यालरीबाट सिधै फोटो छान्नुहोस्' : 'Or upload a photo directly from your device'}
                   </p>
+                  {cameraError && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCameraError(null)
+                        setCameraRetryCount((count) => count + 1)
+                      }}
+                      className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-xs font-bold text-white transition hover:bg-white/20 active:scale-95 cursor-pointer"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                        <path d="M3 3v5h5" />
+                      </svg>
+                      <span>{isNe ? 'फेरि प्रयास गर्नुहोस्' : 'Try again'}</span>
+                    </button>
+                  )}
                 </div>
               )}
             </>

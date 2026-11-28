@@ -30,10 +30,14 @@ export default function SampleModal({ isOpen, onClose, language }: SampleModalPr
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/65 p-0 sm:p-4 backdrop-blur-md transition-opacity duration-300"
-      style={backdropStyle}
-      onClick={triggerClose}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
     >
+      <div
+        className="absolute inset-0 bg-black/65 backdrop-blur-md"
+        style={backdropStyle}
+        onClick={triggerClose}
+        aria-hidden="true"
+      />
       <div
         role="dialog"
         aria-modal="true"
