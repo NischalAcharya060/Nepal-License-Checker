@@ -4,6 +4,7 @@ import { useState } from 'react'
 import toast from 'react-hot-toast'
 import type { Language } from '@/lib/i18n'
 import { TypeScriptLogo, PythonLogo, PhpLogo, PostmanLogo } from '@/components/SdkLogos'
+import { useSwipeDownToClose } from '@/hooks/useSwipeDownToClose'
 
 interface NpmModalProps {
   isOpen: boolean
@@ -29,7 +30,12 @@ export default function NpmModal({ isOpen, onClose, language }: NpmModalProps) {
   const [pythonTab, setPythonTab] = useState<'basic' | 'fastapi'>('basic')
   const [phpTab, setPhpTab] = useState<'pure' | 'laravel'>('pure')
 
-  if (!isOpen) return null
+  const { isRendered, triggerClose, modalStyle, backdropStyle, handleProps } = useSwipeDownToClose({
+    isOpen,
+    onClose,
+  })
+
+  if (!isRendered) return null
 
   const isNe = language === 'ne'
   const isGithub = registry === 'github'
@@ -99,17 +105,28 @@ export default function NpmModal({ isOpen, onClose, language }: NpmModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-0 sm:p-4 lg:p-6 backdrop-blur-md animate-fade-in"
-      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-0 sm:p-4 lg:p-6 backdrop-blur-md transition-opacity duration-300"
+      style={backdropStyle}
+      onClick={triggerClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="sdk-modal-title"
     >
       <div
-        className="relative flex max-h-[94vh] w-full max-w-5xl xl:max-w-[1080px] flex-col overflow-hidden rounded-t-[28px] sm:rounded-3xl dev-glass-card shadow-2xl animate-rise-in border border-[var(--border-default)]"
+        style={modalStyle}
+        className="relative flex max-h-[83vh] sm:max-h-[90vh] w-full max-w-5xl xl:max-w-[1080px] flex-col overflow-hidden rounded-t-[28px] sm:rounded-3xl dev-glass-card shadow-2xl border border-[var(--border-default)] pb-[max(0.75rem,env(safe-area-inset-bottom))]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="w-10 h-1 bg-[var(--border-default)] rounded-full mx-auto my-2 sm:hidden" aria-hidden />
+        {/* Mobile handle indicator & Swipe Down zone */}
+        <div
+          className="w-full pt-3 pb-1 flex flex-col items-center justify-center cursor-grab active:cursor-grabbing touch-none select-none sm:hidden"
+          {...handleProps}
+        >
+          <div className="w-12 h-1.5 bg-[var(--border-default)] hover:bg-[var(--text-muted)] rounded-full transition-colors" />
+          <span className="text-[10px] text-[var(--text-muted)] mt-1 font-medium opacity-65 tracking-tight">
+            {isNe ? 'बन्द गर्न तल तान्नुहोस्' : 'Swipe down to close'}
+          </span>
+        </div>
 
         {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-[var(--border-default)] bg-gradient-to-r from-[var(--nepal-red)]/10 via-[var(--nepal-blue)]/10 to-transparent px-5 py-4 sm:px-7">
@@ -150,7 +167,7 @@ export default function NpmModal({ isOpen, onClose, language }: NpmModalProps) {
 
           <button
             type="button"
-            onClick={onClose}
+            onClick={triggerClose}
             className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-xl p-2 text-[var(--text-muted)] transition hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
             aria-label={isNe ? 'मोडाल बन्द गर्नुहोस्' : 'Close modal'}
           >

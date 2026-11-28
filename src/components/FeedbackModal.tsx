@@ -183,7 +183,6 @@ export default function FeedbackModal({
     modalStyle,
     backdropStyle,
     handleProps,
-    containerProps,
   } = useSwipeDownToClose({
     isOpen,
     onClose,
@@ -204,8 +203,7 @@ export default function FeedbackModal({
     >
       <div
         style={modalStyle}
-        {...containerProps}
-        className="relative w-full max-w-lg rounded-t-[28px] sm:rounded-3xl dev-glass-card shadow-2xl overflow-hidden pb-[max(1rem,env(safe-area-inset-bottom))]"
+        className="relative flex flex-col max-h-[83vh] sm:max-h-[88vh] w-full max-w-lg rounded-t-[28px] sm:rounded-3xl dev-glass-card shadow-2xl overflow-hidden pb-[max(1rem,env(safe-area-inset-bottom))]"
       >
         {/* Mobile handle indicator & Swipe Down zone */}
         <div
@@ -220,8 +218,7 @@ export default function FeedbackModal({
 
         {/* Header */}
         <div
-          className="flex items-center justify-between border-b border-[var(--border-default)]/80 bg-[var(--bg-secondary)]/50 px-5 py-3.5 select-none cursor-grab active:cursor-grabbing sm:cursor-default"
-          {...handleProps}
+          className="flex items-center justify-between border-b border-[var(--border-default)]/80 bg-[var(--bg-secondary)]/50 px-5 py-3.5 select-none"
         >
           <div className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)]">
@@ -283,7 +280,7 @@ export default function FeedbackModal({
         </div>
 
         {/* Content */}
-        <div className="p-5 sm:p-6 max-h-[75vh] overflow-y-auto">
+        <div className="p-5 sm:p-6 flex-1 overflow-y-auto">
           {activeTab === 'submit' ? (
             isSuccess ? (
               <div className="flex flex-col items-center justify-center py-5 text-center">

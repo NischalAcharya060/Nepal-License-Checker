@@ -105,7 +105,6 @@ export default function OfficesModal({ isOpen, onClose, copy, language }: Office
     modalStyle,
     backdropStyle,
     handleProps,
-    containerProps,
   } = useSwipeDownToClose({
     isOpen: isOpen && !selectedOffice,
     onClose,
@@ -126,8 +125,7 @@ export default function OfficesModal({ isOpen, onClose, copy, language }: Office
       >
         <div
           style={modalStyle}
-          {...containerProps}
-          className="relative flex max-h-[90vh] sm:max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[28px] sm:rounded-3xl dev-glass-card shadow-2xl pb-[max(1rem,env(safe-area-inset-bottom))]"
+          className="relative flex max-h-[83vh] sm:max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[28px] sm:rounded-3xl dev-glass-card shadow-2xl pb-[max(1rem,env(safe-area-inset-bottom))]"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Mobile handle indicator & Swipe Down zone */}
@@ -143,8 +141,7 @@ export default function OfficesModal({ isOpen, onClose, copy, language }: Office
 
           {/* Header */}
           <div
-            className="flex items-start justify-between border-b border-[var(--border-default)] bg-gradient-to-r from-[var(--nepal-blue-soft)] to-transparent p-4 sm:p-5 select-none cursor-grab active:cursor-grabbing sm:cursor-default"
-            {...handleProps}
+            className="flex items-start justify-between border-b border-[var(--border-default)] bg-gradient-to-r from-[var(--nepal-blue-soft)] to-transparent p-4 sm:p-5 select-none"
           >
             <div>
               <div className="flex items-center gap-2">
@@ -332,7 +329,7 @@ export default function OfficesModal({ isOpen, onClose, copy, language }: Office
         >
           <div
             style={{ zIndex: 2001 }}
-            className="relative flex max-h-[90vh] sm:max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-t-[28px] sm:rounded-3xl dev-glass-card shadow-2xl animate-rise-in"
+            className="relative flex max-h-[83vh] sm:max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-t-[28px] sm:rounded-3xl dev-glass-card shadow-2xl animate-rise-in"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="w-10 h-1 bg-[var(--border-default)] rounded-full mx-auto my-2 sm:hidden" aria-hidden />

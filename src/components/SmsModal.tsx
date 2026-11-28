@@ -19,7 +19,6 @@ export default function SmsModal({ isOpen, onClose, copy }: SmsModalProps) {
     modalStyle,
     backdropStyle,
     handleProps,
-    containerProps,
   } = useSwipeDownToClose({
     isOpen,
     onClose,
@@ -40,8 +39,7 @@ export default function SmsModal({ isOpen, onClose, copy }: SmsModalProps) {
     >
       <div
         style={modalStyle}
-        {...containerProps}
-        className="relative flex max-h-[90vh] sm:max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-t-[28px] sm:rounded-3xl dev-glass-card shadow-2xl pb-[max(1rem,env(safe-area-inset-bottom))]"
+        className="relative flex max-h-[83vh] sm:max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-t-[28px] sm:rounded-3xl dev-glass-card shadow-2xl pb-[max(1rem,env(safe-area-inset-bottom))]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Mobile handle indicator & Swipe Down zone */}
@@ -57,8 +55,7 @@ export default function SmsModal({ isOpen, onClose, copy }: SmsModalProps) {
 
         {/* Header */}
         <div
-          className="flex items-start justify-between border-b border-[var(--border-default)] bg-gradient-to-r from-[var(--nepal-blue-soft)] to-transparent p-4 sm:p-5 select-none cursor-grab active:cursor-grabbing sm:cursor-default"
-          {...handleProps}
+          className="flex items-start justify-between border-b border-[var(--border-default)] bg-gradient-to-r from-[var(--nepal-blue-soft)] to-transparent p-4 sm:p-5 select-none"
         >
           <div className="flex items-center gap-3">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--nepal-blue)] text-white shadow-sm">

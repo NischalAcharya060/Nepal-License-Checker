@@ -236,7 +236,11 @@ export default function Footer({
                 type="button"
                 onClick={onOpenSponsor}
                 className="inline-flex items-center gap-1.5 rounded-xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 px-3 py-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 transition active:scale-95 shadow-2xs cursor-pointer group"
-                title={isNe ? 'परियोजनालाई सहयोग गर्नुहोस् (eSewa / Khalti)' : 'Support this Project via eSewa or Khalti'}
+                title={
+                  isNe
+                    ? 'परियोजनालाई .com डोमेन र होस्टिङका लागि सहयोग गर्नुहोस् (eSewa / Khalti)'
+                    : 'Help fund our .com domain and reliable hosting via eSewa or Khalti'
+                }
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-rose-500 transition-transform group-hover:scale-125">
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
@@ -678,8 +682,7 @@ export default function Footer({
         >
           <div
             style={docsSwipe.modalStyle}
-            {...docsSwipe.containerProps}
-            className="relative flex flex-col w-full max-w-xl max-h-[90vh] sm:max-h-[85vh] overflow-hidden rounded-t-[28px] sm:rounded-3xl bg-[var(--surface-primary)] dev-glass-card shadow-2xl border border-[var(--border-default)] pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-0"
+            className="relative flex flex-col w-full max-w-xl max-h-[83vh] sm:max-h-[85vh] overflow-hidden rounded-t-[28px] sm:rounded-3xl bg-[var(--surface-primary)] dev-glass-card shadow-2xl border border-[var(--border-default)] pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-0"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Mobile handle indicator & Swipe Down zone */}
@@ -695,8 +698,7 @@ export default function Footer({
 
             {/* Header */}
             <div
-              className="flex items-center justify-between border-b border-[var(--border-default)] px-5 sm:px-6 py-3.5 sm:py-4 bg-[var(--bg-secondary)]/50 select-none cursor-grab active:cursor-grabbing sm:cursor-default"
-              {...docsSwipe.handleProps}
+              className="flex items-center justify-between border-b border-[var(--border-default)] px-5 sm:px-6 py-3.5 sm:py-4 bg-[var(--bg-secondary)]/50 select-none"
             >
               <div className="flex items-center gap-2.5">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--nepal-blue)] text-white shadow-xs">
@@ -842,8 +844,7 @@ export default function Footer({
         >
           <div
             style={categoriesSwipe.modalStyle}
-            {...categoriesSwipe.containerProps}
-            className="relative flex flex-col w-full max-w-2xl max-h-[90vh] sm:max-h-[85vh] overflow-hidden rounded-t-[28px] sm:rounded-3xl bg-[var(--surface-primary)] dev-glass-card shadow-2xl border border-[var(--border-default)] pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-0"
+            className="relative flex flex-col w-full max-w-2xl max-h-[83vh] sm:max-h-[85vh] overflow-hidden rounded-t-[28px] sm:rounded-3xl bg-[var(--surface-primary)] dev-glass-card shadow-2xl border border-[var(--border-default)] pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-0"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Mobile handle indicator & Swipe Down zone */}
@@ -859,8 +860,7 @@ export default function Footer({
 
             {/* Header */}
             <div
-              className="flex items-center justify-between border-b border-[var(--border-default)] px-5 sm:px-6 py-3.5 sm:py-4 bg-[var(--bg-secondary)]/50 select-none cursor-grab active:cursor-grabbing sm:cursor-default"
-              {...categoriesSwipe.handleProps}
+              className="flex items-center justify-between border-b border-[var(--border-default)] px-5 sm:px-6 py-3.5 sm:py-4 bg-[var(--bg-secondary)]/50 select-none"
             >
               <div className="flex items-center gap-2.5">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--nepal-blue)] text-white shadow-xs">
