@@ -169,6 +169,60 @@ export default function EducationalSection({
         ))}
       </div>
 
+      {/* Regional Offices & Provinces Coverage Strip - High SEO & User Value */}
+      <div className="mt-4 rounded-2xl border border-[var(--border-default)]/80 bg-[var(--surface-primary)]/80 p-4 shadow-2xs backdrop-blur-sm sm:p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+          <div className="flex items-center gap-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--nepal-blue-soft)] text-[var(--nepal-blue)]">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+            </span>
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-primary)]">
+                {language === 'ne' ? 'सबै प्रदेश तथा यातायात कार्यालयहरू समेटिएको' : 'All Provinces & Transport Offices Covered'}
+              </h3>
+              <p className="text-[11px] text-[var(--text-secondary)]">
+                {language === 'ne'
+                  ? 'काठमाडौं, पोखरा, बुटवल, जनकपुर, विराटनगर लगायत नेपालभरका २५+ कार्यालयहरू'
+                  : 'Check smart card print status across 25+ official DOTM centers in Nepal'}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onOpenOffices}
+            className="inline-flex items-center justify-center gap-1.5 self-start sm:self-auto rounded-xl border border-[var(--nepal-blue)]/30 bg-[var(--nepal-blue-soft)]/60 px-3 py-1.5 text-xs font-bold text-[var(--nepal-blue)] transition hover:bg-[var(--nepal-blue)] hover:text-white active:scale-95 cursor-pointer shadow-2xs"
+          >
+            <span>{language === 'ne' ? 'सबै २५+ कार्यालय विवरण' : 'View All 25+ Offices'}</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <line x1="5" y1="12" x2="19" y2="12" />
+              <polyline points="12 5 19 12 12 19" />
+            </svg>
+          </button>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {[
+            { label: 'Kathmandu Valley', detail: 'Ekantakuna, Thulo Bharyang, Chabahil, Radhe Radhe' },
+            { label: 'Gandaki', detail: 'Pokhara, Kaski' },
+            { label: 'Lumbini', detail: 'Butwal, Rupandehi, Palpa' },
+            { label: 'Madhesh', detail: 'Janakpur, Birgunj, Lahan, Bardibas' },
+            { label: 'Koshi', detail: 'Itahari, Biratnagar, Birtamod Jhapa' },
+            { label: 'Bagmati (Outer)', detail: 'Chitwan, Bharatpur, Hetauda' },
+            { label: 'Karnali & Sudurpashchim', detail: 'Nepalgunj, Dhangadhi' },
+          ].map((region) => (
+            <span
+              key={region.label}
+              className="inline-flex items-center gap-1 rounded-lg border border-[var(--border-default)]/60 bg-[var(--surface-primary)] px-2.5 py-1 text-[11px] font-medium text-[var(--text-secondary)] shadow-2xs"
+            >
+              <strong className="font-semibold text-[var(--text-primary)]">{region.label}:</strong>
+              <span>{region.detail}</span>
+            </span>
+          ))}
+        </div>
+      </div>
+
       {/* Quick Actions Bar for mobile users */}
       <div className="mt-4 flex flex-wrap gap-2 sm:hidden">
         <button
